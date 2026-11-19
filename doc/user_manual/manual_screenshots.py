@@ -11,7 +11,7 @@ old image next to the new one. The manual is only changed with --install.
 import argparse, io, json, os, shlex, shutil, subprocess, sys, time
 
 import msgpack
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFilter
 
 MANUAL = os.path.dirname(os.path.abspath(__file__))
 REPO   = os.path.dirname(os.path.dirname(MANUAL))
@@ -171,20 +171,47 @@ def savePng(src, dst, dpi):
     os.remove(src)
 
 
-def screenShot(c, objs, dst, dpi):
-    # objs: one object path or several joined by '+', cropped to the union of their screen rects
+def screenBox(c, objs, visible=True):
+    # objs: one object path or several joined by '+', union of their screen rects
     boxes = []
     for obj in objs.split('+'):
         obj = obj.strip('"')
         g = c.cmd('uiget {} --what screen_geometry'.format('"{}"'.format(obj) if ' ' in obj else obj))
         if isinstance(g, str):
             g = json.loads(g)
-        g = g.get('visible') or g
+        if visible:
+            g = g.get('visible') or g
         boxes.append((g['x'], g['y'], g['x'] + g['width'], g['y'] + g['height']))
-    box = (min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes))
+    return (min(b[0] for b in boxes), min(b[1] for b in boxes), max(b[2] for b in boxes), max(b[3] for b in boxes))
+
+
+def screenShot(c, objs, dst, dpi):
+    box = screenBox(c, objs)
     png = subprocess.run(['import', '-display', DISPLAY, '-window', 'root', 'png:-'],
                          check=True, capture_output=True).stdout
     Image.open(io.BytesIO(png)).convert('RGB').crop(box).save(dst, dpi=(dpi, dpi))
+    return box[:2]
+
+
+def editImage(c, step, target, origin, dpi):
+    # box / blur / crop / cropw <objs>: on the image taken last, in screen coordinates relative to its
+    # origin, cropw crops only the width
+    kind, objs = step.split(' ', 1)
+    x0, y0, x1, y1 = screenBox(c, shlex.split(objs)[0])
+    r = (x0 - origin[0], y0 - origin[1], x1 - origin[0], y1 - origin[1])
+    im = Image.open(target).convert('RGB')
+    if kind == 'box':
+        ImageDraw.Draw(im).rectangle((r[0] - 3, r[1] - 3, r[2] + 2, r[3] + 2), outline=(255, 0, 0), width=2)
+    elif kind == 'blur':
+        im.paste(im.crop(r).filter(ImageFilter.GaussianBlur(6)), r[:2])
+    elif kind == 'cropw':
+        im = im.crop((r[0], 0, r[2], im.height))
+        origin = (x0, origin[1])
+    else:
+        im = im.crop(r)
+        origin = (x0, y0)
+    im.save(target, dpi=(dpi, dpi))
+    return origin
 
 
 def compareImage(old_fn, new_fn, out_fn):
@@ -215,7 +242,7 @@ def takeImage(c, img, out_dir, dpi, report):
         c.cmd('uiset mainwindow.toolbox "Data Sources"')
         c.cmd('uiset mainwindow.toolbox_data_sources_button ""')
 
-    taken = False
+    origin = None
     for step in img['steps']:
         if step.startswith('sleep '):
             time.sleep(int(step.split()[1]) / 1000.0)
@@ -223,25 +250,31 @@ def takeImage(c, img, out_dir, dpi, report):
             obj = objArg(step)
             c.waitFor(lambda: c.visible(obj), '{} did not show'.format(obj))
             time.sleep(0.5)
+        elif step.startswith('viewpoint '):
+            vp = json.load(open(os.path.join(MANUAL, 'screenshot_viewpoints', step.split()[1] + '.json')))
+            c.cmd('set_view_point "{}"'.format(json.dumps(vp, separators=(',', ':')).replace('"', '\\"')))
         elif step.startswith('dump '):
             report['dumps'].append({'cmd': step[5:], 'value': c.tryCmd(step[5:])})
         elif step.startswith('grab '):
             tmp = target + '.tmp.png'
             c.cmd('uiget {} --what "grab:{}"'.format(objArg(step), tmp))
             savePng(tmp, target, dpi)
-            taken = True
+            origin = screenBox(c, shlex.split(step)[1], visible=False)[:2]
         elif step.startswith('shot '):
-            screenShot(c, shlex.split(step)[1], target, dpi)
-            taken = True
+            origin = screenShot(c, shlex.split(step)[1], target, dpi)
+        elif step.split(' ')[0] in ('box', 'blur', 'crop', 'cropw'):
+            origin = editImage(c, step, target, origin, dpi)
         else:
             c.cmd(step)
-    if not taken:
+    if origin is None:
         raise RuntimeError('no grab or shot step')
     return target
 
 
 def cleanup(c):
-    if c.visible('popup'):
+    for i in range(4):
+        if not c.visible('popup'):
+            break
         c.tryCmd('uiinject popup "key(Escape)"')
         time.sleep(0.3)
     for i in range(3):
@@ -271,8 +304,9 @@ def main():
     images = [i for ch in spec['chapters'] for i in ch['images']
               if i['steps'] and (a.all or i['dirty'] or only)
               and (only is None or os.path.basename(i['file']) in only or i['file'] in only)]
-    # images without a database first, then per database in chapter order
-    images.sort(key=lambda i: (i['database'] or ''))
+    # images without a database first, then per database in chapter order. A view point sets the
+    # data sources to load, so the images with a view point come last per database
+    images.sort(key=lambda i: (i['database'] or '', any(s.startswith('viewpoint ') for s in i['steps'])))
 
     out_dir = os.path.abspath(os.path.expanduser(a.out))
     shutil.rmtree(out_dir, ignore_errors=True)

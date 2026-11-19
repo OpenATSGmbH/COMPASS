@@ -33,6 +33,7 @@
 #include <QAbstractItemView>
 #include <QContextMenuEvent>
 #include <QWheelEvent>
+#include <QMouseEvent>
 #include <QDateTimeEdit>
 #include <QComboBox>
 #include <QTabWidget>
@@ -239,7 +240,8 @@ bool injectClickEvent(QWidget* root,
                       int x, 
                       int y, 
                       Qt::MouseButton button, 
-                      int delay)
+                      int delay,
+                      Qt::KeyboardModifiers modifiers)
 {
     auto obj = findObject(root, obj_name);
     if (obj.first != rtcommand::FindObjectErrCode::NoError)
@@ -278,12 +280,12 @@ bool injectClickEvent(QWidget* root,
             w = scroll_area->viewport();
         
         injectionMsg("widget");
-        QTest::mouseClick(w, button, Qt::NoModifier, pos, delay);
+        QTest::mouseClick(w, button, modifiers, pos, delay);
     }
     else //window
     {
         injectionMsg("window");
-        QTest::mouseClick(dynamic_cast<QWindow*>(obj.second), button, Qt::NoModifier, pos, delay);
+        QTest::mouseClick(dynamic_cast<QWindow*>(obj.second), button, modifiers, pos, delay);
     }
 
     return true;
@@ -390,6 +392,16 @@ bool injectWheelEvent(QWidget* root,
 }
 
 /**
+ * QTest::mouseMove only sets the cursor position for widgets (Qt 5), so a drag with a held
+ * button never reaches the widget: send the move event directly.
+ */
+static void sendMouseMove(QWidget* w, const QPoint& pos, Qt::MouseButton button, Qt::KeyboardModifiers modifiers)
+{
+    QMouseEvent event(QEvent::MouseMove, pos, w->mapToGlobal(pos), Qt::NoButton, button, modifiers);
+    QApplication::sendEvent(w, &event);
+}
+
+/**
  */
 bool injectRectEvent(QWidget* root,
                      const QString& obj_name, 
@@ -398,7 +410,8 @@ bool injectRectEvent(QWidget* root,
                      int x1, 
                      int y1,
                      Qt::MouseButton button, 
-                     int delay)
+                     int delay,
+                     Qt::KeyboardModifiers modifiers)
 {
     auto obj = findObject(root, obj_name);
     if (obj.first != rtcommand::FindObjectErrCode::NoError)
@@ -431,16 +444,80 @@ bool injectRectEvent(QWidget* root,
             w = scroll_area->viewport();
 
         injectionMsg("widget");
-        QTest::mousePress(w, button, Qt::NoModifier, pos0, 0);
-        QTest::mouseMove(w, pos1, 0);
-        QTest::mouseRelease(w, button, Qt::NoModifier, pos1, 0);
+        QTest::mousePress(w, button, modifiers, pos0, 0);
+        sendMouseMove(w, pos1, button, modifiers);
+        QTest::mouseRelease(w, button, modifiers, pos1, 0);
     }
     else //window
     {
         injectionMsg("window");
-        QTest::mousePress(dynamic_cast<QWindow*>(obj.second), button, Qt::NoModifier, pos0, 0);
+        QTest::mousePress(dynamic_cast<QWindow*>(obj.second), button, modifiers, pos0, 0);
         QTest::mouseMove(dynamic_cast<QWindow*>(obj.second), pos1, 0);
-        QTest::mouseRelease(dynamic_cast<QWindow*>(obj.second), button, Qt::NoModifier, pos1, 0);
+        QTest::mouseRelease(dynamic_cast<QWindow*>(obj.second), button, modifiers, pos1, 0);
+    }
+
+    return true;
+}
+
+/**
+ * Injects a single mouse press, move or release, e.g. a press and a move without a release,
+ * so that a rubber band of a drag stays on screen.
+ */
+bool injectMouseStepEvent(QWidget* root,
+                          const QString& obj_name,
+                          QEvent::Type type,
+                          int x,
+                          int y,
+                          Qt::MouseButton button,
+                          Qt::KeyboardModifiers modifiers)
+{
+    auto obj = findObject(root, obj_name);
+    if (obj.first != rtcommand::FindObjectErrCode::NoError)
+    {
+        logObjectError("injectMouseStepEvent", obj_name, obj.first);
+        return false;
+    }
+
+    if (!obj.second->isWidgetType() && !obj.second->isWindowType())
+    {
+        logObjectError("injectMouseStepEvent", obj_name, rtcommand::FindObjectErrCode::WrongType);
+        return false;
+    }
+
+    QPoint pos(x, y);
+
+    loginf << "injecting mouse event type " << (int)type << " button " << (int)button << " at (" << x << "," << y << ")";
+
+    if (obj.second->isWidgetType())
+    {
+        auto w = dynamic_cast<QWidget*>(obj.second);
+
+        //!for scroll areas we have to send the events to its viewport!
+        auto scroll_area = dynamic_cast<QAbstractScrollArea*>(w);
+        if (scroll_area)
+            w = scroll_area->viewport();
+
+        if (type == QEvent::MouseButtonPress)
+            QTest::mousePress(w, button, modifiers, pos, 0);
+        else if (type == QEvent::MouseMove)
+            sendMouseMove(w, pos, button, modifiers);
+        else if (type == QEvent::MouseButtonRelease)
+            QTest::mouseRelease(w, button, modifiers, pos, 0);
+        else
+            return false;
+    }
+    else //window
+    {
+        auto win = dynamic_cast<QWindow*>(obj.second);
+
+        if (type == QEvent::MouseButtonPress)
+            QTest::mousePress(win, button, modifiers, pos, 0);
+        else if (type == QEvent::MouseMove)
+            QTest::mouseMove(win, pos, 0);
+        else if (type == QEvent::MouseButtonRelease)
+            QTest::mouseRelease(win, button, modifiers, pos, 0);
+        else
+            return false;
     }
 
     return true;
@@ -759,6 +836,65 @@ bool injectMenuEvent(QWidget* root,
     
     //seems that for popup menus the key based traversal works better
     return traverseMenuKeys(obj.second, path_to_action, delay, true);
+}
+
+/**
+ * Opens a menu bar menu or a path of submenus of a menu without triggering an action,
+ * e.g. for a screenshot of an open menu. Each path entry must be a menu.
+ */
+bool injectOpenMenuEvent(QWidget* root,
+                         const QString& obj_name,
+                         const QStringList& path_to_menu)
+{
+    auto obj = findObject(root, obj_name);
+    if (obj.first != rtcommand::FindObjectErrCode::NoError)
+    {
+        logObjectError("injectOpenMenuEvent", obj_name, obj.first);
+        return false;
+    }
+
+    QWidget* current = dynamic_cast<QWidget*>(obj.second);
+    if (!dynamic_cast<QMenuBar*>(current) && !dynamic_cast<QMenu*>(current))
+    {
+        logObjectError("injectOpenMenuEvent", obj_name, rtcommand::FindObjectErrCode::WrongType);
+        return false;
+    }
+
+    for (const QString& part : path_to_menu)
+    {
+        QString p = part.trimmed();
+
+        QAction* action = nullptr;
+        for (auto a : current->actions())
+        {
+            if (a && !a->isSeparator() && a->menu() && a->isVisible() && normalizedMenuName(a->text()) == p)
+            {
+                action = a;
+                break;
+            }
+        }
+
+        if (!action)
+        {
+            loginf << "menu '" << p.toStdString() << "' not found";
+            return false;
+        }
+
+        //setActiveAction opens the menu, its first entry stays unselected
+        if (auto menu_bar = dynamic_cast<QMenuBar*>(current))
+        {
+            menu_bar->setActiveAction(action);
+        }
+        else
+        {
+            dynamic_cast<QMenu*>(current)->setActiveAction(action);
+        }
+
+        current = action->menu();
+        QApplication::processEvents();
+    }
+
+    return true;
 }
 
 /**

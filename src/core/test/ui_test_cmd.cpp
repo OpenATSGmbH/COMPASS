@@ -222,6 +222,30 @@ bool RTCommandUIGet::run_impl()
         result        = v;
         result_string = v.dump();
     }
+    else if (what == "objects")
+    {
+        //object paths of the named descendant widgets, with class and visibility, to find the
+        //path of a widget
+        nlohmann::json v = nlohmann::json::array();
+
+        for (auto w : receiver.second->findChildren<QWidget*>())
+        {
+            if (w->objectName().isEmpty() || w->objectName().startsWith("qt_"))
+                continue;
+
+            QStringList path;
+            for (QWidget* p = w; p && p != receiver.second; p = p->parentWidget())
+                if (!p->objectName().isEmpty() && !p->objectName().startsWith("qt_"))
+                    path.prepend(p->objectName());
+
+            v.push_back({ { "path", path.join(".").toStdString() },
+                          { "class", w->metaObject()->className() },
+                          { "visible", w->isVisible() } });
+        }
+
+        result        = v;
+        result_string = v.dump(4);
+    }
     else if (what.startsWith("grab:"))
     {
         //save an image of the widget as rendered by the application (no desktop screenshot needed)

@@ -27,6 +27,7 @@
 #include <QDialog>
 #include <QMainWindow>
 #include <QApplication>
+#include <QMenu>
 
 namespace rtcommand
 {
@@ -164,6 +165,50 @@ std::pair<rtcommand::FindObjectErrCode, QObject *> getCommandReceiver(const std:
     else if (first_part == "popup")
     {
         return ui_test::findObject(QApplication::activePopupWidget(), remainder.c_str());
+    }
+    else if (first_part.size() > 5 && first_part.find("popup") == 0)
+    {
+        //popup<N>: the menu N levels below the active popup menu, e.g. popup1 = the menu
+        //that opened the active submenu
+        int levels = QString::fromStdString(first_part.substr(5)).toInt();
+
+        QWidget* current = QApplication::activePopupWidget();
+        for (int i = 0; i < levels && current; ++i)
+        {
+            QWidget* parent_menu = nullptr;
+            for (auto w : QApplication::topLevelWidgets())
+            {
+                auto menu = dynamic_cast<QMenu*>(w);
+                if (!menu || !menu->isVisible())
+                    continue;
+
+                for (auto a : menu->actions())
+                    if (a->menu() == current)
+                        parent_menu = menu;
+            }
+            current = parent_menu;
+        }
+
+        if (!current)
+            return {rtcommand::FindObjectErrCode::NotFound, nullptr};
+
+        return ui_test::findObject(current, remainder.c_str());
+    }
+    else if (first_part == "toplevel")
+    {
+        //toplevel.<object name>: a visible top-level window, e.g. a non-modal dialog
+        if (parts.value().empty())
+            return {rtcommand::FindObjectErrCode::NotFound, nullptr};
+
+        QString name = QString::fromStdString(parts.value().at(0));
+        parts.value().erase(parts.value().begin());
+        std::string rest = Utils::String::compress(parts.value(), RTCommand::ObjectPathSeparator);
+
+        for (auto w : QApplication::topLevelWidgets())
+            if (w->isVisible() && w->objectName() == name)
+                return ui_test::findObject(w, rest.c_str());
+
+        return {rtcommand::FindObjectErrCode::NotFound, nullptr};
     }
     else if (first_part == "focus")
     {
