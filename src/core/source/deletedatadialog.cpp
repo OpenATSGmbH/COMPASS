@@ -70,6 +70,7 @@ void DeleteDataDialog::createUI()
     for (unsigned int i = 0; i < dbc_names.size(); ++i)
     {
         QCheckBox* cb = new QCheckBox(dbc_names[i].c_str());
+        cb->setObjectName("dbcontent_" + QString::fromStdString(dbc_names[i]).toLower() + "_check");
         cb->setChecked(false);
         dbc_layout->addWidget(cb, i / cols, i % cols);
         dbcontent_checks_[dbc_names[i]] = cb;
@@ -82,6 +83,7 @@ void DeleteDataDialog::createUI()
     QHBoxLayout* dbc_button_layout = new QHBoxLayout;
 
     QPushButton* select_all_btn = new QPushButton("Select All");
+    select_all_btn->setObjectName("select_all_button");
     connect(select_all_btn, &QPushButton::clicked, [this]() {
         for (auto& cb_it : dbcontent_checks_)
             cb_it.second->setChecked(true);
@@ -89,6 +91,7 @@ void DeleteDataDialog::createUI()
     dbc_button_layout->addWidget(select_all_btn);
 
     QPushButton* select_none_btn = new QPushButton("Select None");
+    select_none_btn->setObjectName("select_none_button");
     connect(select_none_btn, &QPushButton::clicked, [this]() {
         for (auto& cb_it : dbcontent_checks_)
             cb_it.second->setChecked(false);
@@ -105,6 +108,7 @@ void DeleteDataDialog::createUI()
     QVBoxLayout* ds_group_layout = new QVBoxLayout;
 
     ds_tree_ = new QTreeWidget;
+    ds_tree_->setObjectName("ds_tree");
     ds_tree_->setHeaderLabels({"Name", "Count"});
     ds_tree_->header()->setStretchLastSection(false);
     ds_tree_->header()->setSectionResizeMode(0, QHeaderView::Stretch);
@@ -125,6 +129,8 @@ void DeleteDataDialog::createUI()
     QDialogButtonBox* button_box = new QDialogButtonBox(
         QDialogButtonBox::Ok | QDialogButtonBox::Cancel);
     button_box->button(QDialogButtonBox::Ok)->setText("Delete");
+    button_box->button(QDialogButtonBox::Ok)->setObjectName("delete_button");
+    button_box->button(QDialogButtonBox::Cancel)->setObjectName("cancel_button");
     button_box->button(QDialogButtonBox::Ok)->setIcon(QIcon());
     button_box->button(QDialogButtonBox::Cancel)->setIcon(QIcon());
 

@@ -49,12 +49,14 @@ CreateARTASAssociationsTaskDialog::CreateARTASAssociationsTaskDialog(CreateARTAS
     QHBoxLayout* button_layout = new QHBoxLayout();
 
     QPushButton* cancel_button = new QPushButton("Cancel");
+    cancel_button->setObjectName("cancel_button");
     connect(cancel_button,  &QPushButton::clicked, this, &QDialog::reject);
     button_layout->addWidget(cancel_button);
 
     button_layout->addStretch();
 
     QPushButton* run_button = new QPushButton("Run");
+    run_button->setObjectName("run_button");
     connect(run_button, &QPushButton::clicked, this, &QDialog::accept);
     button_layout->addWidget(run_button);
 

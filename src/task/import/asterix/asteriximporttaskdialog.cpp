@@ -51,12 +51,14 @@ ASTERIXImportTaskDialog::ASTERIXImportTaskDialog(ASTERIXImportTask& task,
     QHBoxLayout* button_layout = new QHBoxLayout();
 
     cancel_button_ = new QPushButton("Cancel");
+    cancel_button_->setObjectName("cancel_button");
     connect(cancel_button_, &QPushButton::clicked, this, &ASTERIXImportTaskDialog::cancelClickedSlot);
     button_layout->addWidget(cancel_button_);
 
     button_layout->addStretch();
 
     import_button_ = new QPushButton("Import");
+    import_button_->setObjectName("import_button");
     connect(import_button_, &QPushButton::clicked, this, &ASTERIXImportTaskDialog::importClickedSlot);
     button_layout->addWidget(import_button_);
 

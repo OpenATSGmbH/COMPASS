@@ -111,6 +111,7 @@ void SectionContentFigure::addContentUI(QVBoxLayout* layout,
     }
 
     QLabel* label = new QLabel(("Figure: " + name()).c_str());
+    UI_TEST_OBJ_NAME(label, QString::fromStdString("Figure " + name() + " Label"));
 
     QPushButton* view_button = new QPushButton("View");
     view_button->setIcon(QIcon());

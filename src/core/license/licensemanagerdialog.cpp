@@ -49,6 +49,7 @@ LicenseManagerDialog::LicenseManagerDialog(LicenseManager& license_manager,
     license_manager_(license_manager)
 {
     setWindowTitle("Manage Licenses");
+    setObjectName("license_manager_dialog");
 
     auto layout = new QVBoxLayout;
     setLayout(layout);
@@ -58,6 +59,8 @@ LicenseManagerDialog::LicenseManagerDialog(LicenseManager& license_manager,
 
     auto add_license_button = new QPushButton("Add License");
     remove_license_button_ = new QPushButton("Remove License");
+    add_license_button->setObjectName("add_license_button");
+    remove_license_button_->setObjectName("remove_license_button");
 
     layouth->addWidget(add_license_button);
     layouth->addWidget(remove_license_button_);
@@ -75,6 +78,7 @@ LicenseManagerDialog::LicenseManagerDialog(LicenseManager& license_manager,
     state_idx_ = 5;
 
     license_list_ = new QTreeWidget;
+    license_list_->setObjectName("license_tree");
     license_list_->setColumnCount(headers.count());
     license_list_->setHeaderLabels(headers);
     license_list_->setSelectionMode(QTreeWidget::SelectionMode::SingleSelection);
@@ -102,6 +106,7 @@ LicenseManagerDialog::LicenseManagerDialog(LicenseManager& license_manager,
 
     auto button_layout = new QHBoxLayout;
     auto close_button  = new QPushButton("Close");
+    close_button->setObjectName("close_button");
 
     button_layout->addStretch(1);
     button_layout->addWidget(close_button);

@@ -21,6 +21,7 @@
 #include "sectorlayer.h"
 #include "evaluationstandard.h"
 #include "requirement/group.h"
+#include "ui_test_common.h"
 
 #include <QLabel>
 #include <QCheckBox>
@@ -93,6 +94,7 @@ void EvaluationSectorWidget::update()
                 const string& requirement_group_name = req_grp_it->name();
 
                 QCheckBox* check = new QCheckBox(requirement_group_name.c_str());
+                UI_TEST_OBJ_NAME(check, QString::fromStdString(sector_layer_name + "_" + requirement_group_name));
                 check->setChecked(calculator_.useGroupInSectorLayer(sector_layer_name, requirement_group_name));
                 check->setProperty("sector_layer_name", sector_layer_name.c_str());
                 check->setProperty("requirement_group_name", requirement_group_name.c_str());

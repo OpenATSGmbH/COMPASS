@@ -58,6 +58,7 @@ ASTERIXImportProgressDialog::ASTERIXImportProgressDialog(const ASTERIXImportSour
 :   QDialog (parent)
 ,   source_ (source)
 {
+    setObjectName("asterix_import_progress_dialog");
     setWindowTitle("Importing ASTERIX Recording(s)");
 
     // the dialog width is fixed by the layout, so the content cannot resize the window.
@@ -137,6 +138,7 @@ void ASTERIXImportProgressDialog::createUI()
     button_layout->addStretch(1);
 
     abort_button_ = new QPushButton("Abort");
+    abort_button_->setObjectName("abort_button");
     abort_button_->setIcon(QIcon());
     abort_button_->setToolTip("Stop the import and discard the data decoded so far");
     connect(abort_button_, &QPushButton::clicked, this, &ASTERIXImportProgressDialog::abortSlot);

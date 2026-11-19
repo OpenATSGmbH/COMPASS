@@ -104,12 +104,14 @@ LicenseImportDialog::LicenseImportDialog(QWidget* parent,
 :   QDialog(parent, f)
 {
     setWindowTitle("Add New License");
+    setObjectName("license_import_dialog");
 
     auto layout = new QVBoxLayout;
     setLayout(layout);
 
     auto key_layout = new QFormLayout;
     auto key_edit   = new KeyEdit;
+    key_edit->setObjectName("key_edit");
 
     key_edit->setPlaceholderText("Enter license key");
     key_edit->setAcceptRichText(false);
@@ -118,6 +120,7 @@ LicenseImportDialog::LicenseImportDialog(QWidget* parent,
     key_layout->addRow("License Key: ", key_edit);
 
     status_label_ = new QLabel;
+    status_label_->setObjectName("status_label");
 
     key_layout->addRow("", status_label_);
 
@@ -140,6 +143,8 @@ LicenseImportDialog::LicenseImportDialog(QWidget* parent,
     auto button_layout = new QHBoxLayout;
     import_button_     = new QPushButton("Add License");
     auto button_cancel = new QPushButton("Cancel");
+    import_button_->setObjectName("add_license_button");
+    button_cancel->setObjectName("cancel_button");
 
     button_layout->addWidget(button_cancel);
     button_layout->addStretch(1);

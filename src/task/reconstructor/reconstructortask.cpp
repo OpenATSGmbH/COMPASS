@@ -481,6 +481,7 @@ void ReconstructorTask::run()
 
     progress_dialog_.reset(new QProgressDialog("Reconstructing...", "Cancel", 0, 100,
                                                Dialogs::statusDialogParent()));
+    progress_dialog_->setObjectName("reconstruction_progress_dialog");
     progress_dialog_->setWindowTitle("Reconstructing References");
     progress_dialog_->setMinimumWidth(600);
     progress_dialog_->setLabel(tmp_label);
@@ -600,7 +601,9 @@ void ReconstructorTask::deleteAssociationsDoneSlot()
 
     if (allow_user_interactions_)
     {
-        progress_dialog_->setCancelButton(new QPushButton("Cancel"));
+        QPushButton* cancel_button = new QPushButton("Cancel");
+        cancel_button->setObjectName("cancel_button");
+        progress_dialog_->setCancelButton(cancel_button);
 
         connect(progress_dialog_.get(), &QProgressDialog::canceled,
                 this, &ReconstructorTask::runCancelledSlot);

@@ -80,6 +80,7 @@ ASTERIXJSONParserDetailWidget::ASTERIXJSONParserDetailWidget(ASTERIXJSONParser& 
     form_layout->addRow(asterix_label);
 
     json_key_box_ = new QComboBox();
+    json_key_box_->setObjectName("json_key_combo");
     json_key_box_->setEditable(false);
     //json_key_box_->setTextInteractionFlags(Qt::TextSelectableByMouse);
     connect(json_key_box_, SIGNAL(currentIndexChanged(const QString &)),
@@ -161,18 +162,21 @@ ASTERIXJSONParserDetailWidget::ASTERIXJSONParserDetailWidget(ASTERIXJSONParser& 
     // buttons
 
     new_dbcontvar_button_ = new QPushButton("New DBContent Variable");
+    new_dbcontvar_button_->setObjectName("new_variable_button");
     new_dbcontvar_button_->setHidden(true);
     connect(new_dbcontvar_button_, &QPushButton::clicked,
             this, &ASTERIXJSONParserDetailWidget::createNewDBVariableSlot);
     main_layout->addWidget(new_dbcontvar_button_);
 
     dbcontvar_edit_button_ = new QPushButton("Edit DBContent Variable");
+    dbcontvar_edit_button_->setObjectName("edit_variable_button");
     dbcontvar_edit_button_->setHidden(true);
     connect(dbcontvar_edit_button_, &QPushButton::clicked,
             this, &ASTERIXJSONParserDetailWidget::editDBVariableSlot);
     main_layout->addWidget(dbcontvar_edit_button_);
 
     dbcontvar_delete_button_ = new QPushButton("Delete DBContent Variable");
+    dbcontvar_delete_button_->setObjectName("delete_variable_button");
     dbcontvar_delete_button_->setToolTip("Deletes the DBContent Variable from the DBContent, not just from the Mapping.");
     dbcontvar_delete_button_->setHidden(true);
     connect(dbcontvar_delete_button_, &QPushButton::clicked,
@@ -180,6 +184,7 @@ ASTERIXJSONParserDetailWidget::ASTERIXJSONParserDetailWidget(ASTERIXJSONParser& 
     main_layout->addWidget(dbcontvar_delete_button_);
 
     delete_mapping_button_ = new QPushButton("Delete Mapping");
+    delete_mapping_button_->setObjectName("delete_mapping_button");
     delete_mapping_button_->setHidden(true);
     connect(delete_mapping_button_, &QPushButton::clicked,
             this, &ASTERIXJSONParserDetailWidget::deleteMappingSlot);

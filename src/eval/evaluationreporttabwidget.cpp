@@ -46,6 +46,7 @@ EvaluationReportTabWidget::EvaluationReportTabWidget(EvaluationCalculator& calcu
     const auto& eval_settings = calculator.settings();
 
     skip_no_data_details_check_ = new QCheckBox ();
+    skip_no_data_details_check_->setObjectName("skip_no_data_details_check");
     skip_no_data_details_check_->setChecked(eval_settings.report_skip_no_data_details_);
     connect(skip_no_data_details_check_, &QCheckBox::clicked,
             this, &EvaluationReportTabWidget::toggleSkipNoDataDetailsSlot);
@@ -55,6 +56,7 @@ EvaluationReportTabWidget::EvaluationReportTabWidget(EvaluationCalculator& calcu
     //++row;
 
     split_results_by_mops_check_ = new QCheckBox ();
+    split_results_by_mops_check_->setObjectName("split_results_by_mops_check");
     split_results_by_mops_check_->setChecked(eval_settings.report_split_results_by_mops_);
     connect(split_results_by_mops_check_, &QCheckBox::clicked,
             this, &EvaluationReportTabWidget::toggleSplitResultsByMOPSSlot);
@@ -63,6 +65,7 @@ EvaluationReportTabWidget::EvaluationReportTabWidget(EvaluationCalculator& calcu
     // split results by mode a/c only and mode s
 
     split_results_by_mac_ms_check_ = new QCheckBox ();
+    split_results_by_mac_ms_check_->setObjectName("split_results_by_mac_ms_check");
     split_results_by_mac_ms_check_->setChecked(eval_settings.report_split_results_by_aconly_ms_);
     connect(split_results_by_mac_ms_check_, &QCheckBox::clicked,
             this, &EvaluationReportTabWidget::toggleSplitResultsByMACMSSlot);
@@ -71,12 +74,14 @@ EvaluationReportTabWidget::EvaluationReportTabWidget(EvaluationCalculator& calcu
     // show ok
 
     show_ok_joined_target_reports_check_ = new QCheckBox ();
+    show_ok_joined_target_reports_check_->setObjectName("show_ok_joined_target_reports_check");
     show_ok_joined_target_reports_check_->setChecked(eval_settings.show_ok_joined_target_reports_);
     connect(show_ok_joined_target_reports_check_, &QCheckBox::clicked,
             this, &EvaluationReportTabWidget::toggleShowOKJoinedSlot);
     layout->addRow("Show OK data in Sector Results", show_ok_joined_target_reports_check_);
 
     result_detail_zoom_edit_ = new QLineEdit(QString::number(eval_settings.result_detail_zoom_));
+    result_detail_zoom_edit_->setObjectName("result_detail_zoom_edit");
     result_detail_zoom_edit_->setValidator(new QDoubleValidator(0.000001, 1.0, 7, this));
     connect(result_detail_zoom_edit_, &QLineEdit::textEdited,
             this, &EvaluationReportTabWidget::resultDetailZoomEditSlot);
@@ -86,6 +91,7 @@ EvaluationReportTabWidget::EvaluationReportTabWidget(EvaluationCalculator& calcu
 
     // grid generation
     grid_num_cells_x_box_  = new QSpinBox;
+    grid_num_cells_x_box_->setObjectName("grid_num_cells_x_box");
     grid_num_cells_x_box_->setMinimum(1);
     grid_num_cells_x_box_->setMaximum(2000);
     grid_num_cells_x_box_->setValue(eval_settings.grid_num_cells_x);
@@ -93,6 +99,7 @@ EvaluationReportTabWidget::EvaluationReportTabWidget(EvaluationCalculator& calcu
     layout->addRow("#Grid Cells X", grid_num_cells_x_box_);
 
     grid_num_cells_y_box_  = new QSpinBox;
+    grid_num_cells_y_box_->setObjectName("grid_num_cells_y_box");
     grid_num_cells_y_box_->setMinimum(1);
     grid_num_cells_y_box_->setMaximum(2000);
     grid_num_cells_y_box_->setValue(eval_settings.grid_num_cells_y);

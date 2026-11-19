@@ -35,8 +35,13 @@ TimeWindowDialog::TimeWindowDialog(QWidget* parent,
 {
     loginf << "begin " << Time::toString(begin) << " end " << Time::toString(end);
 
+    setObjectName("time_window_dialog");
+
     begin_edit_ = new QDateTimeEdit(this);
     end_edit_ = new QDateTimeEdit(this);
+
+    begin_edit_->setObjectName("begin_edit");
+    end_edit_->setObjectName("end_edit");
 
     begin_edit_->setDisplayFormat(Time::QT_DATETIME_FORMAT_SHORT.c_str());
     end_edit_->setDisplayFormat(Time::QT_DATETIME_FORMAT_SHORT.c_str());
@@ -47,6 +52,7 @@ TimeWindowDialog::TimeWindowDialog(QWidget* parent,
         end_edit_->setDateTime(Time::qtFrom(end, false));
 
     comment_edit_ = new QLineEdit;
+    comment_edit_->setObjectName("comment_edit");
     comment_edit_->setText(QString::fromStdString(comment));
 
     auto* layout = new QVBoxLayout(this);

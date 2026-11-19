@@ -165,6 +165,7 @@ void ASTERIXImportDataSourcesWidget::buildUI()
 
     // left: tree
     tree_widget_ = new QTreeWidget();
+    tree_widget_->setObjectName("data_source_tree");
     tree_widget_->setHeaderLabels({"Source", "SAC/SIC", "Records"});
     tree_widget_->header()->setSectionResizeMode(0, QHeaderView::Stretch);
     tree_widget_->header()->setSectionResizeMode(1, QHeaderView::ResizeToContents);
@@ -192,6 +193,7 @@ void ASTERIXImportDataSourcesWidget::buildUI()
     banner_label->setWordWrap(true);
     banner_layout->addWidget(banner_label, 1);
     add_to_context_button_ = new QPushButton(tr("Add to Context"));
+    add_to_context_button_->setObjectName("add_to_context_button");
     add_to_context_button_->setIcon(QIcon());
     add_to_context_button_->setToolTip(
         tr("Create this data source in the active context using the values entered below."));
@@ -248,6 +250,7 @@ void ASTERIXImportDataSourcesWidget::buildUI()
     items_layout->addWidget(items_header_);
 
     items_table_ = new QTableWidget();
+    items_table_->setObjectName("item_table");
     items_table_->setColumnCount(4);
     items_table_->setHorizontalHeaderLabels({"Item", "Count", "Min", "Max"});
 

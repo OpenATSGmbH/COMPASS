@@ -58,6 +58,7 @@ ASTERIXJSONParserWidget::ASTERIXJSONParserWidget(ASTERIXJSONParser& parser, QWid
     proxy_model_->setSourceModel(&parser_);
 
     table_view_ = new QTableView();
+    table_view_->setObjectName("mapping_table");
     table_view_->setModel(proxy_model_);
     table_view_->setSortingEnabled(true);
     table_view_->sortByColumn(1, Qt::AscendingOrder);

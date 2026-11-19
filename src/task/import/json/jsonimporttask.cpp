@@ -898,6 +898,7 @@ void JSONImportTask::updateMsgBox()
     if (!msg_box_)
     {
         msg_box_.reset(new QMessageBox(Dialogs::statusDialogParent()));
+        msg_box_->setObjectName("json_import_status_box");
 
         loginf << "creating";
 

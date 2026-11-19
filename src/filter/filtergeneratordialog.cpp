@@ -229,6 +229,7 @@ void FilterGeneratorDialog::createGUIElements()
     logic_layout->addWidget(logic_label);
 
     condition_logic_combo_ = new QComboBox();
+    condition_logic_combo_->setObjectName("join_combo");
     condition_logic_combo_->addItem("AND");
     condition_logic_combo_->addItem("OR");
     condition_logic_combo_->setCurrentIndex(0);

@@ -38,6 +38,8 @@ BaseBufferTableWidget::BaseBufferTableWidget(TableView& view, TableViewDataSourc
     QVBoxLayout* layout = new QVBoxLayout();
 
     table_ = new QTableView(this);
+    table_->setObjectName("data_table");
+    table_->horizontalHeader()->setObjectName("data_table_header");
     table_->setSelectionBehavior(QAbstractItemView::SelectItems);
     table_->setSelectionMode(QAbstractItemView::ContiguousSelection);
     table_->setCornerButtonEnabled(false);

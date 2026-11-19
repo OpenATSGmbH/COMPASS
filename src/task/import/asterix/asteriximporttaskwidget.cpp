@@ -61,6 +61,7 @@ ASTERIXImportTaskWidget::ASTERIXImportTaskWidget(ASTERIXImportTask& task, QWidge
     main_layout_ = new QHBoxLayout();
 
     tab_widget_ = new QTabWidget();
+    tab_widget_->setObjectName("tab_widget");
 
     main_layout_->addWidget(tab_widget_);
 
@@ -180,11 +181,13 @@ void ASTERIXImportTaskWidget::addDecoderTab()
         framing_grid->addWidget(framing_label, 0, 0);
 
         framing_combo_ = new ASTERIXFramingComboBox(task_);
+        framing_combo_->setObjectName("framing_combo");
         connect(framing_combo_, &ASTERIXFramingComboBox::changedFraming,
                 this, &ASTERIXImportTaskWidget::framingChangedSlot);
         framing_grid->addWidget(framing_combo_, 0, 1);
 
         framing_edit_ = new QPushButton("Edit");
+        framing_edit_->setObjectName("framing_edit_button");
         connect(framing_edit_, &QPushButton::clicked,
                 this, &ASTERIXImportTaskWidget::framingEditSlot);
         framing_grid->addWidget(framing_edit_, 0, 2);
@@ -252,17 +255,20 @@ void ASTERIXImportTaskWidget::addMappingsTab()
     QHBoxLayout* parser_manage_layout = new QHBoxLayout();
 
     object_parser_box_ = new QComboBox();
+    object_parser_box_->setObjectName("parser_combo");
     connect(object_parser_box_, SIGNAL(currentIndexChanged(const QString&)), this,
             SLOT(selectedObjectParserSlot(const QString&)));
 
     parser_manage_layout->addWidget(object_parser_box_);
 
     add_object_parser_button_ = new QPushButton("Add");
+    add_object_parser_button_->setObjectName("add_parser_button");
     connect(add_object_parser_button_, SIGNAL(clicked()), this, SLOT(addParserSlot()));
     add_object_parser_button_->setEnabled(task_.manager().appState().expertMode());
     parser_manage_layout->addWidget(add_object_parser_button_);
 
     delete_object_parser_button_ = new QPushButton("Remove");
+    delete_object_parser_button_->setObjectName("remove_parser_button");
     connect(delete_object_parser_button_, SIGNAL(clicked()), this, SLOT(removeObjectParserSlot()));
     delete_object_parser_button_->setEnabled(task_.manager().appState().expertMode());
     parser_manage_layout->addWidget(delete_object_parser_button_);
@@ -275,6 +281,7 @@ void ASTERIXImportTaskWidget::addMappingsTab()
     parsers_layout->addWidget(line);
 
     object_parser_widget_ = new QStackedWidget();
+    object_parser_widget_->setObjectName("parser_stack");
     parsers_layout->addWidget(object_parser_widget_);
 
     updateParserBox();
@@ -383,6 +390,7 @@ void ASTERIXImportTaskWidget::selectedObjectParserSlot(const QString& text)
     if (object_parser_widgets_.count(id) == 0)
     {
         auto w = task_.schema()->parser(cat).createWidget();
+        w->setObjectName("parser_" + text);
         object_parser_widget_->addWidget(w);
         object_parser_widgets_[ id ] = w;
     }
@@ -476,6 +484,7 @@ void ASTERIXImportTaskWidget::updateSourcesGrid()
         headers << "Decoding";
 
         QTreeWidget* tree_widget = new QTreeWidget;
+        tree_widget->setObjectName("file_tree");
         tree_widget->setColumnCount(headers.count());
         tree_widget->setHeaderLabels(headers);
 

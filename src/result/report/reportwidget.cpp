@@ -72,6 +72,8 @@ bool ReportWidget::sidebarShownForWidth(bool shown, int width)
 ReportWidget::ReportWidget(TaskResultsWidget& task_result_widget)
     : QWidget(nullptr), task_result_widget_(task_result_widget)
 {
+    setObjectName("report_widget");
+
     QVBoxLayout* main_layout = new QVBoxLayout();
 
     { // button layout
@@ -80,11 +82,13 @@ ReportWidget::ReportWidget(TaskResultsWidget& task_result_widget)
         QIcon left_icon(Files::IconProvider::getIcon("arrow_to_left.png"));
 
         back_button_ = new QPushButton ();
+        back_button_->setObjectName("report_back_button");
         back_button_->setIcon(left_icon);
         connect (back_button_, &QPushButton::clicked, this, &ReportWidget::stepBackSlot);
         button_layout->addWidget(back_button_);
 
         current_section_label_ = new QLabel;
+        current_section_label_->setObjectName("report_section_label");
         button_layout->addWidget(current_section_label_);
 
         button_layout->addStretch();

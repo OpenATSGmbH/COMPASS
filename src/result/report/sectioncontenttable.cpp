@@ -2121,12 +2121,16 @@ SectionContentTableWidget::SectionContentTableWidget(SectionContentTable* conten
 {
     traced_assert(content_table_);
 
+    UI_TEST_OBJ_NAME(this, QString::fromStdString("Table " + content_table_->name() + " Content"));
+
     QVBoxLayout* main_layout = new QVBoxLayout();
     setLayout(main_layout);
 
     QHBoxLayout* upper_layout  = new QHBoxLayout();
 
-    upper_layout->addWidget(new QLabel(("Table: " + content_table_->name()).c_str()));
+    QLabel* table_label = new QLabel(("Table: " + content_table_->name()).c_str());
+    UI_TEST_OBJ_NAME(table_label, QString::fromStdString("Table " + content_table_->name() + " Label"));
+    upper_layout->addWidget(table_label);
     upper_layout->addStretch();
     
     const auto& col_groups = content_table->columnGroups();
@@ -2142,6 +2146,7 @@ SectionContentTableWidget::SectionContentTableWidget(SectionContentTable* conten
     upper_layout->addStretch();
 
     options_button_ = new QPushButton;
+    UI_TEST_OBJ_NAME(options_button_, QString::fromStdString("Table " + content_table_->name() + " Options Button"));
     options_button_->setStyleSheet("QPushButton::menu-indicator { image: none; }");
     options_button_->setIcon(Utils::Files::IconProvider::getIcon("edit.png"));
     options_button_->setFixedSize(UI_ICON_SIZE); 

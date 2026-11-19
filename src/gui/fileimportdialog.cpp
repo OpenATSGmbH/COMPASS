@@ -50,7 +50,10 @@ FileImportDialog::FileImportDialog(const std::vector<std::string>& files,
     auto layout = new QVBoxLayout;
     setLayout(layout);
 
+    setObjectName("file_import_dialog");
+
     tree_widget_ = new QTreeWidget(this);
+    tree_widget_->setObjectName("file_tree");
 
     layout->addWidget(tree_widget_);
 
@@ -64,6 +67,9 @@ FileImportDialog::FileImportDialog(const std::vector<std::string>& files,
 
     ok_button_         = new QPushButton("Import");
     auto cancel_button = new QPushButton("Cancel");
+
+    ok_button_->setObjectName("import_button");
+    cancel_button->setObjectName("cancel_button");
 
     button_layout->addWidget(cancel_button);
     button_layout->addStretch(1);
