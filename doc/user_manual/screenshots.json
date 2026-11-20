@@ -3863,22 +3863,32 @@
                 },
                 {
                     "file": "flightdeck/targets/figures/ui_targets.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/targets/targets.tex:7"
                     ],
                     "shows": "Targets tool (icon bar + panel), empty target table (no reconstruction yet)",
                     "category": "flight_deck",
-                    "automation": "easy",
-                    "database": "at_20230422",
-                    "requires": "DB with imported data, no reconstruction",
+                    "automation": "tested",
+                    "database": null,
+                    "requires": "new empty DB, created by the steps",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
-                    "steps": null,
-                    "recipe_hint": "open DB without reconstruction, uiset mainwindow.toolbox \"Targets\", grab mainwindow.toolbox, crop the views area in the script (width minus toolbox_views geometry width, unverified)",
-                    "gaps": "no named widget covers only icon bar + tool panel (mainwindow.toolbox includes the views area, toolbox_panel lacks the icon bar), crop in script",
+                    "frame": true,
+                    "steps": [
+                        "create_db /tmp/compass_manual/empty.db",
+                        "uiset mainwindow.toolbox \"Targets\"",
+                        "uiset mainwindow.toolbox_grow_button \"\"",
+                        "uiset mainwindow.toolbox_grow_button \"\"",
+                        "sleep 1000",
+                        "shot mainwindow.toolbox_data_sources_button+mainwindow.toolbox_panel",
+                        "uiset mainwindow.toolbox_shrink_button \"\"",
+                        "uiset mainwindow.toolbox_shrink_button \"\"",
+                        "close_db"
+                    ],
+                    "recipe_hint": null,
+                    "gaps": "none",
                     "volatile": "tool width comes from QSettings COMPASS/ToolBox (~/.config, outside the config dir): needs a fresh HOME"
                 },
                 {
