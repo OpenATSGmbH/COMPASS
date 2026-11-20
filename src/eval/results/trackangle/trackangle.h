@@ -124,6 +124,8 @@ protected:
                                         const EvaluationDetail& detail, 
                                         TargetAnnotationType type,
                                         bool is_ok) const override;
+
+    virtual FeatureDefinitions getCustomAnnotationDefinitions() const override;
 };
 
 /**

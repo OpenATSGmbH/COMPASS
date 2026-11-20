@@ -857,6 +857,7 @@ void DataSourcesWidget::createUI()
     top_layout_->setContentsMargins(0, 0, 0, 0);
 
     tree_widget_ = new QTreeWidget;
+    tree_widget_->setObjectName("ds_tree");
 
     QStringList header_labels;
     header_labels << "Name";

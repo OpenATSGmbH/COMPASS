@@ -1,0 +1,10 @@
+{
+    "id": 1,
+    "name": "Vienna Airport",
+    "type": "Saved",
+    "status": "open",
+    "position_latitude": 48.113,
+    "position_longitude": 16.57,
+    "position_window_latitude": 0.06,
+    "position_window_longitude": 0.09
+}

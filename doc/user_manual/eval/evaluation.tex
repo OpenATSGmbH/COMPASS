@@ -57,8 +57,8 @@ The value can be changed per requirement in the 'Standard' tab, in the configura
 
 \begin{figure}[H]
     \centering
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm]{figures/eval_overview.png}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/eval_overview.png}
   \caption{Evaluation dialog}
 \end{figure}
 
@@ -82,8 +82,8 @@ Pressing the 'Run' button at the bottom will run the Evaluation, and generate a 
 
 \begin{figure}[H]
   \centering
-  \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/eval_main.png}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/eval_main.png}
   \caption{Evaluation Main tab}
 \end{figure}
 
@@ -149,8 +149,8 @@ All requirement mappings thus should be deselected for this layer (see figure be
 
 \begin{figure}[H]
   \centering
-  \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/eval_unmap_min_height_filter.png}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/eval_unmap_min_height_filter.png}
   \caption{Minimum Height Filter}
 \end{figure}
 
@@ -159,8 +159,8 @@ All requirement mappings thus should be deselected for this layer (see figure be
 
 \begin{figure}[H]
   \centering
-  \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/eval_standard.png}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/eval_standard.png}
   \caption{Evaluation Standard tab}
 \end{figure}
 
@@ -183,8 +183,6 @@ At the bottom, the following general settings of the current standard can be edi
 \item Ignore Mode A/C Only Targets: Targets with a Mode 3/A code or a Mode C code, but without any Mode S attribute, are ignored
 \end{itemize}
 \ \\
-
-\textcolor{red}{\textbf{[TODO: update screenshot figures/eval\_standard.png: new elements 'Ignore Primary Only Targets', 'Ignore Non-ADSB Targets' and 'Ignore Mode A/C Only Targets']}} \\
 
 The 3 target settings define which targets are relevant for the standard. A standard for secondary surveillance, e.g. \nameref{sec:eval_req_detection} of an MLAT system, cannot be assessed with targets that carry no transponder, an ADS-B standard cannot be assessed with targets that never transmit ADS-B, and a standard stating its requirements for Mode S targets only cannot be assessed with Mode A/C-only targets. After the evaluation data is loaded, the current standard checks each target and marks the not relevant ones as ignored. \\
 
@@ -241,8 +239,8 @@ Below that, the current standard is shown. On the left side, a tree-view exists 
 
 \begin{figure}[H]
   \centering
-  \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/eval_standard_add_req.png}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/eval_standard_add_req.png}
   \caption{Evaluation Standard tab: Add requirement}
 \end{figure}
 
@@ -329,9 +327,9 @@ For detailed information about each requirement please refer to section \nameref
 \subsection{Results Config Tab}
 
 \begin{figure}[H]
-  \hspace*{-2cm}
   \centering
-    \includegraphics[width=12cm,frame]{figures/eval_results_config.png}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/eval_results_config.png}
   \caption{Evaluation Results tab}
 \end{figure}
 
@@ -349,16 +347,40 @@ The following settings can be used to configure the content of the generated res
 \end{itemize}
 \ \\
 
+\subsubsection{Report Figures}
+\label{sec:eval_report_figures}
+
+The 'Report Figures' group sets how the figures of the evaluation report are drawn (see \nameref{sec:report_section_figures}):
+
+\begin{itemize}
+\item Histogram Bars: Number of bars of the histograms of value distributions (e.g. 'Full distribution' of a position error), 10 by default
+\item Histogram Log Scale: Logarithmic count axis of the histograms with one data series, on by default
+\begin{itemize}
+\item Histograms with several data series are stacked and always use a linear axis
+\end{itemize}
+\item Export Image Width, Export Image Height: Layout size of an exported figure image, 1200 x 800 by default
+\begin{itemize}
+\item The image has twice this size in pixels
+\item A smaller layout gives larger text in the image, e.g. for two figures next to each other on one page
+\end{itemize}
+\item Report Figure Background: See below
+\end{itemize}
+\ \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} \textbf{Please note that these settings are written into the figures when the evaluation runs.
+Changed settings apply to the next evaluation, not to existing reports.} \\
+
 \subsubsection{Report Figure Background}
 \label{sec:eval_report_figure_background}
 
-The 'Report Figure Background' group sets the background of the report figures with a grid over longitude and latitude (e.g. the sector overview figures).
+The 'Report Figure Background' group in the 'Report Figures' group sets the background of the report figures with a grid over longitude and latitude (e.g. the sector overview figures).
 The report shows and exports these figures with this background, and the 'View' button gives it to the Grid View.
 The values are the same as the background items of the Grid View, see \nameref{sec:grid_background}. \\
 
 \begin{figure}[H]
   \center
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: figures/eval\_report\_figure\_background.png - 'Results Config' tab of the evaluation dialog with the 'Report Figure Background' group, sector layers expanded]}}\vspace{1.5cm}}}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/eval_report_figure_background.png}
   \caption{Evaluation Report Figure Background}
 \end{figure}
 
@@ -407,11 +429,14 @@ Please note that the post-processing step uses all available cores on the CPU.
 
 \begin{figure}[H]
   \centering 
-    \includegraphics[width=10cm]{figures/eval_eval_status.png}
+    \includegraphics[width=5cm,frame]{figures/eval_eval_status.png}
   \caption{Evaluation: Running evaluation status}
 \end{figure}
 
 \subfile{eval_inspect}
 \subfile{eval_excluded_data}
 \subfile{eval_targets}
-\subfile{eval_requirements}
+
+\section{Requirements}
+
+The requirement types and their parameters are described in the User Manual Appendix, see \nameref{sec:eval_requirements}.

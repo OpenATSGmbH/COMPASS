@@ -49,7 +49,6 @@ namespace EvaluationRequirementResult
 const std::string Joined::SectorTargetsTableName        = "Targets";
 const std::string Joined::SectorOverviewTableName       = "Sector Overview";
 const std::string Joined::SectorOverviewID              = "Sector Overview";
-const int         Joined::SectorOverviewRenderDelayMSec = 100;
 
 /**
 */
@@ -385,7 +384,7 @@ void Joined::addOverview (ResultReport::Section& section,
 {
     section.addFigure(SectorOverviewID, 
                       ResultReport::SectionContentViewable([this]() { return this->viewableOverviewData(); })
-                        .setCaption(name).setRenderDelayMS(SectorOverviewRenderDelayMSec));
+                        .setCaption(name));
 }
 
 /**

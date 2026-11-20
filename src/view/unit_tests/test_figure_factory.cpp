@@ -67,7 +67,6 @@ namespace
         collection.addDataSeries(h1, "Radar B", QColor("#0080ff"));
 
         ViewPointGenVP vp("Range Error Histogram", 0, "Histogram");
-        vp.noDataLoaded(true);
         vp.annotations().getOrCreateAnnotation("Range Error")->addFeature(
             new ViewPointGenFeatureHistogram(collection, PlotMetadata("Range Error", "", "Error [m]", "Count")));
 
@@ -202,7 +201,6 @@ namespace
         collection.addDataSeries(points_b, "Radar B", QColor("#0080ff"), 10.0);
 
         ViewPointGenVP vp("Range Bias", 0, "Scatterplot");
-        vp.noDataLoaded(true);
         vp.annotations().getOrCreateAnnotation("Range Bias")->addFeature(
             new ViewPointGenFeatureScatterSeries(collection, PlotMetadata("Range Bias", "", "Range [m]", "Bias [m]")));
 
@@ -373,7 +371,6 @@ namespace
         rs.max_value = 1.0;
 
         ViewPointGenVP vp("PD - Altitude/Longitude", 0, "Grid");
-        vp.noDataLoaded(true);
         vp.annotations().getOrCreateAnnotation("PD")->addFeature(
             new ViewPointGenFeatureGrid(layer, rs, PlotMetadata("PD - Altitude/Longitude", "", "Longitude (deg)", "Altitude (ft)")));
 
@@ -494,7 +491,6 @@ namespace
         rs.max_value = 1.0;
 
         ViewPointGenVP vp("PD - Horizontal", 0, "Grid");
-        vp.noDataLoaded(true);
         vp.annotations().getOrCreateAnnotation("PD")->addFeature(
             new ViewPointGenFeatureGrid(layer, rs, PlotMetadata("PD - Horizontal", "", "Longitude (deg)", "Latitude (deg)")));
 
@@ -642,7 +638,6 @@ namespace
         }
 
         ViewPointGenVP vp("Draw Time", 0, "Scatterplot");
-        vp.noDataLoaded(true);
         vp.annotations().getOrCreateAnnotation("Draw Time")->addFeature(
             new ViewPointGenFeatureScatterSeries(collection, PlotMetadata("Draw Time", "", "X", "Y")));
 

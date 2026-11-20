@@ -44,6 +44,22 @@ using namespace nlohmann;
 namespace EvaluationRequirementResult
 {
 
+namespace
+{
+
+void addErrorHistograms(FeatureDefinitions& defs,
+                        const std::string& value_name,
+                        const EvaluationCalculator& calculator,
+                        const SpeedBase& result)
+{
+    defs.addDefinition<FeatureDefinitionStringCategoryHistogram>(value_name, calculator, "Error Count", "Error Count")
+        .addDataSeries("", { "#CF", "#CP" }, { result.numCompFailed(), result.numCompPassed() });
+    defs.addDefinition<FeatureDefinitionHistogram<double>>(value_name, calculator, "Full distribution", "Full distribution [m/s]")
+        .addDataSeries("", SingleSpeed::DetailKey::Offset);
+}
+
+}
+
 /***********************************************************************************
  * SpeedBase
  ***********************************************************************************/
@@ -269,6 +285,17 @@ void SingleSpeed::addAnnotationForDetail(nlohmann::json& annotations_json,
     }
 }
 
+/**
+*/
+FeatureDefinitions SingleSpeed::getCustomAnnotationDefinitions() const
+{
+    FeatureDefinitions defs;
+
+    addErrorHistograms(defs, requirement()->name(), calculator_, *this);
+
+    return defs;
+}
+
 /***********************************************************************************
  * JoinedSpeed
  ***********************************************************************************/
@@ -398,8 +425,10 @@ FeatureDefinitions JoinedSpeed::getCustomAnnotationDefinitions() const
 
     defs.addDefinition<FeatureDefinitionBinaryGrid>(requirement()->name(), calculator_, "Passed")
         .addDataSeries(SingleSpeed::DetailKey::CheckPassed, 
-                       GridAddDetailMode::AddEvtRefPosition, 
+                       GridAddDetailMode::AddEvtRefPosition,
                        false);
+
+    addErrorHistograms(defs, requirement()->name(), calculator_, *this);
 
     return defs;
 }

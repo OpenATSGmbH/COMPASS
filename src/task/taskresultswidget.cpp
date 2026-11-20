@@ -59,6 +59,8 @@ using namespace Utils;
 TaskResultsWidget::TaskResultsWidget(TaskManager& task_man)
     : ToolBoxWidget(nullptr), task_man_(task_man)
 {
+    setObjectName("reports_tool");
+
     QVBoxLayout* main_layout = new QVBoxLayout();
 
     QHBoxLayout* top_layout = new QHBoxLayout;

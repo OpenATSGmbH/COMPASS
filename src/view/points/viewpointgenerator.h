@@ -26,6 +26,7 @@
 #include "grid2drendersettings.h"
 
 #include <memory>
+#include <optional>
 #include <vector>
 #include <map>
 #include <set>
@@ -85,6 +86,21 @@ public:
 
 private:
     std::vector<uint32_t> utns_;
+};
+
+/**
+ * Load statements of a generated view point, written as its load_data object:
+ * all data source types and data sources, restricted by the filters.
+*/
+class ViewPointGenLoadData
+{
+public:
+    ViewPointGenFilters& filters() { return filters_; }
+
+    void toJSON(nlohmann::json& j) const;
+
+private:
+    ViewPointGenFilters filters_;
 };
 
 /**
@@ -621,7 +637,10 @@ public:
     void addCustomField(const std::string& name, const QVariant& value);
 
     ViewPointGenAnnotations& annotations() { return annotations_; }
-    ViewPointGenFilters& filters() { return filters_; }
+
+    /// the view point loads data, returns its load statements
+    ViewPointGenLoadData& enableDataLoading();
+    bool loadsData() const { return load_data_.has_value(); }
 
     void appendToDescription(const std::string& text);
 
@@ -645,7 +664,6 @@ public:
     static const std::string ViewPointFieldType;
     static const std::string ViewPointFieldStatus;
     static const std::string ViewPointFieldAnnotations;
-    static const std::string ViewPointFieldFilters;
     static const std::string ViewPointFieldPosLat;
     static const std::string ViewPointFieldPosLon;
     static const std::string ViewPointFieldWinLat;
@@ -654,11 +672,6 @@ public:
     static const std::string StatusNameOpen;
     static const std::string StatusNameClosed;
     static const std::string StatusNameTodo;
-
-    bool noDataLoaded() const { return no_data_loaded_; }
-    void noDataLoaded(bool value) { no_data_loaded_ = value; }
-
-    void setDataSourceTypes(const std::vector<std::string>& ds_types) { ds_types_ = ds_types; }
 
   private:
     std::string  name_;
@@ -669,9 +682,7 @@ public:
     std::string  description_;
 
     ViewPointGenAnnotations annotations_;
-    ViewPointGenFilters     filters_;
-    bool no_data_loaded_ {false}; // set if no dbcontent data should be loaded
-    std::vector<std::string> ds_types_; // if non-empty, restricts loaded data source types
+    std::optional<ViewPointGenLoadData> load_data_; // no value: the view point loads no data
 
     std::map<std::string, QVariant> custom_fields_;
 };

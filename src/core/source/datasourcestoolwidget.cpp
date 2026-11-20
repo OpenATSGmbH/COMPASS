@@ -89,6 +89,7 @@ void DataSourcesToolWidget::createUI()
         QHBoxLayout* mode_layout = new QHBoxLayout();
 
         QLabel* mode_label = new QLabel("Color Mode:");
+        UI_TEST_OBJ_NAME(mode_label, "DS Color Mode Label")
         mode_label->setFont(font_bold);
         mode_layout->addWidget(mode_label);
 

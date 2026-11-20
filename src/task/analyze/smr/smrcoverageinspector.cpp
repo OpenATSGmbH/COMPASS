@@ -334,7 +334,6 @@ void attachGridFigure(ResultReport::Section& section,
                       proj.x_axis_label, proj.y_axis_label);
 
     auto vp = std::make_unique<ViewPointGenVP>(fig_name, 0, "Grid");
-    vp->noDataLoaded(true);
 
     auto* anno = vp->annotations().getOrCreateAnnotation(annotation_name);
 
@@ -1877,10 +1876,9 @@ void SMRCoverageInspector::writeReport(ResultReport::Section& root)
 
         const std::string fig = "Reports per Scan - " + c.label;
         auto vp = std::make_unique<ViewPointGenVP>(fig, 0, "Histogram");
-        vp->noDataLoaded(true);
         auto* anno = vp->annotations().getOrCreateAnnotation("Reports per Scan");
         anno->addFeature(new ViewPointGenFeatureHistogram(
-            h, "Reports per Scan", QColor(0, 128, 192), boost::optional<bool>(),
+            h, "Reports per Scan", QColor(0, 128, 192), task().reportFigureOptionsConfig().histogram_log_scale,
             PlotMetadata("Sensor Coverage", fig, "Reports per Scan", "Count")));
 
         nlohmann::json vp_json;
@@ -1923,10 +1921,9 @@ void SMRCoverageInspector::writeReport(ResultReport::Section& root)
 
         const std::string fig = "Update Interval Histogram";
         auto vp = std::make_unique<ViewPointGenVP>(fig, 0, "Histogram");
-        vp->noDataLoaded(true);
         auto* anno = vp->annotations().getOrCreateAnnotation("Update Interval");
         anno->addFeature(new ViewPointGenFeatureHistogram(
-            h, "Update Interval", QColor(0, 128, 192), boost::optional<bool>(),
+            h, "Update Interval", QColor(0, 128, 192), task().reportFigureOptionsConfig().histogram_log_scale,
             PlotMetadata("Sensor Coverage", fig, "Update Interval (s)", "Count")));
 
         nlohmann::json vp_json;

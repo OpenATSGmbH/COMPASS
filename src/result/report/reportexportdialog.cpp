@@ -149,6 +149,7 @@ void ReportExportDialog::createUI()
     setLayout(main_layout);
 
     config_widget_ = new QWidget;
+    config_widget_->setObjectName("config_widget");
 
     config_layout_ = new QFormLayout;
     config_widget_->setLayout(config_layout_);
@@ -156,11 +157,13 @@ void ReportExportDialog::createUI()
     main_layout->addWidget(config_widget_);
     
     base_dir_button_ = new QPushButton;
+    base_dir_button_->setObjectName("report_dir_button");
     base_dir_button_->setIcon(Utils::Files::createIcon("folder.png"));
 
     connect(base_dir_button_, &QPushButton::pressed, this, &ReportExportDialog::editBaseDir);
 
     base_dir_edit_ = new QLineEdit;
+    base_dir_edit_->setObjectName("report_dir_edit");
     base_dir_edit_->setReadOnly(true);
     base_dir_edit_->setFrame(false);
 
@@ -179,27 +182,33 @@ void ReportExportDialog::createUI()
     //connect(res_dir_name_edit_, &QLineEdit::textChanged, this, &ReportExportDialog::checkExport);
 
     report_name_edit_ = new QLineEdit;
+    report_name_edit_->setObjectName("report_name_edit");
     config_layout_->addRow("Report Name", report_name_edit_);
 
     connect(report_name_edit_, &QLineEdit::textChanged, this, &ReportExportDialog::checkExport);
 
     author_edit_ = new QLineEdit;
+    author_edit_->setObjectName("author_edit");
     config_layout_->addRow("Author", author_edit_);
 
     comment_edit_ = new QTextEdit;
+    comment_edit_->setObjectName("comment_edit");
     config_layout_->addRow("Comments", comment_edit_);
 
     latex_max_rows_edit_ = new QSpinBox;
+    latex_max_rows_edit_->setObjectName("max_table_rows_edit");
     latex_max_rows_edit_->setMinimum(0);
     latex_max_rows_edit_->setMaximum(std::numeric_limits<int>::max());
     config_layout_->addRow("Maximum Table Rows", latex_max_rows_edit_);
 
     latex_max_colw_edit_ = new QSpinBox;
+    latex_max_colw_edit_->setObjectName("max_table_column_width_edit");
     latex_max_colw_edit_->setMinimum(0);
     latex_max_colw_edit_->setMaximum(std::numeric_limits<int>::max());
     config_layout_->addRow("Maximum Table Column Width", latex_max_colw_edit_);
 
     open_file_box_ = new QCheckBox;
+    open_file_box_->setObjectName("open_file_check");
     config_layout_->addRow("Open Created " + format_str_ + " File", open_file_box_);
 
     config_spacer_ = new QWidget;
@@ -210,8 +219,10 @@ void ReportExportDialog::createUI()
     elapsed_label_   = new QLabel;
     remaining_label_ = new QLabel;
     status_label_    = new QLabel;
+    status_label_->setObjectName("status_label");
 
     progress_bar_ = new QProgressBar;
+    progress_bar_->setObjectName("progress_bar");
     progress_bar_->setMinimum(0);
     progress_bar_->setMaximum(100);
 
@@ -224,7 +235,9 @@ void ReportExportDialog::createUI()
     main_layout->addLayout(progress_layout);
 
     export_button_  = new QPushButton("Export");
+    export_button_->setObjectName("export_button");
     cancel_button_  = new QPushButton("Cancel");
+    cancel_button_->setObjectName("cancel_button");
 
     connect(export_button_, &QPushButton::pressed, this, &ReportExportDialog::exportReport);
     connect(cancel_button_, &QPushButton::pressed, this, &ReportExportDialog::cancel);

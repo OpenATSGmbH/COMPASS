@@ -27,11 +27,14 @@ The following content is commonly stored in a view point file:
  \item Unique identifier
  \item View Point type
  \item Description text
- \item A point in time with a time window
  \item A position with a position window
+ \item Optional load statements, which define the data to load:
+ \begin{itemize}
  \item A list of DSTypes to be loaded
  \item A list of data sources to be loaded
  \item A list of filters
+ \item A point in time with a time window
+ \end{itemize}
  \item A list of context variables
  \item A list of displayable annotations
   \end{itemize}
@@ -187,35 +190,37 @@ A view point only has to contain an 'id' and 'type' attribute, but additional at
             "position_longitude":12.2,
             "position_window_latitude":0.05,
             "position_window_longitude":0.02,
-            "timestamp":"2021-01-02 01:00:00.002",
-            "time_window":4.0,
-            "data_sources": [
-                [
-                    12750,
+            "load_data": {
+                "timestamp":"2021-01-02 01:00:00.002",
+                "time_window":4.0,
+                "data_sources": [
                     [
-                        0,
-                        1
+                        12750,
+                        [
+                            0,
+                            1
+                        ]
+                    ],
+                    [
+                        12759,
+                        [
+                            2,
+                            3
+                        ]
                     ]
                 ],
-                [
-                    12759,
-                    [
-                        2,
-                        3
-                    ]
-                ]
-            ],
-            "data_source_types": [
-                "Radar",
-                "RefTraj"
-            ],
-            "filters": {
-                "Time of Day": {
-                    "Time of Day Maximum": "16:02:00.00",
-                    "Time of Day Minimum": "16:00:00.00"
-                },
-                "UTNs": {
-                    "utns": "4"
+                "data_source_types": [
+                    "Radar",
+                    "RefTraj"
+                ],
+                "filters": {
+                    "Time of Day": {
+                        "Time of Day Maximum": "16:02:00.00",
+                        "Time of Day Minimum": "16:00:00.00"
+                    },
+                    "UTNs": {
+                        "utns": "4"
+                    }
                 }
             },
             "context_variables": {
@@ -243,38 +248,94 @@ In each View Point object, the following values can be defined:
     position\_longitude & Center position WGS-84 longitude, as number &    \\ \hline
     position\_window\_latitude & Geographic window size in WGS-84 latitude, as number &    \\ \hline
     position\_window\_longitude & Geographic window size in WGS-84 longitude, as number &    \\ \hline
+    load\_data & Load statements, as JSON object (see below) &    \\ \hline
+    context\_variables & List of extra content data variables to load and display &    \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}
+%\ \\
+
+\subsection{View Point Load Statements}
+\label{sec:appendix_view_points_load_data}
+
+The 'load\_data' attribute defines which data the view point loads. \\
+
+\begin{itemize}
+\item The view point has no 'load\_data' attribute, or its value is null:
+\begin{itemize}
+\item The view point loads no data.
+\item The view point shows its annotations only.
+\end{itemize}
+\item The 'load\_data' attribute is a JSON object:
+\begin{itemize}
+\item The view point loads the data that the object defines.
+\item The keys 'data\_source\_types' and 'data\_sources' are required.
+\item If a required key is missing, COMPASS shows an error in the log and loads no data.
+\end{itemize}
+\end{itemize}
+
+In the 'load\_data' object, the following values can be defined:
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | X | c | }
+    \hline
+    \textbf{Key} & \textbf{Value Description} & \textbf{Required} \\ \hline
+    data\_source\_types & List of DSTypes to load, as strings, or the string "all" & Y \\ \hline
+    data\_sources & List of data sources to load, with lists which lines to load, or the string "all" & Y \\ \hline
+    filters & List of filters defining which data to load, as JSON objects &   \\ \hline
     timestamp & Center timestamp, string in format "yyyy-MM-dd hh:mm:ss.zzz" &    \\ \hline
     time\_window & Time window size, as number in seconds &    \\ \hline
-    data\_sources & List of data sources to load, with lists which lines to load &    \\ \hline
-    data\_source\_types & List of DSTypes to load, as strings &    \\ \hline
-    filters & List of filters defining which data to load, as JSON objects &   \\ \hline
-    context\_variables & List of extra content data variables to load and display &    \\ \hline
+    selected\_rec\_nums & List of record numbers of the target reports to select &    \\ \hline
     labels & List of [record number, level of detail] pairs defining target report labels shown in Geographic Views &    \\ \hline
 \end{tabularx}
 \end{table}
 \end{center}
 %\ \\
 
-If the 'data\_sources', 'data\_source\_types' or 'filters' attribute are not defined, all data will be loaded.
+The value "all" loads all DSTypes or all data sources. An empty list loads nothing. \\
+
+The keys 'timestamp', 'time\_window', 'selected\_rec\_nums' and 'labels' apply to the loaded target reports only. \\
+
+A view point that loads all data:
+
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+{
+        ...
+        {
+            "id": 2,
+            "name": "All Data",
+            "type": "Example",
+            "load_data": {
+                "data_source_types": "all",
+                "data_sources": "all"
+            }
+        },
+        ...
+}
+\end{lstlisting}
 
 \subsection{View Point Filters}
 
-The 'filters' attribute contains a JSON object, where each filter name is used as a key, and the value is again a JSON object encompassing the filter conditions. Each filter condition value is a string, the same as a user would enter in the GUI.
+The 'filters' attribute of the 'load\_data' object contains a JSON object, where each filter name is used as a key, and the value is again a JSON object encompassing the filter conditions. Each filter condition value is a string, the same as a user would enter in the GUI.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
         ...
         {
             ...
-            "filters": {
-                "Filter Name 1": {
-                    "Filter Condition 1": "Value 1"
-                },
-                "Filter Name 2": {
-                    "Filter Condition 1": "Value 1",
-                    "Filter Condition 2": "Value 2"
-                }
+            "load_data": {
                 ...
+                "filters": {
+                    "Filter Name 1": {
+                        "Filter Condition 1": "Value 1"
+                    },
+                    "Filter Name 2": {
+                        "Filter Condition 1": "Value 1",
+                        "Filter Condition 2": "Value 2"
+                    }
+                    ...
+                }
             }
             ...
         },
@@ -282,7 +343,7 @@ The 'filters' attribute contains a JSON object, where each filter name is used a
 }
 \end{lstlisting}      
 
-When a view point is set, only the filters that are defined will be activated, all others will be disabled. If no 'filter' is defined, filtering will be disabled (load all data). \\
+When a view point is set, only the filters that are defined will be activated, all others will be disabled. If the 'load\_data' object has no 'filters' attribute, filtering will be disabled. \\
 
 All possible filters existing in COMPASS can be set using view points, e.g.:
 
@@ -290,51 +351,54 @@ All possible filters existing in COMPASS can be set using view points, e.g.:
 {
         ...
         {
-            "data_source_types": [
-                "Other",
-                "RefTraj",
-                "Tracker"
-            ],
-            "filters": {
-                "ADSBMOPS": {
-                    "ADSBMOPSCondition0": "0"
-                },
-                "Aircraft Address": {
-                    "Aircraft Address Values": "3cc0c4"
-                },
-                "Aircraft Identification": {
-                    "Aircraft Identification Values": "teh01,teh08"
-                },
-                "Detection Type": {
-                    "Radar Detection TypeCondition0": "1"
-                },
-                "Mode 3/A Codes": {
-                    "Mode 3/A Codes Values": "4547"
-                },
-                "Mode C Codes": {
-                    "Barometric Altitude Maximum": 24210.0,
-                    "Barometric Altitude Minimum": 230.0,
-                    "Barometric Altitude NULL": false
-                },
-                "Position": {
-                    "Latitude Maximum": "49.215488",
-                    "Latitude Minimum": "46.208428",
-                    "Longitude Maximum": "17.335926",
-                    "Longitude Minimum": "11.246144"
-                },
-                "Timestamp": {
-                    "Timestamp Maximum": "2022-10-20 16:07:59.264",
-                    "Timestamp Minimum": "2022-10-19 15:37:58.116"
-                },
-                "Track Number": {
-                    "Track Number Values": "4547"
-                },
-                "Tracker Track Number": {
-                    "Values": {
-                        "12990": {
-                            "0": "4171",
-                            "1": "4281",
-                            "2": "4197"
+            "load_data": {
+                "data_sources": "all",
+                "data_source_types": [
+                    "Other",
+                    "RefTraj",
+                    "Tracker"
+                ],
+                "filters": {
+                    "ADSBMOPS": {
+                        "ADSBMOPSCondition0": "0"
+                    },
+                    "Aircraft Address": {
+                        "Aircraft Address Values": "3cc0c4"
+                    },
+                    "Aircraft Identification": {
+                        "Aircraft Identification Values": "teh01,teh08"
+                    },
+                    "Detection Type": {
+                        "Radar Detection TypeCondition0": "1"
+                    },
+                    "Mode 3/A Codes": {
+                        "Mode 3/A Codes Values": "4547"
+                    },
+                    "Mode C Codes": {
+                        "Barometric Altitude Maximum": 24210.0,
+                        "Barometric Altitude Minimum": 230.0,
+                        "Barometric Altitude NULL": false
+                    },
+                    "Position": {
+                        "Latitude Maximum": "49.215488",
+                        "Latitude Minimum": "46.208428",
+                        "Longitude Maximum": "17.335926",
+                        "Longitude Minimum": "11.246144"
+                    },
+                    "Timestamp": {
+                        "Timestamp Maximum": "2022-10-20 16:07:59.264",
+                        "Timestamp Minimum": "2022-10-19 15:37:58.116"
+                    },
+                    "Track Number": {
+                        "Track Number Values": "4547"
+                    },
+                    "Tracker Track Number": {
+                        "Values": {
+                            "12990": {
+                                "0": "4171",
+                                "1": "4281",
+                                "2": "4197"
+                            }
                         }
                     }
                 }
@@ -363,17 +427,20 @@ Please \textbf{note} that setting custom filters (created by the user) is also p
 \subsection{View Point Labels}
 \label{sec:appendix_view_points_labels}
 
-The optional 'labels' attribute defines labels for specific target reports, shown in all Geographic Views when the view point is set. Each entry is a pair of a record number and a level of detail (see \nameref{sec:geoview_labels_tab}), given as a number from 1 to 3. \\
+The optional 'labels' attribute of the 'load\_data' object defines labels for specific target reports, shown in all Geographic Views when the view point is set. Each entry is a pair of a record number and a level of detail (see \nameref{sec:geoview_labels_tab}), given as a number from 1 to 3. \\
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 {
         ...
         {
             ...
-            "labels": [
-                [ 145686581, 1 ],
-                [ 145686832, 3 ]
-            ]
+            "load_data": {
+                ...
+                "labels": [
+                    [ 145686581, 1 ],
+                    [ 145686832, 3 ]
+                ]
+            }
         }
         ...
 }
@@ -439,7 +506,8 @@ A listed annotation can be shown or hidden by using the checkbox next to it. \\
 
 \begin{figure}[H]
     \centering
-      \includegraphics[width=12cm]{figures/viewpoints_anno_example.png}
+  \hspace*{-2.5cm}
+      \includegraphics[width=19cm,frame]{figures/viewpoints_anno_example.png}
     \caption{View Point Annotations - Example} 
 \end{figure}
 
@@ -491,7 +559,8 @@ Depending on its type a feature may contain additional fields. Examples for the 
 
 \begin{figure}[H]
     \centering
-      \includegraphics[width=8cm]{figures/viewpoints_anno_example_points.png}
+  \hspace*{-2.5cm}
+      \includegraphics[width=19cm,frame]{figures/viewpoints_anno_example_points.png}
     \caption{View Point Annotations - Points} 
 \end{figure}
 
@@ -524,7 +593,8 @@ Here $[45.0, 18.0]$ and $[45.0, 20.0]$ form one line, and $[48.0, 20.0]$ and $[4
 
 \begin{figure}[H]
     \centering
-        \includegraphics[width=8cm]{figures/viewpoints_anno_example_lines.png}
+  \hspace*{-2.5cm}
+        \includegraphics[width=19cm,frame]{figures/viewpoints_anno_example_lines.png}
     \caption{View Point Annotations - Lines} 
 \end{figure}
 
@@ -556,7 +626,8 @@ The displayed line connects the given coordinates, one after another.
 
 \begin{figure}[H]
     \centering
-        \includegraphics[width=8cm]{figures/viewpoints_anno_example_linestring.png}
+  \hspace*{-2.5cm}
+        \includegraphics[width=19cm,frame]{figures/viewpoints_anno_example_linestring.png}
     \caption{View Point Annotations - Line Strings} 
 \end{figure}
 
@@ -593,7 +664,8 @@ The 'sizes' of the ellipses are provided as value triples (Standard deviation X,
 
 \begin{figure}[H]
     \centering
-        \includegraphics[width=8cm]{figures/viewpoints_anno_example_ellipses.png}
+  \hspace*{-2.5cm}
+        \includegraphics[width=19cm,frame]{figures/viewpoints_anno_example_ellipses.png}
     \caption{View Point Annotations - Ellipses} 
 \end{figure}
 
@@ -619,7 +691,8 @@ The 'sizes' of the ellipses are provided as value triples (Standard deviation X,
 
 \begin{figure}[H]
     \centering
-        \includegraphics[width=10cm]{figures/viewpoints_anno_example_text.png}
+  \hspace*{-2.5cm}
+        \includegraphics[width=19cm,frame]{figures/viewpoints_anno_example_text.png}
     \caption{View Point Annotations - Text} 
 \end{figure}
 
@@ -647,7 +720,8 @@ At the moment only GeoTIFF files are supported.
 
 %\begin{figure}[H]
 %    \center
-%        \includegraphics[width=10cm]{figures/viewpoints_anno_example_text.png}
+  \hspace*{-2.5cm}
+%        \includegraphics[width=19cm,frame]{figures/viewpoints_anno_example_text.png}
 %    \caption{View Point Annotations - Text} 
 %\end{figure}
 
@@ -699,7 +773,8 @@ At the moment only GeoTIFF files are supported.
 
 \begin{figure}[H]
     \centering
-        \includegraphics[width=15cm]{figures/viewpoints_anno_example_grid.png}
+  \hspace*{-2.5cm}
+        \includegraphics[width=19cm,frame]{figures/viewpoints_anno_example_grid.png}
     \caption{View Point Annotations - Grid} 
 \end{figure}
 
@@ -768,7 +843,8 @@ displayed simultaneously in HistogramView.
 
 \begin{figure}[H]
     \centering
-        \includegraphics[width=15cm]{figures/viewpoints_anno_example_histogram.png}
+  \hspace*{-2.5cm}
+        \includegraphics[width=19cm,frame]{figures/viewpoints_anno_example_histogram.png}
     \caption{View Point Annotations - Histogram} 
 \end{figure}
 
@@ -813,7 +889,8 @@ The feature may contain multiple data series.
 
 \begin{figure}[H]
     \centering
-        \includegraphics[width=15cm]{figures/viewpoints_anno_example_scatter.png}
+  \hspace*{-2.5cm}
+        \includegraphics[width=19cm,frame]{figures/viewpoints_anno_example_scatter.png}
     \caption{View Point Annotations - Scatter Series} 
 \end{figure}
 
@@ -878,7 +955,8 @@ This example will result in each point being displayed in a separate color.
 
 \begin{figure}[H]
     \centering
-        \includegraphics[width=8cm]{figures/viewpoints_anno_example_colorvec.png}
+  \hspace*{-2.5cm}
+        \includegraphics[width=19cm,frame]{figures/viewpoints_anno_example_colorvec.png}
     \caption{View Point Annotations - Color vectors} 
 \end{figure}
 
@@ -950,7 +1028,8 @@ individually.
 
 \begin{figure}[H]
     \centering
-        \includegraphics[width=14cm]{figures/viewpoints_anno_example_nested.png}
+  \hspace*{-2.5cm}
+        \includegraphics[width=19cm,frame]{figures/viewpoints_anno_example_nested.png}
     \caption{View Point Annotations - Nested Annotations} 
 \end{figure}
 
@@ -998,23 +1077,31 @@ individually.
             "id": 1,
             "name": "No Data",
             "status": "open",
-            "data_source_types": [],
             "type": "Example"
         },
         {
             "id": 2,
             "name": "All Data",
             "status": "open",
-            "type": "Example"
+            "type": "Example",
+            "load_data": {
+                "data_source_types": "all",
+                "data_sources": "all"
+            }
         },
         {
-            "data_source_types": [
-                "Tracker"
-            ],
-            "filters": {
-                "Aircraft Address": {
-                    "Aircraft Address Values": "4408AE"
-                }
+            "load_data": {
+                "data_source_types": [
+                    "Tracker"
+                ],
+                "data_sources": "all",
+                "filters": {
+                    "Aircraft Address": {
+                        "Aircraft Address Values": "4408AE"
+                    }
+                },
+                "timestamp":"2021-01-02 11:52:55.002",
+                "time_window":4.0
             },
             "id": 3,
             "name": "Filtered 0x4408AE",
@@ -1022,28 +1109,31 @@ individually.
             "position_longitude": 16.185397891887238,
             "position_window_latitude": 0.3,
             "position_window_longitude": 0.3,
-            "timestamp":"2021-01-02 11:52:55.002",
-            "time_window":4.0,
             "status": "open",
             "type": "Target Issue 1"
         },
         {
-            "data_source_types": [
-                "Tracker"
-            ],
-            "filters": {
-                "Timestamp": {
-                    "Timestamp Maximum": "2021-01-02 11:59:00.000",
-                    "Timestamp Minimum": "2021-01-02 09:59:58.752"
-                },
-                "Tracker Track Number": {
-                    "Values": {
-                        "12990": {
-                            "0": "6630",
-                            "1": "5748"
+            "load_data": {
+                "data_source_types": [
+                    "Tracker"
+                ],
+                "data_sources": "all",
+                "filters": {
+                    "Timestamp": {
+                        "Timestamp Maximum": "2021-01-02 11:59:00.000",
+                        "Timestamp Minimum": "2021-01-02 09:59:58.752"
+                    },
+                    "Tracker Track Number": {
+                        "Values": {
+                            "12990": {
+                                "0": "6630",
+                                "1": "5748"
+                            }
                         }
                     }
-                }
+                },
+                "timestamp":"2021-01-02 11:52:55.002",
+                "time_window":4.0
             },
             "id": 4,
             "name": "Filtered Track Numbers",
@@ -1051,8 +1141,6 @@ individually.
             "position_longitude": 16.216732317219545,
             "position_window_latitude": 0.3,
             "position_window_longitude": 0.3,
-            "timestamp":"2021-01-02 11:52:55.002",
-            "time_window":4.0,
             "status": "open",
             "type": "Target Issue 1"
         },
@@ -1064,7 +1152,6 @@ individually.
             "position_window_latitude": 10,
             "position_window_longitude": 10,
             "status": "open",
-            "data_source_types": [],
             "type": "Annotation",
             "annotations" :
             [
@@ -1180,7 +1267,6 @@ individually.
             "id": 6,
             "name": "Annotation2",
             "status": "open",
-            "data_source_types": [],
             "position_latitude": 11,
             "position_longitude": 21.5,
             "position_window_latitude": 2,
@@ -1237,7 +1323,6 @@ individually.
             "position_longitude": 22,
             "position_window_latitude": 5,
             "position_window_longitude": 5,
-            "data_source_types": [],
             "type": "Annotation",
             "annotations" :
             [
@@ -1297,7 +1382,6 @@ individually.
             "id": 8,
             "name": "Grid Annotation",
             "status": "open",
-            "data_source_types": [],
             "type": "Grid Annotation",
             "annotations" :
             [
@@ -1341,7 +1425,6 @@ individually.
             "id": 9,
             "name": "Histogram Annotation",
             "status": "open",
-            "data_source_types": [],
             "type": "Histogram Annotation",
             "annotations" :
             [
@@ -1403,7 +1486,6 @@ individually.
             "id": 10,
             "name": "Scatterplot Annotation",
             "status": "open",
-            "data_source_types": [],
             "type": "Scatterplot Annotation",
             "annotations" :
             [
@@ -1449,7 +1531,6 @@ individually.
             "position_longitude": -120.477,
             "position_window_latitude": 10,
             "position_window_longitude": 10,
-            "data_source_types": [],
             "type": "GeoImage Annotation",
             "annotations" :
             [
@@ -1476,7 +1557,6 @@ individually.
             "position_longitude": -120.477,
             "position_window_latitude": 0.5,
             "position_window_longitude": 0.5,
-            "data_source_types": [],
             "type": "Zoomed GeoImage Annotation",
             "annotations" :
             [
@@ -1503,7 +1583,6 @@ individually.
             "position_longitude": -120.477,
             "position_window_latitude": 0.2,
             "position_window_longitude": 0.2,
-            "data_source_types": [],
             "type": "Zoomed GeoImage Annotation2",
             "annotations" :
             [

@@ -50,6 +50,7 @@ EvaluationStandardWidget::EvaluationStandardWidget(EvaluationStandard& standard)
             this, &EvaluationStandardWidget::standardConfigChangedSlot);
 
     tree_view_.reset(new QTreeView());
+    tree_view_->setObjectName("standard_tree");
     tree_view_->setModel(&standard_model_);
     tree_view_->setRootIsDecorated(false);
     tree_view_->expandAll();
@@ -71,6 +72,7 @@ EvaluationStandardWidget::EvaluationStandardWidget(EvaluationStandard& standard)
     scroll_area->setWidgetResizable(true);
 
     requirements_widget_ = new QStackedWidget();
+    requirements_widget_->setObjectName("requirement_stack");
 
     scroll_area->setWidget(requirements_widget_);
 

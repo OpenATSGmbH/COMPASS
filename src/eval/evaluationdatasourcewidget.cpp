@@ -21,6 +21,7 @@
 #include "db_context_manager.h"
 #include "evaluationcalculator.h"
 #include "evaluationmanager.h"
+#include "ui_test_common.h"
 
 #include <QLabel>
 #include <QCheckBox>
@@ -70,6 +71,7 @@ EvaluationDataSourceWidget::EvaluationDataSourceWidget(EvaluationCalculator& cal
 
     dbcont_combo_ = new DBContentComboBox(calculator_.manager().dbContentManager(),
                                           false, true, excluded_dbcontents);
+    dbcont_combo_->QObject::setObjectName("dbcontent_combo");
 
     if (dbcont_combo_->findText(dbcontent_name_.c_str()) >= 0)
     {
@@ -106,6 +108,7 @@ EvaluationDataSourceWidget::EvaluationDataSourceWidget(EvaluationCalculator& cal
     line_lay->addWidget(new QLabel("Line ID"), 0, 0);
 
     QComboBox* line_box = new QComboBox();
+    line_box->setObjectName("line_combo");
     line_box->addItems({"1", "2", "3", "4"});
     line_box->setCurrentIndex(line_id_);
 
@@ -169,6 +172,7 @@ void EvaluationDataSourceWidget::updateDataSourcesSlot()
         traced_assert(ds);
 
         QCheckBox* checkbox = new QCheckBox(tr(ds->name().c_str()));
+        UI_TEST_OBJ_NAME(checkbox, QString::fromStdString("data_source_" + ds->name()));
         checkbox->setChecked(it.second);
         checkbox->setProperty("id", ds_id);
         connect(checkbox, SIGNAL(clicked()), this, SLOT(toggleDataSourceSlot()));

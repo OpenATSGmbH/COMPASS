@@ -27,7 +27,6 @@
 
 #include "files.h"
 #include "global.h"
-#include "view.h"
 
 #include <boost/filesystem.hpp>
 
@@ -203,15 +202,10 @@ ResultT<nlohmann::json> ReportExporter::exportReport(TaskResult& result,
         num_sections_total_ = section_ptr->totalNumSections(func);
         num_contents_total_ = section_ptr->totalNumContents(func);
 
-        //for immediate rendering of the views (e.g. geographic view) during image generation
-        View::setInstantDisplay(true);
-
         //export
         res_final = exportReport_impl(result, section_ptr, content_id);
         if (!res_final.ok())
             return res_final;
-
-        View::setInstantDisplay(false);
 
         //check on created in-mem data
         if (exportCreatesInMemoryData() && res_final.result().is_null())
@@ -351,8 +345,9 @@ Result ReportExporter::visitContent(SectionContent& content, bool is_root_sectio
     //check which content
     if (content.contentType() == SectionContent::ContentType::Figure)
     {
+        //a view figure or a figure that cannot be drawn gives no image (TaskResult::renderFigure), so the exporters write nothing for it
         auto c = dynamic_cast<SectionContentFigure*>(&content);
-        if (c) 
+        if (c)
             return exportFigure(*c, is_root_section);
     }
     else if (content.contentType() == SectionContent::ContentType::Table)

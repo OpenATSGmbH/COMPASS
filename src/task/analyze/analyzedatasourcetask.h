@@ -23,6 +23,7 @@
 #include "task.h"
 #include "global.h"
 #include "gridbackgroundsettings.h"
+#include "reportfigureoptions.h"
 
 #include "creatorregistry.h"
 #include "json_fwd.hpp"
@@ -277,6 +278,11 @@ public:
     /// Sector layers that are hidden in the default sector selection: all
     std::set<std::string> reportFigureDefaultHiddenLayers() const;
 
+    /// Stored options of the report figures (histogram log scale, export layout size), edited in the dialog.
+    /// The inspectors write the log scale into their histograms of one data series.
+    ReportFigureOptions reportFigureOptionsConfig() const;
+    void reportFigureOptionsConfig(const ReportFigureOptions& options);
+
 protected:
     /// Takes over the inspector settings created by inspectorSettingsFactory().
     void childCreated(Configurable* child) override;
@@ -286,8 +292,9 @@ protected:
 private:
     void registerInspectors();
 
-    /// writes the stored background set into the report figures below the section that have a geographic grid
-    void addReportFigureBackground(ResultReport::Section& section) const;
+    /// writes the stored export layout size into the report figures below the section, and the stored background
+    /// set into the ones that have a geographic grid
+    void addReportFigureSettings(ResultReport::Section& section) const;
 
     std::string ds_type_;
 
@@ -316,6 +323,7 @@ private:
     nlohmann::json used_sectors_;     // sector-layer name -> bool (unlisted = true)
 
     nlohmann::json report_figure_background_; // ReportFigureBackground
+    nlohmann::json report_figure_options_;    // ReportFigureOptions
 
     std::map<std::string, std::unique_ptr<InspectorSettingsBase>> inspector_settings_; // settings class -> settings
 

@@ -71,9 +71,11 @@ void DataSourcesStatusToolWidget::createUI()
     selection_layout->setContentsMargins(0, 0, 0, 0);
 
     tracker_combo_ = new QComboBox;
+    tracker_combo_->setObjectName("sensor_status_tracker_combo");
     tracker_combo_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     line_combo_ = new QComboBox;
+    line_combo_->setObjectName("sensor_status_line_combo");
     line_combo_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Preferred);
 
     auto tracker_label = new QLabel("Tracker");
@@ -93,6 +95,7 @@ void DataSourcesStatusToolWidget::createUI()
 
     //create status widget
     auto ds_status_widget = new QWidget;
+    ds_status_widget->setObjectName("sensor_status_widget");
 
     QVBoxLayout* status_layout = new QVBoxLayout();
     status_layout->setContentsMargins(0, 0, 0, 0);
@@ -100,6 +103,7 @@ void DataSourcesStatusToolWidget::createUI()
     ds_status_widget->setLayout(status_layout);
 
     ds_widget_ = new DataSourcesStatusWidget(ctx_man_, tracker_);
+    ds_widget_->setObjectName("sensor_status_tree");
     ds_widget_->setContentsMargins(0, 0, 0, 0);
     ds_widget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
@@ -131,6 +135,7 @@ void DataSourcesStatusToolWidget::createUI()
     event_widget->setLayout(event_layout);
 
     event_box_ = new QTextEdit;
+    event_box_->setObjectName("sensor_status_log_edit");
     event_box_->setReadOnly(true);
     event_box_->setAcceptRichText(true);
     event_box_->document()->setMaximumBlockCount(ctx_man_.sensorConfig().sensor_status_max_event_buf_size);

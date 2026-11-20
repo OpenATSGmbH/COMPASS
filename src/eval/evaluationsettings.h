@@ -99,10 +99,13 @@ struct EvaluationSettings
     unsigned int grid_num_cells_y     = 512;
 
     //histogram generation
-    unsigned int histogram_num_bins = 20;
+    unsigned int histogram_num_bins = 10;
 
     //background set of the geographic report figures (ReportFigureBackground)
     nlohmann::json report_figure_background_;
+
+    //options of the report figures (ReportFigureOptions)
+    nlohmann::json report_figure_options_;
 
     //surrounding delta of the sector restriction of the load and the result view points: the
     //fraction of the extent of the used sector layers, clamped to [min in meters, max in degrees]

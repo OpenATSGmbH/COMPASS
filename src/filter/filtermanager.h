@@ -139,5 +139,7 @@ protected:
 
     virtual void checkSubConfigurables();
 
+    void loadNoData();
+
     bool checkDBContent (const std::string& dbcontent_name); // returns true if ok
 };

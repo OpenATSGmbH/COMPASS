@@ -52,6 +52,7 @@ JSONImportTaskWidget::JSONImportTaskWidget(JSONImportTask& task, QWidget* parent
     main_layout_ = new QHBoxLayout();
 
     tab_widget_ = new QTabWidget();
+    tab_widget_->setObjectName("tab_widget");
     main_layout_->addWidget(tab_widget_);
 
     addMainTab();
@@ -87,6 +88,7 @@ void JSONImportTaskWidget::addMainTab()
 
         // date
         QDateEdit* date_edit = new QDateEdit();
+        date_edit->setObjectName("utc_day_edit");
         date_edit->setDisplayFormat("yyyy-MM-dd");
 
         //loginf << "UGA " << Time::toDateString(task_.date());
@@ -136,6 +138,7 @@ void JSONImportTaskWidget::addMappingsTab()
         schema_layout->addWidget(schemas_label);
 
         schema_box_ = new QComboBox();
+        schema_box_->setObjectName("schema_combo");
         connect(schema_box_, SIGNAL(activated(const QString&)), this,
                 SLOT(selectedSchemaChangedSlot(const QString&)));
         updateSchemasBox();
@@ -166,6 +169,7 @@ void JSONImportTaskWidget::addMappingsTab()
         parsers_layout->addWidget(parser_label_);
 
         object_parser_box_ = new QComboBox();
+        object_parser_box_->setObjectName("parser_combo");
         connect(object_parser_box_, SIGNAL(currentIndexChanged(const QString&)), this,
                 SLOT(selectedObjectParserSlot(const QString&)));
 

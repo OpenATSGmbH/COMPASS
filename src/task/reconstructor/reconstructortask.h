@@ -162,9 +162,9 @@ public:
     ReconstructorBase::DataSlice& processingSlice();
     const ReconstructorBase::DataSlice& processingSlice() const;
 
-    std::unique_ptr<ViewPointGenVP> getDebugViewpoint(const std::string& name, const std::string& type, bool* created = nullptr) const;
-    std::unique_ptr<ViewPointGenVP> getDebugViewpointNoData(const std::string& name, const std::string& type); // w/o sur data
-    std::unique_ptr<ViewPointGenVP> getDebugViewpointForUTN(std::uint64_t utn, const std::string& name_prefix="") const;
+    std::unique_ptr<ViewPointGenVP> getDebugViewpoint(const std::string& name, const std::string& type) const; // loads no data
+    std::unique_ptr<ViewPointGenVP> getDebugViewpointWithData(const std::string& name, const std::string& type) const; // loads all data
+    std::unique_ptr<ViewPointGenVP> getDebugViewpointForUTN(std::uint64_t utn, const std::string& name_prefix="") const; // loads the UTN
 
     bool skipReferenceDataWriting() const;
     void skipReferenceDataWriting(bool newSkip_reference_data_writing);

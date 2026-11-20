@@ -26,6 +26,7 @@
 #include "viewmanager.h"
 #include "viewpointgenerator.h"
 #include "reportfigure.h"
+#include "viewpointkeys.h"
 #include "viewrenderwidget.h"
 #include "ui_test_common.h"
 
@@ -36,8 +37,6 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
-#include <QApplication>
-#include <QThread>
 #include <QImage>
 
 #include <algorithm>
@@ -47,7 +46,6 @@ namespace ResultReport
 
 const std::string SectionContentFigure::FieldFigureType      = "figure_type";
 const std::string SectionContentFigure::FieldCaption         = "caption";
-const std::string SectionContentFigure::FieldRenderDelayMSec = "render_delay_msec";
 const std::string SectionContentFigure::FieldViewable        = "viewable";
 
 const std::string SectionContentFigure::FieldDocPath         = "path";
@@ -78,9 +76,8 @@ SectionContentFigure::SectionContentFigure(Section* parent_section)
  */
 void SectionContentFigure::setViewable(const SectionContentViewable& viewable)
 {
-    caption_           = viewable.caption;
-    render_delay_msec_ = viewable.render_delay_msec;
-    viewable_fnc_      = viewable.viewable_func;
+    caption_      = viewable.caption;
+    viewable_fnc_ = viewable.viewable_func;
 }
 
 /**
@@ -110,7 +107,19 @@ void SectionContentFigure::addContentUI(QVBoxLayout* layout,
         return;
     }
 
-    QLabel* label = new QLabel(("Figure: " + name()).c_str());
+    const auto classification = classify();
+    const auto& entries       = classification.render_entries;
+
+    std::string label_text = "Figure: " + name();
+
+    if (classification.kind == FigureKind::CannotBeDrawn)
+    {
+        logerr << "figure '" << name() << "' cannot be drawn";
+        label_text += " (cannot be drawn)";
+    }
+
+    QLabel* label = new QLabel(QString::fromStdString(label_text));
+    UI_TEST_OBJ_NAME(label, QString::fromStdString("Figure " + name() + " Label"));
 
     QPushButton* view_button = new QPushButton("View");
     view_button->setIcon(QIcon());
@@ -119,9 +128,7 @@ void SectionContentFigure::addContentUI(QVBoxLayout* layout,
 
     QObject::connect (view_button, &QPushButton::clicked, [ this ] () { this->view(false, true); });
 
-    const auto entries = renderEntries();
-
-    if (entries.empty())
+    if (classification.kind != FigureKind::Simple)
     {
         QHBoxLayout* fig_layout = new QHBoxLayout();
 
@@ -169,17 +176,22 @@ const context::DBContextManager* SectionContentFigure::sectorSource()
 
 /**
  */
-std::vector<report_figure::RenderEntry> SectionContentFigure::renderEntries() const
+SectionContentFigure::Classification SectionContentFigure::classify() const
 {
-    //the content of an on-demand figure is not built only to draw it, such a figure stays with the views
-    if (isOnDemand())
-        return {};
-
     auto content = viewableContent();
     if (!content)
         return {};
 
-    return report_figure::selectRenderEntries(nlohmann::json(*content));
+    const nlohmann::json view_point(*content);
+
+    if (view_point_load::loadsData(view_point))
+        return { FigureKind::View, {} };
+
+    auto entries = report_figure::selectRenderEntries(view_point);
+    if (entries.empty())
+        return {};
+
+    return { FigureKind::Simple, std::move(entries) };
 }
 
 /**
@@ -207,22 +219,6 @@ bool SectionContentFigure::view(bool load_blocking, bool open_view_deck) const
     report_->setCurrentViewable(*content, load_blocking, open_view_deck);
 
     return true;
-}
-
-/**
- */
-void SectionContentFigure::executeRenderDelay() const
-{
-    if (render_delay_msec_ > 0)
-    {
-        boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
-        while ((boost::posix_time::microsec_clock::local_time() - start_time).total_milliseconds()
-               < render_delay_msec_)
-        {
-            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-            QThread::msleep(1);
-        }
-    }
 }
 
 /**
@@ -255,9 +251,8 @@ void SectionContentFigure::toJSON_impl(nlohmann::json& j) const
     //call base
     SectionContent::toJSON_impl(j);
 
-    j[ FieldFigureType      ] = fig_type_;
-    j[ FieldCaption         ] = caption_;
-    j[ FieldRenderDelayMSec ] = render_delay_msec_;
+    j[ FieldFigureType ] = fig_type_;
+    j[ FieldCaption    ] = caption_;
 
     nlohmann::json jviewable = nlohmann::json::object();
     if (!isOnDemand())
@@ -278,19 +273,17 @@ bool SectionContentFigure::fromJSON_impl(const nlohmann::json& j)
     if (!SectionContent::fromJSON_impl(j))
         return false;
 
-    if (!j.is_object()                    ||
-        !j.contains(FieldFigureType)      ||
-        !j.contains(FieldCaption)         ||
-        !j.contains(FieldRenderDelayMSec) ||
+    if (!j.is_object()               ||
+        !j.contains(FieldFigureType) ||
+        !j.contains(FieldCaption)    ||
         !j.contains(FieldViewable))
     {
         logerr << "section content figure does not obtain needed fields";
         return false;
     }
 
-    fig_type_          = j[ FieldFigureType      ];
-    caption_           = j[ FieldCaption         ];
-    render_delay_msec_ = j[ FieldRenderDelayMSec ];
+    fig_type_ = j[ FieldFigureType ];
+    caption_  = j[ FieldCaption    ];
 
     std::shared_ptr<nlohmann::json::object_t> jviewable(new nlohmann::json::object_t);
     *jviewable = j[ FieldViewable ];

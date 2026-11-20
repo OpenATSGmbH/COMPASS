@@ -98,12 +98,14 @@ VariableOrderedSetWidget::VariableOrderedSetWidget(VariableOrderedSet& set,
 
         QPushButton* remove_button = new QPushButton();
         remove_button->setText("Remove");
+        remove_button->setObjectName("remove_variable_button");
         connect(remove_button, &QPushButton::clicked, this,
                 &VariableOrderedSetWidget::removeSlot);
         button_layout->addWidget(remove_button);
 
         QPushButton* add_button = new QPushButton();
         add_button->setText("Add");
+        add_button->setObjectName("add_variable_button");
         connect(add_button, &QPushButton::clicked, this,
                 &VariableOrderedSetWidget::showDialogSlot);
         button_layout->addWidget(add_button);

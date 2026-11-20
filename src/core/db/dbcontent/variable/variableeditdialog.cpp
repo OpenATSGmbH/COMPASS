@@ -61,6 +61,7 @@ VariableEditDialog::VariableEditDialog(Variable& variable, QWidget* parent, Qt::
         setWindowTitle("Show DBContent Variable");
 
     setModal(true);
+    setObjectName("variable_edit_dialog");
 
     QVBoxLayout* main_layout = new QVBoxLayout();
 
@@ -70,18 +71,21 @@ VariableEditDialog::VariableEditDialog(Variable& variable, QWidget* parent, Qt::
     //    QLineEdit* name_edit_ {nullptr};
 
     name_edit_ = new QLineEdit(variable_.name().c_str());
+    name_edit_->setObjectName("name_edit");
     name_edit_->setReadOnly(!expert_mode_);
     connect(name_edit_, &QLineEdit::textChanged, this, &VariableEditDialog::nameChangedSlot);
     form_layout->addRow("Name", name_edit_);
 
     //    QLineEdit* short_name_edit_ {nullptr};
     short_name_edit_ = new QLineEdit(variable_.shortName().c_str());
+    short_name_edit_->setObjectName("short_name_edit");
     short_name_edit_->setReadOnly(!expert_mode_);
     connect(short_name_edit_, &QLineEdit::textChanged, this, &VariableEditDialog::shortNameChangedSlot);
     form_layout->addRow("Short Name", short_name_edit_);
 
     //    QTextEdit* description_edit_ {nullptr};
     description_edit_ = new QTextEdit();
+    description_edit_->setObjectName("comment_edit");
     description_edit_->document()->setPlainText(variable_.description().c_str());
     short_name_edit_->setReadOnly(!expert_mode_);
     description_edit_->setWordWrapMode(QTextOption::WrapMode::WrapAnywhere);
@@ -95,6 +99,7 @@ VariableEditDialog::VariableEditDialog(Variable& variable, QWidget* parent, Qt::
     // candidates applies to the next import
 
     origin_combo_ = new QComboBox();
+    origin_combo_->setObjectName("origin_combo");
     for (const auto& origin : {Variable::OriginAsterix, Variable::OriginCalculated,
                                Variable::OriginInternal, Variable::OriginSelection})
         origin_combo_->addItem(origin.c_str());
@@ -105,12 +110,14 @@ VariableEditDialog::VariableEditDialog(Variable& variable, QWidget* parent, Qt::
     form_layout->addRow("Origin", origin_combo_);
 
     data_item_edit_ = new QLineEdit(variable_.dataItem().c_str());
+    data_item_edit_->setObjectName("data_item_edit");
     data_item_edit_->setReadOnly(!expert_mode_);
     data_item_edit_->setToolTip("ASTERIX item in EUROCONTROL notation, I021/071.Time of Applicability for Position");
     connect(data_item_edit_, &QLineEdit::textChanged, this, &VariableEditDialog::dataItemChangedSlot);
     form_layout->addRow("Data Item", data_item_edit_);
 
     inputs_edit_ = new QLineEdit(boost::algorithm::join(variable_.inputs(), ", ").c_str());
+    inputs_edit_->setObjectName("inputs_edit");
     inputs_edit_->setReadOnly(!expert_mode_);
     inputs_edit_->setToolTip("Variables of this content the value is calculated from, comma separated");
     connect(inputs_edit_, &QLineEdit::textChanged, this, &VariableEditDialog::inputsChangedSlot);
@@ -122,6 +129,7 @@ VariableEditDialog::VariableEditDialog(Variable& variable, QWidget* parent, Qt::
         candidates_layout->setContentsMargins(0, 0, 0, 0);
 
         candidates_list_ = new QListWidget();
+        candidates_list_->setObjectName("candidates_list");
         candidates_list_->setToolTip("Candidates in priority order, the first with a value supplies the record. "
                                      "A change applies to the next import.");
         candidates_layout->addWidget(candidates_list_);
@@ -129,16 +137,19 @@ VariableEditDialog::VariableEditDialog(Variable& variable, QWidget* parent, Qt::
         QVBoxLayout* buttons_layout = new QVBoxLayout();
 
         candidate_up_button_ = new QPushButton("Up");
+        candidate_up_button_->setObjectName("candidate_up_button");
         candidate_up_button_->setToolTip("Move the selected candidate up in the priority order");
         connect(candidate_up_button_, &QPushButton::clicked, this, &VariableEditDialog::moveCandidateUpSlot);
         buttons_layout->addWidget(candidate_up_button_);
 
         candidate_down_button_ = new QPushButton("Down");
+        candidate_down_button_->setObjectName("candidate_down_button");
         candidate_down_button_->setToolTip("Move the selected candidate down in the priority order");
         connect(candidate_down_button_, &QPushButton::clicked, this, &VariableEditDialog::moveCandidateDownSlot);
         buttons_layout->addWidget(candidate_down_button_);
 
         candidate_remove_button_ = new QPushButton("Remove");
+        candidate_remove_button_->setObjectName("candidate_remove_button");
         candidate_remove_button_->setToolTip("Remove the selected candidate");
         connect(candidate_remove_button_, &QPushButton::clicked, this, &VariableEditDialog::removeCandidateSlot);
         buttons_layout->addWidget(candidate_remove_button_);
@@ -156,6 +167,7 @@ VariableEditDialog::VariableEditDialog(Variable& variable, QWidget* parent, Qt::
         add_layout->setContentsMargins(0, 0, 0, 0);
 
         candidate_add_combo_ = new QComboBox();
+        candidate_add_combo_->setObjectName("candidate_add_combo");
         candidate_add_combo_->setToolTip("Variable of this content to add as the last candidate");
         for (const auto& var_it : variable_.object().variables())
             if (var_it.first != variable_.name())
@@ -163,6 +175,7 @@ VariableEditDialog::VariableEditDialog(Variable& variable, QWidget* parent, Qt::
         add_layout->addWidget(candidate_add_combo_);
 
         candidate_add_button_ = new QPushButton("Add");
+        candidate_add_button_->setObjectName("candidate_add_button");
         connect(candidate_add_button_, &QPushButton::clicked, this, &VariableEditDialog::addCandidateSlot);
         add_layout->addWidget(candidate_add_button_);
 
@@ -171,6 +184,7 @@ VariableEditDialog::VariableEditDialog(Variable& variable, QWidget* parent, Qt::
     }
 
     source_variable_edit_ = new QLineEdit(variable_.sourceVariableName().c_str());
+    source_variable_edit_->setObjectName("source_variable_edit");
     source_variable_edit_->setReadOnly(!expert_mode_);
     source_variable_edit_->setToolTip("UCHAR variable of this content holding the 1-based index of the chosen candidate");
     connect(source_variable_edit_, &QLineEdit::textChanged, this, &VariableEditDialog::sourceVariableChangedSlot);
@@ -181,22 +195,26 @@ VariableEditDialog::VariableEditDialog(Variable& variable, QWidget* parent, Qt::
 
     //    VariableDataTypeComboBox* type_combo_ {nullptr};
     type_combo_ = new VariableDataTypeComboBox(variable_.dataTypeRef(), variable_.dataTypeStringRef());
+    type_combo_->setObjectName("data_type_combo");
     type_combo_->setEnabled(expert_mode_);
     form_layout->addRow("Data Type", type_combo_);
 
     //    UnitSelectionWidget* unit_sel_ {nullptr};
     unit_sel_ = new UnitSelectionWidget(variable_.dbContent().dbContentManager().unitManager(), variable_.dimension(), variable_.unit());
+    unit_sel_->setObjectName("unit_button");
     unit_sel_->setEnabled(expert_mode_);
     form_layout->addRow("Unit", unit_sel_);
 
     //    StringRepresentationComboBox* representation_box_ {nullptr};
     representation_box_ = new StringRepresentationComboBox(variable_.representationRef(),
                                                            variable_.representationStringRef());
+    representation_box_->setObjectName("representation_combo");
     representation_box_->setEnabled(expert_mode_);
     form_layout->addRow("Representation", representation_box_);
 
     //    QLineEdit* db_column_edit_ {nullptr};
     db_column_edit_ = new QLineEdit(variable_.dbColumnName().c_str());
+    db_column_edit_->setObjectName("db_column_edit");
     db_column_edit_->setReadOnly(!expert_mode_);
     connect(db_column_edit_, &QLineEdit::textChanged, this, &VariableEditDialog::dbColumnChangedSlot);
     form_layout->addRow("DBColumn", db_column_edit_);
@@ -204,6 +222,7 @@ VariableEditDialog::VariableEditDialog(Variable& variable, QWidget* parent, Qt::
     main_layout->addLayout(form_layout);
 
     done_button_ = new QPushButton("Done");
+    done_button_->setObjectName("done_button");
     connect(done_button_, &QPushButton::clicked, this, &VariableEditDialog::doneSlot);
     main_layout->addWidget(done_button_);
 

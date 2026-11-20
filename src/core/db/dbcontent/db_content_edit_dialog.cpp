@@ -71,6 +71,7 @@ DBContentEditDialog::DBContentEditDialog(DBContentManager& dbcont_man, QWidget* 
 
     setModal(true);
     setMinimumSize(QSize(900, 600));
+    setObjectName("dbcontent_edit_dialog");
 
     QSettings settings("COMPASS", "DBContentEditDialog");
 
@@ -80,6 +81,7 @@ DBContentEditDialog::DBContentEditDialog(DBContentManager& dbcont_man, QWidget* 
 
     // tree
     tree_widget_ = new QTreeWidget();
+    tree_widget_->setObjectName("variable_tree");
     tree_widget_->setHeaderHidden(true);
     tree_widget_->setColumnCount(1);
     tree_widget_->setUniformRowHeights(true);
@@ -94,6 +96,7 @@ DBContentEditDialog::DBContentEditDialog(DBContentManager& dbcont_man, QWidget* 
     scroll->setWidgetResizable(true);
 
     detail_stack_ = new QStackedWidget();
+    detail_stack_->setObjectName("detail_stack");
 
     placeholder_ = new QLabel("Select a Meta or DBContent variable from the tree.");
     static_cast<QLabel*>(placeholder_)->setAlignment(Qt::AlignCenter);
@@ -121,6 +124,7 @@ DBContentEditDialog::DBContentEditDialog(DBContentManager& dbcont_man, QWidget* 
     button_layout->addStretch();
 
     auto* ok_button = new QPushButton("Close");
+    ok_button->setObjectName("close_button");
     ok_button->setIcon(QIcon());
     ok_button->setToolTip("Close the dialog");
     connect(ok_button, &QPushButton::clicked, this, &DBContentEditDialog::okClickedSlot);

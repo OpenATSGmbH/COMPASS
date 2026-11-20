@@ -25,6 +25,8 @@
 ColorModeLabel::ColorModeLabel(AppState& app_state, QWidget* parent)
 :   QLabel(parent)
 {
+    setObjectName("color_mode_label");
+
     showMode(app_state.colorMode());
 
     connect(&app_state, &AppState::colorModeChangedSignal, this, &ColorModeLabel::showMode);

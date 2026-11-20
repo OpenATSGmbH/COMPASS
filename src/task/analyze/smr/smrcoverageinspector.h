@@ -149,7 +149,7 @@ public:
     float extra_ratio_unacceptable_above_ = 0.20f;
 
     // Measured inter-report interval histogram.
-    int   ui_hist_num_bins_ = 20;
+    int   ui_hist_num_bins_ = 10;
     float ui_hist_max_s_    = 5.0f;
 };
 

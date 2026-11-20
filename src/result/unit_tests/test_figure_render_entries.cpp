@@ -74,14 +74,15 @@ namespace
     };
 
     /// view point with one histogram annotation
-    nlohmann::json histogramViewPoint(bool no_data_loaded)
+    nlohmann::json histogramViewPoint(bool loads_data)
     {
         RawHistogram h;
         h.addBin(RawHistogramBin(3, "0-10"));
         h.addBin(RawHistogramBin(12, "10-20"));
 
         ViewPointGenVP vp("Histogram", 0, "Histogram");
-        vp.noDataLoaded(no_data_loaded);
+        if (loads_data)
+            vp.enableDataLoading();
         vp.annotations().getOrCreateAnnotation("Errors")->addFeature(
             new ViewPointGenFeatureHistogram(h, "Errors", Qt::blue, boost::optional<bool>(),
                                              PlotMetadata("Errors", "", "Error [m]", "Count")));
@@ -92,27 +93,66 @@ namespace
         return j;
     }
 
+    /// view point without load_data with a points annotation, which no render widget draws
+    nlohmann::json pointsViewPoint()
+    {
+        ViewPointGenVP vp("Points", 0, "Points");
+        vp.annotations().getOrCreateAnnotation("Positions")->addFeature(
+            new ViewPointGenFeaturePoints(ViewPointGenFeaturePoints::Symbol::Circle, 6.0f,
+                                          { Eigen::Vector2d(47.0, 16.0) }));
+
+        nlohmann::json j;
+        vp.toJSON(j);
+
+        return j;
+    }
+
+    /// task result that gives each on-demand figure the view point on_demand_view_point when it is loaded
+    class OnDemandTaskResult : public TaskResult
+    {
+    public:
+        explicit OnDemandTaskResult(ITaskProvider& provider) : TaskResult(1, provider) {}
+
+        nlohmann::json        on_demand_view_point;
+        mutable unsigned int  num_loads = 0;
+
+    protected:
+        bool loadOnDemandFigure_impl(ResultReport::SectionContentFigure* figure) const override
+        {
+            ++num_loads;
+
+            auto content = std::make_shared<nlohmann::json::object_t>(
+                on_demand_view_point.get<nlohmann::json::object_t>());
+            figure->setViewableFunc([ content ] () { return content; });
+
+            return true;
+        }
+    };
+
     struct ReportWithSection
     {
-        ReportWithSection() : result(1, provider), section(result.report()->getSection("Figures")) {}
+        ReportWithSection() : result(provider), section(result.report()->getSection("Figures")) {}
 
         NoTaskProvider         provider;
-        TaskResult             result;
+        OnDemandTaskResult     result;
         ResultReport::Section& section;
     };
+
+    using FigureKind = ResultReport::SectionContentFigure::FigureKind;
 }
 
-TEST_CASE("report figure with a histogram view point is drawn by a render widget", "[result][reportfigure]")
+TEST_CASE("report figure with a histogram view point is a simple figure", "[result][reportfigure]")
 {
     ReportWithSection report;
 
     auto& figure = report.section.addFigure("Errors Histogram",
-                                            ResultReport::SectionContentViewable(histogramViewPoint(true)));
+                                            ResultReport::SectionContentViewable(histogramViewPoint(false)));
 
-    const auto entries = figure.renderEntries();
+    const auto classification = figure.classify();
 
-    REQUIRE(entries.size() == 1);
-    CHECK(entries[ 0 ].image_name == "histogram_0");
+    CHECK(classification.kind == FigureKind::Simple);
+    REQUIRE(classification.render_entries.size() == 1);
+    CHECK(classification.render_entries[ 0 ].image_name == "histogram_0");
 
     SECTION("the export gives one image per annotation and uses no view")
     {
@@ -126,37 +166,67 @@ TEST_CASE("report figure with a histogram view point is drawn by a render widget
     }
 }
 
-TEST_CASE("report figure that loads data is shown by the views", "[result][reportfigure]")
+TEST_CASE("report figure that loads data is a view figure", "[result][reportfigure]")
 {
     ReportWithSection report;
 
     auto& figure = report.section.addFigure("Errors Histogram",
-                                            ResultReport::SectionContentViewable(histogramViewPoint(false)));
+                                            ResultReport::SectionContentViewable(histogramViewPoint(true)));
 
-    CHECK(figure.renderEntries().empty());
+    const auto classification = figure.classify();
+
+    CHECK(classification.kind == FigureKind::View);
+    CHECK(classification.render_entries.empty());
+
+    //the task provider throws on a view manager request
+    CHECK(report.result.renderFigure(figure).empty());
 }
 
-TEST_CASE("report figure on demand is shown by the views", "[result][reportfigure]")
+TEST_CASE("report figure on demand is classified after its content is loaded", "[result][reportfigure]")
 {
     ReportWithSection report;
 
-    bool content_built = false;
-
-    ResultReport::SectionContentViewable viewable([ & ] ()
-    {
-        content_built = true;
-
-        auto content = std::make_shared<nlohmann::json::object_t>();
-        *content = histogramViewPoint(true);
-
-        return content;
-    });
-
-    auto& figure = report.section.addFigure("Errors Histogram", viewable);
+    auto& figure = report.section.addFigure("Errors Histogram", ResultReport::SectionContentViewable());
     figure.setOnDemand();
 
-    CHECK(figure.renderEntries().empty());
+    SECTION("a simple figure gives images")
+    {
+        report.result.on_demand_view_point = histogramViewPoint(false);
 
-    //the content is not built only to decide how the figure is drawn
-    CHECK(!content_built);
+        const auto classification = figure.classify();
+
+        CHECK(report.result.num_loads == 1);
+        CHECK(classification.kind == FigureKind::Simple);
+        CHECK(classification.render_entries.size() == 1);
+
+        const auto images = report.result.renderFigure(figure);
+
+        REQUIRE(images.size() == 1);
+        CHECK(images[ 0 ].second == "histogram_0");
+        CHECK(report.result.num_loads == 1);
+    }
+
+    SECTION("a view figure gives no images")
+    {
+        report.result.on_demand_view_point = histogramViewPoint(true);
+
+        CHECK(figure.classify().kind == FigureKind::View);
+        CHECK(report.result.renderFigure(figure).empty());
+    }
+}
+
+TEST_CASE("report figure without load_data that no render widget draws cannot be drawn", "[result][reportfigure]")
+{
+    ReportWithSection report;
+
+    auto& figure = report.section.addFigure("Positions",
+                                            ResultReport::SectionContentViewable(pointsViewPoint()));
+
+    const auto classification = figure.classify();
+
+    CHECK(classification.kind == FigureKind::CannotBeDrawn);
+    CHECK(classification.render_entries.empty());
+
+    //the task provider throws on a view manager request
+    CHECK(report.result.renderFigure(figure).empty());
 }

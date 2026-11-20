@@ -95,7 +95,6 @@ public:
     static boost::optional<Evaluation::RequirementResultID> joinedContentProperties(const ResultReport::SectionContent& content);
 
     static const std::string SectorOverviewID;
-    static const int         SectorOverviewRenderDelayMSec;
 
     static const std::string SectorTargetsTableName;
     static const std::string SectorOverviewTableName;

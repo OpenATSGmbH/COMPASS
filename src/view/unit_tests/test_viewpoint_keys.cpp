@@ -19,6 +19,7 @@
 
 #include "viewpointkeys.h"
 #include "viewpointgenerator.h"
+#include "viewpoint.h"
 
 #include "json.hpp"
 
@@ -31,7 +32,6 @@ TEST_CASE("ViewPointGenVP field names equal the ViewPointKeys keys", "[viewpoint
     REQUIRE(ViewPointGenVP::ViewPointFieldType        == ViewPointKeys::VP_TYPE_KEY);
     REQUIRE(ViewPointGenVP::ViewPointFieldStatus      == ViewPointKeys::VP_STATUS_KEY);
     REQUIRE(ViewPointGenVP::ViewPointFieldAnnotations == ViewPointKeys::VP_ANNOTATION_KEY);
-    REQUIRE(ViewPointGenVP::ViewPointFieldFilters     == ViewPointKeys::VP_FILTERS_KEY);
     REQUIRE(ViewPointGenVP::ViewPointFieldPosLat      == ViewPointKeys::VP_POS_LAT_KEY);
     REQUIRE(ViewPointGenVP::ViewPointFieldPosLon      == ViewPointKeys::VP_POS_LON_KEY);
     REQUIRE(ViewPointGenVP::ViewPointFieldWinLat      == ViewPointKeys::VP_POS_WIN_LAT_KEY);
@@ -52,4 +52,134 @@ TEST_CASE("ViewPointGenVP scanForFeatures finds annotation features", "[viewpoin
     REQUIRE(features.size() == 1);
 
     REQUIRE(ViewPointGenVP::scanForFeatures(vp, { "grid" }).empty());
+}
+
+TEST_CASE("view point load_data decides whether a view point loads data", "[viewpoint]")
+{
+    nlohmann::json vp = { { "id", 1 }, { "type", "Saved" } };
+
+    SECTION("missing key loads no data")
+    {
+        CHECK(!view_point_load::loadsData(vp));
+        CHECK(view_point_load::loadData(vp) == nullptr);
+    }
+
+    SECTION("null loads no data")
+    {
+        vp[ "load_data" ] = nullptr;
+
+        CHECK(!view_point_load::loadsData(vp));
+    }
+
+    SECTION("object loads data")
+    {
+        vp[ "load_data" ] = { { "data_source_types", "all" }, { "data_sources", "all" } };
+
+        REQUIRE(view_point_load::loadsData(vp));
+        CHECK(view_point_load::loadData(vp) == &vp.at("load_data"));
+        CHECK(view_point_load::checkLoadData(vp.at("load_data")).empty());
+    }
+
+    SECTION("explicit lists are valid")
+    {
+        nlohmann::json load_data = { { "data_source_types", { "Radar" } },
+                                     { "data_sources", nlohmann::json::array({ { 12750, { 0, 1 } } }) } };
+
+        CHECK(view_point_load::checkLoadData(load_data).empty());
+
+        load_data[ "data_sources" ] = { { "12750", { 0, 1 } } };
+        CHECK(view_point_load::checkLoadData(load_data).empty());
+    }
+
+    SECTION("a missing required key is an error")
+    {
+        CHECK(!view_point_load::checkLoadData({ { "data_sources", "all" } }).empty());
+        CHECK(!view_point_load::checkLoadData({ { "data_source_types", "all" } }).empty());
+        CHECK(!view_point_load::checkLoadData(nlohmann::json::object()).empty());
+    }
+
+    SECTION("a value that is neither a list nor all is an error")
+    {
+        CHECK(!view_point_load::checkLoadData({ { "data_source_types", "some" }, { "data_sources", "all" } }).empty());
+        CHECK(!view_point_load::checkLoadData({ { "data_source_types", "all" }, { "data_sources", 5 } }).empty());
+    }
+}
+
+TEST_CASE("ViewPointGenVP writes load_data only if it loads data", "[viewpoint]")
+{
+    ViewPointGenVP vp("Figure", 0, "Histogram");
+
+    SECTION("default loads no data")
+    {
+        nlohmann::json j;
+        vp.toJSON(j);
+
+        CHECK(!j.contains("load_data"));
+        CHECK(!view_point_load::loadsData(j));
+    }
+
+    SECTION("data loading writes both required keys and the filters")
+    {
+        vp.enableDataLoading().filters().addFilter(std::make_unique<ViewPointGenFilterUTN>(4));
+
+        nlohmann::json j;
+        vp.toJSON(j);
+
+        REQUIRE(view_point_load::loadsData(j));
+
+        const auto& load_data = j.at("load_data");
+        CHECK(view_point_load::checkLoadData(load_data).empty());
+        CHECK(load_data.at("data_source_types") == "all");
+        CHECK(load_data.at("data_sources") == "all");
+        CHECK(load_data.at("filters").contains("UTNs"));
+        CHECK(!j.contains("filters"));
+    }
+}
+
+TEST_CASE("view point import checks load_data", "[viewpoint]")
+{
+    auto collection = [] (const nlohmann::json& view_point)
+    {
+        nlohmann::json j;
+        j[ ViewPointKeys::VP_COLLECTION_CONTENT_TYPE_KEY    ] = ViewPointKeys::VP_COLLECTION_CONTENT_TYPE;
+        j[ ViewPointKeys::VP_COLLECTION_CONTENT_VERSION_KEY ] = ViewPointKeys::VP_COLLECTION_CONTENT_VERSION;
+        j[ ViewPointKeys::VP_COLLECTION_ARRAY_KEY           ] = nlohmann::json::array({ view_point });
+        return j;
+    };
+
+    nlohmann::json vp;
+    vp[ ViewPointKeys::VP_ID_KEY   ] = 1;
+    vp[ ViewPointKeys::VP_TYPE_KEY ] = "Saved";
+
+    std::string err;
+
+    SECTION("no load_data is valid")
+    {
+        CHECK(ViewPoint::isValidJSON(collection(vp), "", &err));
+    }
+
+    SECTION("null load_data is valid")
+    {
+        vp[ ViewPointKeys::VP_LOAD_DATA_KEY ] = nullptr;
+        CHECK(ViewPoint::isValidJSON(collection(vp), "", &err));
+    }
+
+    SECTION("complete load_data is valid")
+    {
+        vp[ ViewPointKeys::VP_LOAD_DATA_KEY ] = view_point_load::loadAllData();
+        CHECK(ViewPoint::isValidJSON(collection(vp), "", &err));
+    }
+
+    SECTION("load_data without data_sources is rejected")
+    {
+        vp[ ViewPointKeys::VP_LOAD_DATA_KEY ][ ViewPointKeys::VP_DS_TYPES_KEY ] = ViewPointKeys::VP_LOAD_ALL;
+        CHECK(!ViewPoint::isValidJSON(collection(vp), "", &err));
+        CHECK(err.find(ViewPointKeys::VP_DS_KEY) != std::string::npos);
+    }
+
+    SECTION("load_data that is no object is rejected")
+    {
+        vp[ ViewPointKeys::VP_LOAD_DATA_KEY ] = "all";
+        CHECK(!ViewPoint::isValidJSON(collection(vp), "", &err));
+    }
 }

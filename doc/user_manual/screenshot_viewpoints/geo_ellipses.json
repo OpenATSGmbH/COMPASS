@@ -1,0 +1,69 @@
+{
+    "id": 1,
+    "name": "Ellipses Example",
+    "type": "Saved",
+    "status": "open",
+    "position_latitude": 45.5,
+    "position_longitude": 15.0,
+    "position_window_latitude": 5.0,
+    "position_window_longitude": 5.0,
+    "annotations": [
+        {
+            "name": "Ellipses",
+            "symbol_color": "#0000FF",
+            "hidden": false,
+            "features": [
+                {
+                    "type": "ellipses",
+                    "geometry": {
+                        "coordinates": [
+                            [
+                                44.0,
+                                14.0
+                            ],
+                            [
+                                44.0,
+                                16.0
+                            ],
+                            [
+                                47.0,
+                                16.0
+                            ],
+                            [
+                                45.0,
+                                15.0
+                            ]
+                        ],
+                        "sizes": [
+                            [
+                                10000.0,
+                                20000.0,
+                                1500000
+                            ],
+                            [
+                                20000.0,
+                                30000.0,
+                                300000000
+                            ],
+                            [
+                                50000.0,
+                                60000.0,
+                                50000433
+                            ],
+                            [
+                                80000.0,
+                                90000.0,
+                                2
+                            ]
+                        ]
+                    },
+                    "properties": {
+                        "color": "#0000FF",
+                        "line_width": 2.7,
+                        "num_points": 32
+                    }
+                }
+            ]
+        }
+    ]
+}

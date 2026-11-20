@@ -407,6 +407,9 @@ void CompassRoot::connectManagers()
                      filter_manager_.get(), &FilterManager::dataSourcesChangedSlot);
     QObject::connect(context_manager_.get(), &context::DBContextManager::dataSourcesChangedSignal,
                      filter_manager_.get(), &FilterManager::dataSourcesChangedSlot);
+    // the tracker track number filter shows one row per tracker line with inserted data
+    QObject::connect(context_manager_.get(), &context::DBContextManager::countsChangedSignal,
+                     filter_manager_.get(), &FilterManager::dataSourcesChangedSlot);
 
     QObject::connect(context_manager_.get(), &context::DBContextManager::activeContextChangedSignal,
                      filter_manager_.get(), &FilterManager::sectorsChangedSlot);

@@ -47,6 +47,7 @@ SimpleReconstructorWidget::SimpleReconstructorWidget(SimpleReconstructor& recons
     QVBoxLayout* main_layout = new QVBoxLayout();
 
     QTabWidget* tab_widget = new QTabWidget();
+    tab_widget->setObjectName("scoring_um_tab_widget");
 
     // main widget
     main_widget_.reset(new ReconstructorMainWidget(reconstructor, tab_widget));

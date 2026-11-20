@@ -198,6 +198,61 @@ bool RTCommandUIGet::run_impl()
         result        = v;
         result_string = v.dump();
     }
+    else if (what == "screen_geometry")
+    {
+        //position on the screen and size, in layout pixels, e.g. to crop a desktop screenshot
+        //(OpenGL widgets are missing in a QWidget::grab() image)
+        const QPoint top_left = receiver.second->mapToGlobal(QPoint(0, 0));
+
+        nlohmann::json v;
+        v[ "x"      ] = top_left.x();
+        v[ "y"      ] = top_left.y();
+        v[ "width"  ] = receiver.second->width();
+        v[ "height" ] = receiver.second->height();
+
+        //the part not clipped by the parents, e.g. of a widget inside a scroll area. Not
+        //visibleRegion(), it also leaves out the area covered by the children. A window, e.g. a popup,
+        //is not clipped by the widget it belongs to
+        QRect visible(top_left, receiver.second->size());
+        for (QWidget* p = receiver.second->isWindow() ? nullptr : receiver.second->parentWidget(); p; p = p->parentWidget())
+        {
+            visible &= QRect(p->mapToGlobal(QPoint(0, 0)), p->size());
+            if (p->isWindow())
+                break;
+        }
+
+        v[ "visible" ][ "x"      ] = visible.x();
+        v[ "visible" ][ "y"      ] = visible.y();
+        v[ "visible" ][ "width"  ] = visible.width();
+        v[ "visible" ][ "height" ] = visible.height();
+
+        result        = v;
+        result_string = v.dump();
+    }
+    else if (what == "objects")
+    {
+        //object paths of the named descendant widgets, with class and visibility, to find the
+        //path of a widget
+        nlohmann::json v = nlohmann::json::array();
+
+        for (auto w : receiver.second->findChildren<QWidget*>())
+        {
+            if (w->objectName().isEmpty() || w->objectName().startsWith("qt_"))
+                continue;
+
+            QStringList path;
+            for (QWidget* p = w; p && p != receiver.second; p = p->parentWidget())
+                if (!p->objectName().isEmpty() && !p->objectName().startsWith("qt_"))
+                    path.prepend(p->objectName());
+
+            v.push_back({ { "path", path.join(".").toStdString() },
+                          { "class", w->metaObject()->className() },
+                          { "visible", w->isVisible() } });
+        }
+
+        result        = v;
+        result_string = v.dump(4);
+    }
     else if (what.startsWith("grab:"))
     {
         //save an image of the widget as rendered by the application (no desktop screenshot needed)

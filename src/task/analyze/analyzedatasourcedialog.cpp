@@ -23,7 +23,7 @@
 #include "db_context_manager.h"
 #include "sectorlayer.h"
 #include "data_source.h"
-#include "reportfigurebackgroundwidget.h"
+#include "reportfiguresettingswidget.h"
 #include "ui_test_common.h"
 
 #include <QCheckBox>
@@ -422,6 +422,7 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
 
     // data exclusions of the evaluation: target use flags, excluded time windows
     auto* eval_excl_cb = new QCheckBox();
+    UI_TEST_OBJ_NAME(eval_excl_cb, "use_eval_exclusions_check");
     eval_excl_cb->setChecked(task_.useEvalExclusions());
     eval_excl_cb->setToolTip("Leave out the targets and time windows excluded in the evaluation "
                              "(targets not used, excluded time windows per target and global)");
@@ -437,6 +438,7 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
         const auto& layers = task_.manager().dbContextManager().sectorLayers();
 
         auto* sectors_cb = new QCheckBox();
+        UI_TEST_OBJ_NAME(sectors_cb, "limit_by_sectors_check");
         sectors_cb->setChecked(task_.limitBySectors());
         sectors_cb->setEnabled(!layers.empty());
         sectors_cb->setToolTip(layers.empty()
@@ -460,6 +462,7 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
                     continue;
                 const std::string name = layer->name();
                 auto* cb = new QCheckBox(QString::fromStdString(name));
+                UI_TEST_OBJ_NAME(cb, QString::fromStdString("sector_" + name + "_check"));
                 cb->setChecked(task_.useSector(name));
                 connect(cb, &QCheckBox::toggled, this, [this, name](bool on) {
                     if (updating_ui_) return;
@@ -539,13 +542,18 @@ QWidget* AnalyzeDataSourceDialog::buildReportWidget()
             });
     form->addRow("Max cells per axis", max_spin);
 
-    auto* background = new ReportFigureBackgroundWidget(
+    // the inspectors have their own number of histogram bars
+    auto* figure_settings = new ReportFigureSettingsWidget(
         task_.manager().dbContextManager(),
-        [ this ] () { return task_.reportFigureDefaultHiddenLayers(); });
-    background->setBackground(task_.reportFigureBackgroundConfig());
-    connect(background, &ReportFigureBackgroundWidget::backgroundChangedSignal, this,
-            [ this, background ] () { task_.reportFigureBackgroundConfig(background->background()); });
-    outer->addWidget(background);
+        [ this ] () { return task_.reportFigureDefaultHiddenLayers(); },
+        false);
+    figure_settings->setOptions(task_.reportFigureOptionsConfig());
+    figure_settings->setBackground(task_.reportFigureBackgroundConfig());
+    connect(figure_settings, &ReportFigureSettingsWidget::optionsChangedSignal, this,
+            [ this, figure_settings ] () { task_.reportFigureOptionsConfig(figure_settings->options()); });
+    connect(figure_settings, &ReportFigureSettingsWidget::backgroundChangedSignal, this,
+            [ this, figure_settings ] () { task_.reportFigureBackgroundConfig(figure_settings->background()); });
+    outer->addWidget(figure_settings);
     outer->addStretch(1);
 
     return w;

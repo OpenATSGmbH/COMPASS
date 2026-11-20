@@ -62,6 +62,7 @@ ReconstructorTaskDialog::ReconstructorTaskDialog(ReconstructorTask& task, QWidge
     combo_layout->setFormAlignment(Qt::AlignRight | Qt::AlignTop);
 
     reconstructor_box_ = new QComboBox();
+    reconstructor_box_->setObjectName("method_combo");
     reconstructor_box_->addItem(QString::fromStdString(ReconstructorTask::ScoringUMReconstructorName));
 
     const auto& license_manager = task_.manager().licenseManager();
@@ -101,6 +102,7 @@ ReconstructorTaskDialog::ReconstructorTaskDialog(ReconstructorTask& task, QWidge
     main_layout->addLayout(combo_layout);
 
     reconstructor_widget_stack_ = new QStackedWidget();
+    reconstructor_widget_stack_->setObjectName("reconstructor_stack");
 
     // one widget per selectable reconstructor, same order as the combo box (index = stack index)
     for (int i = 0; i < reconstructor_box_->count(); ++i)
@@ -140,12 +142,14 @@ ReconstructorTaskDialog::ReconstructorTaskDialog(ReconstructorTask& task, QWidge
     QHBoxLayout* button_layout = new QHBoxLayout();
 
     cancel_button_ = new QPushButton("Cancel");
+    cancel_button_->setObjectName("cancel_button");
     connect(cancel_button_, &QPushButton::clicked, this, &QDialog::reject);
     button_layout->addWidget(cancel_button_);
 
     button_layout->addStretch();
 
     run_button_ = new QPushButton("Run");
+    run_button_->setObjectName("run_button");
     connect(run_button_, &QPushButton::clicked, this, &QDialog::accept);
     button_layout->addWidget(run_button_);
 

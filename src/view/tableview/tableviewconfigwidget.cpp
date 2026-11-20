@@ -102,6 +102,7 @@ TableViewConfigWidget::TableViewConfigWidget(TableViewWidget* view_widget, QWidg
     }
 
     export_button_ = new QPushButton("Export");
+    export_button_->setObjectName("export_button");
     connect(export_button_, SIGNAL(clicked(bool)), this, SLOT(exportSlot()));
     getMainLayout()->addWidget(export_button_);
 }

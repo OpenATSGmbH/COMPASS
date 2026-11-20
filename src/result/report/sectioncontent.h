@@ -78,12 +78,6 @@ struct SectionContentViewable
         return *this;
     }
 
-    SectionContentViewable& setRenderDelayMS(int delay)
-    {
-        render_delay_msec = delay;
-        return *this;
-    }
-
     SectionContentViewable& setOnDemand()
     {
         on_demand = true;
@@ -92,7 +86,6 @@ struct SectionContentViewable
 
     ViewableFunc viewable_func;
     std::string  caption;
-    int          render_delay_msec = 0;
     bool         on_demand         = false;
 };
 

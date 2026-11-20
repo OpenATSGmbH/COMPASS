@@ -300,6 +300,7 @@ unsigned int ToolBox::addTool(ToolBoxWidget* tool)
     std::string label = Utils::String::compress(labels, '\n');
 
     auto button = new DeckButton;
+    button->setObjectName(QString::fromStdString("toolbox_" + Utils::Files::normalizeFilename(name, true) + "_button"));
 
     int tool_idx = (int)tools_.size();
 

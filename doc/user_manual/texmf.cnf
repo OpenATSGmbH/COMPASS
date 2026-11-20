@@ -1,0 +1,14 @@
+% Local TeX configuration for the COMPASS user manual.
+%
+% Picked up via TEXMFCNF set in the Makefile. Bumps the runtime memory
+% allowances so that the document (large appendix lstlistings, many figures,
+% many cross-references) fits within pdflatex's working memory.
+%
+% extra_mem_top / extra_mem_bot are runtime values applied when the format
+% is loaded; they do not require fmtutil --byfmt pdflatex to take effect.
+
+extra_mem_top  = 20000000
+extra_mem_bot  = 20000000
+pool_size      = 12500000
+buf_size       = 800000
+font_mem_size  = 16000000

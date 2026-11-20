@@ -22,7 +22,7 @@
                 "grid_num_cells_x": 256,
                 "grid_num_cells_y": 256,
                 "grid_pixels_per_cell": 5,
-                "histogram_num_bins": 20,
+                "histogram_num_bins": 10,
                 "line_id_ref": 0,
                 "line_id_tst": 0,
                 "load_timestamp_begin": "2023-09-21 21:24:59.048",

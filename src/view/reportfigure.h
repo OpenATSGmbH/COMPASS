@@ -19,6 +19,7 @@
 
 #include "plotmetadata.h"
 #include "griddisplaydata.h"
+#include "reportfigureoptions.h"
 #include "json_fwd.hpp"
 
 #include <QSize>
@@ -68,15 +69,9 @@ struct RenderEntry
     bool                                    geographic = false; // a grid over longitude / latitude
     std::vector<GridTextLabel>              labels;     // the text features of the view point
     boost::optional<GridBackgroundSettings> background; // the background set of the view point
+
+    QSize export_layout_size = ExportLayoutSize; // of the view point, also gives the height for width in the GUI
 };
-
-/// An exported image has the layout of this size, with ExportScale * ExportScale pixels per layout pixel.
-/// More pixels alone make the chart texts smaller, their font size is fixed.
-extern const QSize ExportLayoutSize;
-extern const double ExportScale;
-
-/// true: the view point loads no data, it shows its annotations only
-bool loadsNoData(const nlohmann::json& view_point);
 
 /// true if the annotations (the annotation array of a view point) hold a grid over longitude / latitude.
 /// The tasks write the background set only into such view points.
@@ -86,26 +81,28 @@ bool hasGeographicGrid(const nlohmann::json& annotations);
  * Decides how a report figure with this view point is drawn.
  * Entries: one render widget per entry. The histograms first, then the scatterplots, then the grids, each
  * kind in the order of its view.
- * Empty: the figure is shown by the views ("View" button, image of each view with content).
+ * Empty: a view figure (the view point loads data), or a figure that cannot be drawn.
  *
  * A figure gets render widgets if its view point loads no data and holds histogram, scatter series and grid
  * annotations only. With a longitude / latitude grid the view point can also hold overlay features (points,
  * lines, error ellipses, text): the texts are the labels of the geographic grids, the other overlays are not
- * drawn. The caller leaves out the figures that are locked or built on demand.
+ * drawn. The caller leaves out the locked figures and loads the content of on-demand figures first.
  */
 std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point);
 
-/// The render widget of an entry, with the display of a report figure: legend at the right side, no
-/// interaction (mouse wheel ignored, no tools, no drag), no OpenGL, and the height follows the width
-/// with the ratio of the export image. A geographic grid without a background set in its view point gets
-/// GridBackgroundSettings::reportDefaults().
+/// The render widget of an entry, with the display of a report figure: legend at the right side, narrow
+/// margins, no interaction (mouse wheel ignored, no tools, no drag), no OpenGL, and the height follows the width
+/// with the ratio of the export layout size of the entry. A histogram of one series has a log y axis, a histogram of several
+/// (stacked) series a linear one, unless the annotation sets the scale. A geographic grid without a
+/// background set in its view point gets GridBackgroundSettings::reportDefaults().
 /// Created without a model object or a view. ctx_man: gives the sector lines of geographic grids, none
 /// without it.
 std::unique_ptr<ViewRenderWidget> createRenderWidget(const RenderEntry& entry,
                                                      const context::DBContextManager* ctx_man = nullptr,
                                                      QWidget* parent = nullptr);
 
-/// The image of an entry for the report export, with the light palette.
+/// The image of an entry for the report export, with the light palette: the export layout size of the entry
+/// times ExportScale.
 bool renderExportImage(const RenderEntry& entry, QImage& image, const context::DBContextManager* ctx_man = nullptr);
 
 }

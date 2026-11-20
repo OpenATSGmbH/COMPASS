@@ -177,6 +177,14 @@ namespace
 
         return series;
     }
+
+    /// narrow: the narrow chart margin on each side, else the margins of the style (-1)
+    void setLegendMargins(ColorLegendWidget& legend, bool narrow)
+    {
+        const int margin = narrow ? ChartView::NarrowMargin : -1;
+
+        legend.layout()->setContentsMargins(margin, margin, margin, margin);
+    }
 }
 
 /**
@@ -284,6 +292,9 @@ void GridViewRenderWidget::redraw()
     //the legend of the color map, hidden without
     legend_widget_->setLegend(legend_);
     legend_widget_->setVisible(colormap_.has_value());
+
+    setLegendMargins(*legend_widget_, narrowMargins());
+    contentLayout()->setSpacing(narrowMargins() ? 0 : -1);
 }
 
 /**
@@ -726,6 +737,8 @@ bool GridViewRenderWidget::render(QImage& image, const QSize& size, double scale
             legend->setPalette(*fixedPalette());
 
         legend->setLegend(legend_);
+
+        setLegendMargins(*legend, narrowMargins());
 
         legend_width = std::min(legend->sizeHint().width(), size.width() / 2);
     }

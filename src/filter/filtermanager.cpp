@@ -376,42 +376,59 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
     loginf;
     traced_assert(vp);
 
-    const json& data = vp->data();
+    const json* load_data = view_point_load::loadData(vp->data());
+
+    if (load_data)
+    {
+        std::string error = view_point_load::checkLoadData(*load_data);
+
+        if (!error.empty())
+        {
+            logerr << "view point data not loaded: " << error;
+            load_data = nullptr;
+        }
+    }
+
+    if (!load_data)
+    {
+        logdbg << "load no data";
+
+        loadNoData();
+        return;
+    }
 
     auto& ctx_man = dbContextManager();
 
-    // add all data source types that need loading
-    if (data.contains(ViewPointKeys::VP_DS_TYPES_KEY)) // the listed ones should be loaded
-    {
-        const json& data_source_types  = data.at(ViewPointKeys::VP_DS_TYPES_KEY);
+    const json& data_source_types = load_data->at(ViewPointKeys::VP_DS_TYPES_KEY);
 
+    if (data_source_types.is_array())
+    {
         std::set<std::string> ds_types = data_source_types.get<std::set<std::string>>();
 
         logdbg << "load " << ds_types.size() << " ds_types";
 
         ctx_man.setLoadOnlyDSTypes(ds_types);
     }
-    else // all should be loaded
+    else
     {
         logdbg << "load all ds_types";
 
         ctx_man.setLoadDSTypes(true);
     }
 
-    if (data.contains(ViewPointKeys::VP_SELECTED_RECNUMS_KEY))
+    if (load_data->contains(ViewPointKeys::VP_SELECTED_RECNUMS_KEY))
     {
-        auto& selected = data.at(ViewPointKeys::VP_SELECTED_RECNUMS_KEY);
+        auto& selected = load_data->at(ViewPointKeys::VP_SELECTED_RECNUMS_KEY);
         traced_assert(selected.is_array());
         std::vector<std::uint64_t> vec = selected.get<std::vector<std::uint64_t>>();
 
         dbcontent_man_.storeSelectedRecNums(vec);
     }
 
-    // add all data sources that need loading
-    if (data.contains(ViewPointKeys::VP_DS_KEY)) // the listed ones should be loaded
-    {
-        const json& data_sources  = data.at(ViewPointKeys::VP_DS_KEY);
+    const json& data_sources = load_data->at(ViewPointKeys::VP_DS_KEY);
 
+    if (!data_sources.is_string())
+    {
         std::map<unsigned int, std::set<unsigned int>> ds_ids
                 = data_sources.get<std::map<unsigned int, std::set<unsigned int>>>(); // ds_id + line strs
 
@@ -419,7 +436,7 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
 
         ctx_man.setLoadOnlyDataSources(ds_ids);
     }
-    else // all should be loaded
+    else
     {
         logdbg << "load all ds_ids";
 
@@ -428,13 +445,13 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
     }
 
     // add filters
-    use_filters_ = data.contains(ViewPointKeys::VP_FILTERS_KEY);
+    use_filters_ = load_data->contains(ViewPointKeys::VP_FILTERS_KEY);
 
     disableAllFilters();
 
-    if (data.contains(ViewPointKeys::VP_FILTERS_KEY))
+    if (use_filters_)
     {
-        const json& filters = data.at(ViewPointKeys::VP_FILTERS_KEY);
+        const json& filters = load_data->at(ViewPointKeys::VP_FILTERS_KEY);
 
         logdbg << "filter data '" << filters.dump(4) << "'";
 
@@ -468,23 +485,42 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
         widget_->updateUseFilters();
 }
 
+void FilterManager::loadNoData()
+{
+    // no data source types loads nothing, the data source selection of the user stays unchanged
+    dbContextManager().setLoadOnlyDSTypes({});
+
+    use_filters_ = false;
+    disableAllFilters();
+
+    if (widget_)
+        widget_->updateUseFilters();
+}
+
 void FilterManager::setConfigInViewPoint (nlohmann::json& data)
 {
     loginf;
 
     auto& ctx_man = dbContextManager();
 
-    if (ctx_man.dsTypeFiltered()) // ds types filters active
-        data[ViewPointKeys::VP_DS_TYPES_KEY] = ctx_man.wantedDSTypes(); // add all data sources that need loading
+    json& load_data = data[ViewPointKeys::VP_LOAD_DATA_KEY];
+    load_data = json::object();
 
-    if (ctx_man.loadDataSourcesFiltered()) // ds filters active
-        data[ViewPointKeys::VP_DS_KEY] = ctx_man.getLoadDataSources(); // add all data sources that need loading
+    if (ctx_man.dsTypeFiltered())
+        load_data[ViewPointKeys::VP_DS_TYPES_KEY] = ctx_man.wantedDSTypes();
+    else
+        load_data[ViewPointKeys::VP_DS_TYPES_KEY] = ViewPointKeys::VP_LOAD_ALL;
+
+    if (ctx_man.loadDataSourcesFiltered())
+        load_data[ViewPointKeys::VP_DS_KEY] = ctx_man.getLoadDataSources();
+    else
+        load_data[ViewPointKeys::VP_DS_KEY] = ViewPointKeys::VP_LOAD_ALL;
 
     // add filters
     if (use_filters_)
     {
-        data[ViewPointKeys::VP_FILTERS_KEY] = json::object();
-        json& filters = data.at(ViewPointKeys::VP_FILTERS_KEY);
+        load_data[ViewPointKeys::VP_FILTERS_KEY] = json::object();
+        json& filters = load_data.at(ViewPointKeys::VP_FILTERS_KEY);
 
         for (auto& fil_it : filters_)
         {

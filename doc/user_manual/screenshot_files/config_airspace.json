@@ -1,0 +1,93 @@
+{
+    "air_space_sector_definition": {
+        "air_space_sectors": [
+            {
+                "name": "LOWW_TMA_LOW",
+                "own_height_min": "0",
+                "own_height_max": "9500",
+                "own_volume": "1",
+                "used_for_checking": "1",
+                "geographic_points": [
+                    {
+                        "index": "0",
+                        "latitude": "48.45",
+                        "longitude": "16.0"
+                    },
+                    {
+                        "index": "1",
+                        "latitude": "48.45",
+                        "longitude": "17.0"
+                    },
+                    {
+                        "index": "2",
+                        "latitude": "47.8",
+                        "longitude": "17.0"
+                    },
+                    {
+                        "index": "3",
+                        "latitude": "47.8",
+                        "longitude": "16.0"
+                    }
+                ]
+            },
+            {
+                "name": "LOWW_TMA_HIGH",
+                "own_height_min": "9500",
+                "own_height_max": "24500",
+                "own_volume": "1",
+                "used_for_checking": "1",
+                "geographic_points": [
+                    {
+                        "index": "0",
+                        "latitude": "48.6",
+                        "longitude": "15.8"
+                    },
+                    {
+                        "index": "1",
+                        "latitude": "48.6",
+                        "longitude": "17.2"
+                    },
+                    {
+                        "index": "2",
+                        "latitude": "47.6",
+                        "longitude": "17.2"
+                    },
+                    {
+                        "index": "3",
+                        "latitude": "47.6",
+                        "longitude": "15.8"
+                    }
+                ]
+            },
+            {
+                "name": "LOWS_TMA",
+                "own_height_min": "0",
+                "own_height_max": "13500",
+                "own_volume": "1",
+                "used_for_checking": "1",
+                "geographic_points": [
+                    {
+                        "index": "0",
+                        "latitude": "48.0",
+                        "longitude": "12.7"
+                    },
+                    {
+                        "index": "1",
+                        "latitude": "48.0",
+                        "longitude": "13.4"
+                    },
+                    {
+                        "index": "2",
+                        "latitude": "47.6",
+                        "longitude": "13.4"
+                    },
+                    {
+                        "index": "3",
+                        "latitude": "47.6",
+                        "longitude": "12.7"
+                    }
+                ]
+            }
+        ]
+    }
+}

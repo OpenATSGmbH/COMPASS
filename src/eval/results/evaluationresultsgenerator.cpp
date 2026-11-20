@@ -124,6 +124,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
 
     QProgressDialog postprocess_dialog ("", "", 0, num_req_evals, Dialogs::statusDialogParent());
     postprocess_dialog.setWindowTitle("Evaluating");
+    postprocess_dialog.setObjectName("evaluation_progress_dialog");
     postprocess_dialog.setCancelButton(nullptr);
     postprocess_dialog.setWindowModality(Qt::ApplicationModal);
     // do not steal os focus from other applications when popping up

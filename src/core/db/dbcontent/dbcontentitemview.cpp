@@ -108,6 +108,7 @@ DBContentItemView::DBContentItemView(DBContentItemModel& model, QWidget* parent)
 
     // Item tree view
     tree_view_ = new QTreeView(this);
+    tree_view_->setObjectName("item_tree");
     tree_view_->setModel(proxy_model_);
     tree_view_->setRootIsDecorated(false);
     //flat list of same-height rows: skips the per-row size hint computation

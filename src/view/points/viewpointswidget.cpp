@@ -60,6 +60,7 @@ ViewPointsWidget::ViewPointsWidget(ViewManager& view_manager)
     statusesChangedSlot(table_model_->statuses()); // needs first update
 
     table_view_ = new QTableView();
+    table_view_->setObjectName("view_points_table");
     table_view_->setModel(proxy_model_);
     table_view_->setSortingEnabled(true);
     table_view_->sortByColumn(0, Qt::AscendingOrder);
@@ -88,18 +89,22 @@ ViewPointsWidget::ViewPointsWidget(ViewManager& view_manager)
         QHBoxLayout* button_layout = new QHBoxLayout();
 
         import_button_ = new QPushButton("Import");
+        import_button_->setObjectName("view_points_import_button");
         connect (import_button_, &QPushButton::clicked, this, &ViewPointsWidget::importSlot);
         button_layout->addWidget(import_button_);
 
         delete_all_button_ = new QPushButton("Delete All");
+        delete_all_button_->setObjectName("view_points_delete_all_button");
         connect (delete_all_button_, &QPushButton::clicked, this, &ViewPointsWidget::deleteAllSlot);
         button_layout->addWidget(delete_all_button_);
 
         export_button_ = new QPushButton("Export");
+        export_button_->setObjectName("view_points_export_button");
         connect (export_button_, &QPushButton::clicked, this, &ViewPointsWidget::exportSlot);
         button_layout->addWidget(export_button_);
 
         export_pdf_button_ = new QPushButton("Export PDF");
+        export_pdf_button_->setObjectName("view_points_export_pdf_button");
         connect (export_pdf_button_, &QPushButton::clicked, this, &ViewPointsWidget::exportPDFSlot);
         button_layout->addWidget(export_pdf_button_);
 
@@ -263,26 +268,32 @@ void ViewPointsWidget::addToToolBar(QToolBar* tool_bar)
     auto action_prev = tool_bar->addAction("Select Previous [Up]");
     action_prev->setIcon(Utils::Files::IconProvider::getIcon("up.png"));
     connect(action_prev, &QAction::triggered, this, &ViewPointsWidget::selectPreviousSlot);
+    tool_bar->widgetForAction(action_prev)->setObjectName("view_points_previous_button");
 
     auto action_open = tool_bar->addAction("Set Selected Status Open [O]");
     action_open->setIcon(Utils::Files::IconProvider::getIcon("not_recommended.png"));
     connect(action_open, &QAction::triggered, this, &ViewPointsWidget::setSelectedOpenSlot);
+    tool_bar->widgetForAction(action_open)->setObjectName("view_points_open_button");
 
     auto action_closed = tool_bar->addAction("Set Selected Status Closed [C]");
     action_closed->setIcon(Utils::Files::IconProvider::getIcon("not_todo.png"));
     connect(action_closed, &QAction::triggered, this, &ViewPointsWidget::setSelectedClosedSlot);
+    tool_bar->widgetForAction(action_closed)->setObjectName("view_points_closed_button");
 
     auto action_todo = tool_bar->addAction("Set Selected Status ToDo [T]");
     action_todo->setIcon(Utils::Files::IconProvider::getIcon("todo.png"));
     connect(action_todo, &QAction::triggered, this, &ViewPointsWidget::setSelectedTodoSlot);
+    tool_bar->widgetForAction(action_todo)->setObjectName("view_points_todo_button");
 
     auto action_edit = tool_bar->addAction("Edit Comment [E]");
     action_edit->setIcon(Utils::Files::IconProvider::getIcon("comment.png"));
     connect(action_edit, &QAction::triggered, this, &ViewPointsWidget::editCommentSlot);
+    tool_bar->widgetForAction(action_edit)->setObjectName("view_points_edit_comment_button");
 
     auto action_next = tool_bar->addAction("Select Next [Down]");
     action_next->setIcon(Utils::Files::IconProvider::getIcon("down.png"));
     connect(action_next, &QAction::triggered, this, &ViewPointsWidget::selectNextSlot);
+    tool_bar->widgetForAction(action_next)->setObjectName("view_points_next_button");
 }
 
 void ViewPointsWidget::loadingStarted()

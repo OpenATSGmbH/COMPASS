@@ -1090,6 +1090,8 @@ boost::posix_time::time_duration DBContentManager::maxLatency() const
 void DBContentManager::showSurroundingData (unsigned int utn)
 {
     nlohmann::json::object_t data;
+    nlohmann::json& load_data = data[ViewPointKeys::VP_LOAD_DATA_KEY];
+    load_data = view_point_load::loadAllData();
 
     traced_assert(target_model_);
     traced_assert(target_model_->existsTarget(utn));
@@ -1110,14 +1112,14 @@ void DBContentManager::showSurroundingData (unsigned int utn)
     //    },
 
         // TODO_TIMESTAMP
-    data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(time_end);
-    data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] = Time::toString(time_begin);
+    load_data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(time_end);
+    load_data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] = Time::toString(time_begin);
 
     //    "Aircraft Address": {
     //    "Aircraft Address Values": "FEFE10"
     //    },
     if (target.aircraftAddresses().size())
-        data[ViewPointKeys::VP_FILTERS_KEY]["Aircraft Address"]["Aircraft Address Values"] =
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Aircraft Address"]["Aircraft Address Values"] =
             target.aircraftAddressesStr()+",NULL";
 
     //    "Mode 3/A Code": {
@@ -1125,7 +1127,7 @@ void DBContentManager::showSurroundingData (unsigned int utn)
     //    }
 
     if (target.modeACodes().size())
-        data[ViewPointKeys::VP_FILTERS_KEY]["Mode 3/A Codes"]["Mode 3/A Codes Values"] = target.modeACodesStr()+",NULL";
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Mode 3/A Codes"]["Mode 3/A Codes Values"] = target.modeACodesStr()+",NULL";
 
     //    VP_FILTERS_KEY: {
     //    "Barometric Altitude": {
@@ -1141,9 +1143,9 @@ void DBContentManager::showSurroundingData (unsigned int utn)
         float alt_max = target.modeCMax();
         alt_max += 300;
 
-        data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Maximum"] = alt_max;
-        data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Minimum"] = alt_min;
-        data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude NULL"] = true;
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Maximum"] = alt_max;
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Minimum"] = alt_min;
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude NULL"] = true;
     }
 
     //    "Position": {
@@ -1160,10 +1162,10 @@ void DBContentManager::showSurroundingData (unsigned int utn)
         double lon_eps = (target.longitudeMax() - target.longitudeMin()) / 10.0; // 10%
         lon_eps = min(lon_eps, 0.1); // 10% or 0.1 at max
 
-        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Maximum"] = to_string(target.latitudeMax()+lat_eps);
-        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Minimum"] = to_string(target.latitudeMin()-lat_eps);
-        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Maximum"] = to_string(target.longitudeMax()+lon_eps);
-        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Minimum"] = to_string(target.longitudeMin()-lon_eps);
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Maximum"] = to_string(target.latitudeMax()+lat_eps);
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Minimum"] = to_string(target.latitudeMin()-lat_eps);
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Maximum"] = to_string(target.longitudeMax()+lon_eps);
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Minimum"] = to_string(target.longitudeMin()-lon_eps);
     }
 
     setViewableDataConfig(data);
@@ -1172,6 +1174,8 @@ void DBContentManager::showSurroundingData (unsigned int utn)
 void DBContentManager::showSurroundingData (std::set<unsigned int> utns)
 {
     nlohmann::json::object_t data;
+    nlohmann::json& load_data = data[ViewPointKeys::VP_LOAD_DATA_KEY];
+    load_data = view_point_load::loadAllData();
 
     using namespace boost::posix_time;
 
@@ -1279,14 +1283,14 @@ void DBContentManager::showSurroundingData (std::set<unsigned int> utns)
     //    },
 
         // TODO_TIMESTAMP
-    data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(sum_time_end);
-    data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] = Time::toString(sum_time_begin);
+    load_data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(sum_time_end);
+    load_data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] = Time::toString(sum_time_begin);
 
     //    "Aircraft Address": {
     //    "Aircraft Address Values": "FEFE10"
     //    },
     if (aircraft_adresses.size())
-        data[ViewPointKeys::VP_FILTERS_KEY]["Aircraft Address"]["Aircraft Address Values"] =
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Aircraft Address"]["Aircraft Address Values"] =
             String::compress(aircraft_adresses,',')+",NULL";
 
     //    "Mode 3/A Code": {
@@ -1294,7 +1298,7 @@ void DBContentManager::showSurroundingData (std::set<unsigned int> utns)
     //    }
 
     if (mode_a_codes.size())
-        data[ViewPointKeys::VP_FILTERS_KEY]["Mode 3/A Codes"]["Mode 3/A Codes Values"] =
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Mode 3/A Codes"]["Mode 3/A Codes Values"] =
             String::compress(mode_a_codes,',')+",NULL";
 
     //    VP_FILTERS_KEY: {
@@ -1306,9 +1310,9 @@ void DBContentManager::showSurroundingData (std::set<unsigned int> utns)
 
     if (!first_alt)
     {
-        data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Maximum"] = sum_alt_max;
-        data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Minimum"] = sum_alt_min;
-        data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude NULL"] = true;
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Maximum"] = sum_alt_max;
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Minimum"] = sum_alt_min;
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude NULL"] = true;
     }
 
     //    "Position": {
@@ -1320,10 +1324,10 @@ void DBContentManager::showSurroundingData (std::set<unsigned int> utns)
 
     if (!first_pos)
     {
-        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Maximum"] = to_string(sum_lat_max);
-        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Minimum"] = to_string(sum_lat_min);
-        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Maximum"] = to_string(sum_lon_max);
-        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Minimum"] = to_string(sum_lon_min);
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Maximum"] = to_string(sum_lat_max);
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Minimum"] = to_string(sum_lat_min);
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Maximum"] = to_string(sum_lon_max);
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Minimum"] = to_string(sum_lon_min);
 
     }
 
@@ -1397,7 +1401,9 @@ void DBContentManager::showUTN (unsigned int utn)
     loginf << "utn " << utn;
 
     nlohmann::json data;
-    data[ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
+    nlohmann::json& load_data = data[ViewPointKeys::VP_LOAD_DATA_KEY];
+    load_data = view_point_load::loadAllData();
+    load_data[ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
 
     logdbg << "showing";
     setViewableDataConfig(data);
@@ -1412,7 +1418,9 @@ void DBContentManager::showUTNs (std::set<unsigned int> utns)
     if (utns.size())
     {
         nlohmann::json data;
-        data[ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = String::compress(utns, ',');
+        nlohmann::json& load_data = data[ViewPointKeys::VP_LOAD_DATA_KEY];
+        load_data = view_point_load::loadAllData();
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = String::compress(utns, ',');
 
         loginf << "showing '" << String::compress(utns, ',') << "'";
         setViewableDataConfig(data);

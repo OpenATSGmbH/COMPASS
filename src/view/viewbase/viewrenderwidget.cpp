@@ -214,6 +214,16 @@ void ViewRenderWidget::setWheelIgnored(bool ignored)
 
 /**
  */
+void ViewRenderWidget::setNarrowMargins(bool narrow)
+{
+    narrow_margins_ = narrow;
+
+    if (isDrawn())
+        redraw();
+}
+
+/**
+ */
 void ViewRenderWidget::resetDrawState()
 {
     draw_state_ = RenderState::NotDrawn;

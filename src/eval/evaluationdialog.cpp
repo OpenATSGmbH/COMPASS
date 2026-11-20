@@ -47,6 +47,7 @@ EvaluationDialog::EvaluationDialog(EvaluationCalculator& calculator, QWidget* pa
     setWindowFlags(Qt::Window | Qt::WindowTitleHint | Qt::CustomizeWindowHint);
 
     setModal(true);
+    UI_TEST_OBJ_NAME(this, "evaluation_dialog");
 
     setMinimumSize(QSize(1000, 800));
 
@@ -56,15 +57,18 @@ EvaluationDialog::EvaluationDialog(EvaluationCalculator& calculator, QWidget* pa
     UI_TEST_OBJ_NAME(tab_widget, "tab_widget");
 
     main_tab_widget_.reset(new EvaluationMainTabWidget(calculator_, *this));
+    UI_TEST_OBJ_NAME(main_tab_widget_, "main_tab");
     tab_widget->addTab(main_tab_widget_.get(), "Main");
 
     // filter_widget_.reset(new EvaluationFilterTabWidget(calculator_));
     // tab_widget->addTab(filter_widget_.get(), "Filter");
 
     std_tab_widget_.reset(new EvaluationStandardTabWidget(calculator_));
+    UI_TEST_OBJ_NAME(std_tab_widget_, "standard_tab");
     tab_widget->addTab(std_tab_widget_.get(), "Standard");
 
     report_tab_widget_.reset(new EvaluationReportTabWidget(calculator_));
+    UI_TEST_OBJ_NAME(report_tab_widget_, "results_config_tab");
     tab_widget->addTab(report_tab_widget_.get(), "Results Config");
 
     main_layout->addWidget(tab_widget);
@@ -81,12 +85,14 @@ EvaluationDialog::EvaluationDialog(EvaluationCalculator& calculator, QWidget* pa
     QHBoxLayout* button_layout = new QHBoxLayout();
 
     cancel_button_ = new QPushButton("Cancel");
+    UI_TEST_OBJ_NAME(cancel_button_, "cancel_button");
     connect(cancel_button_, &QPushButton::clicked, this, &QDialog::reject);
     button_layout->addWidget(cancel_button_);
 
     button_layout->addStretch();
 
     run_button_ = new QPushButton("Run");
+    UI_TEST_OBJ_NAME(run_button_, "run_button");
     connect(run_button_, &QPushButton::clicked, this, &QDialog::accept);
     button_layout->addWidget(run_button_);
 

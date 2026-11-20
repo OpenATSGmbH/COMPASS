@@ -85,6 +85,12 @@ public:
     /// The chart does not use the mouse wheel, so a scroll area around it scrolls.
     void setWheelIgnored(bool ignored) { wheel_ignored_ = ignored; }
 
+    /// Chart margins of NarrowMargin in place of the default of Qt Charts, also as the lower limit of
+    /// reserveHorizontalLabelMargins(), and a legend without margins except for the gap to the plot.
+    void useNarrowMargins();
+
+    static constexpr int NarrowMargin = 6;
+
     /// Lays out the chart and the items of the view for the given size, for a view that is never
     /// shown. A hidden widget gets no resize event, which does this for a view on the screen.
     void layoutForSize(const QSize& size);
@@ -98,6 +104,7 @@ public:
     /// half of it reaches past the plot area, and the default margin is
     /// narrower than half a wide label such as a time of day.
     /// Recomputed from the current labels, so a zoom never widens it for good.
+    /// Never below the default margin of Qt Charts, or NarrowMargin after useNarrowMargins().
     static void reserveHorizontalLabelMargins(QtCharts::QChart* chart);
 
     /// The series the selection is drawn with, null unless the view uses

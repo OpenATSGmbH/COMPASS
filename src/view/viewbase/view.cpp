@@ -435,31 +435,6 @@ QImage View::renderView() const
 }
 
 /**
- */
-void View::prepareForRender()
-{
-    traced_assert(widget_);
-    widget_->prepareForRender();
-}
-
-/**
- */
-void View::setExporting(bool ok)
-{
-    traced_assert(widget_);
-    widget_->setExporting(ok);
-}
-
-/**
- * Asks the view widget if it shows any data.
- */
-bool View::hasScreenshotContent() const
-{
-    traced_assert(widget_);
-    return widget_->hasScreenshotContent();
-}
-
-/**
  * Reacts on a changed global load state in the view manager.
  */
 void View::viewManagerReloadStateChanged()

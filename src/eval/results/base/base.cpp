@@ -321,7 +321,10 @@ std::unique_ptr<nlohmann::json::object_t> Base::createViewable(const AnnotationO
             (*viewable_ptr)[ViewPointKeys::VP_POS_WIN_LAT_KEY] = calculator_.settings().result_detail_zoom_;
             (*viewable_ptr)[ViewPointKeys::VP_POS_WIN_LON_KEY] = calculator_.settings().result_detail_zoom_;
         }
-        (*viewable_ptr)[ViewPointKeys::VP_TIMESTAMP_KEY  ] = Utils::Time::toString(info.timestamp);
+
+        auto load_data_it = viewable_ptr->find(ViewPointKeys::VP_LOAD_DATA_KEY);
+        if (load_data_it != viewable_ptr->end() && load_data_it->second.is_object())
+            load_data_it->second[ViewPointKeys::VP_TIMESTAMP_KEY] = Utils::Time::toString(info.timestamp);
     }
 
     //init annotation array
@@ -348,6 +351,9 @@ std::unique_ptr<nlohmann::json::object_t> Base::createViewable(const AnnotationO
     if (report_figure::hasGeographicGrid(vp_anno_array))
         (*viewable_ptr)[ViewPointGenFeatureGrid::ViewPointFieldNameBackground] =
             calculator_.reportFigureBackground(sector_layer_.name()).toJSON();
+
+    (*viewable_ptr)[ReportFigureOptions::ViewPointFieldExportLayoutSize] =
+        calculator_.reportFigureOptionsConfig().exportLayoutSizeJSON();
 
     return viewable_ptr;
 }

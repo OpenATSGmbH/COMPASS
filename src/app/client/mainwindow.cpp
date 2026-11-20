@@ -911,18 +911,14 @@ void MainWindow::importAsterixRecordingSlot()
 {
     loginf;
 
-    QFileDialog dialog(this, "Import ASTERIX File(s)");
-    dialog.setViewMode(QFileDialog::Detail);
-    dialog.setFileMode(QFileDialog::ExistingFiles);
-    dialog.setDirectory(compass_.appState().lastUsedPath().c_str());
-
     ASTERIXImportTask& task = root_.taskManager().asterixImporterTask();
 
     task.source().setSourceType(ASTERIXImportSource::SourceType::FileASTERIX);
 
-    if (dialog.exec())
+    QStringList filenames = Dialogs::getOpenFileNames(this, "Import ASTERIX File(s)",
+                                                      compass_.appState().lastUsedPath().c_str());
+    if (!filenames.isEmpty())
     {
-        QStringList filenames = dialog.selectedFiles();
 
         vector<string> filenames_vec;
 
@@ -981,18 +977,15 @@ void MainWindow::importAsterixFromPCAPSlot()
 
     // task.runDialog(this);
 
-    QFileDialog dialog(this, "Import PCAP File(s)", QString(), "PCAP Files (*.pcap *.PCAP)");
-    dialog.setViewMode(QFileDialog::Detail);
-    dialog.setFileMode(QFileDialog::ExistingFiles);
-    dialog.setDirectory(compass_.appState().lastUsedPath().c_str());
-
     ASTERIXImportTask& task = root_.taskManager().asterixImporterTask();
 
     task.source().setSourceType(ASTERIXImportSource::SourceType::FilePCAP);
 
-    if (dialog.exec())
+    QStringList filenames = Dialogs::getOpenFileNames(this, "Import PCAP File(s)",
+                                                      compass_.appState().lastUsedPath().c_str(),
+                                                      "PCAP Files (*.pcap *.PCAP)");
+    if (!filenames.isEmpty())
     {
-        QStringList filenames = dialog.selectedFiles();
 
         vector<string> filenames_vec;
 
@@ -1048,7 +1041,7 @@ void MainWindow::importAsterixFromNetworkSlot()
 
 void MainWindow::importJSONRecordingSlot()
 {
-    string filename = QFileDialog::getOpenFileName(
+    string filename = Dialogs::getOpenFileName(
                           this, "Import JSON File", compass_.appState().lastUsedPath().c_str(),
                           "JSON Files (*.json *.zip)").toStdString();
 
@@ -1100,8 +1093,8 @@ void MainWindow::importGPSTrailSlot()
 
 void MainWindow::importViewPointsSlot()
 {
-    string filename = QFileDialog::getOpenFileName(this, "Import View Points",
-                                                   compass_.appState().lastUsedPath().c_str(), "*.json").toStdString();
+    string filename = Dialogs::getOpenFileName(this, "Import View Points",
+                                               compass_.appState().lastUsedPath().c_str(), "*.json").toStdString();
 
     if (filename.size() > 0)
     {

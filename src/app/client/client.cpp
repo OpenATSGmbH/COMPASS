@@ -276,6 +276,8 @@ Client::Client(int& argc,
         ("enable_event_log", po::bool_switch(&enable_event_log_), "collect warnings and errors in the event log")
         ("quit", po::bool_switch(&quit_), "quit after finishing all previous steps")
         ("no_highdpi", "disable Qt high-DPI scaling (fixes double-sized UI on some systems)")
+        ("bundled_font", po::value<float>(&bundled_font_size_),
+         "use the bundled Ubuntu font at the given point size, e.g. '11' for reproducible screenshots")
         ;
 
     // add hidden options
@@ -453,32 +455,42 @@ bool Client::run ()
         applyDarkMode(compass_->appState().darkMode());
 
         // make system your application font (applies to all widgets)
-        if (Utils::System::appDir() != nullptr)
+        if (Utils::System::appDir() != nullptr || bundled_font_size_ > 0)
         {
             QFont system_font = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
+
+            // --bundled_font: the Ubuntu font shipped in data/fonts/ubuntu at a fixed size,
+            // independent of the desktop settings
+            qreal   bundled_font_point_size = bundled_font_size_;
+            QString font_dir = QString::fromStdString(Utils::Files::getFontFilepath("ubuntu/", false));
 
 #ifdef _WIN32
             // Windows: the Ubuntu font shipped in data/fonts/ubuntu, so COMPASS looks as on Linux,
             // at the size of the Windows UI font (9 pt by default, follows the Windows text size)
-            const qreal   WindowsAppFontPointSize = system_font.pointSizeF();
-            const QString font_dir = QString::fromStdString(system_install_path_ + "data/fonts/ubuntu/");
-            bool fonts_loaded = true;
+            if (bundled_font_point_size <= 0)
+                bundled_font_point_size = system_font.pointSizeF();
+            font_dir = QString::fromStdString(system_install_path_ + "data/fonts/ubuntu/");
+#endif
 
-            for (const char* file : { "Ubuntu-R.ttf", "Ubuntu-B.ttf", "Ubuntu-RI.ttf", "Ubuntu-BI.ttf" })
+            if (bundled_font_point_size > 0)
             {
-                if (QFontDatabase::addApplicationFont(font_dir + file) < 0)
+                bool fonts_loaded = true;
+
+                for (const char* file : { "Ubuntu-R.ttf", "Ubuntu-B.ttf", "Ubuntu-RI.ttf", "Ubuntu-BI.ttf" })
                 {
-                    logwrn << "could not load font '" << (font_dir + file).toStdString() << "'";
-                    fonts_loaded = false;
+                    if (QFontDatabase::addApplicationFont(font_dir + file) < 0)
+                    {
+                        logwrn << "could not load font '" << (font_dir + file).toStdString() << "'";
+                        fonts_loaded = false;
+                    }
+                }
+
+                if (fonts_loaded)
+                {
+                    system_font = QFont("Ubuntu");
+                    system_font.setPointSizeF(bundled_font_point_size);
                 }
             }
-
-            if (fonts_loaded)
-            {
-                system_font = QFont("Ubuntu");
-                system_font.setPointSizeF(WindowsAppFontPointSize);
-            }
-#endif
 
             system_font.setPointSizeF(system_font.pointSizeF() * compass_->appState().settings().app_font_scale);
             setFont(system_font);

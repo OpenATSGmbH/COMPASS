@@ -44,6 +44,26 @@ using namespace nlohmann;
 namespace EvaluationRequirementResult
 {
 
+namespace
+{
+
+void addErrorHistograms(FeatureDefinitions& defs,
+                        const std::string& value_name,
+                        const EvaluationCalculator& calculator,
+                        const TrackAngleBase& result)
+{
+    // the offset is signed, the requirement checks its absolute value
+    ValueSource<double> abs_offset(SingleTrackAngle::DetailKey::Offset);
+    abs_offset.value_tr_func = [] (const double& v) { return std::fabs(v); };
+
+    defs.addDefinition<FeatureDefinitionStringCategoryHistogram>(value_name, calculator, "Error Count", "Error Count")
+        .addDataSeries("", { "#CF", "#CP" }, { result.numCompFailed(), result.numCompPassed() });
+    defs.addDefinition<FeatureDefinitionHistogram<double>>(value_name, calculator, "Full distribution", "Full distribution [deg]")
+        .addDataSeries("", abs_offset);
+}
+
+}
+
 /***************************************************************************************
  * TrackAngleBase
  ***************************************************************************************/
@@ -225,11 +245,11 @@ std::vector<Single::TargetInfo> SingleTrackAngle::targetInfos() const
              { "#PosOutside [1]", "Number of updates outside sector"             , num_pos_outside_                   },
              { "#PosInside [1]" , "Number of updates inside sector"              , num_pos_inside_                    }, 
              { "#NoTstData [1]" , "Number of updates without tst trackangle data", num_no_tst_value_                  }, 
-             { "OMin [m/s]"     , "Minimum of trackangle offset"                 , formatValue(accumulator_.min())    }, 
-             { "OMax [m/s]"     , "Maximum of trackangle offset"                 , formatValue(accumulator_.max())    }, 
-             { "OAvg [m/s]"     , "Average of trackangle offset"                 , formatValue(accumulator_.mean())   }, 
-             { "OSDev [m/s]"    , "Standard Deviation of trackangle offset"      , formatValue(accumulator_.stddev()) },
-             { "OVar [m^2/s^2]" , "Variance of trackangle offset"                , formatValue(accumulator_.var())    },
+             { "OMin [deg]"     , "Minimum of track angle offset"                 , formatValue(accumulator_.min())    }, 
+             { "OMax [deg]"     , "Maximum of track angle offset"                 , formatValue(accumulator_.max())    }, 
+             { "OAvg [deg]"     , "Average of track angle offset"                 , formatValue(accumulator_.mean())   }, 
+             { "OSDev [deg]"    , "Standard Deviation of track angle offset"      , formatValue(accumulator_.stddev()) },
+             { "OVar [deg^2]"   , "Variance of track angle offset"                , formatValue(accumulator_.var())    },
              { "#CF [1]"        , "Number of updates with failed comparison"     , num_comp_failed_                   }, 
              { "#CP [1]"        , "Number of updates with passed comparison"     , num_comp_passed_                   } };
 }
@@ -275,6 +295,17 @@ void SingleTrackAngle::addAnnotationForDetail(nlohmann::json& annotations_json,
     //            line_color = {(float)line_color_qt.redF(), (float)line_color_qt.greenF(), (float)line_color_qt.blueF(), 1.0f};
     //            anno_lines.push_back({get<0>(line_it), get<1>(line_it), line_color});
     //        }
+}
+
+/**
+*/
+FeatureDefinitions SingleTrackAngle::getCustomAnnotationDefinitions() const
+{
+    FeatureDefinitions defs;
+
+    addErrorHistograms(defs, requirement()->name(), calculator_, *this);
+
+    return defs;
 }
 
 /***************************************************************************************
@@ -369,11 +400,11 @@ std::vector<Joined::SectorInfo> JoinedTrackAngle::sectorInfos() const
              { "#PosOutside [1]", "Number of updates outside sector"             , num_pos_outside_                   },
              { "#PosInside [1]" , "Number of updates inside sector"              , num_pos_inside_                    }, 
              { "#NoTstData [1]" , "Number of updates without tst trackangle data", num_no_tst_value_                  }, 
-             { "OMin [m/s]"     , "Minimum of trackangle offset"                 , formatValue(accumulator_.min())    }, 
-             { "OMax [m/s]"     , "Maximum of trackangle offset"                 , formatValue(accumulator_.max())    }, 
-             { "OAvg [m/s]"     , "Average of trackangle offset"                 , formatValue(accumulator_.mean())   }, 
-             { "OSDev [m/s]"    , "Standard Deviation of trackangle offset"      , formatValue(accumulator_.stddev()) },
-             { "OVar [m^2/s^2]" , "Variance of trackangle offset"                , formatValue(accumulator_.var())    },
+             { "OMin [deg]"     , "Minimum of track angle offset"                 , formatValue(accumulator_.min())    }, 
+             { "OMax [deg]"     , "Maximum of track angle offset"                 , formatValue(accumulator_.max())    }, 
+             { "OAvg [deg]"     , "Average of track angle offset"                 , formatValue(accumulator_.mean())   }, 
+             { "OSDev [deg]"    , "Standard Deviation of track angle offset"      , formatValue(accumulator_.stddev()) },
+             { "OVar [deg^2]"   , "Variance of track angle offset"                , formatValue(accumulator_.var())    },
              { "#CF [1]"        , "Number of updates with failed comparison"     , num_comp_failed_                   }, 
              { "#CP [1]"        , "Number of updates with passed comparison"     , num_comp_passed_                   } };
 }
@@ -407,8 +438,10 @@ FeatureDefinitions JoinedTrackAngle::getCustomAnnotationDefinitions() const
 
     defs.addDefinition<FeatureDefinitionBinaryGrid>(requirement()->name(), calculator_, "Passed")
         .addDataSeries(SingleTrackAngle::DetailKey::CheckPassed, 
-                       GridAddDetailMode::AddEvtRefPosition, 
+                       GridAddDetailMode::AddEvtRefPosition,
                        false);
+
+    addErrorHistograms(defs, requirement()->name(), calculator_, *this);
 
     return defs;
 }

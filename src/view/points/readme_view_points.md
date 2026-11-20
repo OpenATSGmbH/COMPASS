@@ -133,22 +133,43 @@ viewPoint().reportError(getName(), "description of what failed");
 
 `viewPoint()` is available in `VariableView` and in `GeographicView`. Guard it with `hasViewPoint()` where the code also runs outside a view point, because the accessor asserts. A component that is not a view calls `reportError()` on the `ViewableDataConfig` it was given and passes its own component name. The Grid View, Histogram View and Scatter Plot View data widgets use this form. All reported errors appear in the command's reply JSON.
 
-## Data Source Selection (`data_sources`)
+## Load Statements (`load_data`)
 
-View points can restrict which data sources are loaded via the `"data_sources"` key. The value is a JSON array of `[ds_id, [line_ids]]` pairs (how nlohmann/json serializes `map<unsigned int, set<unsigned int>>`). An empty line array means **no lines** - `disableAllLines()` is called first, then only listed lines are enabled. To load all lines, list them explicitly (e.g. `[0, 1, 2, 3]`).
+A view point loads data only if it has a `"load_data"` object. Missing or `null`: the view point loads no data and shows its annotations only. `view_point_load::loadData()` / `loadsData()` in `src/core/viewpointkeys.h` decide this for all readers (filter, view, report figures).
+
+Inside `load_data`, `data_source_types` and `data_sources` are required, each a list or the string `"all"` (`view_point_load::checkLoadData()`). A missing key: `FilterManager::showViewPointSlot()` logs an error and loads no data. `filters`, `selected_rec_nums`, `labels`, `timestamp` and `time_window` are optional keys of `load_data`.
 
 ```json
 {
-    "data_sources": [
-        [12750, [0, 1]],
-        [65025, []]
-    ]
+    "load_data": {
+        "data_source_types": "all",
+        "data_sources": "all",
+        "filters": { "UTNs": { "utns": "4" } }
+    }
 }
 ```
 
-- When `data_sources` is present, only the listed sources are loaded (`DataSourceManager::setLoadOnlyDataSources`).
-- When absent, all data sources are loaded.
-- `data_source_types` (e.g. `["ADSB", "RefTraj"]`) is applied independently - it restricts which DS types are enabled.
+Generated view points: `ViewPointGenVP` writes no `load_data` by default, `ViewPointGenVP::enableDataLoading()` writes it with `"all"` and the generator filters.
+
+## Data Source Selection (`load_data.data_sources`)
+
+View points can restrict which data sources are loaded via the `"data_sources"` key of `load_data`. The value is a JSON array of `[ds_id, [line_ids]]` pairs (how nlohmann/json serializes `map<unsigned int, set<unsigned int>>`). An empty line array means **no lines** - `disableAllLines()` is called first, then only listed lines are enabled. To load all lines, list them explicitly (e.g. `[0, 1, 2, 3]`).
+
+```json
+{
+    "load_data": {
+        "data_source_types": "all",
+        "data_sources": [
+            [12750, [0, 1]],
+            [65025, []]
+        ]
+    }
+}
+```
+
+- A list loads only the listed sources (`DBContextManager::setLoadOnlyDataSources`).
+- `"all"` loads all data sources and lines.
+- `data_source_types` (e.g. `["ADSB", "RefTraj"]` or `"all"`) is applied independently - it restricts which DS types are enabled.
 - The read side uses `get<map<unsigned int, set<unsigned int>>>()` which also accepts a JSON object with string keys (`{"12750": [0, 1]}`), but the write side always produces array-of-pairs.
 
 **Key source files**:
@@ -163,7 +184,7 @@ View points can restrict which data sources are loaded via the `"data_sources"` 
 
 ## Labels (`labels`)
 
-A view point can pin a label on individual target reports with the `"labels"` key. The value is an array of `[rec_num, level]` pairs, where `rec_num` is the record number of the target report and `level` is its level of detail, 1 to 3 (how nlohmann/json serializes `map<unsigned long, unsigned int>`). The level is set per label, so one view point can mix levels.
+A view point can pin a label on individual target reports with the `"labels"` key of `load_data`. The value is an array of `[rec_num, level]` pairs, where `rec_num` is the record number of the target report and `level` is its level of detail, 1 to 3 (how nlohmann/json serializes `map<unsigned long, unsigned int>`). The level is set per label, so one view point can mix levels.
 
 ```json
 {
@@ -240,17 +261,7 @@ A view point collection file carries `"content_type": "view_points"` and `"conte
 
 ## Annotation-Only View Points (e.g. Grids)
 
-When a view point exists only to display annotations - e.g. 'grid' features shown in a Grid View, or geometry overlays - the loading of all DBContents should be disabled. Otherwise setting the view point triggers a full data load, and the loaded target reports are displayed on top of (or instead of) the annotation content.
-
-Disable all DBContent loading by adding an empty data source list to the view point:
-
-```json
-{
-    "data_sources": []
-}
-```
-
-An empty `data_sources` list makes `FilterManager::showViewPointSlot()` call `DBContextManager::setLoadOnlyDataSources()` with an empty map: all sources are set to not-wanted and none is re-enabled, so no DBContent data is loaded when the view point is set.
+A view point that only displays annotations - e.g. 'grid' features shown in a Grid View, or geometry overlays - has no `load_data`. Setting it loads no DBContent data (`FilterManager::showViewPointSlot()` enables no DS type and no data source and disables the filters), so no target reports are displayed on top of the annotation content.
 
 ## Files
 

@@ -135,6 +135,7 @@ void ViewWidget::createStandardLayout()
 
     //main splitter (containing a left and a right widget)
     main_splitter_ = new QSplitter;
+    main_splitter_->setObjectName("main_splitter");
     main_splitter_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     main_splitter_->setOrientation(Qt::Horizontal);
     main_splitter_->setContentsMargins(0, 0, 0, 0);
@@ -143,6 +144,7 @@ void ViewWidget::createStandardLayout()
     left_widget->setContentsMargins(0, 0, 0, 0);
 
     right_widget_ = new QWidget;
+    right_widget_->setObjectName("config_panel");
     right_widget_->setContentsMargins(0, 0, 0, 0);
 
     QVBoxLayout* left_layout = new QVBoxLayout;
@@ -159,6 +161,7 @@ void ViewWidget::createStandardLayout()
 
     main_splitter_->addWidget(left_widget);
     main_splitter_->addWidget(right_widget_);
+    main_splitter_->handle(1)->setObjectName("main_splitter_handle");
 
     //create data widget container in left widget
     {

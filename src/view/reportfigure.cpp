@@ -40,9 +40,6 @@
 namespace report_figure
 {
 
-const QSize  ExportLayoutSize = QSize(1200, 800);
-const double ExportScale      = 2.0;
-
 namespace
 {
     /// The kinds in the order of their render widgets in a figure, with the feature type of their
@@ -183,10 +180,13 @@ namespace
      * image_palette: set for a widget that draws an image of the export. It then builds no display.
      * Empty pointer: widget of the report GUI, with the application palette.
      */
-    void configure(ViewRenderWidget& widget, const QPalette* image_palette)
+    void configure(ViewRenderWidget& widget, const RenderEntry& entry, const QPalette* image_palette)
     {
+        const QSize& layout_size = entry.export_layout_size;
+
         widget.setWheelIgnored(true);
-        widget.setHeightForWidth(ExportLayoutSize.height() / (double)ExportLayoutSize.width(), WidgetMinHeight);
+        widget.setNarrowMargins(true);
+        widget.setHeightForWidth(layout_size.height() / (double)layout_size.width(), WidgetMinHeight);
 
         if (image_palette)
         {
@@ -207,12 +207,14 @@ namespace
         if (!data)
             logwrn << "malformed histogram annotation of figure image '" << entry.image_name << "': " << error;
 
+        //the series are stacked, on a log axis the upper segments would look much smaller than they are
         HistogramRenderOptions options;
-        options.legend_mode = HistogramLegendMode::RightSide;
+        options.legend_mode   = HistogramLegendMode::RightSide;
+        options.use_log_scale = data && data->histogram.numDataSeries() <= 1;
 
         auto widget = std::make_unique<HistogramViewRenderWidget>(parent);
 
-        configure(*widget, image_palette);
+        configure(*widget, entry, image_palette);
         widget->setDisplayData(data, options);
 
         return widget;
@@ -237,7 +239,7 @@ namespace
 
         auto widget = std::make_unique<ScatterPlotViewRenderWidget>(parent);
 
-        configure(*widget, image_palette);
+        configure(*widget, entry, image_palette);
 
         //the navigate tool of the widget moves the chart with the mouse, a report figure has no interaction
         widget->setDragEnabled(false);
@@ -271,7 +273,7 @@ namespace
 
         auto widget = std::make_unique<GridViewRenderWidget>(parent);
 
-        configure(*widget, image_palette);
+        configure(*widget, entry, image_palette);
 
         //the navigate tool of the widget moves the chart with the mouse, a report figure has no interaction
         widget->setDragEnabled(false);
@@ -306,30 +308,10 @@ namespace
 }
 
 /**
- * A view point loads no data if it lists no data source type or no data source. A view point without
- * these keys loads all of them (FilterManager::showViewPointSlot).
- */
-bool loadsNoData(const nlohmann::json& view_point)
-{
-    if (!view_point.is_object())
-        return false;
-
-    for (const auto& key : { ViewPointKeys::VP_DS_TYPES_KEY, ViewPointKeys::VP_DS_KEY })
-    {
-        auto it = view_point.find(key);
-
-        if (it != view_point.end() && (it->is_array() || it->is_object()) && it->empty())
-            return true;
-    }
-
-    return false;
-}
-
-/**
  */
 std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point)
 {
-    if (!loadsNoData(view_point))
+    if (view_point_load::loadsData(view_point))
         return {};
 
     auto annotations_it = view_point.find(ViewPointGenVP::ViewPointFieldAnnotations);
@@ -362,6 +344,8 @@ std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point)
         background = GridViewModel::backgroundFromViewPoint(view_point);
     }
 
+    const QSize export_layout_size = ReportFigureOptions::exportLayoutSizeFromViewPoint(view_point);
+
     std::vector<RenderEntry> entries;
 
     for (const auto& info : kindInfos())
@@ -376,11 +360,12 @@ std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point)
             for (const auto& annotation : group.annotations)
             {
                 RenderEntry entry;
-                entry.kind             = info.kind;
-                entry.annotation_index = annotation_index++;
-                entry.image_name       = info.image_name + "_" + std::to_string(entry.annotation_index);
-                entry.feature          = std::make_shared<const nlohmann::json>(annotation.feature_json);
-                entry.metadata         = annotation.metadata;
+                entry.kind               = info.kind;
+                entry.annotation_index   = annotation_index++;
+                entry.image_name         = info.image_name + "_" + std::to_string(entry.annotation_index);
+                entry.feature            = std::make_shared<const nlohmann::json>(annotation.feature_json);
+                entry.metadata           = annotation.metadata;
+                entry.export_layout_size = export_layout_size;
 
                 if (info.kind == Kind::Grid && isGeographicGrid(annotation.feature_json))
                 {
@@ -412,7 +397,7 @@ bool renderExportImage(const RenderEntry& entry, QImage& image, const context::D
 {
     const QPalette palette = app_palette::light();
 
-    return createWidget(entry, ctx_man, nullptr, &palette)->render(image, ExportLayoutSize, ExportScale);
+    return createWidget(entry, ctx_man, nullptr, &palette)->render(image, entry.export_layout_size, ExportScale);
 }
 
 /**

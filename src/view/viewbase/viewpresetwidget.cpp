@@ -173,6 +173,10 @@ void ViewPresetEditDialog::createUI()
     category_edit_    = new QLineEdit;
     description_edit_ = new QTextEdit;
 
+    name_edit_->setObjectName("name_edit");
+    category_edit_->setObjectName("category_edit");
+    description_edit_->setObjectName("description_edit");
+
     description_edit_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     description_edit_->setAcceptRichText(false);
 
@@ -187,6 +191,9 @@ void ViewPresetEditDialog::createUI()
 
     auto ok_button     = new QPushButton("Ok");
     auto cancel_button = new QPushButton("Cancel");
+
+    ok_button->setObjectName("ok_button");
+    cancel_button->setObjectName("cancel_button");
 
     button_layout->addWidget(cancel_button );
     button_layout->addStretch(1);
@@ -650,6 +657,15 @@ void ViewPresetItemWidget::updateContents(const ViewPresets::Key& key)
     key_    = key;
     preset_ = &presets.presets().at(key);
 
+    const QString obj_name = "preset_" + ui_test::normalizedObjectName(QString::fromStdString(key_.second));
+
+    setObjectName(obj_name);
+    deployed_label_->setObjectName(obj_name + "_origin_label");
+    edit_button_->setObjectName(obj_name + "_edit_button");
+    copy_button_->setObjectName(obj_name + "_copy_button");
+    save_button_->setObjectName(obj_name + "_save_button");
+    remove_button_->setObjectName(obj_name + "_remove_button");
+
     updateContents();
 }
 
@@ -898,6 +914,7 @@ void ViewPresetItemListWidget::createUI()
     layout->addLayout(header_layout);
 
     filter_edit_ = new QLineEdit;
+    filter_edit_->setObjectName("filter_edit");
     filter_edit_->setPlaceholderText("Filter for preset name...");
     header_layout->addWidget(filter_edit_);
 
@@ -941,6 +958,7 @@ void ViewPresetItemListWidget::createUI()
     QPushButton* add_button = new QPushButton;
     add_button->setIcon(Utils::Files::IconProvider::getIcon("crosshair_fat.png"));
     add_button->setText("Add preset");
+    add_button->setObjectName("add_preset_button");
     footer_layout->addWidget(add_button);
     footer_layout->addStretch(1);
 
@@ -1215,6 +1233,7 @@ void ViewPresetWidget::createUI()
     preset_list_ = new ViewPresetItemListWidget(view_, this);
 
     show_button_ = new QToolButton;
+    show_button_->setObjectName("show_presets_button");
     show_button_->setIcon(Utils::Files::IconProvider::getIcon("preset.png"));
     show_button_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     show_button_->setToolButtonStyle(Qt::ToolButtonStyle::ToolButtonTextBesideIcon);

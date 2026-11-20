@@ -48,6 +48,20 @@ public:
         Hidden       // hidden figure referenced by content (e.g. by a table, not rendered in pdf report)
     };
 
+    /// How the report GUI shows a figure and whether the export writes it, decided by its view point
+    enum class FigureKind
+    {
+        Simple,        // no load_data: render widgets in the report GUI, one image per annotation in the export
+        View,          // load_data: name and "View" button in the report GUI, left out of the export
+        CannotBeDrawn  // no load_data, but no render widget can draw its view point: no image in the export
+    };
+
+    struct Classification
+    {
+        FigureKind                              kind = FigureKind::CannotBeDrawn;
+        std::vector<report_figure::RenderEntry> render_entries; // one per annotation, empty unless simple
+    };
+
     struct ImageResource
     {
         std::string name;
@@ -73,26 +87,22 @@ public:
 
     /// open_view_deck: a collapsed View Deck opens to show the figure (View button)
     bool view (bool load_blocking = false, bool open_view_deck = false) const;
-    void executeRenderDelay() const;
 
     FigureType figureType() const { return fig_type_; }
     const std::string& caption() const { return caption_; }
-    int renderDelayMSec() const { return render_delay_msec_; }
 
     ResultT<std::vector<ImageResource>> obtainImages(const std::string* resource_dir) const;
 
     /// stored view point of the figure, loads on-demand content if needed (empty pointer if none)
     std::shared_ptr<nlohmann::json::object_t> viewableContent() const;
 
-    /// The render widgets that draw the figure in the report GUI and in the export, one per annotation.
-    /// Empty: the views show the figure ("View" button, image of each view with content).
-    std::vector<report_figure::RenderEntry> renderEntries() const;
+    /// kind of the figure and the render widgets that draw a simple figure, loads on-demand content first
+    Classification classify() const;
     /// the sectors the geographic grids of the render widgets draw, nullptr without a task result
     const context::DBContextManager* sectorSource();
 
     static const std::string FieldFigureType;
     static const std::string FieldCaption;
-    static const std::string FieldRenderDelayMSec;
     static const std::string FieldViewable;
 
     static const std::string FieldDocPath;
@@ -107,9 +117,8 @@ protected:
                                const std::string* resource_dir,
                                ReportExportMode export_style) const override final;
 
-    FigureType  fig_type_          = FigureType::Section;
+    FigureType  fig_type_ = FigureType::Section;
     std::string caption_;
-    int         render_delay_msec_ = 0;
 
     SectionContentViewable::ViewableFunc viewable_fnc_;
 };

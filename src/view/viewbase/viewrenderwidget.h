@@ -76,6 +76,11 @@ public:
     void setWheelIgnored(bool ignored);
     bool wheelIgnored() const { return wheel_ignored_; }
 
+    /// Narrow margins around the content of the display and the rendered images, for a report figure.
+    /// The views keep the wider default margins.
+    void setNarrowMargins(bool narrow);
+    bool narrowMargins() const { return narrow_margins_; }
+
     /// The widget is used for render() only: redraw() builds no display, so the widget is never drawn.
     /// A report export sets this, it would build each display twice otherwise.
     void setImageOnly(bool image_only) { image_only_ = image_only; }
@@ -120,6 +125,7 @@ private:
 
     boost::optional<double> height_ratio_; // set: the height follows the width
     int                     height_min_   = 0;
-    bool                    wheel_ignored_ = false;
-    bool                    image_only_    = false;
+    bool                    wheel_ignored_  = false;
+    bool                    narrow_margins_ = false;
+    bool                    image_only_     = false;
 };

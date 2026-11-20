@@ -170,9 +170,6 @@ public:
     virtual bool hasScreenshotContent() const;
     /// the contents of the render widget as an image
     virtual QImage renderData();
-    /// called before renderData(), e.g. to settle asynchronous resources
-    virtual void prepareForRender() {}
-    virtual void setExporting(bool exporting) {}
 
     ViewModel& model() { traced_assert(model_); return *model_; }
     const ViewModel& model() const { traced_assert(model_); return *model_; }

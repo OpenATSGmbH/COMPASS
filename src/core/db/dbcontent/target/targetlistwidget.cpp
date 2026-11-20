@@ -54,6 +54,7 @@ TargetListWidget::TargetListWidget(TargetModel& model, DBContentManager& dbcont_
     proxy_model_->setSourceModel(&model_);
 
     table_view_ = new QTableView();
+    table_view_->setObjectName("target_table");
     table_view_->setModel(proxy_model_);
     table_view_->setSortingEnabled(true);
     table_view_->sortByColumn(0, Qt::AscendingOrder);

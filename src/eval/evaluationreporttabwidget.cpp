@@ -18,7 +18,7 @@
 #include "evaluationreporttabwidget.h"
 #include "evaluationcalculator.h"
 #include "evaluationmanager.h"
-#include "reportfigurebackgroundwidget.h"
+#include "reportfiguresettingswidget.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -46,6 +46,7 @@ EvaluationReportTabWidget::EvaluationReportTabWidget(EvaluationCalculator& calcu
     const auto& eval_settings = calculator.settings();
 
     skip_no_data_details_check_ = new QCheckBox ();
+    skip_no_data_details_check_->setObjectName("skip_no_data_details_check");
     skip_no_data_details_check_->setChecked(eval_settings.report_skip_no_data_details_);
     connect(skip_no_data_details_check_, &QCheckBox::clicked,
             this, &EvaluationReportTabWidget::toggleSkipNoDataDetailsSlot);
@@ -55,6 +56,7 @@ EvaluationReportTabWidget::EvaluationReportTabWidget(EvaluationCalculator& calcu
     //++row;
 
     split_results_by_mops_check_ = new QCheckBox ();
+    split_results_by_mops_check_->setObjectName("split_results_by_mops_check");
     split_results_by_mops_check_->setChecked(eval_settings.report_split_results_by_mops_);
     connect(split_results_by_mops_check_, &QCheckBox::clicked,
             this, &EvaluationReportTabWidget::toggleSplitResultsByMOPSSlot);
@@ -63,6 +65,7 @@ EvaluationReportTabWidget::EvaluationReportTabWidget(EvaluationCalculator& calcu
     // split results by mode a/c only and mode s
 
     split_results_by_mac_ms_check_ = new QCheckBox ();
+    split_results_by_mac_ms_check_->setObjectName("split_results_by_mac_ms_check");
     split_results_by_mac_ms_check_->setChecked(eval_settings.report_split_results_by_aconly_ms_);
     connect(split_results_by_mac_ms_check_, &QCheckBox::clicked,
             this, &EvaluationReportTabWidget::toggleSplitResultsByMACMSSlot);
@@ -71,12 +74,14 @@ EvaluationReportTabWidget::EvaluationReportTabWidget(EvaluationCalculator& calcu
     // show ok
 
     show_ok_joined_target_reports_check_ = new QCheckBox ();
+    show_ok_joined_target_reports_check_->setObjectName("show_ok_joined_target_reports_check");
     show_ok_joined_target_reports_check_->setChecked(eval_settings.show_ok_joined_target_reports_);
     connect(show_ok_joined_target_reports_check_, &QCheckBox::clicked,
             this, &EvaluationReportTabWidget::toggleShowOKJoinedSlot);
     layout->addRow("Show OK data in Sector Results", show_ok_joined_target_reports_check_);
 
     result_detail_zoom_edit_ = new QLineEdit(QString::number(eval_settings.result_detail_zoom_));
+    result_detail_zoom_edit_->setObjectName("result_detail_zoom_edit");
     result_detail_zoom_edit_->setValidator(new QDoubleValidator(0.000001, 1.0, 7, this));
     connect(result_detail_zoom_edit_, &QLineEdit::textEdited,
             this, &EvaluationReportTabWidget::resultDetailZoomEditSlot);
@@ -86,6 +91,7 @@ EvaluationReportTabWidget::EvaluationReportTabWidget(EvaluationCalculator& calcu
 
     // grid generation
     grid_num_cells_x_box_  = new QSpinBox;
+    grid_num_cells_x_box_->setObjectName("grid_num_cells_x_box");
     grid_num_cells_x_box_->setMinimum(1);
     grid_num_cells_x_box_->setMaximum(2000);
     grid_num_cells_x_box_->setValue(eval_settings.grid_num_cells_x);
@@ -93,24 +99,32 @@ EvaluationReportTabWidget::EvaluationReportTabWidget(EvaluationCalculator& calcu
     layout->addRow("#Grid Cells X", grid_num_cells_x_box_);
 
     grid_num_cells_y_box_  = new QSpinBox;
+    grid_num_cells_y_box_->setObjectName("grid_num_cells_y_box");
     grid_num_cells_y_box_->setMinimum(1);
     grid_num_cells_y_box_->setMaximum(2000);
     grid_num_cells_y_box_->setValue(eval_settings.grid_num_cells_y);
     connect(grid_num_cells_y_box_, QOverload<int>::of(&QSpinBox::valueChanged), [ settings_ptr ] (int v) { settings_ptr->grid_num_cells_y = v; });
     layout->addRow("#Grid Cells Y", grid_num_cells_y_box_);
 
-    background_widget_ = new ReportFigureBackgroundWidget(
+    figure_settings_widget_ = new ReportFigureSettingsWidget(
         calculator.manager().dbContextManager(),
-        [ this ] () { return calculator_.reportFigureDefaultHiddenLayers(); });
-    background_widget_->setBackground(calculator.reportFigureBackgroundConfig());
-    connect(background_widget_, &ReportFigureBackgroundWidget::backgroundChangedSignal, this,
-            [ this ] () { calculator_.reportFigureBackgroundConfig(background_widget_->background()); });
+        [ this ] () { return calculator_.reportFigureDefaultHiddenLayers(); },
+        true);
+    figure_settings_widget_->setHistogramBars(eval_settings.histogram_num_bins);
+    figure_settings_widget_->setOptions(calculator.reportFigureOptionsConfig());
+    figure_settings_widget_->setBackground(calculator.reportFigureBackgroundConfig());
+    connect(figure_settings_widget_, &ReportFigureSettingsWidget::histogramBarsChangedSignal, this,
+            [ this ] () { calculator_.settings().histogram_num_bins = figure_settings_widget_->histogramBars(); });
+    connect(figure_settings_widget_, &ReportFigureSettingsWidget::optionsChangedSignal, this,
+            [ this ] () { calculator_.reportFigureOptionsConfig(figure_settings_widget_->options()); });
+    connect(figure_settings_widget_, &ReportFigureSettingsWidget::backgroundChangedSignal, this,
+            [ this ] () { calculator_.reportFigureBackgroundConfig(figure_settings_widget_->background()); });
 
     setContentsMargins(0, 0, 0, 0);
 
     QVBoxLayout* left_layout = new QVBoxLayout();
     left_layout->addLayout(layout);
-    left_layout->addWidget(background_widget_);
+    left_layout->addWidget(figure_settings_widget_);
     left_layout->addStretch();
 
     main_layout->addLayout(left_layout);
@@ -138,7 +152,9 @@ void EvaluationReportTabWidget::updateFromSettings()
     grid_num_cells_x_box_->setValue(eval_settings.grid_num_cells_x);
     grid_num_cells_y_box_->setValue(eval_settings.grid_num_cells_y);
 
-    background_widget_->setBackground(calculator_.reportFigureBackgroundConfig());
+    figure_settings_widget_->setHistogramBars(eval_settings.histogram_num_bins);
+    figure_settings_widget_->setOptions(calculator_.reportFigureOptionsConfig());
+    figure_settings_widget_->setBackground(calculator_.reportFigureBackgroundConfig());
 }
 
 /**

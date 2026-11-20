@@ -29,6 +29,13 @@
 namespace EvaluationRequirementResult
 {
 
+/// the stored log scale for a histogram of one data series, stacked series keep the linear axis of the report figures
+inline void setLogScale(const EvaluationCalculator& calculator, RawHistogramCollection& hcollection)
+{
+    if (hcollection.numDataSeries() == 1)
+        hcollection.setUseLogScale(calculator.reportFigureOptionsConfig().histogram_log_scale);
+}
+
 /**
  * General histogram feature definition.
 */
@@ -101,6 +108,8 @@ public:
 
             hcollection.addDataSeries(h, ds.series_name, ds.series_color);
         }
+
+        setLogScale(calculator(), hcollection);
 
         auto feat = new ViewPointGenFeatureHistogram(hcollection);
 
@@ -180,6 +189,8 @@ public:
 
             hcollection.addDataSeries(h, ds.series_name, ds.series_color);
         }
+
+        setLogScale(calculator(), hcollection);
 
         auto feat = new ViewPointGenFeatureHistogram(hcollection);
 

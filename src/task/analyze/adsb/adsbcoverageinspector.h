@@ -62,7 +62,7 @@ public:
     // Update-interval histogram. `ui_hist_max_s_` is the upper edge; intervals
     // at or above it fold into a single overflow bin (so long detection breaks
     // do not stretch the axis). 0 = auto-derive a rounded-up max from the data.
-    int   ui_hist_num_bins_ = 20;
+    int   ui_hist_num_bins_ = 10;
     float ui_hist_max_s_    = 15.0f;
 };
 

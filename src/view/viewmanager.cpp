@@ -668,7 +668,15 @@ void ViewManager::doViewPointAfterLoad ()
 
     traced_assert(view_points_widget_);
 
-    const json& data = current_viewable_->data();
+    const json* load_data = view_point_load::loadData(current_viewable_->data());
+
+    if (!load_data)
+    {
+        logdbg << "view point loads no data";
+        return;
+    }
+
+    const json& data = *load_data;
 
     logdbg << "data '" << data.dump(4) << "'";
 

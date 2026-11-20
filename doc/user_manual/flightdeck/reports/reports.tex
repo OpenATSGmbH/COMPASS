@@ -3,7 +3,7 @@
 
 \begin{figure}[H]
     \centering
-    \hspace*{-2.5cm}
+  \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/reports.png}
   \caption{Reports overview, showing an Evaluation report}
 \end{figure}
@@ -75,7 +75,7 @@ A menu will open, giving multiple options for export.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=4cm,frame]{figures/export_options.png}
+    \includegraphics[width=3.5cm,frame]{figures/export_options.png}
   %\caption{Data Sources Overview}
 \end{figure}
 
@@ -88,6 +88,19 @@ A menu will open, giving multiple options for export.
 \  \\
 
 Please \textbf{note} that the 'Export as PDF' entry is disabled when \texttt{pdflatex} is not installed on the system. \\
+
+All export formats write the figures as follows (see \nameref{sec:report_section_figures}):
+
+\begin{itemize}
+    \item Simple figures: Each chart of the figure is written as one image, no View is opened
+    \begin{itemize}
+        \item Image name: \texttt{<figure name>\_<chart>\_<number>.png}, e.g. \texttt{Sector Overview\_grid\_0.png}
+        \item Image size: The export image size of the Report Figures settings of the task, 1200 x 800 by default, at twice the resolution
+    \end{itemize}
+    \item View figures: Not exported
+    \item The 'Targets' section of an evaluation report (one section per target) is not exported
+\end{itemize}
+\ \\
 
 \subsubsection{Export as DocX}
 \label{sec:report_export_docx}
@@ -106,9 +119,9 @@ This export will generate a JSON file and a list of exported resources which are
 The following dialog will open.
 
 \begin{figure}[H]
-    \hspace*{-2.5cm}
     \centering
-    \includegraphics[width=14cm]{figures/export_json.png}
+  \hspace*{-1.3cm}
+    \includegraphics[width=16.7cm,frame]{figures/export_json.png}
   \caption{Export as JSON}
 \end{figure}
 
@@ -151,9 +164,9 @@ This export will generate a Latex file and a list of exported resources which ar
 The following dialog will open.
 
 \begin{figure}[H]
-    \hspace*{-2.5cm}
     \centering
-    \includegraphics[width=14cm]{figures/export_latex.png}
+  \hspace*{-1.3cm}
+    \includegraphics[width=16.7cm,frame]{figures/export_latex.png}
   \caption{Export as Latex}
 \end{figure}
 
@@ -190,9 +203,9 @@ This export will generate a PDF file. It will also create an intermediate latex 
 The following dialog will open.
 
 \begin{figure}[H]
-    \hspace*{-2.5cm}
     \centering
-    \includegraphics[width=14cm]{figures/export_pdf.png}
+  \hspace*{-1.3cm}
+    \includegraphics[width=16.7cm,frame]{figures/export_pdf.png}
   \caption{Export as Latex PDF}
 \end{figure}
 
@@ -261,7 +274,8 @@ in the same way as DBContent variables and Meta Variables. Report Variables can 
 
 \begin{figure}[H]
   \center
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: Scatter Plot View with the Report Variable 'Radar Evaluation: Range Offset' on the y-axis over 'Timestamp']}}\vspace{1.5cm}}}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/report_variable_scatter.png}
   \caption{Report Variable in a Scatter Plot View}
 \end{figure}
 
@@ -274,9 +288,9 @@ When selecting a report in the report selection, the report's main section will 
 Above the displayed section, a couple of navigation elements reside.
 
 \begin{figure}[H]
-    \hspace*{-2.5cm}
     \centering
-    \includegraphics[width=12cm,frame]{figures/navigation.png}
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/navigation.png}
   \caption{Navigating sections}
 \end{figure}
 
@@ -292,9 +306,8 @@ On the right side the 'Sections' button resides. Pressing the 'Sections' button 
 contents listing all available sections.
 
 \begin{figure}[H]
-    \hspace*{-2.5cm}
     \centering
-    \includegraphics[width=12cm,frame]{figures/section_button.png}
+    \includegraphics[width=10.4cm,frame]{figures/section_button.png}
   \caption{Section table of contents}
 \end{figure}
 
@@ -307,7 +320,7 @@ When navigating to a section, the section's contents will be displayed. \\
 A section can obtain three types of contents:
 
 \begin{itemize}  
-    \item \nameref{sec:report_section_figures}: Viewable data, which can be visualized in certain Views and exported to a file as image data
+    \item \nameref{sec:report_section_figures}: Charts shown in the report (simple figures), or viewable data shown in the Views (view figures)
     \item \nameref{sec:report_section_tables}: Tabular data, which can be inspected and exported
     \item \nameref{sec:report_section_texts}: Textual data
 \end{itemize}
@@ -316,24 +329,47 @@ A section can obtain three types of contents:
 \subsubsection{Figures} 
 \label{sec:report_section_figures}
 
+A figure is one of two kinds:
+
+\begin{itemize}
+    \item \textbf{Simple figure}: Shows its annotations only and loads no target reports
+    \begin{itemize}
+        \item The report shows the figure's charts below its name: histograms, scatter plots and grids
+        \item The charts have no mouse interaction (no zoom, no pan, no tools)
+        \item A grid over longitude and latitude is drawn with the background of the Report Figures settings of the task (map, national borders, sectors)
+        \item The 'View' button below the charts shows the figure in the Views, with all interactions
+        \item The report exports the charts as images
+    \end{itemize}
+    \item \textbf{View figure}: Needs target reports, e.g. the 'Target Errors Overview' of a target in an evaluation report
+    \begin{itemize}
+        \item The report shows the figure's name and the 'View' button
+        \item The 'View' button loads the target reports and shows the figure in the Views
+        \item The report does not export view figures
+    \end{itemize}
+\end{itemize}
+\ \\
+
 \begin{figure}[H]
-    \hspace*{-2.5cm}
     \centering
-    \includegraphics[width=12cm,frame]{figures/content_figure.png}
-  \caption{Figure content}
+    \includegraphics[width=10cm,frame]{figures/content_figure.png}
+  \caption{Simple figure with two histograms and a grid}
 \end{figure}
 
-Figures will be displayed as a text label showing the figure's name, and a 'View' button. When pressed, the figure's 
-drawable contents will be shown in all Views that are able to display it.
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=13.8cm,frame]{figures/content_view_figure.png}
+  \caption{View figure}
+\end{figure}
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} \textbf{Please note that a simple figure which cannot be drawn shows '(cannot be drawn)' after its name and the 'View' button only.} \\
 
 \subsubsection{Tables} 
 \label{sec:report_section_tables}
 
 \begin{figure}[H]
-    \hspace*{-2.5cm}
     \centering
-    \includegraphics[width=12cm,frame]{figures/content_table.png}
-  \caption{Table content}
+    \includegraphics[width=13.8cm,frame]{figures/content_table.png}
+  \caption{Table content: Results Overview of an evaluation}
 \end{figure}
 
 Tables will be displayed as a text label showing the table's name, the table's contents, 
@@ -344,7 +380,15 @@ The 'Copy Content' action can be used to copy the table's contents to the clipbo
 
 Table rows might additionally be linked to either viewable data or another section.
 Clicking on a table row will trigger the linked viewable data to be displayed if available.
-Double-clicking on a table row will navigate to the linked section if available.
+Double-clicking on a table row will navigate to the linked section if available. \\
+
+E.g. in the 'Results Overview' of an evaluation report, each row shows one requirement with its result:
+
+\begin{itemize}
+    \item Clicking a row shows the sector overview of the requirement in the Views
+    \item Double-clicking a row navigates to the section of the requirement, with its figures and tables
+\end{itemize}
+\ \\
 
 \subsubsection{Texts} 
 \label{sec:report_section_texts}
