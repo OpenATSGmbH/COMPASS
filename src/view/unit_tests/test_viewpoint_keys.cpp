@@ -19,6 +19,7 @@
 
 #include "viewpointkeys.h"
 #include "viewpointgenerator.h"
+#include "viewpoint.h"
 
 #include "json.hpp"
 
@@ -132,5 +133,53 @@ TEST_CASE("ViewPointGenVP writes load_data only if it loads data", "[viewpoint]"
         CHECK(load_data.at("data_sources") == "all");
         CHECK(load_data.at("filters").contains("UTNs"));
         CHECK(!j.contains("filters"));
+    }
+}
+
+TEST_CASE("view point import checks load_data", "[viewpoint]")
+{
+    auto collection = [] (const nlohmann::json& view_point)
+    {
+        nlohmann::json j;
+        j[ ViewPointKeys::VP_COLLECTION_CONTENT_TYPE_KEY    ] = ViewPointKeys::VP_COLLECTION_CONTENT_TYPE;
+        j[ ViewPointKeys::VP_COLLECTION_CONTENT_VERSION_KEY ] = ViewPointKeys::VP_COLLECTION_CONTENT_VERSION;
+        j[ ViewPointKeys::VP_COLLECTION_ARRAY_KEY           ] = nlohmann::json::array({ view_point });
+        return j;
+    };
+
+    nlohmann::json vp;
+    vp[ ViewPointKeys::VP_ID_KEY   ] = 1;
+    vp[ ViewPointKeys::VP_TYPE_KEY ] = "Saved";
+
+    std::string err;
+
+    SECTION("no load_data is valid")
+    {
+        CHECK(ViewPoint::isValidJSON(collection(vp), "", &err));
+    }
+
+    SECTION("null load_data is valid")
+    {
+        vp[ ViewPointKeys::VP_LOAD_DATA_KEY ] = nullptr;
+        CHECK(ViewPoint::isValidJSON(collection(vp), "", &err));
+    }
+
+    SECTION("complete load_data is valid")
+    {
+        vp[ ViewPointKeys::VP_LOAD_DATA_KEY ] = view_point_load::loadAllData();
+        CHECK(ViewPoint::isValidJSON(collection(vp), "", &err));
+    }
+
+    SECTION("load_data without data_sources is rejected")
+    {
+        vp[ ViewPointKeys::VP_LOAD_DATA_KEY ][ ViewPointKeys::VP_DS_TYPES_KEY ] = ViewPointKeys::VP_LOAD_ALL;
+        CHECK(!ViewPoint::isValidJSON(collection(vp), "", &err));
+        CHECK(err.find(ViewPointKeys::VP_DS_KEY) != std::string::npos);
+    }
+
+    SECTION("load_data that is no object is rejected")
+    {
+        vp[ ViewPointKeys::VP_LOAD_DATA_KEY ] = "all";
+        CHECK(!ViewPoint::isValidJSON(collection(vp), "", &err));
     }
 }

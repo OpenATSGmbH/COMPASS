@@ -188,6 +188,22 @@ bool ViewPoint::isValidJSON(nlohmann::json json_obj,
 
             if (!vp_it.contains(ViewPointKeys::VP_TYPE_KEY) || !vp_it.at(ViewPointKeys::VP_TYPE_KEY).is_string())
                 throw std::runtime_error("view point '"+vp_it.dump()+"' does not contain a valid type");
+
+            auto load_it = vp_it.find(ViewPointKeys::VP_LOAD_DATA_KEY);
+
+            if (load_it != vp_it.end() && !load_it->is_null())
+            {
+                const std::string vp_id = vp_it.at(ViewPointKeys::VP_ID_KEY).dump();
+
+                if (!load_it->is_object())
+                    throw std::runtime_error("view point " + vp_id + ": '" + ViewPointKeys::VP_LOAD_DATA_KEY
+                                             + "' is neither an object nor null");
+
+                std::string load_error = view_point_load::checkLoadData(*load_it);
+
+                if (!load_error.empty())
+                    throw std::runtime_error("view point " + vp_id + ": " + load_error);
+            }
         }
 
         if (verbose)
