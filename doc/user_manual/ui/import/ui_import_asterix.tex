@@ -485,7 +485,20 @@ In the mappings list, the following columns are given:
 \ \\
 
 Whenever a mapping is selected, the details are shown on the right side, providing information about the ASTERIX data item (based on the jASTERIX specifications) and the DBContent variable it is mapped to. 
-Using the 'Show DBContent Variable' button the variable can be inspected in detail.
+Using the 'Show DBContent Variable' button the variable can be inspected in detail. In expert mode, the button is named 'Edit DBContent Variable' and the variable can be changed. \\
+
+In addition to the fields of the \nameref{sec:configure_show_content} dialog, the variable dialog shows the origin model of the variable:
+
+\begin{itemize}
+\item Origin: 'asterix', 'calculated', 'internal' or 'selection' (see \nameref{sec:key_concepts})
+\item Data Item: The ASTERIX data item, for 'asterix' variables
+\item Inputs: The input variables, for 'calculated' variables
+\item Candidates: The ordered alternatives, for 'selection' variables. In expert mode they can be moved up and down, removed and added ('Add Candidate')
+\item Source Variable: The variable which stores which candidate supplied the value, for 'selection' variables
+\end{itemize}
+\ \\
+
+A change of the candidates applies to the next import.
 
 \begin{figure}[H]
   \centering
