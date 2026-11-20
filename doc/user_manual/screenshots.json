@@ -30,7 +30,7 @@
             1200
         ],
         "font": "--bundled_font 9.5",
-        "dpi": 130,
+        "dpi": 121.92,
         "binary": "local build under Xvfb",
         "database": "at_20230422",
         "client_args": [
