@@ -2,7 +2,15 @@
 
 \subsection{Operating System}
 
-The binary will currently only be provided for (somewhat current) Linux 64-bit operating systems. The AppImage is built on Debian 10 and links against glibc 2.28, so any distribution shipping glibc 2.28 or newer should work. \\
+The binary is provided for two 64-bit operating systems:
+
+\begin{itemize}
+\item Linux: AppImage, see \nameref{sec:install_appimage}
+\item Windows: zip package, tested on Windows 10, see \nameref{sec:install_windows}
+\end{itemize}
+\ \\
+
+The AppImage is built on AlmaLinux 8 and links against glibc 2.28, so any distribution shipping glibc 2.28 or newer should work. \\
 For the following distributions, the AppImage was reported to be working correctly or is expected to be compatible:
 
 \begin{itemize}
@@ -24,7 +32,9 @@ For the following distributions, the AppImage was reported to have issues (glibc
 
 If you have tried other operating systems than the ones listed here, it would be appreciated if you could provide feedback about your experience to \href{mailto:compass@openats.at}{compass@openats.at}.\\
 
-Other operating systems (e.g. Windows or Mac) are currently not supported.
+The Windows package requires Windows 10 or later. It needs no additional runtime libraries (e.g. no Visual C++ runtime). \\
+
+Other operating systems (e.g. macOS) are currently not supported.
 
 \subsection{Required Hardware}
 
@@ -61,6 +71,8 @@ For larger reference trajectory calculations, workstations with large number of 
 \label{sec:graphics_installation}
 
 Since there exist hundreds of different graphics card types, and numerous possible drivers for each of them, support will only be given for ATI or NVidia graphics cards, with their native drivers.
+
+The commands in this section are Linux commands. On Windows, the graphics card and driver are shown in the Device Manager under 'Display adapters'. \\
 
 To find out what graphics cards are available in the system, use \textit{lspci} (might have to be installed):
 
