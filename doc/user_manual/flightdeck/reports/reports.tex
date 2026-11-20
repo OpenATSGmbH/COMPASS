@@ -22,7 +22,7 @@ Please \textbf{note} that running a task might overwrite an existing report. \\
 
 A report can be selected in the combo box at the 'Report' tool's top at any time for further inspection. 
 This combo box will subsequently be referred to as \textit{report selection}. 
-Selecting a report will immediately show the report's main section. \\
+Selecting a report will immediately show the report as one document with all its sections (see \nameref{sec:report_structure}). \\
 
 Apart from selecting and visualizing a report, further actions can be carried out using the management buttons next to the 
 report selection. These actions always apply to the currently selected report.
@@ -280,12 +280,25 @@ in the same way as DBContent variables and Meta Variables. Report Variables can 
 \end{figure}
 
 \subsection{Report Structure}
+\label{sec:report_structure}
 
-A report consists of a hierarchy of nested sections. 
-A section obtains a name, and may contain multiple subsections and a number of so-called \textit{contents}.
-When selecting a report in the report selection, the report's main section will be shown. \\
+A report consists of a hierarchy of nested sections.
+A section obtains a name, and may contain multiple subsections and a number of so-called \textit{contents}. \\
 
-Above the displayed section, a couple of navigation elements reside.
+All sections of a report are shown as one continuous document, which can be scrolled from the first to the last section:
+
+\begin{itemize}
+\item Section sidebar: On the left side of the document, the section tree of the report is shown, with the section numbers
+\begin{itemize}
+\item Clicking a section scrolls the document to this section
+\item Collapsing a section in the sidebar also collapses it in the document, expanding it shows it again
+\item The per-target sections start collapsed
+\end{itemize}
+\item The sidebar is hidden when the 'Reports' tool is narrow, and shown again when it is wider. While the sidebar is hidden, the 'Sections' button gives access to the section tree (see below).
+\end{itemize}
+\ \\
+
+Above the document, a couple of navigation elements reside.
 
 \begin{figure}[H]
     \centering
@@ -297,12 +310,12 @@ Above the displayed section, a couple of navigation elements reside.
 By pressing the \includegraphics[width=0.5cm,frame]{../../data/icons/arrow_to_left.png} button,
 one can navigate back to the last displayed section. \\
 
-Next to the back button the ID of the currently displayed section in the report will be displayed.
+Next to the back button the ID of the section at the top of the document will be displayed.
 The ID encodes the path from the root section of the report to the current section, in order 
 to identify the section uniquely. The individual section names are 
 separated by ':', e.g. 'Report:Results:Overview:Results'. \\
 
-On the right side the 'Sections' button resides. Pressing the 'Sections' button will open a table of 
+On the right side the 'Sections' button resides. It is only enabled while the section sidebar is hidden. Pressing the 'Sections' button will open a table of
 contents listing all available sections.
 
 \begin{figure}[H]
@@ -311,11 +324,9 @@ contents listing all available sections.
   \caption{Section table of contents}
 \end{figure}
 
-Clicking a section entry once will navigate to the selected section. Double-clicking the section entry will 
+Clicking a section entry once will scroll the document to the selected section. Double-clicking the section entry will
 in addition close the table of contents. Pressing the 'Sections' button again will close the table of contents
 without selecting a section. \\
-
-When navigating to a section, the section's contents will be displayed. \\
 
 A section can obtain three types of contents:
 

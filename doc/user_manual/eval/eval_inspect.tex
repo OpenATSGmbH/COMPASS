@@ -20,7 +20,7 @@ After selection of the report in the Flight Deck, it will present itself as foll
 There are several levels of detail in which sub-results can be inspected. \\
 
 The uppermost is the 'Requirements$\rightarrow$Overview$\rightarrow$Results', giving the sector sums for all requirements. 
-This is also the main section of any Evaluation report, which will be displayed when the report is selected. \\
+This is also the main section of any Evaluation report, at the top of the report document. \\
 
 The next level of detail is the sector sum details, located in 'Sectors$\rightarrow$Sector Layer Name$\rightarrow$Requirement Group Name$\rightarrow$Requirement Name'. \\
 
@@ -31,7 +31,7 @@ By default, when single-clicking a row in a table the respective results are sho
 a step into the next level of detail is performed (if available) and the respective report section is opened. \\
 
 Navigation can be made more efficient by returning to the last sub-result by using the 'Back' button on the top-left. 
-Every section of the report can also be selected by showing the table of contents by clicking the 'Sections' button on the top right.\\
+Every section of the report can also be selected in the section sidebar, or with the 'Sections' button on the top right while the sidebar is hidden (see \nameref{sec:report_structure}).\\
 
 Different requirement results may use different views to display additional result details for deeper inspection:
 
@@ -42,9 +42,17 @@ Different requirement results may use different views to display additional resu
 \item Per-target issue display: Mark test target reports with issues with red border, green otherwise
 \end{itemize}
 \item Histogram Views
-\begin{itemize}  
+\begin{itemize}
 \item Show counts of \#OK and \#NotOK, or numerical distribution of e.g. calculated error/offset
 \end{itemize}
+\end{itemize}
+\ \\
+
+The position, speed and track angle requirements show two histograms in the report, per sector and per target:
+
+\begin{itemize}
+\item 'Error Count': number of failed (\#CF) and passed (\#CP) comparisons
+\item 'Full distribution': distribution of the error value, position error in m, speed offset in m/s, absolute track angle offset in deg
 \end{itemize}
 \ \\
 

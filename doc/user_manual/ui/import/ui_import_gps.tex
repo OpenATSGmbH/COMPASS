@@ -23,11 +23,17 @@ GSV & Optional & Number of visible satellites, satellite SNR (signal-to-noise ra
 \hline
 VTG & Optional & Ground speed (used as fallback if RMC speed is unavailable) \\
 \hline
+GST & Optional & Latitude and longitude error (1-sigma), used as position accuracy \\
+\hline
+ZDA & Optional & Time and \textbf{date} \\
+\hline
 \end{tabular}
 \caption{NMEA sentences used by COMPASS}
 \end{table}
 
-\textbf{Note:} The GGA sentence provides position and time-of-day but \textit{no date}. The date is only available from the RMC sentence. Without RMC, the 'Override Date' option must be used. The GSA sentence provides dilution-of-precision values which are used to compute position accuracy estimates. The GST sentence is \textit{not} supported.
+\textbf{Note:} The GGA sentence provides position and time-of-day but \textit{no date}. The date is only available from the RMC or ZDA sentence. Without RMC or ZDA, the 'Override Date' option must be used. The GSA sentence provides dilution-of-precision values which are used to compute position accuracy estimates. If GST sentences exist, their latitude and longitude errors are used as position accuracy instead. \\
+
+The sentences are read from GPS (GP), GLONASS (GL), Galileo (GA), BeiDou (GB) and multi-system (GN) receivers.
 
 \begin{figure}[H]
   \centering

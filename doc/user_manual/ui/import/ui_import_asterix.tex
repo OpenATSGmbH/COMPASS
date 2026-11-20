@@ -46,8 +46,9 @@ Please \textbf{note} that the following ASTERIX categories, editions, reserved e
   010 & 0.24 Sensis, 0.31  &  & & X  \\ \hline
   019 & 1.2, 1.3 & & & X \\ \hline
   020 & 1.5, 1.8 & 1.3 & & X \\ \hline
-  021 & 0.26, 2.1, 2.4 & 1.5 & & X \\ \hline
+  021 & 0.26, 2.1, 2.4 & 1.5 & Aireon & X \\ \hline
   023 & 1.2 & & & X \\ \hline
+  025 & 1.1, 1.5 & & & X \\ \hline
   030 & 7.0 & & & \\ \hline
   034 & 1.26 & & &  \\ \hline
   048 & 1.15, 1.23 & 1.9 & & X \\ \hline
@@ -59,7 +60,19 @@ Please \textbf{note} that the following ASTERIX categories, editions, reserved e
 \end{tabular} \\
 \  \\
 
-Please \textbf{note} that only the categories marked with 'X' are used, i.e. inserted into the database. Decoding of ASTERIX CAT002 is recommended if CAT001 data is imported, since the timestamps are derived from it (if not available in CAT001).
+Please \textbf{note} that only the categories marked with 'X' are used, i.e. inserted into the database. Decoding of ASTERIX CAT002 is recommended if CAT001 data is imported, since the timestamps are derived from it (if not available in CAT001). \\
+
+In addition to the decoded data items, the import writes the following variables for each target report:
+
+\begin{itemize}
+\item 'Recording Time': Time of the recording frame in seconds since midnight, from the IOSS or RFF frame header
+\item 'Recording Day': Day counter of the recording, 0 at its start (IOSS and RFF)
+\item 'Recording Date': UTC date of the recording frame (RFF)
+\item 'Record Data': The original ASTERIX record as hexadecimal text (CAT001, CAT010, CAT020, CAT021, CAT048 and CAT062)
+\end{itemize}
+\ \\
+
+The recording variables are empty if the framing does not provide them (e.g. Raw/Netto, network import).
 
 \subsubsection{Probing}
 \label{sec:ui_import_asterix_probing}
@@ -484,7 +497,15 @@ Using the 'Show DBContent Variable' button the variable can be inspected in deta
 
 The 'Cancel' button aborts the import.  The 'Import' button triggers the import of the selected files into the database with the given options, but is only available if all selected files can be decoded correctly. \\
 
-Using the 'Import' button, the import task can be performed. During import a status indication will be shown. \\
+Using the 'Import' button, the import task can be performed. During import, the 'Importing ASTERIX Recording(s)' dialog is shown:
+
+\begin{itemize}
+\item File list: 'Filename', 'Size (MB)' and 'Status' ('Pending', 'Decoding', 'Done') of each file, the file being decoded in bold
+\item Progress bar of the whole import
+\item 'Elapsed' and 'Remaining' time, and the number of decoded records per second
+\item 'Abort' button: stops the import and discards the data decoded so far
+\end{itemize}
+\ \\
 
 \begin{figure}[H]
     \centering

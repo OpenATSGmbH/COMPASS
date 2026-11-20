@@ -114,6 +114,16 @@ If the View Deck was collapsed before, it opens again with its last View. Switch
 the number keys on the keyboard. Pressing the respective number key will show the tool (and possibly show the Flight Deck again),
 pressing it again will collapse the Flight Deck. Table \ref{table:ui_flight_deck_tools} lists the assigned number hotkeys. \\
 
+The width of the Flight Deck is set per tool, in percent of the main window width next to the icon bar:
+
+\begin{itemize}
+\item Drag the separator between the Flight Deck and the View Deck: the width changes in steps of 10 percent
+\item 'Decrease Width' \includegraphics[width=0.5cm,frame]{../../data/icons/arrow_to_left.png} and 'Increase Width' \includegraphics[width=0.5cm,frame]{../../data/icons/arrow_to_right.png} buttons at the top of each tool, or the keys '-' and '+': change the width by 10 percent
+\item The width is between 10 and 70 percent, also limited by the minimum widths of the tool and the Views
+\item Each tool keeps its own width, also after a restart of the application
+\end{itemize}
+\ \\
+
 When selecting a tool, the tools content will be shown with a decoration bar on top. The bar will show the selected tool's name 
 and various action buttons for configuring the tool.
 
