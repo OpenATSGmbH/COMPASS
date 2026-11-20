@@ -245,11 +245,11 @@ std::vector<Single::TargetInfo> SingleTrackAngle::targetInfos() const
              { "#PosOutside [1]", "Number of updates outside sector"             , num_pos_outside_                   },
              { "#PosInside [1]" , "Number of updates inside sector"              , num_pos_inside_                    }, 
              { "#NoTstData [1]" , "Number of updates without tst trackangle data", num_no_tst_value_                  }, 
-             { "OMin [m/s]"     , "Minimum of trackangle offset"                 , formatValue(accumulator_.min())    }, 
-             { "OMax [m/s]"     , "Maximum of trackangle offset"                 , formatValue(accumulator_.max())    }, 
-             { "OAvg [m/s]"     , "Average of trackangle offset"                 , formatValue(accumulator_.mean())   }, 
-             { "OSDev [m/s]"    , "Standard Deviation of trackangle offset"      , formatValue(accumulator_.stddev()) },
-             { "OVar [m^2/s^2]" , "Variance of trackangle offset"                , formatValue(accumulator_.var())    },
+             { "OMin [deg]"     , "Minimum of track angle offset"                 , formatValue(accumulator_.min())    }, 
+             { "OMax [deg]"     , "Maximum of track angle offset"                 , formatValue(accumulator_.max())    }, 
+             { "OAvg [deg]"     , "Average of track angle offset"                 , formatValue(accumulator_.mean())   }, 
+             { "OSDev [deg]"    , "Standard Deviation of track angle offset"      , formatValue(accumulator_.stddev()) },
+             { "OVar [deg^2]"   , "Variance of track angle offset"                , formatValue(accumulator_.var())    },
              { "#CF [1]"        , "Number of updates with failed comparison"     , num_comp_failed_                   }, 
              { "#CP [1]"        , "Number of updates with passed comparison"     , num_comp_passed_                   } };
 }
@@ -400,11 +400,11 @@ std::vector<Joined::SectorInfo> JoinedTrackAngle::sectorInfos() const
              { "#PosOutside [1]", "Number of updates outside sector"             , num_pos_outside_                   },
              { "#PosInside [1]" , "Number of updates inside sector"              , num_pos_inside_                    }, 
              { "#NoTstData [1]" , "Number of updates without tst trackangle data", num_no_tst_value_                  }, 
-             { "OMin [m/s]"     , "Minimum of trackangle offset"                 , formatValue(accumulator_.min())    }, 
-             { "OMax [m/s]"     , "Maximum of trackangle offset"                 , formatValue(accumulator_.max())    }, 
-             { "OAvg [m/s]"     , "Average of trackangle offset"                 , formatValue(accumulator_.mean())   }, 
-             { "OSDev [m/s]"    , "Standard Deviation of trackangle offset"      , formatValue(accumulator_.stddev()) },
-             { "OVar [m^2/s^2]" , "Variance of trackangle offset"                , formatValue(accumulator_.var())    },
+             { "OMin [deg]"     , "Minimum of track angle offset"                 , formatValue(accumulator_.min())    }, 
+             { "OMax [deg]"     , "Maximum of track angle offset"                 , formatValue(accumulator_.max())    }, 
+             { "OAvg [deg]"     , "Average of track angle offset"                 , formatValue(accumulator_.mean())   }, 
+             { "OSDev [deg]"    , "Standard Deviation of track angle offset"      , formatValue(accumulator_.stddev()) },
+             { "OVar [deg^2]"   , "Variance of track angle offset"                , formatValue(accumulator_.var())    },
              { "#CF [1]"        , "Number of updates with failed comparison"     , num_comp_failed_                   }, 
              { "#CP [1]"        , "Number of updates with passed comparison"     , num_comp_passed_                   } };
 }
