@@ -44,6 +44,26 @@ using namespace nlohmann;
 namespace EvaluationRequirementResult
 {
 
+namespace
+{
+
+void addErrorHistograms(FeatureDefinitions& defs,
+                        const std::string& value_name,
+                        const EvaluationCalculator& calculator,
+                        const TrackAngleBase& result)
+{
+    // the offset is signed, the requirement checks its absolute value
+    ValueSource<double> abs_offset(SingleTrackAngle::DetailKey::Offset);
+    abs_offset.value_tr_func = [] (const double& v) { return std::fabs(v); };
+
+    defs.addDefinition<FeatureDefinitionStringCategoryHistogram>(value_name, calculator, "Error Count", "Error Count")
+        .addDataSeries("", { "#CF", "#CP" }, { result.numCompFailed(), result.numCompPassed() });
+    defs.addDefinition<FeatureDefinitionHistogram<double>>(value_name, calculator, "Full distribution", "Full distribution [deg]")
+        .addDataSeries("", abs_offset);
+}
+
+}
+
 /***************************************************************************************
  * TrackAngleBase
  ***************************************************************************************/
@@ -277,6 +297,17 @@ void SingleTrackAngle::addAnnotationForDetail(nlohmann::json& annotations_json,
     //        }
 }
 
+/**
+*/
+FeatureDefinitions SingleTrackAngle::getCustomAnnotationDefinitions() const
+{
+    FeatureDefinitions defs;
+
+    addErrorHistograms(defs, requirement()->name(), calculator_, *this);
+
+    return defs;
+}
+
 /***************************************************************************************
  * JoinedTrackAngle
  ***************************************************************************************/
@@ -407,8 +438,10 @@ FeatureDefinitions JoinedTrackAngle::getCustomAnnotationDefinitions() const
 
     defs.addDefinition<FeatureDefinitionBinaryGrid>(requirement()->name(), calculator_, "Passed")
         .addDataSeries(SingleTrackAngle::DetailKey::CheckPassed, 
-                       GridAddDetailMode::AddEvtRefPosition, 
+                       GridAddDetailMode::AddEvtRefPosition,
                        false);
+
+    addErrorHistograms(defs, requirement()->name(), calculator_, *this);
 
     return defs;
 }
