@@ -99,7 +99,7 @@ struct EvaluationSettings
     unsigned int grid_num_cells_y     = 512;
 
     //histogram generation
-    unsigned int histogram_num_bins = 20;
+    unsigned int histogram_num_bins = 10;
 
     //background set of the geographic report figures (ReportFigureBackground)
     nlohmann::json report_figure_background_;

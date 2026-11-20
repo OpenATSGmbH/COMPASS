@@ -207,8 +207,10 @@ namespace
         if (!data)
             logwrn << "malformed histogram annotation of figure image '" << entry.image_name << "': " << error;
 
+        //the series are stacked, on a log axis the upper segments would look much smaller than they are
         HistogramRenderOptions options;
-        options.legend_mode = HistogramLegendMode::RightSide;
+        options.legend_mode   = HistogramLegendMode::RightSide;
+        options.use_log_scale = data && data->histogram.numDataSeries() <= 1;
 
         auto widget = std::make_unique<HistogramViewRenderWidget>(parent);
 

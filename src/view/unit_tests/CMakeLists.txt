@@ -11,6 +11,7 @@ target_sources(compass_tests PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/test_grid_render_widget.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_figure_selection.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_figure_factory.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_report_histogram.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_view_deck.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_viewpoint_geoimage.cpp
 )

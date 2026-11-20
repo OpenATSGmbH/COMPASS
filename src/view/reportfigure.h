@@ -94,8 +94,9 @@ std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point);
 
 /// The render widget of an entry, with the display of a report figure: legend at the right side, no
 /// interaction (mouse wheel ignored, no tools, no drag), no OpenGL, and the height follows the width
-/// with the ratio of the export image. A geographic grid without a background set in its view point gets
-/// GridBackgroundSettings::reportDefaults().
+/// with the ratio of the export image. A histogram of one series has a log y axis, a histogram of several
+/// (stacked) series a linear one, unless the annotation sets the scale. A geographic grid without a
+/// background set in its view point gets GridBackgroundSettings::reportDefaults().
 /// Created without a model object or a view. ctx_man: gives the sector lines of geographic grids, none
 /// without it.
 std::unique_ptr<ViewRenderWidget> createRenderWidget(const RenderEntry& entry,

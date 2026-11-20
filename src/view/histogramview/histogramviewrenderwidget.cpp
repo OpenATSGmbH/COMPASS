@@ -310,14 +310,17 @@ std::unique_ptr<ChartView> HistogramViewRenderWidget::createChartView(bool& has_
     // auto-sets legend visibility from marker labels (non-empty -> visible),
     // which would otherwise override whatever we set earlier. Hide the
     // legend when there are too many entries to be useful - the layer panel
-    // carries per-layer identity in that case.
+    // carries per-layer identity in that case. Without a series name the
+    // legend would only show a colored square.
     {
-        const bool has_series = has_data && chart_series->count() > 0;
+        const auto sets = chart_series->barSets();
+        const bool has_named_series = has_data && std::any_of(sets.begin(), sets.end(),
+            [ ] (const QBarSet* set) { return !set->label().isEmpty(); });
 
-        if (has_series && options_.legend_mode == HistogramLegendMode::RightSide)
+        if (has_named_series && options_.legend_mode == HistogramLegendMode::RightSide)
             chart_view->showLegendAtRightSide();
         else
-            chart->legend()->setVisible(has_series && chart_series->count() <= MaxLegendEntries);
+            chart->legend()->setVisible(has_named_series && chart_series->count() <= MaxLegendEntries);
     }
 
     //    connect (chart_series_, &QBarSeries::clicked,
