@@ -59,6 +59,22 @@ void ViewPointGenFilters::toJSON(nlohmann::json& j) const
 }
 
 /********************************************************************************
+ * ViewPointGenLoadData
+ ********************************************************************************/
+
+/**
+*/
+void ViewPointGenLoadData::toJSON(nlohmann::json& j) const
+{
+    j = view_point_load::loadAllData();
+
+    nlohmann::json filters;
+    filters_.toJSON(filters);
+    if (!filters.is_null())
+        j[ViewPointKeys::VP_FILTERS_KEY] = filters;
+}
+
+/********************************************************************************
  * ViewPointGenFilterUTN
  ********************************************************************************/
 
@@ -1175,7 +1191,6 @@ const std::string ViewPointGenVP::ViewPointFieldID          = "id";
 const std::string ViewPointGenVP::ViewPointFieldType        = "type";
 const std::string ViewPointGenVP::ViewPointFieldStatus      = "status";
 const std::string ViewPointGenVP::ViewPointFieldAnnotations = "annotations";
-const std::string ViewPointGenVP::ViewPointFieldFilters     = "filters";
 const std::string ViewPointGenVP::ViewPointFieldPosLat      = "position_latitude";
 const std::string ViewPointGenVP::ViewPointFieldPosLon      = "position_longitude";
 const std::string ViewPointGenVP::ViewPointFieldWinLat      = "position_window_latitude";
@@ -1205,6 +1220,16 @@ ViewPointGenVP::ViewPointGenVP(const std::string& name,
 void ViewPointGenVP::addCustomField(const std::string& name, const QVariant& value)
 {
     custom_fields_[ name ] = value;
+}
+
+/**
+*/
+ViewPointGenLoadData& ViewPointGenVP::enableDataLoading()
+{
+    if (!load_data_)
+        load_data_.emplace();
+
+    return *load_data_;
 }
 
 /**
@@ -1249,11 +1274,6 @@ void ViewPointGenVP::toJSON(nlohmann::json& j) const
     annotations_.toJSON(annotations);
     j[ViewPointFieldAnnotations] = annotations;
 
-    nlohmann::json filters;
-    filters_.toJSON(filters);
-    if (!filters.is_null())
-        j[ViewPointFieldFilters] = filters;
-
     for (const auto& cf : custom_fields_)
     {
         if (cf.second.type() == QVariant::Type::Int)
@@ -1268,10 +1288,8 @@ void ViewPointGenVP::toJSON(nlohmann::json& j) const
             j[cf.first] = cf.second.toString().toStdString();
     }
 
-    if (no_data_loaded_)
-        j[ViewPointKeys::VP_DS_TYPES_KEY] = nlohmann::json::array();
-    else if (!ds_types_.empty())
-        j[ViewPointKeys::VP_DS_TYPES_KEY] = ds_types_;
+    if (load_data_)
+        load_data_->toJSON(j[ViewPointKeys::VP_LOAD_DATA_KEY]);
 }
 
 /**

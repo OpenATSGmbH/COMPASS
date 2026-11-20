@@ -387,7 +387,8 @@ std::shared_ptr<nlohmann::json::object_t> EvaluationTaskResult::createTargetView
 
         auto timestamp = ReportTableContent::rowTimestamp(buffer, highlight_row.value());
         if (timestamp.has_value())
-            (*viewable)[ ViewPointKeys::VP_TIMESTAMP_KEY ] = Utils::Time::toString(timestamp.value());
+            (*viewable)[ ViewPointKeys::VP_LOAD_DATA_KEY ][ ViewPointKeys::VP_TIMESTAMP_KEY ] =
+                Utils::Time::toString(timestamp.value());
     }
     else
     {

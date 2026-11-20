@@ -1555,7 +1555,7 @@
                         "sleep 2000",
                         "grab last_view"
                     ],
-                    "recipe_hint": "open DB, set_view_point with the histogram view point JSON from appendix/appendix_view_points.tex (\"data_sources\": []), select Histogram View, grab last_view",
+                    "recipe_hint": "open DB, set_view_point with the histogram view point JSON from appendix/appendix_view_points.tex (no load_data), select Histogram View, grab last_view",
                     "gaps": "none",
                     "volatile": "none"
                 },

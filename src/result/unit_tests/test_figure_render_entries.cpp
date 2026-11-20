@@ -74,14 +74,15 @@ namespace
     };
 
     /// view point with one histogram annotation
-    nlohmann::json histogramViewPoint(bool no_data_loaded)
+    nlohmann::json histogramViewPoint(bool loads_data)
     {
         RawHistogram h;
         h.addBin(RawHistogramBin(3, "0-10"));
         h.addBin(RawHistogramBin(12, "10-20"));
 
         ViewPointGenVP vp("Histogram", 0, "Histogram");
-        vp.noDataLoaded(no_data_loaded);
+        if (loads_data)
+            vp.enableDataLoading();
         vp.annotations().getOrCreateAnnotation("Errors")->addFeature(
             new ViewPointGenFeatureHistogram(h, "Errors", Qt::blue, boost::optional<bool>(),
                                              PlotMetadata("Errors", "", "Error [m]", "Count")));
@@ -107,7 +108,7 @@ TEST_CASE("report figure with a histogram view point is drawn by a render widget
     ReportWithSection report;
 
     auto& figure = report.section.addFigure("Errors Histogram",
-                                            ResultReport::SectionContentViewable(histogramViewPoint(true)));
+                                            ResultReport::SectionContentViewable(histogramViewPoint(false)));
 
     const auto entries = figure.renderEntries();
 
@@ -131,7 +132,7 @@ TEST_CASE("report figure that loads data is shown by the views", "[result][repor
     ReportWithSection report;
 
     auto& figure = report.section.addFigure("Errors Histogram",
-                                            ResultReport::SectionContentViewable(histogramViewPoint(false)));
+                                            ResultReport::SectionContentViewable(histogramViewPoint(true)));
 
     CHECK(figure.renderEntries().empty());
 }
@@ -147,7 +148,7 @@ TEST_CASE("report figure on demand is shown by the views", "[result][reportfigur
         content_built = true;
 
         auto content = std::make_shared<nlohmann::json::object_t>();
-        *content = histogramViewPoint(true);
+        *content = histogramViewPoint(false);
 
         return content;
     });

@@ -321,7 +321,10 @@ std::unique_ptr<nlohmann::json::object_t> Base::createViewable(const AnnotationO
             (*viewable_ptr)[ViewPointKeys::VP_POS_WIN_LAT_KEY] = calculator_.settings().result_detail_zoom_;
             (*viewable_ptr)[ViewPointKeys::VP_POS_WIN_LON_KEY] = calculator_.settings().result_detail_zoom_;
         }
-        (*viewable_ptr)[ViewPointKeys::VP_TIMESTAMP_KEY  ] = Utils::Time::toString(info.timestamp);
+
+        auto load_data_it = viewable_ptr->find(ViewPointKeys::VP_LOAD_DATA_KEY);
+        if (load_data_it != viewable_ptr->end() && load_data_it->second.is_object())
+            load_data_it->second[ViewPointKeys::VP_TIMESTAMP_KEY] = Utils::Time::toString(info.timestamp);
     }
 
     //init annotation array

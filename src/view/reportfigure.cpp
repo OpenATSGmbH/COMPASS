@@ -306,30 +306,10 @@ namespace
 }
 
 /**
- * A view point loads no data if it lists no data source type or no data source. A view point without
- * these keys loads all of them (FilterManager::showViewPointSlot).
- */
-bool loadsNoData(const nlohmann::json& view_point)
-{
-    if (!view_point.is_object())
-        return false;
-
-    for (const auto& key : { ViewPointKeys::VP_DS_TYPES_KEY, ViewPointKeys::VP_DS_KEY })
-    {
-        auto it = view_point.find(key);
-
-        if (it != view_point.end() && (it->is_array() || it->is_object()) && it->empty())
-            return true;
-    }
-
-    return false;
-}
-
-/**
  */
 std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point)
 {
-    if (!loadsNoData(view_point))
+    if (view_point_load::loadsData(view_point))
         return {};
 
     auto annotations_it = view_point.find(ViewPointGenVP::ViewPointFieldAnnotations);

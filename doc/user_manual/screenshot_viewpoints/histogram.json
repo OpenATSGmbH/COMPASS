@@ -3,7 +3,6 @@
     "name": "Histogram Example",
     "type": "Saved",
     "status": "open",
-    "data_sources": [],
     "annotations": [
         {
             "name": "My Histogram Annotation",

@@ -3,7 +3,6 @@
     "name": "Vienna Airport",
     "type": "Saved",
     "status": "open",
-    "data_sources": [],
     "position_latitude": 48.113,
     "position_longitude": 16.57,
     "position_window_latitude": 0.06,

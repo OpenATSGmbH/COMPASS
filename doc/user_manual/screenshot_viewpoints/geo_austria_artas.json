@@ -7,13 +7,16 @@
     "position_longitude": 14.5,
     "position_window_latitude": 3.0,
     "position_window_longitude": 4.5,
-    "filters": {
-        "Timestamp": {
-            "Timestamp Minimum": "2023-04-22 10:20:00.000",
-            "Timestamp Maximum": "2023-04-22 10:20:20.000"
+    "load_data": {
+        "data_source_types": [
+            "Tracker"
+        ],
+        "data_sources": "all",
+        "filters": {
+            "Timestamp": {
+                "Timestamp Minimum": "2023-04-22 10:20:00.000",
+                "Timestamp Maximum": "2023-04-22 10:20:20.000"
+            }
         }
-    },
-    "data_source_types": [
-        "Tracker"
-    ]
+    }
 }

@@ -1437,6 +1437,9 @@ void EvaluationCalculator::updateResultsToChanges ()
 nlohmann::json::object_t EvaluationCalculator::getBaseViewableDataConfig () const
 {
     nlohmann::json data;
+    nlohmann::json& load_data = data[ViewPointKeys::VP_LOAD_DATA_KEY];
+
+    load_data[ViewPointKeys::VP_DS_TYPES_KEY] = ViewPointKeys::VP_LOAD_ALL;
 
     // set data sources
 
@@ -1450,12 +1453,12 @@ nlohmann::json::object_t EvaluationCalculator::getBaseViewableDataConfig () cons
         if (src_it.second)
             data_sources[stoull(src_it.first)].insert(settings_.line_id_tst_);
 
-    data["data_sources"] = data_sources;
+    load_data[ViewPointKeys::VP_DS_KEY] = data_sources;
 
     // restrict to the evaluated sector layers, with their exclusion sectors and altitude limits
     if (!used_sector_layers_.empty())
     {
-        auto& sectors_filter = data[ViewPointKeys::VP_FILTERS_KEY][SectorsFilter::FilterName];
+        auto& sectors_filter = load_data[ViewPointKeys::VP_FILTERS_KEY][SectorsFilter::FilterName];
 
         sectors_filter[SectorsFilter::ViewPointKeyLayers]   = used_sector_layers_;
         sectors_filter[SectorsFilter::ViewPointKeyUseDelta] = true;
@@ -1505,9 +1508,9 @@ nlohmann::json::object_t EvaluationCalculator::getBaseViewableDataConfig () cons
 
     if (eval_man_.use_timestamp_filter_)
     {
-        data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] =
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] =
             Time::toString(eval_man_.load_timestamp_begin_);
-        data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] =
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] =
             Time::toString(eval_man_.load_timestamp_end_);
     }
 
@@ -1518,11 +1521,7 @@ nlohmann::json::object_t EvaluationCalculator::getBaseViewableDataConfig () cons
  */
 nlohmann::json::object_t EvaluationCalculator::getBaseViewableNoDataConfig () const
 {
-    nlohmann::json data;
-
-    data["data_sources"] = std::map<unsigned int, std::set<unsigned int>>{};
-
-    return data;
+    return nlohmann::json::object_t{};
 }
 
 /**
@@ -1530,7 +1529,7 @@ nlohmann::json::object_t EvaluationCalculator::getBaseViewableNoDataConfig () co
 std::unique_ptr<nlohmann::json::object_t> EvaluationCalculator::getViewableForUTN (unsigned int utn) const
 {
     nlohmann::json::object_t data = getBaseViewableDataConfig();
-    data[ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
+    data[ViewPointKeys::VP_LOAD_DATA_KEY][ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
 
     return std::unique_ptr<nlohmann::json::object_t>{new nlohmann::json::object_t(move(data))};
 }
@@ -1618,7 +1617,7 @@ void EvaluationCalculator::showUTN (unsigned int utn)
     loginf << "utn " << utn;
 
     nlohmann::json data = getBaseViewableDataConfig();
-    data[ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
+    data[ViewPointKeys::VP_LOAD_DATA_KEY][ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
 
     loginf << "showing";
     eval_man_.setViewableDataConfig(data);
@@ -1629,7 +1628,9 @@ void EvaluationCalculator::showUTN (unsigned int utn)
 void EvaluationCalculator::showFullUTN (unsigned int utn)
 {
     nlohmann::json::object_t data;
-    data[ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
+    nlohmann::json& load_data = data[ViewPointKeys::VP_LOAD_DATA_KEY];
+    load_data = view_point_load::loadAllData();
+    load_data[ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
 
     eval_man_.setViewableDataConfig(data);
 }
@@ -1639,6 +1640,8 @@ void EvaluationCalculator::showFullUTN (unsigned int utn)
 void EvaluationCalculator::showSurroundingData (const EvaluationTarget& target)
 {
     nlohmann::json::object_t data;
+    nlohmann::json& load_data = data[ViewPointKeys::VP_LOAD_DATA_KEY];
+    load_data = view_point_load::loadAllData();
 
     ptime time_begin = target.timeBegin();
     time_begin -= seconds(60);
@@ -1652,21 +1655,21 @@ void EvaluationCalculator::showSurroundingData (const EvaluationTarget& target)
     //    },
 
     // TODO_TIMESTAMP
-    data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(time_end);
-    data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] = Time::toString(time_begin);
+    load_data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(time_end);
+    load_data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] = Time::toString(time_begin);
 
     //    "Aircraft Address": {
     //    "Aircraft Address Values": "FEFE10"
     //    },
     if (target.aircraftAddresses().size())
-        data[ViewPointKeys::VP_FILTERS_KEY]["Aircraft Address"]["Aircraft Address Values"] = target.aircraftAddressesStr()+",NULL";
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Aircraft Address"]["Aircraft Address Values"] = target.aircraftAddressesStr()+",NULL";
 
     //    "Mode 3/A Code": {
     //    "Mode 3/A Code Values": "7000"
     //    }
 
     if (target.modeACodes().size())
-        data[ViewPointKeys::VP_FILTERS_KEY]["Mode 3/A Codes"]["Mode 3/A Codes Values"] = target.modeACodesStr()+",NULL";
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Mode 3/A Codes"]["Mode 3/A Codes Values"] = target.modeACodesStr()+",NULL";
 
     //    VP_FILTERS_KEY: {
     //    "Barometric Altitude": {
@@ -1682,9 +1685,9 @@ void EvaluationCalculator::showSurroundingData (const EvaluationTarget& target)
         float alt_max = target.modeCMax();
         alt_max += 300;
 
-        data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Maximum"] = alt_max;
-        data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Minimum"] = alt_min;
-        data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude NULL"] = true;
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Maximum"] = alt_max;
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Minimum"] = alt_min;
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude NULL"] = true;
     }
 
     //    "Position": {
@@ -1701,10 +1704,10 @@ void EvaluationCalculator::showSurroundingData (const EvaluationTarget& target)
         double lon_eps = (target.longitudeMax() - target.longitudeMin()) / 10.0; // 10%
         lon_eps = min(lon_eps, 0.1); // 10% or 0.1 at max
 
-        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Maximum"] = to_string(target.latitudeMax()+lat_eps);
-        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Minimum"] = to_string(target.latitudeMin()-lat_eps);
-        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Maximum"] = to_string(target.longitudeMax()+lon_eps);
-        data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Minimum"] = to_string(target.longitudeMin()-lon_eps);
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Maximum"] = to_string(target.latitudeMax()+lat_eps);
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Minimum"] = to_string(target.latitudeMin()-lat_eps);
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Maximum"] = to_string(target.longitudeMax()+lon_eps);
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Minimum"] = to_string(target.longitudeMin()-lon_eps);
     }
 
     eval_man_.setViewableDataConfig(data);

@@ -1898,7 +1898,7 @@ void ReconstructorBase::doUnassociatedAnalysis()
     QRectF roi(lon_min, lat_min, lon_max - lon_min, lat_max - lat_min);
     traced_assert(!roi.isEmpty());
 
-    auto vp = task().getDebugViewpoint(
+    auto vp = task().getDebugViewpointWithData(
         name+" Unassociated Grid", "Grid");
 
     auto anno = vp->annotations().getOrCreateAnnotation("Unassociated Grid");
@@ -1982,16 +1982,18 @@ void ReconstructorBase::doUnassociatedAnalysis()
     vp->toJSON(vp_json);
     //section.addFigure("Avg. Unused Scatterplot", {vp_json});
 
+    nlohmann::json& load_data = vp_json.at(ViewPointKeys::VP_LOAD_DATA_KEY);
+
     // slice was already switched
-    vp_json[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(
+    load_data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(
         next_slice_begin_ - settings().sliceDuration() - boost::posix_time::milliseconds(1));
-    vp_json[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] =
+    load_data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] =
         Time::toString(current_slice_begin_ - settings().sliceDuration());
 
-    // vp_json[ViewPointKeys::VP_FILTERS_KEY]["Record Number"]["Record NumberCondition0"] =
+    // load_data[ViewPointKeys::VP_FILTERS_KEY]["Record Number"]["Record NumberCondition0"] =
     //     String::compress(associator().unassociatedRecNums(), ',');
 
-    vp_json[ViewPointKeys::VP_SELECTED_RECNUMS_KEY] = associator().unassociatedRecNums();
+    load_data[ViewPointKeys::VP_SELECTED_RECNUMS_KEY] = associator().unassociatedRecNums();
 
     table.addRow(row, {vp_json});
 

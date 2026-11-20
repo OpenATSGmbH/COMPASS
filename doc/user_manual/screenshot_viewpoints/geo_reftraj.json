@@ -3,26 +3,29 @@
     "name": "Reconstructed Target",
     "type": "Saved",
     "status": "open",
-    "data_source_types": [
-        "RefTraj"
-    ],
+    "load_data": {
+        "data_source_types": [
+            "RefTraj"
+        ],
+        "data_sources": "all",
+        "filters": {
+            "UTNs": {
+                "utns": "273"
+            },
+            "Timestamp": {
+                "Timestamp Minimum": "2023-04-22 10:14:00.000",
+                "Timestamp Maximum": "2023-04-22 10:25:00.000"
+            }
+        },
+        "labels": [
+            [
+                616700927,
+                3
+            ]
+        ]
+    },
     "position_latitude": 48.12,
     "position_longitude": 16.45,
     "position_window_latitude": 0.25,
-    "position_window_longitude": 0.38,
-    "filters": {
-        "UTNs": {
-            "utns": "273"
-        },
-        "Timestamp": {
-            "Timestamp Minimum": "2023-04-22 10:14:00.000",
-            "Timestamp Maximum": "2023-04-22 10:25:00.000"
-        }
-    },
-    "labels": [
-        [
-            616700927,
-            3
-        ]
-    ]
+    "position_window_longitude": 0.38
 }

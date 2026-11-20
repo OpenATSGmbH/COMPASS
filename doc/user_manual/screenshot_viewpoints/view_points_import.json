@@ -13,17 +13,21 @@
             "status": "open",
             "comment": "",
             "text": "Target report not associated",
-            "timestamp": "2023-04-22 10:00:03.092",
-            "time_window": 60.0,
+            "load_data": {
+                "data_source_types": "all",
+                "data_sources": "all",
+                "filters": {
+                    "UTNs": {
+                        "utns": "0"
+                    }
+                },
+                "timestamp": "2023-04-22 10:00:03.092",
+                "time_window": 60.0
+            },
             "position_latitude": 47.6515,
             "position_longitude": 11.9753,
             "position_window_latitude": 0.3,
-            "position_window_longitude": 0.45,
-            "filters": {
-                "UTNs": {
-                    "utns": "0"
-                }
-            }
+            "position_window_longitude": 0.45
         },
         {
             "id": 1,
@@ -32,17 +36,21 @@
             "status": "open",
             "comment": "",
             "text": "Additional track for target",
-            "timestamp": "2023-04-22 10:00:02.696",
-            "time_window": 60.0,
+            "load_data": {
+                "data_source_types": "all",
+                "data_sources": "all",
+                "filters": {
+                    "UTNs": {
+                        "utns": "3"
+                    }
+                },
+                "timestamp": "2023-04-22 10:00:02.696",
+                "time_window": 60.0
+            },
             "position_latitude": 46.7137,
             "position_longitude": 13.7662,
             "position_window_latitude": 0.3,
-            "position_window_longitude": 0.45,
-            "filters": {
-                "UTNs": {
-                    "utns": "3"
-                }
-            }
+            "position_window_longitude": 0.45
         },
         {
             "id": 2,
@@ -51,17 +59,21 @@
             "status": "closed",
             "comment": "checked",
             "text": "Track shorter than 60 s",
-            "timestamp": "2023-04-22 10:00:00.500",
-            "time_window": 60.0,
+            "load_data": {
+                "data_source_types": "all",
+                "data_sources": "all",
+                "filters": {
+                    "UTNs": {
+                        "utns": "4"
+                    }
+                },
+                "timestamp": "2023-04-22 10:00:00.500",
+                "time_window": 60.0
+            },
             "position_latitude": 48.5144,
             "position_longitude": 15.6431,
             "position_window_latitude": 0.3,
-            "position_window_longitude": 0.45,
-            "filters": {
-                "UTNs": {
-                    "utns": "4"
-                }
-            }
+            "position_window_longitude": 0.45
         },
         {
             "id": 3,
@@ -70,17 +82,21 @@
             "status": "open",
             "comment": "",
             "text": "Position offset above 200 m",
-            "timestamp": "2023-04-22 10:00:03.296",
-            "time_window": 60.0,
+            "load_data": {
+                "data_source_types": "all",
+                "data_sources": "all",
+                "filters": {
+                    "UTNs": {
+                        "utns": "5"
+                    }
+                },
+                "timestamp": "2023-04-22 10:00:03.296",
+                "time_window": 60.0
+            },
             "position_latitude": 47.116,
             "position_longitude": 15.2913,
             "position_window_latitude": 0.3,
-            "position_window_longitude": 0.45,
-            "filters": {
-                "UTNs": {
-                    "utns": "5"
-                }
-            }
+            "position_window_longitude": 0.45
         }
     ]
 }

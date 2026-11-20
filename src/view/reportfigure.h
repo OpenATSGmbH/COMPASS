@@ -75,9 +75,6 @@ struct RenderEntry
 extern const QSize ExportLayoutSize;
 extern const double ExportScale;
 
-/// true: the view point loads no data, it shows its annotations only
-bool loadsNoData(const nlohmann::json& view_point);
-
 /// true if the annotations (the annotation array of a view point) hold a grid over longitude / latitude.
 /// The tasks write the background set only into such view points.
 bool hasGeographicGrid(const nlohmann::json& annotations);

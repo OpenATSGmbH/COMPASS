@@ -184,7 +184,6 @@ namespace
     nlohmann::json labelViewPoint()
     {
         ViewPointGenVP vp("labels", 0, "Grid");
-        vp.noDataLoaded(true);
 
         vp.annotations().getOrCreateAnnotation("grid")->addFeature(new ViewPointGenFeatureGrid(makeLayer("wgs84")));
 

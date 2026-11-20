@@ -94,7 +94,6 @@ namespace
     std::unique_ptr<ViewPointGenVP> viewPoint()
     {
         auto vp = std::make_unique<ViewPointGenVP>("Figure", 0, "Histogram");
-        vp->noDataLoaded(true);
 
         return vp;
     }
@@ -130,25 +129,23 @@ TEST_CASE("report figure selection", "[view][reportfigure]")
         CHECK(entries[ 0 ].feature->contains("histogram"));
     }
 
-    SECTION("a view point that loads data uses the view path")
+    SECTION("a view point with load_data uses the view path")
     {
         ViewPointGenVP vp("Figure", 0, "Histogram");
         addHistogram(vp, "Errors");
+        vp.enableDataLoading();
 
         CHECK(report_figure::selectRenderEntries(toJSON(vp)).empty());
     }
 
-    SECTION("a view point with an empty data source list loads no data")
+    SECTION("a view point with a null load_data loads no data")
     {
         ViewPointGenVP vp("Figure", 0, "Histogram");
         addHistogram(vp, "Errors");
 
         nlohmann::json j = toJSON(vp);
-        REQUIRE(!report_figure::loadsNoData(j));
+        j[ "load_data" ] = nullptr;
 
-        j[ "data_sources" ] = nlohmann::json::array();
-
-        CHECK(report_figure::loadsNoData(j));
         CHECK(report_figure::selectRenderEntries(j).size() == 1);
     }
 
@@ -192,6 +189,7 @@ TEST_CASE("report figure selection", "[view][reportfigure]")
     {
         ViewPointGenVP vp("Figure", 0, "Scatterplot");
         addScatter(vp, "Bias");
+        vp.enableDataLoading();
 
         CHECK(report_figure::selectRenderEntries(toJSON(vp)).empty());
     }
