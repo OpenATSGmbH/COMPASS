@@ -1,7 +1,12 @@
 # User Manual - Structure & Extension Reference
 
 Source: `doc/user_manual/` - LaTeX memoir-class document.  
-Root file: `user_manual.tex` (includes all chapters via `\subfile{}`).  
+Two root files, built into two PDFs by `make draft`:
+- `user_manual.tex` -> `user_manual.pdf`: all chapters except the Appendix (via `\subfile{}`).
+- `user_manual_appendix.tex` -> `user_manual_appendix.pdf` ("User Manual Appendix"): the Appendix chapter, incl. the evaluation requirements.
+- Both load `preamble.tex` (shared preamble, title page macro `\compasstitlepage{<title>}`) and read the labels of the other document via `xr-hyper` (`\externaldocument`), so `\nameref` works across both PDFs. The PDFs link to each other by file name and must stay in the same folder.
+
+
 Current version: **1.0.0** ("Defiant Dodo").  
 Authors: Helmut Puhr & Philipp Wagner.
 
@@ -10,7 +15,9 @@ Authors: Helmut Puhr & Philipp Wagner.
 ## Document Structure
 
 ```
-user_manual.tex               root, preamble, chapter includes
+preamble.tex                  shared preamble of both root files
+user_manual.tex               root of user_manual.pdf, chapter includes
+user_manual_appendix.tex      root of user_manual_appendix.pdf, includes appendix/appendix.tex
 intro/
   introduction.tex            Chapter: Introduction (chapter file + subfiles)
   intro_feature_highlights.tex
@@ -236,7 +243,7 @@ Pre-requisites: associations set, sector defined, reference data and test data e
 
 **eval_targets**: Per-UTN result table - pass/fail per requirement, manual remove from evaluation.
 
-**eval_requirements**: Per-requirement-type detailed documentation (separate files: eval_req_det, _dub, _extra, _id, _m3a, _mc, _mom, _pos, _speed, _trk_cst).
+**eval_requirements** (`sec:eval_requirements`, "Appendix: Evaluation Requirements"): Per-requirement-type detailed documentation (separate files: eval_req_det, _dub, _extra, _id, _m3a, _mc, _mom, _pos, _speed, _trk_cst). The files stay in `eval/`, but are included by `appendix/appendix.tex`, so they are in the User Manual Appendix. The Evaluation chapter only has a short 'Requirements' section that refers to it.
 
 ---
 
@@ -312,6 +319,8 @@ Known issues: AppImage FUSE permissions on CentOS, missing glibc library version
 ---
 
 ### Appendix (`sec:appendix`)
+
+Separate document `user_manual_appendix.pdf`. Order: configuration, data sources, airspace, view points, maps, algorithms, evaluation requirements (`../eval/eval_requirements`), evaluation standards, logging, LaTeX, utils, remote GPU, licensing.
 
 **appendix_configuration**: Configuration file locations, structure, how to reset.
 
@@ -451,6 +460,7 @@ When adding content, respect the level of detail and approximate length of exist
 
 ### Cross-References
 - `\nameref{sec:foo}` for inline human-readable references - **default choice**, always within a sentence, never bare.
+- Between `user_manual.pdf` and `user_manual_appendix.pdf` use only `\nameref`: a `\ref` or `\pageref` number would be read as a number of the current document. Name the document where the target title alone does not show it, e.g. "described in the User Manual Appendix, see \nameref{sec:eval_requirements}".
 - `\ref{sec:foo}` only when the **number** matters (rare; appears as parenthetical `(\ref{sec:appendix_view_points})` for "see appendix N.N" style).
 - Common forms:
   - "described in \nameref{sec:filters}"

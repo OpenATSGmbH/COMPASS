@@ -1,0 +1,31 @@
+\input{preamble}
+\externaldocument{user_manual}[user_manual.pdf]
+\hypersetup{pdftitle={OpenATS COMPASS User Manual Appendix}}
+
+\begin{document}
+
+\firmlists
+\midsloppy
+\raggedbottom
+
+\frontmatter
+\pagestyle{empty}
+
+\compasstitlepage{User Manual Appendix}
+
+\cleardoublepage
+
+\pagestyle{headings}
+
+\setupparasubsecs
+\tableofcontents
+\setlength{\unitlength}{1pt}
+\clearpage
+
+\pagenumbering{arabic}
+
+\subfile{appendix/appendix}
+
+\end{document}
+
+\endinput

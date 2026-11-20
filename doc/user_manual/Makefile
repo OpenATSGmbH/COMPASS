@@ -5,7 +5,9 @@
 #   quality  - clean full rebuild, all passes settled (use before releases)
 #   clean    - remove auxiliary files
 
-JOBNAME  := user_manual
+# user_manual and user_manual_appendix read each other's .aux (xr-hyper), so each
+# build runs latexmk twice: the second call picks up the labels of the other document.
+JOBNAMES := user_manual_appendix user_manual
 LATEXMK  := latexmk
 PDFLATEX := pdflatex
 
@@ -24,12 +26,16 @@ help:
 	@echo "  clean    - remove auxiliary files"
 
 draft:
-	$(LATEXMK) -pdf -pdflatex="$(PDFLATEX) $(PDFLATEX_FLAGS) %O %S" -f $(JOBNAME)
+	$(LATEXMK) -pdf -pdflatex="$(PDFLATEX) $(PDFLATEX_FLAGS) %O %S" -f $(JOBNAMES)
+	$(LATEXMK) -pdf -pdflatex="$(PDFLATEX) $(PDFLATEX_FLAGS) %O %S" -f $(JOBNAMES)
 
 quality: clean
-	$(LATEXMK) -pdf -pdflatex="$(PDFLATEX) $(PDFLATEX_FLAGS) %O %S" -g $(JOBNAME)
+	$(LATEXMK) -pdf -pdflatex="$(PDFLATEX) $(PDFLATEX_FLAGS) %O %S" -g $(JOBNAMES)
+	$(LATEXMK) -pdf -pdflatex="$(PDFLATEX) $(PDFLATEX_FLAGS) %O %S" $(JOBNAMES)
 
 clean:
-	$(LATEXMK) -C $(JOBNAME) || true
-	rm -f $(JOBNAME).ego $(JOBNAME).ent $(JOBNAME).glo $(JOBNAME).gls \
-	      $(JOBNAME).ilg $(JOBNAME).ind lines.idx
+	$(LATEXMK) -C $(JOBNAMES) || true
+	for j in $(JOBNAMES); do \
+	    rm -f $$j.ego $$j.ent $$j.glo $$j.gls $$j.ilg $$j.ind; \
+	done
+	rm -f lines.idx
