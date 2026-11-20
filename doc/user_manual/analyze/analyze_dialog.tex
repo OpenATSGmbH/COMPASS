@@ -87,10 +87,34 @@ The Evaluation exclusions are defined in the \nameref{sec:targets} tool of the F
 \includegraphics[width=0.5cm]{../../data/icons/hint.png} \textbf{Please note that the exclusions are read when the analysis is run.
 If they are changed later, the analysis report has to be updated to use the changed exclusions.} \\
 
+\subsection{Report Figures}
+\label{sec:analyze_report_figures}
+
+The 'Report Figures' group on the 'Report' page sets how the figures of the analysis report are drawn (see \nameref{sec:report_section_figures}):
+
+\begin{itemize}
+\item Histogram Log Scale: Logarithmic count axis of the histograms with one data series, on by default
+\begin{itemize}
+\item Histograms with several data series are stacked and always use a linear axis
+\end{itemize}
+\item Export Image Width, Export Image Height: Layout size of an exported figure image, 1200 x 800 by default
+\begin{itemize}
+\item The image has twice this size in pixels
+\item A smaller layout gives larger text in the image, e.g. for two figures next to each other on one page
+\end{itemize}
+\item Report Figure Background: See below
+\end{itemize}
+\ \\
+
+The number of histogram bars of the update interval histograms is set in the ADS-B and MLAT Sensor Coverage settings ('Histogram Bins', 10 by default). \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} \textbf{Please note that these settings are written into the figures when the analysis runs.
+Changed settings apply to the next analysis, not to existing reports.} \\
+
 \subsection{Report Figure Background}
 \label{sec:analyze_report_figure_background}
 
-The 'Report Figure Background' group on the 'Report' page sets the background of the report figures with a grid over longitude and latitude (e.g. the coverage figures).
+The 'Report Figure Background' group in the 'Report Figures' group on the 'Report' page sets the background of the report figures with a grid over longitude and latitude (e.g. the coverage figures).
 The report shows and exports these figures with this background, and the 'View' button gives it to the Grid View.
 The values are the same as the background items of the Grid View, see \nameref{sec:grid_background}. \\
 

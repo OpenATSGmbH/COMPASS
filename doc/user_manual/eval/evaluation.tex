@@ -347,10 +347,33 @@ The following settings can be used to configure the content of the generated res
 \end{itemize}
 \ \\
 
+\subsubsection{Report Figures}
+\label{sec:eval_report_figures}
+
+The 'Report Figures' group sets how the figures of the evaluation report are drawn (see \nameref{sec:report_section_figures}):
+
+\begin{itemize}
+\item Histogram Bars: Number of bars of the histograms of value distributions (e.g. 'Full distribution' of a position error), 10 by default
+\item Histogram Log Scale: Logarithmic count axis of the histograms with one data series, on by default
+\begin{itemize}
+\item Histograms with several data series are stacked and always use a linear axis
+\end{itemize}
+\item Export Image Width, Export Image Height: Layout size of an exported figure image, 1200 x 800 by default
+\begin{itemize}
+\item The image has twice this size in pixels
+\item A smaller layout gives larger text in the image, e.g. for two figures next to each other on one page
+\end{itemize}
+\item Report Figure Background: See below
+\end{itemize}
+\ \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} \textbf{Please note that these settings are written into the figures when the evaluation runs.
+Changed settings apply to the next evaluation, not to existing reports.} \\
+
 \subsubsection{Report Figure Background}
 \label{sec:eval_report_figure_background}
 
-The 'Report Figure Background' group sets the background of the report figures with a grid over longitude and latitude (e.g. the sector overview figures).
+The 'Report Figure Background' group in the 'Report Figures' group sets the background of the report figures with a grid over longitude and latitude (e.g. the sector overview figures).
 The report shows and exports these figures with this background, and the 'View' button gives it to the Grid View.
 The values are the same as the background items of the Grid View, see \nameref{sec:grid_background}. \\
 
