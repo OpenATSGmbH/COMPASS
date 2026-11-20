@@ -176,7 +176,7 @@
                     "requires": "AT_2026 Data Context in the fresh config dir (copy ~/.compass/data_contexts/AT_2026 or import ZIP), set with --set_context AT_2026",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"AT_20230422|Edit\" --async",
                         "wait dialog",
@@ -205,7 +205,7 @@
                     "requires": "AT_2026 Data Context in the fresh config dir (copy ~/.compass/data_contexts/AT_2026 or import ZIP), set with --set_context AT_2026, a radar data source without PD / clutter rate",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"AT_20230422|Edit\" --async",
                         "wait dialog",
@@ -391,7 +391,7 @@
                     "requires": "at_20230422 context (data sources, sectors/sectors.json, context/ffts.json), restored from the DB",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"AT_20230422|Edit\" --async",
                         "wait dialog",
@@ -850,7 +850,7 @@
                     "requires": "AT dataset 2026-05-20 (hello_world2_v100, ~/data/austria/hello_world2, not in ~/data/test)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Histogram View\" --async",
                         "sleep 1000",
@@ -883,7 +883,7 @@
                     "requires": "AT dataset 2026-05-20 (hello_world2_v100, not in ~/data/test)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Histogram View\" --async",
                         "sleep 1000",
@@ -965,7 +965,7 @@
                     "requires": "AT dataset 2026-05-20 (hello_world2_v100)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Data Sources\"",
                         "uiinject mainwindow.color_mode \"showpopup()\"",
@@ -990,7 +990,7 @@
                     "requires": "AT_2026 Data Context in the fresh config dir (copy ~/.compass/data_contexts/AT_2026 or import ZIP), set with --set_context AT_2026",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiinject mainwindow.mainmenu \"openmenu(Configuration)\"",
                         "wait popup",
@@ -1016,7 +1016,7 @@
                     "requires": "AT_2026 Data Context in the fresh config dir (copy ~/.compass/data_contexts/AT_2026 or import ZIP), set with --set_context AT_2026",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiinject mainwindow.mainmenu \"openmenu(AT_20230422)\"",
                         "wait popup",
@@ -1042,7 +1042,7 @@
                     "requires": "none",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiinject mainwindow.mainmenu \"openmenu(File)\"",
                         "wait popup",
@@ -1068,7 +1068,7 @@
                     "requires": "AT dataset 2026-05-20 (hello_world2_v100)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Data Sources\"",
                         "sleep 500",
@@ -1092,7 +1092,7 @@
                     "requires": "AT dataset (hello_world2_v100)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Data Sources\"",
                         "uiset mainwindow.toolbox_config_button --async",
@@ -1118,7 +1118,7 @@
                     "requires": "any DB (Import enabled only with DB)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiinject mainwindow.mainmenu \"openmenu(Import)\"",
                         "wait popup",
@@ -1144,7 +1144,7 @@
                     "requires": "AT dataset with ADS-B, MLAT, radar, tracker (counts 6830636)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Table View 0\"",
                         "uiset mainwindow.reload --wait_signal=mainwindow.dataLoaded;300000",
@@ -1176,7 +1176,7 @@
                     "requires": "AT dataset with ADS-B, MLAT, radar, tracker",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Table View 0\"",
                         "uiset mainwindow.reload --wait_signal=mainwindow.dataLoaded;300000",
@@ -1201,7 +1201,7 @@
                     "requires": "any DB with data",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiinject mainwindow.mainmenu \"openmenu(Process)\"",
                         "wait popup",
@@ -1348,7 +1348,7 @@
                     "requires": "delivered view presets (repo presets/, seeded into HOME)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Table View 0\"",
                         "sleep 500",
@@ -1378,7 +1378,7 @@
                     "requires": "any DB with a view",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Table View 0\"",
                         "sleep 500",
@@ -1402,7 +1402,7 @@
                     "requires": "any DB with a Table View",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Table View 0\"",
                         "sleep 500",
@@ -1462,7 +1462,7 @@
                     "requires": "delivered view presets (repo presets/, seeded into HOME)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Table View 0\"",
                         "sleep 500",
@@ -1489,7 +1489,7 @@
                     "requires": "any DB with a view, one user preset",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Table View 0\"",
                         "sleep 500",
@@ -1527,7 +1527,7 @@
                     "requires": "any DB; view point JSON with 'My Histogram' annotation (appendix_view_points.tex)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Histogram View\" --async",
                         "sleep 1000",
@@ -2380,7 +2380,7 @@
                     "requires": "Austrian recording with radars, MLAT, ADS-B and ARTAS tracker (at_20230422 likely suitable, unverified)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Data Sources\"",
                         "uiinject mainwindow.color_mode \"showpopup()\"",
@@ -2406,7 +2406,7 @@
                     "requires": "any DB",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Data Sources\"",
                         "uiset mainwindow.toolbox_config_button --async",
@@ -2431,7 +2431,7 @@
                     "requires": "Austrian recording with radars, MLAT, ADS-B and ARTAS tracker (at_20230422 likely suitable, unverified), ARTAS tracker needed",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Data Sources\"",
                         "uiset mainwindow.toolbox_grow_button \"\"",
@@ -2479,7 +2479,7 @@
                     "requires": "any DB",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Data Sources\"",
                         "uiset mainwindow.toolbox_config_button --async",
@@ -2506,7 +2506,7 @@
                     "requires": "any DB",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Data Sources\"",
                         "uiset mainwindow.toolbox_config_button --async",
@@ -2533,7 +2533,7 @@
                     "requires": "Austrian recording with radars, MLAT, ADS-B and ARTAS tracker (at_20230422 likely suitable, unverified), with associations",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Data Sources\"",
                         "uiset mainwindow.toolbox_grow_button \"\"",
@@ -2561,7 +2561,7 @@
                     "requires": "any DB (filter widget from default config)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_Aircraft Address.filter_visible_check\" true",
@@ -2587,7 +2587,7 @@
                     "requires": "any DB (filter widget from default config)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_Aircraft Identification.filter_visible_check\" true",
@@ -2613,7 +2613,7 @@
                     "requires": "any DB",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset mainwindow.filter_use_check true",
@@ -2709,7 +2709,7 @@
                     "requires": "any DB (filter widget from default config)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_ADSBMOPS.filter_visible_check\" true",
@@ -2735,7 +2735,7 @@
                     "requires": "any DB (filter widget from default config)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_ADSB Quality.filter_visible_check\" true",
@@ -2761,7 +2761,7 @@
                     "requires": "any DB",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset mainwindow.toolbox_config_button --async",
@@ -2786,7 +2786,7 @@
                     "requires": "any DB (filter widget from default config)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_Detection Type.filter_visible_check\" true",
@@ -2812,7 +2812,7 @@
                     "requires": "DB with data (window spans DB time range)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset mainwindow.toolbox_grow_button \"\"",
@@ -2847,7 +2847,7 @@
                     "requires": "any DB (filter widget from default config)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_Ground Bit.filter_visible_check\" true",
@@ -2873,7 +2873,7 @@
                     "requires": "any DB (filter widget from default config)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_MLAT RUs.filter_visible_check\" true",
@@ -2900,7 +2900,7 @@
                     "requires": "MLAT data source with remote unit names (LOWW_26 context has RU01...), at_20230422 has none",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_MLAT RUs.filter_visible_check\" true",
@@ -2927,7 +2927,7 @@
                     "requires": "any DB (filter widget from default config)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_Mode 3/A Codes.filter_visible_check\" true",
@@ -2953,7 +2953,7 @@
                     "requires": "any DB (filter widget from default config)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_Mode C Codes.filter_visible_check\" true",
@@ -2979,7 +2979,7 @@
                     "requires": "any DB (filter widget from default config)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_Position.filter_visible_check\" true",
@@ -3005,7 +3005,7 @@
                     "requires": "any DB (filter widget from default config)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_Primary Only.filter_visible_check\" true",
@@ -3031,7 +3031,7 @@
                     "requires": "any DB (filter widget from default config)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_RefTraj Accuracy.filter_visible_check\" true",
@@ -3084,7 +3084,7 @@
                     "requires": "DB with data",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_Timestamp.filter_visible_check\" true",
@@ -3110,7 +3110,7 @@
                     "requires": "DB with data",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_Time of Day.filter_visible_check\" true",
@@ -3136,7 +3136,7 @@
                     "requires": "Austrian recording with radars, MLAT, ADS-B and ARTAS tracker (at_20230422 likely suitable, unverified), ARTAS tracker needed for the line label",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_Tracker Track Number.filter_visible_check\" true",
@@ -3162,7 +3162,7 @@
                     "requires": "any DB (filter widget from default config)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_Track Number.filter_visible_check\" true",
@@ -3188,7 +3188,7 @@
                     "requires": "any DB (filter widget from default config)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset \"mainwindow.filter_widget_UTNs.filter_visible_check\" true",
@@ -3214,7 +3214,7 @@
                     "requires": "any DB",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Filters\"",
                         "uiset mainwindow.filter_use_check true",
@@ -3244,7 +3244,7 @@
                     "requires": "DB with a stored Evaluation report (run reconstruct + evaluate once and keep the DB, takes minutes)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Reports\"",
                         "uiset mainwindow.report_combo \"Radar Feichtberg Mode-S L1 Evaluation\"",
@@ -3273,7 +3273,7 @@
                     "requires": "DB with a stored Evaluation report (run reconstruct + evaluate once and keep the DB, takes minutes)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Reports\"",
                         "uiset mainwindow.report_combo \"Radar Feichtberg Mode-S L1 Evaluation\"",
@@ -3402,7 +3402,7 @@
                     "requires": "stored report \"Tracker Comparison AWAM ADSB L1 Evaluation\" (DB build, eval_configs/tracker_comparison.json)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Reports\"",
                         "uiset mainwindow.report_combo \"Tracker Comparison AWAM ADSB L1 Evaluation\"",
@@ -3483,7 +3483,7 @@
                     "requires": "DB with a stored Evaluation report (run reconstruct + evaluate once and keep the DB, takes minutes)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Reports\"",
                         "uiset mainwindow.report_combo \"Radar Feichtberg Mode-S L1 Evaluation\"",
@@ -3510,7 +3510,7 @@
                     "requires": "DB with a stored Evaluation report (run reconstruct + evaluate once and keep the DB, takes minutes)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Reports\"",
                         "uiset mainwindow.report_combo \"Tracker Comparison AWAM ADSB L1 Evaluation\"",
@@ -3536,7 +3536,7 @@
                     "requires": "DB with a stored Evaluation report (run reconstruct + evaluate once and keep the DB, takes minutes)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Targets\"",
                         "uiinject mainwindow.target_table \"selectrows(1)\"",
@@ -3568,7 +3568,7 @@
                     "requires": "stored report \"Tracker Comparison AWAM ADSB L1 Evaluation\" (DB build, eval_configs/tracker_comparison.json)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Reports\"",
                         "uiset mainwindow.report_combo \"Tracker Comparison AWAM ADSB L1 Evaluation\"",
@@ -3624,7 +3624,7 @@
                     "requires": "stored report \"Tracker Comparison AWAM ADSB L1 Evaluation\" (DB build, eval_configs/tracker_comparison.json)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Reports\"",
                         "uiset mainwindow.toolbox_grow_button \"\"",
@@ -3655,7 +3655,7 @@
                     "requires": "DB with a stored Evaluation report (run reconstruct + evaluate once and keep the DB, takes minutes)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Reports\"",
                         "uiset mainwindow.report_combo \"Radar Feichtberg Mode-S L1 Evaluation\"",
@@ -3716,7 +3716,7 @@
                     "requires": "DB with reconstructed targets",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Targets\"",
                         "sleep 500",
@@ -3836,7 +3836,7 @@
                     "requires": "DB with >1170 reconstructed targets (old image: 2025-06-25 dataset)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Targets\"",
                         "uiset mainwindow.toolbox_config_button \"Evaluation|Filter Usage\" --async",
@@ -3895,7 +3895,7 @@
                     "requires": "DB with reconstructed targets",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Targets\"",
                         "uiset mainwindow.toolbox_grow_button \"\"",
@@ -3925,7 +3925,7 @@
                     "requires": "DB with reconstructed targets",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Targets\"",
                         "sleep 500",
@@ -3977,7 +3977,7 @@
                     "requires": "any DB",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Targets\"",
                         "uiset mainwindow.toolbox_config_button --async",
@@ -4002,7 +4002,7 @@
                     "requires": "any DB",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Targets\"",
                         "sleep 500",
@@ -4030,7 +4030,7 @@
                     "requires": "fresh DB with import + reconstruction run",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Log\"",
                         "uiset mainwindow.toolbox_grow_button \"\"",
@@ -4058,7 +4058,7 @@
                     "requires": "any DB without view points",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"View Points\"",
                         "sleep 500",
@@ -4082,7 +4082,7 @@
                     "requires": "DB with imported view points",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"View Points\"",
                         "sleep 1000",
@@ -4194,7 +4194,7 @@
                     "requires": "DB with view points with status open and closed",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"View Points\"",
                         "sleep 1000",
@@ -4223,7 +4223,7 @@
                     "requires": "view points JSON with these types (old ATSDB evaluation types, source unverified)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"View Points\"",
                         "sleep 1000",
@@ -4252,7 +4252,7 @@
                     "requires": "DB + view points with matching selection (old dataset)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"View Points\"",
                         "sleep 1000",
@@ -4283,7 +4283,7 @@
                     "requires": "view points JSON with Correlation view points (old dataset, source unverified)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uifiledialog \"{repo}/doc/user_manual/screenshot_viewpoints/view_points_tool.json\"",
                         "uiset mainwindow.mainmenu \"Import|View Points\" --async",
@@ -4316,7 +4316,7 @@
                     "requires": "as view_points_table",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"View Points\"",
                         "sleep 1000",
@@ -4343,7 +4343,7 @@
                     "requires": "DB + view point with selection (old dataset)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"View Points\"",
                         "sleep 1000",
@@ -4380,7 +4380,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified), plus calculated references (RefTraj), prepared once by reconstruct_references",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Targets\"",
                         "uiset mainwindow.toolbox_grow_button \"\"",
@@ -4866,7 +4866,7 @@
                     "requires": "DB with MLAT data sources and a Reference Trajectory with data (CalcRef after reconstruction), e.g. at_20230422 (AWAM sources there unverified), MLAT analysis run",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -4904,7 +4904,7 @@
                     "requires": "DB with MLAT data sources and a Reference Trajectory with data (CalcRef after reconstruction), e.g. at_20230422 (AWAM sources there unverified), MLAT analysis run",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Grid View\" --async",
                         "sleep 1500",
@@ -4939,7 +4939,7 @@
                     "requires": "DB with MLAT data sources and a Reference Trajectory with data (CalcRef after reconstruction), e.g. at_20230422 (AWAM sources there unverified), MLAT analysis run",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Reports\"",
                         "uiset mainwindow.report_combo \"LOWW MLAT L1 Analysis\"",
@@ -4976,7 +4976,7 @@
                     "requires": "DB with MLAT data sources and a Reference Trajectory with data (CalcRef after reconstruction), e.g. at_20230422 (AWAM sources there unverified), MLAT analysis run with RU Coverage (pro inspector)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "analyze MLAT",
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
@@ -5015,7 +5015,7 @@
                     "requires": "DB with MLAT data sources and a Reference Trajectory with data (CalcRef after reconstruction), e.g. at_20230422 (AWAM sources there unverified), MLAT analysis run with RU Coverage (pro inspector)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -5127,7 +5127,7 @@
                     "requires": "DB with MLAT data sources and a Reference Trajectory with data (CalcRef after reconstruction), e.g. at_20230422 (AWAM sources there unverified), MLAT analysis run",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -5165,7 +5165,7 @@
                     "requires": "DB with MLAT data sources and a Reference Trajectory with data (CalcRef after reconstruction), e.g. at_20230422 (AWAM sources there unverified), MLAT analysis run",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Grid View\" --async",
                         "sleep 1500",
@@ -5331,7 +5331,7 @@
                     "requires": "at_20230422 DB after reconstruct_references (RefTraj) with CAT048 radars; sector layer DOI with group 'Test' (current conf names the Radar group 'Mandatory')",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -5458,7 +5458,7 @@
                     "requires": "stored report \"Tracker Comparison AWAM ADSB L1 Evaluation\" (DB build, eval_configs/tracker_comparison.json)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Reports\"",
                         "uiset mainwindow.toolbox_grow_button \"\"",
@@ -5507,7 +5507,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -5566,7 +5566,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -5595,7 +5595,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -5624,7 +5624,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -5653,7 +5653,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -5682,7 +5682,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -5711,7 +5711,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -5770,7 +5770,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -5799,7 +5799,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -5828,7 +5828,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -5857,7 +5857,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -5886,7 +5886,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -5915,7 +5915,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -5944,7 +5944,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -5973,7 +5973,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6002,7 +6002,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6031,7 +6031,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6060,7 +6060,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6089,7 +6089,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6118,7 +6118,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6147,7 +6147,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6176,7 +6176,7 @@
                     "requires": "any open DB (unverified if an empty DB suffices); standard from conf/default/eval.json",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6205,7 +6205,7 @@
                     "requires": "any open DB (standard \"Tracker Comparison\" from conf/default/eval.json, requirement presence in it unverified)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6234,7 +6234,7 @@
                     "requires": "any open DB (standard \"Tracker Comparison\" from conf/default/eval.json, requirement presence in it unverified)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6263,7 +6263,7 @@
                     "requires": "any open DB (standard \"Tracker Comparison\" from conf/default/eval.json, requirement presence in it unverified)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6292,7 +6292,7 @@
                     "requires": "any open DB (standard \"Tracker Comparison\" from conf/default/eval.json, requirement presence in it unverified)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6321,7 +6321,7 @@
                     "requires": "any open DB (standard \"Tracker Comparison\" from conf/default/eval.json, requirement presence in it unverified)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6350,7 +6350,7 @@
                     "requires": "any open DB (standard \"Tracker Comparison\" from conf/default/eval.json, requirement presence in it unverified)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6379,7 +6379,7 @@
                     "requires": "any open DB (standard \"Tracker Comparison\" from conf/default/eval.json, requirement presence in it unverified)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6408,7 +6408,7 @@
                     "requires": "any open DB (standard \"Tracker Comparison\" from conf/default/eval.json, requirement presence in it unverified)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6437,7 +6437,7 @@
                     "requires": "any open DB",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6537,7 +6537,7 @@
                     "requires": "stored report \"Tracker Comparison AWAM ADSB L1 Evaluation\" (DB build, eval_configs/tracker_comparison.json)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Reports\"",
                         "uiset mainwindow.toolbox_grow_button \"\"",
@@ -6605,7 +6605,7 @@
                     "requires": "stored report \"Tracker Comparison AWAM ADSB L1 Evaluation\" (DB build, eval_configs/tracker_comparison.json)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Reports\"",
                         "uiset mainwindow.toolbox_grow_button \"\"",
@@ -6638,7 +6638,7 @@
                     "requires": "any open DB",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6667,7 +6667,7 @@
                     "requires": "any open DB (standard \"Tracker Comparison\" from conf/default/eval.json, requirement presence in it unverified)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -6699,7 +6699,7 @@
                     "requires": "evaluated DB, calculator present (menu entries only when not locked, per EvaluationTaskResult)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "evaluate eval_configs/tracker_comparison.json",
                         "uiset mainwindow.toolbox \"Reports\"",
@@ -6732,7 +6732,7 @@
                     "requires": "evaluated DB (old image: 2025-06-25 data)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Reports\"",
                         "uiset mainwindow.report_combo \"Tracker Comparison AWAM ADSB L1 Evaluation\"",
@@ -6799,7 +6799,7 @@
                     "requires": "evaluated DB (old image: 2025-06-25 data)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Reports\"",
                         "uiset mainwindow.report_combo \"Tracker Comparison AWAM ADSB L1 Evaluation\"",
@@ -6864,7 +6864,7 @@
                     "requires": "evaluated DB (old image: 2025-06-25 data)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Reports\"",
                         "uiset mainwindow.report_combo \"Tracker Comparison AWAM ADSB L1 Evaluation\"",
@@ -6900,7 +6900,7 @@
                     "requires": "stored report \"Tracker Comparison AWAM ADSB L1 Evaluation\" (DB build, eval_configs/tracker_comparison.json)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Reports\"",
                         "uiset mainwindow.toolbox_grow_button \"\"",
@@ -6931,7 +6931,7 @@
                     "requires": "DB context with sector layers LowerHeightFilter and fir_body_cut (not in standard test contexts, unverified)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
                         "wait dialog",
@@ -7032,7 +7032,7 @@
                     "requires": "evaluated DB (old image: units_OPS_2024 sector layer)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Histogram View\" --async",
                         "sleep 1500",
@@ -7075,7 +7075,7 @@
                     "requires": "DB with CAT001/010/020/021/048/062 and RefTraj",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Table View 0\"",
                         "sleep 500",
@@ -7141,7 +7141,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified) (image shows 2026-05-20 data)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Table View 0\"",
                         "uiset mainwindow.reload --wait_signal=mainwindow.dataLoaded;300000",
@@ -7204,7 +7204,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Table View\" --async",
                         "sleep 1000",
@@ -7239,7 +7239,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Table View 0\"",
                         "sleep 500",
@@ -7269,7 +7269,7 @@
                     "requires": "open DB with data, nothing loaded",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Table View\" --async",
                         "sleep 1000",
@@ -7318,7 +7318,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified), plus calculated references (RefTraj), prepared once by reconstruct_references",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Histogram View\" --async",
                         "sleep 1000",
@@ -7348,7 +7348,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified), plus calculated references (RefTraj), prepared once by reconstruct_references",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Histogram View\" --async",
                         "sleep 1000",
@@ -7375,7 +7375,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified), plus calculated references (RefTraj), prepared once by reconstruct_references",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Histogram View\" --async",
                         "sleep 1000",
@@ -7409,7 +7409,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified), plus calculated references (RefTraj), prepared once by reconstruct_references",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Histogram View\" --async",
                         "sleep 1000",
@@ -7443,7 +7443,7 @@
                     "requires": "open DB with data, nothing loaded",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Histogram View\" --async",
                         "sleep 1000",
@@ -7468,7 +7468,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified), plus calculated references (RefTraj), prepared once by reconstruct_references",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Histogram View\" --async",
                         "sleep 1000",
@@ -7502,7 +7502,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified), plus calculated references (RefTraj), prepared once by reconstruct_references",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Histogram View\" --async",
                         "sleep 1000",
@@ -7536,7 +7536,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified), plus calculated references (RefTraj), prepared once by reconstruct_references",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Histogram View\" --async",
                         "sleep 1000",
@@ -7576,7 +7576,7 @@
                     "requires": "DB with position std dev variables (e.g. at_20230422, unverified)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -7606,7 +7606,7 @@
                     "requires": "view point JSON with a grid annotation",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -7637,7 +7637,7 @@
                     "requires": "any DB, ArcGIS earth file with internet access (unverified)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -7701,7 +7701,7 @@
                     "requires": "DB with Radar, MLAT, ADS-B and Tracker data, context with sectors, view point with annotation (original dataset 5.5M records, unverified which)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -7748,7 +7748,7 @@
                     "requires": "DB with Radar, MLAT, ADS-B, Tracker and RefTraj data (original dataset unverified)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -7816,7 +7816,7 @@
                     "requires": "DB with height data",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -7902,7 +7902,7 @@
                     "requires": "a GeoTIFF file",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Grid View\" --async",
                         "sleep 1000",
@@ -7938,7 +7938,7 @@
                     "requires": "a GeoTIFF file",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -7975,7 +7975,7 @@
                     "requires": "DB with ground speed variables",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8079,7 +8079,7 @@
                     "requires": "a GeoTIFF file",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8141,7 +8141,7 @@
                     "requires": "DB with aircraft address 0030C5 (data dependent)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8204,7 +8204,7 @@
                     "requires": "DB with ARTAS tracker data, context with these data sources (original dataset unverified)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8236,7 +8236,7 @@
                     "requires": "as geoview_label_lod1",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8268,7 +8268,7 @@
                     "requires": "as geoview_label_lod1",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8339,7 +8339,7 @@
                     "requires": "DB with the listed DBContents (unverified if all are listed)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8368,7 +8368,7 @@
                     "requires": "DB with known record numbers per DSType",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8396,7 +8396,7 @@
                     "requires": "DB / context with the AT data sources (at_20230422, unverified)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8423,7 +8423,7 @@
                     "requires": "DB with Radar data",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8472,7 +8472,7 @@
                     "requires": "DB with two nearby targets",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8506,7 +8506,7 @@
                     "requires": "DB with loaded radar/MLAT/ADS-B/tracker data, e.g. /home/sk/data/test/at_20230422",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8549,7 +8549,7 @@
                     "requires": "DB with Mode C data, e.g. at_20230422",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8611,7 +8611,7 @@
                     "requires": "any DB (measurements need no data, map only)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8651,7 +8651,7 @@
                     "requires": "any DB, no data load needed",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 10000",
@@ -8675,7 +8675,7 @@
                     "requires": "CAT020 data with contributing receiver info and MLAT Remote Units in the Data Context (dataset unverified, image date 2026-01-05)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8705,7 +8705,7 @@
                     "requires": "any DB, network access to the tile server",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8733,7 +8733,7 @@
                     "requires": "any DB, network access to the tile server",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Configuration|Dark Mode\"",
                         "sleep 2000",
@@ -8768,7 +8768,7 @@
                     "requires": "any DB, network access to the tile server",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8796,7 +8796,7 @@
                     "requires": "any DB, network access to the tile server",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8826,7 +8826,7 @@
                     "requires": "any DB, network access to the tile server",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.mainmenu \"Configuration|Dark Mode\"",
                         "sleep 2000",
@@ -8860,7 +8860,7 @@
                     "requires": "any DB",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8887,7 +8887,7 @@
                     "requires": "any DB with context sectors",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 8000",
@@ -8912,7 +8912,7 @@
                     "requires": "DB with Radar, MLAT, ADS-B, Tracker and RefTraj (reconstructed) data; current image dataset 2026-05-20 unverified, at_20230422 is a candidate",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8940,7 +8940,7 @@
                     "requires": "DB with data and a view point with grid annotation (dataset unverified)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -8988,7 +8988,7 @@
                     "requires": "DB whose Data Context has radars and sectors",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -9074,7 +9074,7 @@
                     "requires": "any DB",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -9164,7 +9164,7 @@
                     "requires": "DB/Data Context with a sector layer of two sectors (test context, e.g. AT_2026 sectors)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -9196,7 +9196,7 @@
                     "requires": "Data Context with sectors with altitude limits",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -9242,7 +9242,7 @@
                     "requires": "DB with loaded data, e.g. at_20230422",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -9373,7 +9373,7 @@
                     "requires": "DB with loaded data incl. Mode C, current image dataset 2026-05-20 unverified",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -9404,7 +9404,7 @@
                     "requires": "any DB",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -9431,7 +9431,7 @@
                     "requires": "DB with loaded data, e.g. at_20230422",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -9462,7 +9462,7 @@
                     "requires": "DB with Mode C data, ground and airborne",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -9507,7 +9507,7 @@
                     "requires": "any DB",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -9540,7 +9540,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Scatterplot View\" --async",
                         "sleep 1000",
@@ -9566,7 +9566,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Scatterplot View\" --async",
                         "sleep 1000",
@@ -9597,7 +9597,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Scatterplot View\" --async",
                         "sleep 1000",
@@ -9626,7 +9626,7 @@
                     "requires": "open DB with data, nothing loaded",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Scatterplot View\" --async",
                         "sleep 1000",
@@ -9692,7 +9692,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Grid View\" --async",
                         "sleep 1000",
@@ -9753,7 +9753,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Grid View\" --async",
                         "sleep 1000",
@@ -9797,7 +9797,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Grid View\" --async",
                         "sleep 1000",
@@ -9833,7 +9833,7 @@
                     "requires": "test DB with ADSB, MLAT, Radar, Tracker imported (e.g. at_20230422, exact counts in current image unverified)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Grid View\" --async",
                         "sleep 1000",
@@ -9864,7 +9864,7 @@
                     "requires": "open DB with data, nothing loaded",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Grid View\" --async",
                         "sleep 1000",
@@ -9895,7 +9895,7 @@
                     "requires": "at_20230422/live recording replayed via UDP multicast (unverified which recording)",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "import_asterix_network --replay_file='/home/sk/data/test/at_20230422/asterix_short/20230422_05h_artas.ff;/home/sk/data/test/at_20230422/asterix_short/20230422_05h_radars.ff;/home/sk/data/test/at_20230422/asterix_short/20230422_05h_wam.ff;/home/sk/data/test/at_20230422/asterix_short/20230422_05h_adsb.ff' --replay_line L1",
                         "sleep 60000",
@@ -10054,7 +10054,7 @@
                     "requires": "live CAT063 data (sensor_status_cat063_check.py setup, unverified)",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "import_asterix_network --replay_file='/home/sk/data/test/at_20230422/asterix_short/20230422_05h_artas.ff;/home/sk/data/test/at_20230422/asterix_short/20230422_05h_radars.ff;/home/sk/data/test/at_20230422/asterix_short/20230422_05h_wam.ff;/home/sk/data/test/at_20230422/asterix_short/20230422_05h_adsb.ff' --replay_line L1",
                         "sleep 60000",
@@ -10083,7 +10083,7 @@
                     "requires": "live CAT063 data",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "import_asterix_network --replay_file='/home/sk/data/test/at_20230422/asterix_short/20230422_05h_artas.ff;/home/sk/data/test/at_20230422/asterix_short/20230422_05h_radars.ff;/home/sk/data/test/at_20230422/asterix_short/20230422_05h_wam.ff;/home/sk/data/test/at_20230422/asterix_short/20230422_05h_adsb.ff' --replay_line L1",
                         "sleep 60000",
@@ -10112,7 +10112,7 @@
                     "requires": "live CAT063 data",
                     "filters": null,
                     "flight_deck": true,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "import_asterix_network --replay_file='/home/sk/data/test/at_20230422/asterix_short/20230422_05h_artas.ff;/home/sk/data/test/at_20230422/asterix_short/20230422_05h_radars.ff;/home/sk/data/test/at_20230422/asterix_short/20230422_05h_wam.ff;/home/sk/data/test/at_20230422/asterix_short/20230422_05h_adsb.ff' --replay_line L1",
                         "sleep 60000",
@@ -10425,7 +10425,7 @@
                     "requires": "DB with AT context (radars, sectors LowerHeightFilter), OSM map, annotation JSON from the appendix listing",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -10453,7 +10453,7 @@
                     "requires": "any DB (AT context), annotation JSON from the appendix listing",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -10479,7 +10479,7 @@
                     "requires": "any DB (AT context), annotation JSON from the appendix listing",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -10505,7 +10505,7 @@
                     "requires": "any DB, grid annotation JSON from the appendix listing",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Grid View\" --async",
                         "sleep 1000",
@@ -10531,7 +10531,7 @@
                     "requires": "any DB, histogram annotation JSON from the appendix listing",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Histogram View\" --async",
                         "sleep 1000",
@@ -10557,7 +10557,7 @@
                     "requires": "any DB (AT context), annotation JSON from the appendix listing",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -10583,7 +10583,7 @@
                     "requires": "any DB (AT context), annotation JSON from the appendix listing",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -10609,7 +10609,7 @@
                     "requires": "any DB (AT context), nested annotation JSON from the appendix listing",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -10639,7 +10639,7 @@
                     "requires": "any DB (AT context), annotation JSON from the appendix listing",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",
@@ -10665,7 +10665,7 @@
                     "requires": "any DB, scatter annotation JSON from the appendix listing",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.add_view \"Add Here|Scatterplot View\" --async",
                         "sleep 1000",
@@ -10691,7 +10691,7 @@
                     "requires": "any DB (AT context), annotation JSON from the appendix listing",
                     "filters": null,
                     "flight_deck": false,
-                    "frame": false,
+                    "frame": true,
                     "steps": [
                         "uiset mainwindow.view_deck \"Geographic View 0\"",
                         "sleep 1000",

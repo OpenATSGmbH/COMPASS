@@ -58,7 +58,7 @@ The value can be changed per requirement in the 'Standard' tab, in the configura
 \begin{figure}[H]
     \centering
     \hspace*{-2.5cm}
-    \includegraphics[width=19cm]{figures/eval_overview.png}
+    \includegraphics[width=19cm,frame]{figures/eval_overview.png}
   \caption{Evaluation dialog}
 \end{figure}
 
@@ -183,8 +183,6 @@ At the bottom, the following general settings of the current standard can be edi
 \item Ignore Mode A/C Only Targets: Targets with a Mode 3/A code or a Mode C code, but without any Mode S attribute, are ignored
 \end{itemize}
 \ \\
-
-\textcolor{red}{\textbf{[TODO: update screenshot figures/eval\_standard.png: new elements 'Ignore Primary Only Targets', 'Ignore Non-ADSB Targets' and 'Ignore Mode A/C Only Targets']}} \\
 
 The 3 target settings define which targets are relevant for the standard. A standard for secondary surveillance, e.g. \nameref{sec:eval_req_detection} of an MLAT system, cannot be assessed with targets that carry no transponder, an ADS-B standard cannot be assessed with targets that never transmit ADS-B, and a standard stating its requirements for Mode S targets only cannot be assessed with Mode A/C-only targets. After the evaluation data is loaded, the current standard checks each target and marks the not relevant ones as ignored. \\
 
@@ -358,7 +356,7 @@ The values are the same as the background items of the Grid View, see \nameref{s
 
 \begin{figure}[H]
   \center
-    \fbox{\parbox{0.8\textwidth}{\vspace{1.5cm}\centering \textcolor{red}{\textbf{[FIGURE TODO: figures/eval\_report\_figure\_background.png - 'Results Config' tab of the evaluation dialog with the 'Report Figure Background' group, sector layers expanded]}}\vspace{1.5cm}}}
+    \includegraphics[width=14cm,frame]{figures/eval_report_figure_background.png}
   \caption{Evaluation Report Figure Background}
 \end{figure}
 
@@ -407,7 +405,7 @@ Please note that the post-processing step uses all available cores on the CPU.
 
 \begin{figure}[H]
   \centering 
-    \includegraphics[width=10cm]{figures/eval_eval_status.png}
+    \includegraphics[width=10cm,frame]{figures/eval_eval_status.png}
   \caption{Evaluation: Running evaluation status}
 \end{figure}
 
