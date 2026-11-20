@@ -3252,12 +3252,39 @@
                 },
                 {
                     "file": "flightdeck/reports/figures/content_figure.png",
-                    "dirty": false,
+                    "dirty": true,
                     "used": true,
                     "used_in": [
                         "flightdeck/reports/reports.tex:322"
                     ],
-                    "shows": "Report figure content row: 'Figure: sector_overview' label and View button",
+                    "shows": "Simple report figure 'Sector Overview' of Horizontal Position Accuracy: label, Full distribution and Error Count histograms, geographic grid, View button",
+                    "category": "report",
+                    "automation": "tested",
+                    "database": "at_20230422",
+                    "requires": "DB with a stored Evaluation report (run reconstruct + evaluate once and keep the DB, takes minutes)",
+                    "filters": null,
+                    "flight_deck": true,
+                    "frame": true,
+                    "steps": [
+                        "uiset mainwindow.toolbox \"Reports\"",
+                        "uiset mainwindow.report_combo \"EUROCAE ED-142 AWAM VIE L1 Evaluation\"",
+                        "sleep 1000",
+                        "uiset mainwindow.report_section_sidebar \"Results|Sectors|En-Route fir_cut_sim|Sum|Horizontal Position Accuracy\"",
+                        "sleep 3000",
+                        "grabparts mainwindow.figure_sector_overview_label+mainwindow.figure_sector_overview_histogram_0+mainwindow.figure_sector_overview_histogram_1+mainwindow.figure_sector_overview_grid_0+mainwindow.figure_sector_overview_view_button"
+                    ],
+                    "recipe_hint": "the figure is taller than the Reports panel, grabparts places the widget grabs at their screen positions",
+                    "gaps": "none",
+                    "volatile": "none"
+                },
+                {
+                    "file": "flightdeck/reports/figures/content_view_figure.png",
+                    "dirty": true,
+                    "used": true,
+                    "used_in": [
+                        "flightdeck/reports/reports.tex"
+                    ],
+                    "shows": "View report figure 'Target Errors Overview': label and View button",
                     "category": "report",
                     "automation": "tested",
                     "database": "at_20230422",
@@ -3269,24 +3296,22 @@
                         "uiset mainwindow.toolbox \"Reports\"",
                         "uiset mainwindow.report_combo \"Radar Feichtberg Mode-S L1 Evaluation\"",
                         "sleep 1000",
-                        "uiset mainwindow.report_section_sidebar \"Results|Sectors|Mandatory fir_cut_sim|Sum|Probability of Detection\"",
-                        "sleep 1500",
-                        "uiinject mainwindow.report_document_view.qt_scrollarea_viewport \"wheel(-720)\"",
-                        "sleep 1000",
-                        "shot mainwindow.figure_sector_overview_label+mainwindow.figure_sector_overview_grid_0+mainwindow.figure_sector_overview_view_button"
+                        "uiset mainwindow.report_section_sidebar \"Results|Targets|UTN 1|fir_cut_sim|Mandatory|Probability of Detection\"",
+                        "sleep 2000",
+                        "grabparts mainwindow.figure_target_errors_overview_label+mainwindow.figure_target_errors_overview_view_button"
                     ],
-                    "recipe_hint": "select report via mainwindow.report_combo, click section in mainwindow.report_section_sidebar, grab parent of figure_sector_overview_view_button",
+                    "recipe_hint": "per-target section of the radar evaluation, the Target Errors Overview loads its target and has no render widget",
                     "gaps": "none",
                     "volatile": "none"
                 },
                 {
                     "file": "flightdeck/reports/figures/content_table.png",
-                    "dirty": false,
+                    "dirty": true,
                     "used": true,
                     "used_in": [
                         "flightdeck/reports/reports.tex:335"
                     ],
-                    "shows": "Report table content: 'Table: sector_details_table' label, Options button, table with PD values",
+                    "shows": "Report table content: 'Table: Results Overview' label, Options button, table with one row per requirement and its result",
                     "category": "report",
                     "automation": "tested",
                     "database": "at_20230422",
@@ -3296,13 +3321,13 @@
                     "frame": true,
                     "steps": [
                         "uiset mainwindow.toolbox \"Reports\"",
-                        "uiset mainwindow.report_combo \"Radar Feichtberg Mode-S L1 Evaluation\"",
+                        "uiset mainwindow.report_combo \"EUROCAE ED-142 AWAM VIE L1 Evaluation\"",
                         "sleep 1000",
-                        "uiset mainwindow.report_section_sidebar \"Results|Sectors|Mandatory fir_cut_sim|Sum|Probability of Detection\"",
+                        "uiset mainwindow.report_section_sidebar \"Results|Overview|Results\"",
                         "sleep 1500",
-                        "grab mainwindow.table_sector_overview_content"
+                        "grab mainwindow.table_results_overview_content"
                     ],
-                    "recipe_hint": "select report, click \"Sectors|Mandatory DOI|Sum|Detection\" in mainwindow.report_section_sidebar, grab table content widget",
+                    "recipe_hint": "select the ED-142 report, section \"Results|Overview|Results\", grab the table content widget",
                     "gaps": "none",
                     "volatile": "none"
                 },
@@ -5244,7 +5269,7 @@
                 },
                 {
                     "file": "analyze/figures/analyze_report_figure_background.png",
-                    "dirty": false,
+                    "dirty": true,
                     "used": true,
                     "used_in": [
                         "analyze/analyze_dialog.tex:100"
@@ -5447,7 +5472,7 @@
                 },
                 {
                     "file": "eval/figures/eval_report_figure_background.png",
-                    "dirty": false,
+                    "dirty": true,
                     "used": true,
                     "used_in": [
                         "eval/evaluation.tex:361"
@@ -6455,7 +6480,7 @@
                 },
                 {
                     "file": "eval/figures/eval_results_config.png",
-                    "dirty": false,
+                    "dirty": true,
                     "used": true,
                     "used_in": [
                         "eval/evaluation.tex:334"
