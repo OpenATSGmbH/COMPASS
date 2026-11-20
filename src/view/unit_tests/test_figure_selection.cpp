@@ -129,7 +129,7 @@ TEST_CASE("report figure selection", "[view][reportfigure]")
         CHECK(entries[ 0 ].feature->contains("histogram"));
     }
 
-    SECTION("a view point with load_data uses the view path")
+    SECTION("a view point with load_data gives no render widget")
     {
         ViewPointGenVP vp("Figure", 0, "Histogram");
         addHistogram(vp, "Errors");
@@ -149,7 +149,7 @@ TEST_CASE("report figure selection", "[view][reportfigure]")
         CHECK(report_figure::selectRenderEntries(j).size() == 1);
     }
 
-    SECTION("another feature uses the view path")
+    SECTION("another feature gives no render widget")
     {
         auto vp = viewPoint();
         addText(*vp, "Label");
@@ -157,7 +157,7 @@ TEST_CASE("report figure selection", "[view][reportfigure]")
         CHECK(report_figure::selectRenderEntries(toJSON(*vp)).empty());
     }
 
-    SECTION("a histogram plus another feature uses the view path")
+    SECTION("a histogram plus another feature gives no render widget")
     {
         auto vp = viewPoint();
         addHistogram(*vp, "Errors");
@@ -185,7 +185,7 @@ TEST_CASE("report figure selection", "[view][reportfigure]")
         CHECK(entries[ 0 ].feature->contains("scatterseries"));
     }
 
-    SECTION("a scatter series in a view point that loads data uses the view path")
+    SECTION("a scatter series in a view point that loads data gives no render widget")
     {
         ViewPointGenVP vp("Figure", 0, "Scatterplot");
         addScatter(vp, "Bias");
@@ -194,7 +194,7 @@ TEST_CASE("report figure selection", "[view][reportfigure]")
         CHECK(report_figure::selectRenderEntries(toJSON(vp)).empty());
     }
 
-    SECTION("a scatter series plus another feature uses the view path")
+    SECTION("a scatter series plus another feature gives no render widget")
     {
         auto vp = viewPoint();
         addScatter(*vp, "Bias");
@@ -260,7 +260,7 @@ TEST_CASE("report figure selection", "[view][reportfigure]")
         CHECK(entries[ 2 ].annotation_index == 0);
         CHECK(entries[ 3 ].annotation_index == 1);
 
-        SECTION("with another feature the figure uses the view path")
+        SECTION("with another feature the figure gives no render widget")
         {
             addText(*vp, "Label");
 
@@ -268,7 +268,7 @@ TEST_CASE("report figure selection", "[view][reportfigure]")
         }
     }
 
-    SECTION("a view point without annotations uses the view path")
+    SECTION("a view point without annotations gives no render widget")
     {
         CHECK(report_figure::selectRenderEntries(toJSON(*viewPoint())).empty());
         CHECK(report_figure::selectRenderEntries(nlohmann::json()).empty());
@@ -400,7 +400,7 @@ TEST_CASE("report figure selection", "[view][reportfigure]")
         CHECK(entries[ 0 ].labels.empty());
     }
 
-    SECTION("points only use the view path")
+    SECTION("points only give no render widget")
     {
         auto vp = viewPoint();
         vp->annotations().getOrCreateAnnotation("Unassociated Reports")->addFeature(
@@ -454,7 +454,7 @@ TEST_CASE("report figure selection", "[view][reportfigure]")
         CHECK(!report_figure::hasGeographicGrid(toJSON(*vp).at(ViewPointGenVP::ViewPointFieldAnnotations)));
     }
 
-    SECTION("a grid plus another feature uses the view path")
+    SECTION("a grid plus another feature gives no render widget")
     {
         auto vp = viewPoint();
         addGrid(*vp, "PD - Altitude/Longitude", "");

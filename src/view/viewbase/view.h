@@ -149,11 +149,6 @@ public:
     QImage renderData() const;
     QImage renderView() const;
 
-    void prepareForRender();
-
-    void setExporting(bool ok);
-    bool hasScreenshotContent() const;
-
     /// Render immediately, without animations (e.g. camera transitions). Set for all views
     /// during report and image generation.
     static bool instantDisplay();

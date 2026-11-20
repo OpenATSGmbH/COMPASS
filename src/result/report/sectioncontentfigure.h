@@ -87,11 +87,9 @@ public:
 
     /// open_view_deck: a collapsed View Deck opens to show the figure (View button)
     bool view (bool load_blocking = false, bool open_view_deck = false) const;
-    void executeRenderDelay() const;
 
     FigureType figureType() const { return fig_type_; }
     const std::string& caption() const { return caption_; }
-    int renderDelayMSec() const { return render_delay_msec_; }
 
     ResultT<std::vector<ImageResource>> obtainImages(const std::string* resource_dir) const;
 
@@ -105,7 +103,6 @@ public:
 
     static const std::string FieldFigureType;
     static const std::string FieldCaption;
-    static const std::string FieldRenderDelayMSec;
     static const std::string FieldViewable;
 
     static const std::string FieldDocPath;
@@ -120,9 +117,8 @@ protected:
                                const std::string* resource_dir,
                                ReportExportMode export_style) const override final;
 
-    FigureType  fig_type_          = FigureType::Section;
+    FigureType  fig_type_ = FigureType::Section;
     std::string caption_;
-    int         render_delay_msec_ = 0;
 
     SectionContentViewable::ViewableFunc viewable_fnc_;
 };

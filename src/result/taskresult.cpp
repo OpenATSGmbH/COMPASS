@@ -24,10 +24,7 @@
 #include "report/sectioncontenttable.h"
 
 #include "dbinterface.h"
-#include "dbcontentmanager.h"
-#include "dbcontentdataengine.h"
 #include "viewmanager.h"
-#include "view.h"
 #include "reportfigure.h"
 
 #include "timeconv.h"
@@ -38,7 +35,6 @@
 #include <boost/filesystem.hpp>
 
 #include <QMenu>
-#include <QApplication>
 
 #include <algorithm>
 
@@ -1021,94 +1017,44 @@ bool TaskResult::fromJSON(const nlohmann::json& j)
  */
 std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const ResultReport::SectionContentFigure& figure) const
 {
-    //do net render locked figures
-    if (figure.isLocked())
-        return std::vector<std::pair<QImage, std::string>>();
+    using FigureKind = ResultReport::SectionContentFigure::FigureKind;
 
     std::vector<std::pair<QImage, std::string>> renderings;
 
-    //only a simple figure has images: one per annotation, drawn without the views
-    const auto classification = figure.classify();
-    if (classification.kind != ResultReport::SectionContentFigure::FigureKind::Simple)
+    //do not render locked figures
+    if (figure.isLocked())
         return renderings;
+
+    //the only classification of the export: a figure parses its view point once
+    const auto classification = figure.classify();
+
+    if (classification.kind == FigureKind::View)
+    {
+        loginf << "skipping view figure '" << figure.name() << "'";
+        return renderings;
+    }
+    if (classification.kind == FigureKind::CannotBeDrawn)
+    {
+        logerr << "skipping figure '" << figure.name() << "', it cannot be drawn";
+        return renderings;
+    }
 
     const auto& render_entries = classification.render_entries;
 
-    if (!render_entries.empty())
+    //the sectors of the geographic grids
+    const bool geographic = std::any_of(render_entries.begin(), render_entries.end(),
+                                        [] (const report_figure::RenderEntry& e) { return e.geographic; });
+
+    const context::DBContextManager* ctx_man = geographic ? &task_manager_.viewManager().dbContextManager() : nullptr;
+
+    for (const auto& entry : render_entries)
     {
-        //the sectors of the geographic grids
-        const bool geographic = std::any_of(render_entries.begin(), render_entries.end(),
-                                            [] (const report_figure::RenderEntry& e) { return e.geographic; });
+        QImage image;
 
-        const context::DBContextManager* ctx_man = geographic ? &task_manager_.viewManager().dbContextManager() : nullptr;
-
-        for (const auto& entry : render_entries)
-        {
-            QImage image;
-
-            if (report_figure::renderExportImage(entry, image, ctx_man))
-                renderings.emplace_back(image, entry.image_name);
-            else
-                logerr << "figure '" << figure.name() << "': image '" << entry.image_name << "' could not be rendered";
-        }
-
-        return renderings;
-    }
-
-    DBContentManager& dbcont_man = task_manager_.dbContentManager();
-    ViewManager&      view_man   = task_manager_.viewManager();
-
-    QCoreApplication::processEvents();
-
-    figure.view();
-
-    //prepare views for rendering
-    for (auto& view_it : view_man.getViews())
-    {
-        //skip table views
-        if (view_it.second->className() == "TableView")
-            continue;
-        
-        //enable export
-        if (view_it.second->hasScreenshotContent())
-        {
-            view_it.second->setExporting(true);
-        }
-    }
-
-    dbcont_man.waitUntilEngineIdle();
-
-    QCoreApplication::processEvents();
-
-    //wait a little for e.g. geoimages to warp and render correctly in geographic view
-    figure.executeRenderDelay();
-
-    //let views settle any async resources (geo view waits for map tile + osgEarth job pipeline)
-    for (auto& view_it : view_man.getViews())
-    {
-        if (view_it.second->className() == "TableView")
-            continue;
-
-        if (view_it.second->hasScreenshotContent())
-            view_it.second->prepareForRender();
-    }
-
-    for (auto& view_it : view_man.getViews())
-    {
-        //skip table views
-        if (view_it.second->className() == "TableView")
-            continue;
-
-        //skip views which show no content
-        if (view_it.second->hasScreenshotContent())
-        {
-            //render view and collect
-            auto img = view_it.second->renderData();
-            renderings.emplace_back(img, view_it.second->instanceName());
-
-            //disable export
-            view_it.second->setExporting(false);
-        }
+        if (report_figure::renderExportImage(entry, image, ctx_man))
+            renderings.emplace_back(image, entry.image_name);
+        else
+            logerr << "figure '" << figure.name() << "': image '" << entry.image_name << "' could not be rendered";
     }
 
     return renderings;

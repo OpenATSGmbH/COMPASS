@@ -37,8 +37,6 @@
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QPushButton>
-#include <QApplication>
-#include <QThread>
 #include <QImage>
 
 #include <algorithm>
@@ -48,7 +46,6 @@ namespace ResultReport
 
 const std::string SectionContentFigure::FieldFigureType      = "figure_type";
 const std::string SectionContentFigure::FieldCaption         = "caption";
-const std::string SectionContentFigure::FieldRenderDelayMSec = "render_delay_msec";
 const std::string SectionContentFigure::FieldViewable        = "viewable";
 
 const std::string SectionContentFigure::FieldDocPath         = "path";
@@ -79,9 +76,8 @@ SectionContentFigure::SectionContentFigure(Section* parent_section)
  */
 void SectionContentFigure::setViewable(const SectionContentViewable& viewable)
 {
-    caption_           = viewable.caption;
-    render_delay_msec_ = viewable.render_delay_msec;
-    viewable_fnc_      = viewable.viewable_func;
+    caption_      = viewable.caption;
+    viewable_fnc_ = viewable.viewable_func;
 }
 
 /**
@@ -227,22 +223,6 @@ bool SectionContentFigure::view(bool load_blocking, bool open_view_deck) const
 
 /**
  */
-void SectionContentFigure::executeRenderDelay() const
-{
-    if (render_delay_msec_ > 0)
-    {
-        boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
-        while ((boost::posix_time::microsec_clock::local_time() - start_time).total_milliseconds()
-               < render_delay_msec_)
-        {
-            QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
-            QThread::msleep(1);
-        }
-    }
-}
-
-/**
- */
 std::shared_ptr<nlohmann::json::object_t> SectionContentFigure::viewableContent() const
 {
     //load on-demand content if needed (@TODO: eeewwwwww)
@@ -271,9 +251,8 @@ void SectionContentFigure::toJSON_impl(nlohmann::json& j) const
     //call base
     SectionContent::toJSON_impl(j);
 
-    j[ FieldFigureType      ] = fig_type_;
-    j[ FieldCaption         ] = caption_;
-    j[ FieldRenderDelayMSec ] = render_delay_msec_;
+    j[ FieldFigureType ] = fig_type_;
+    j[ FieldCaption    ] = caption_;
 
     nlohmann::json jviewable = nlohmann::json::object();
     if (!isOnDemand())
@@ -294,19 +273,17 @@ bool SectionContentFigure::fromJSON_impl(const nlohmann::json& j)
     if (!SectionContent::fromJSON_impl(j))
         return false;
 
-    if (!j.is_object()                    ||
-        !j.contains(FieldFigureType)      ||
-        !j.contains(FieldCaption)         ||
-        !j.contains(FieldRenderDelayMSec) ||
+    if (!j.is_object()               ||
+        !j.contains(FieldFigureType) ||
+        !j.contains(FieldCaption)    ||
         !j.contains(FieldViewable))
     {
         logerr << "section content figure does not obtain needed fields";
         return false;
     }
 
-    fig_type_          = j[ FieldFigureType      ];
-    caption_           = j[ FieldCaption         ];
-    render_delay_msec_ = j[ FieldRenderDelayMSec ];
+    fig_type_ = j[ FieldFigureType ];
+    caption_  = j[ FieldCaption    ];
 
     std::shared_ptr<nlohmann::json::object_t> jviewable(new nlohmann::json::object_t);
     *jviewable = j[ FieldViewable ];
