@@ -83,12 +83,12 @@ bool hasGeographicGrid(const nlohmann::json& annotations);
  * Decides how a report figure with this view point is drawn.
  * Entries: one render widget per entry. The histograms first, then the scatterplots, then the grids, each
  * kind in the order of its view.
- * Empty: the figure is shown by the views ("View" button, image of each view with content).
+ * Empty: a view figure (the view point loads data), or a figure that cannot be drawn.
  *
  * A figure gets render widgets if its view point loads no data and holds histogram, scatter series and grid
  * annotations only. With a longitude / latitude grid the view point can also hold overlay features (points,
  * lines, error ellipses, text): the texts are the labels of the geographic grids, the other overlays are not
- * drawn. The caller leaves out the figures that are locked or built on demand.
+ * drawn. The caller leaves out the locked figures and loads the content of on-demand figures first.
  */
 std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point);
 

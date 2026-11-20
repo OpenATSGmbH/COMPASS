@@ -26,6 +26,7 @@
 #include "viewmanager.h"
 #include "viewpointgenerator.h"
 #include "reportfigure.h"
+#include "viewpointkeys.h"
 #include "viewrenderwidget.h"
 #include "ui_test_common.h"
 
@@ -110,7 +111,18 @@ void SectionContentFigure::addContentUI(QVBoxLayout* layout,
         return;
     }
 
-    QLabel* label = new QLabel(("Figure: " + name()).c_str());
+    const auto classification = classify();
+    const auto& entries       = classification.render_entries;
+
+    std::string label_text = "Figure: " + name();
+
+    if (classification.kind == FigureKind::CannotBeDrawn)
+    {
+        logerr << "figure '" << name() << "' cannot be drawn";
+        label_text += " (cannot be drawn)";
+    }
+
+    QLabel* label = new QLabel(QString::fromStdString(label_text));
     UI_TEST_OBJ_NAME(label, QString::fromStdString("Figure " + name() + " Label"));
 
     QPushButton* view_button = new QPushButton("View");
@@ -120,9 +132,7 @@ void SectionContentFigure::addContentUI(QVBoxLayout* layout,
 
     QObject::connect (view_button, &QPushButton::clicked, [ this ] () { this->view(false, true); });
 
-    const auto entries = renderEntries();
-
-    if (entries.empty())
+    if (classification.kind != FigureKind::Simple)
     {
         QHBoxLayout* fig_layout = new QHBoxLayout();
 
@@ -170,17 +180,22 @@ const context::DBContextManager* SectionContentFigure::sectorSource()
 
 /**
  */
-std::vector<report_figure::RenderEntry> SectionContentFigure::renderEntries() const
+SectionContentFigure::Classification SectionContentFigure::classify() const
 {
-    //the content of an on-demand figure is not built only to draw it, such a figure stays with the views
-    if (isOnDemand())
-        return {};
-
     auto content = viewableContent();
     if (!content)
         return {};
 
-    return report_figure::selectRenderEntries(nlohmann::json(*content));
+    const nlohmann::json view_point(*content);
+
+    if (view_point_load::loadsData(view_point))
+        return { FigureKind::View, {} };
+
+    auto entries = report_figure::selectRenderEntries(view_point);
+    if (entries.empty())
+        return {};
+
+    return { FigureKind::Simple, std::move(entries) };
 }
 
 /**

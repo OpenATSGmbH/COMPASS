@@ -24,6 +24,7 @@
 #include "report/sectioncontenttext.h"
 
 #include "taskresult.h"
+#include "reportfigure.h"
 
 #include "files.h"
 #include "global.h"
@@ -352,8 +353,20 @@ Result ReportExporter::visitContent(SectionContent& content, bool is_root_sectio
     if (content.contentType() == SectionContent::ContentType::Figure)
     {
         auto c = dynamic_cast<SectionContentFigure*>(&content);
-        if (c) 
-            return exportFigure(*c, is_root_section);
+        if (c)
+        {
+            switch (c->classify().kind)
+            {
+                case SectionContentFigure::FigureKind::Simple:
+                    return exportFigure(*c, is_root_section);
+                case SectionContentFigure::FigureKind::View:
+                    loginf << "skipping view figure '" << c->name() << "'";
+                    return Result::succeeded();
+                case SectionContentFigure::FigureKind::CannotBeDrawn:
+                    logerr << "skipping figure '" << c->name() << "', it cannot be drawn";
+                    return Result::succeeded();
+            }
+        }
     }
     else if (content.contentType() == SectionContent::ContentType::Table)
     {

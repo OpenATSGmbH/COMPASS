@@ -899,7 +899,8 @@ void Section::recreateContentUI(bool force_ui_reset,
             auto c = this->loadOrGetContent(i, false);
             if (c->isOnDemand() &&
                 !c->isLocked() &&
-                c->contentType() == SectionContentType::Table)
+                (c->contentType() == SectionContentType::Table ||
+                 c->contentType() == SectionContentType::Figure))
             {
                 c->loadOnDemandIfNeeded();
             }

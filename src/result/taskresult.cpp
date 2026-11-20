@@ -1027,8 +1027,12 @@ std::vector<std::pair<QImage, std::string>> TaskResult::renderFigure(const Resul
 
     std::vector<std::pair<QImage, std::string>> renderings;
 
-    //a figure with render widgets is drawn without the views: one image per annotation
-    const auto render_entries = figure.renderEntries();
+    //only a simple figure has images: one per annotation, drawn without the views
+    const auto classification = figure.classify();
+    if (classification.kind != ResultReport::SectionContentFigure::FigureKind::Simple)
+        return renderings;
+
+    const auto& render_entries = classification.render_entries;
 
     if (!render_entries.empty())
     {
