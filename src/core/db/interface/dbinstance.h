@@ -60,10 +60,9 @@ public:
     Result open(const std::string& file_name);
     Result openInMemory();
     void close();
-    Result reconnect(bool cleanup_db = false, Result* cleanup_result = nullptr);
+    Result reconnect();
     Result exportToFile(const std::string& file_name);
     Result cleanupDB();
-    Result cleanupDBInMem();
 
     const std::string& dbFilename() const { return db_filename_; }
 
@@ -100,11 +99,7 @@ protected:
     virtual ResultT<DBConnection*> createConnection_impl(bool verbose) = 0;
 
     /// implements db file cleanup (if supported)
-    virtual Result cleanupDB_impl(const std::string& db_fn);
     virtual Result cleanupDB_impl();
-
-    /// implements db file cleanup in mem (if supported)
-    virtual Result cleanupDBInMem_impl();
 
     /// implements db export to a specified file
     virtual Result exportToFile_impl(const std::string& filename) = 0;
@@ -117,7 +112,6 @@ protected:
 
 private:
     Result openInternal(const std::string& file_name);
-    Result cleanupDB(const std::string& db_fn);
     Result configureDBUsingPragmas();
 
     ResultT<DBConnection*> createConnection(bool verbose);

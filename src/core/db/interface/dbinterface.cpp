@@ -41,6 +41,7 @@
 #include "files.h"
 #include "timeconv.h"
 #include "number.h"
+#include "system.h"
 #include "asynctask.h"
 
 #include "tbbhack.h"
@@ -72,7 +73,8 @@ const string PROP_LATITUDE_MAX_NAME  {"latitude_max"};
 const string PROP_LONGITUDE_MIN_NAME {"longitude_min"};
 const string PROP_LONGITUDE_MAX_NAME {"longitude_max"};
 
-const size_t DBInterface::TableBulkUpdateMinRows = 50;
+const size_t       DBInterface::TableBulkUpdateMinRows   = 50;
+const unsigned int DBInterface::PrintDBStateIntervalSecs = 300;
 
 #define PROTECT_INSTANCE
 
@@ -97,15 +99,6 @@ DBInterface::DBInterface(nlohmann::json& config,
     registerParameter("max_ram_file_gb", &max_ram_file_gb_, max_ram_file_gb_);
     registerParameter("max_ram_inmem_gb", &max_ram_inmem_gb_, max_ram_inmem_gb_);
     registerParameter("num_threads", &num_threads_, num_threads_);
-    registerParameter("live_cleanup_time_secs", &live_cleanup_time_secs_, live_cleanup_time_secs_);
-    registerParameter("use_live_inmem_db", &use_live_inmem_db_, use_live_inmem_db_);
-
-    if (use_live_inmem_db_)
-    {
-        logwrn << "version not reliable with live in-mem db, deactivating";
-        use_live_inmem_db_ = false; // TODO REMOVE HACK
-    }
-
     registerParameter("preserve_insert_order", &preserve_insert_order_, preserve_insert_order_);
 
     sector_inside_cache_ = std::make_shared<SectorInsideCache>();
@@ -454,8 +447,6 @@ bool DBInterface::cleanupDB(bool show_dialog)
  */
 Result DBInterface::cleanupDBInternal()
 {
-    // [FIX] Protect the critical section where the DB instance is destroyed/recreated.
-    // Also required because we call execute(), which expects the lock to be held.
     #ifdef PROTECT_INSTANCE
     boost::mutex::scoped_lock locker(instance_mutex_);
     #endif
@@ -467,185 +458,101 @@ Result DBInterface::cleanupDBInternal()
 
     cleanup_in_progress_ = true;
 
-    boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
-
-    std::function<std::tuple<string, string, string, std::uint64_t>()> get_db_status = [&]() -> std::tuple<string, string, string, std::uint64_t>
-    {
-        try
-        {
-            DBCommand command;
-            // Query raw bytes from duckdb_memory() for precision, while keeping other info from pragma_database_size
-            command.set("SELECT (SELECT sum(memory_usage_bytes) FROM duckdb_memory()) as mem_bytes, memory_limit, wal_size FROM pragma_database_size();");
-
-            PropertyList list;
-            list.addProperty("mem_bytes", PropertyDataType::ULONGINT);
-            list.addProperty("memory_limit", PropertyDataType::STRING);
-            list.addProperty("wal_size", PropertyDataType::STRING);
-            command.list(list);
-
-            shared_ptr<DBResult> result = execute(command);
-            
-            if (result->containsData())
-            {
-                shared_ptr<Buffer> buffer = result->buffer();
-                if (buffer->size() > 0)
-                {
-                    // Get raw bytes
-                    std::uint64_t mem_bytes = buffer->get<std::uint64_t>("mem_bytes").get(0);
-                    string mem_limit = buffer->get<string>("memory_limit").get(0);
-                    string wal_size = buffer->get<string>("wal_size").get(0);
-
-                    // Convert to MB with high precision
-                    double mem_mb = mem_bytes / (1024.0 * 1024.0);
-
-                    std::stringstream ss;
-                    ss << std::fixed << std::setprecision(2) << mem_mb;
-
-                    return std::make_tuple(ss.str(), mem_limit, wal_size, mem_bytes);
-                }
-            }
-        }
-        catch(const std::exception& ex)
-        {
-            logwrn << "could not query precise db status: " << ex.what();
-        }
-        return std::make_tuple("?", "?", "?", 0);
-    };
-
-    auto get_db_file_size = [&]()
-    {
-        DBCommand command;
-        // Query raw bytes from duckdb_memory() for precision, while keeping other info from pragma_database_size
-        command.set("SELECT database_size FROM pragma_database_size();");
-
-        PropertyList list;
-        list.addProperty("database_size", PropertyDataType::STRING);
-        command.list(list);
-
-        shared_ptr<DBResult> result = execute(command);
-        if (result->containsData())
-        {
-            shared_ptr<Buffer> buffer = result->buffer();
-            if (buffer->size() > 0)
-            {
-                return buffer->get<std::string>("database_size").get(0);
-            }
-        }
-
-        return std::string("?");
-    };
-
-    auto get_db_row_count = [&]()
-    {
-        std::uint64_t row_count = 0;
-
-        try
-        {
-            auto info = db_instance_->defaultConnection().createTableInfo();
-            for (const auto& ti : info.result())
-            {
-                const auto& table_name = ti.second.name();
-
-                PropertyList list;
-                list.addProperty("num_rows", PropertyDataType::ULONGINT);
-
-                DBCommand command;
-                command.set("SELECT COUNT(*) FROM " + table_name);
-                command.list(list);
-
-                std::shared_ptr<DBResult> result = execute(command);
-                if (result->containsData() && result->buffer() && result->buffer()->size() > 0)
-                {
-                    row_count += result->buffer()->get<std::uint64_t>("num_rows").get(0);
-                }
-                else
-                {
-                    logwrn << "could not query row count for table " << table_name;
-                }
-            }
-        }
-        catch(const std::exception& ex)
-        {
-            logwrn << "could not query db row count: " << ex.what();
-        }
-
-        return row_count;
-    };
-
-    string mem_before, limit_before, wal_before;
-    std::uint64_t mem_bytes_before;
-    std::tie(mem_before, limit_before, wal_before, mem_bytes_before) = get_db_status();
-
-    auto db_size_before = get_db_file_size();
-
-    if (app_state_.appMode() == AppMode::LiveRunning)
-    {
-        if (db_instance_->dbInMem())
-        {
-            auto res = execute("CHECKPOINT");
-
-            if (!res.ok())
-            {
-                logerr << "'CHECKPOINT' failed: " << res.error();
-                throw runtime_error("DBInterface: cleanupDBInternal: 'CHECKPOINT' failed: " + res.error());
-            }
-
-            res = execute("VACUUM");
-
-            if (!res.ok())
-            {
-                logerr << "'VACUUM' failed: " << res.error();
-                throw runtime_error("DBInterface: cleanupDBInternal: 'VACUUM' failed: " + res.error());
-            }
-        }
-        else
-        {
-            //loginf << "LIIIIIIVE IN FIIIIIIIILE";
-
-            //reconnect and cleanup to make sure the filesize does not grow
-            Result cleanup_result;
-            auto res = db_instance_->reconnect(true, &cleanup_result);
-
-            if (!res.ok() || !cleanup_result.ok())
-            {
-                logerr << "Cleanup failed: " << res.error();
-                throw runtime_error("DBInterface: cleanupDBInternal: Cleanup failed: " + res.error());
-            }
-        }
-    }
-    else
-    {
-        auto res = db_instance_->cleanupDB();
-        if (!res.ok())
-        {
-            logerr << "'cleanup failed: '" << res.error() << "'";
-        }
-    }
-
-    boost::posix_time::ptime elapsed_time = boost::posix_time::microsec_clock::local_time();
-    boost::posix_time::time_duration time_diff = elapsed_time - start_time;
-
-    string mem_after, limit_after, wal_after;
-    std::uint64_t mem_bytes_after;
-    std::tie(mem_after, limit_after, wal_after, mem_bytes_after) = get_db_status();
-
-    std::uint64_t total_row_count = get_db_row_count();
-    //double kb_per_row = (double)mem_bytes_after / (double)total_row_count / 1000.0;
-
-    auto db_size_after = get_db_file_size();
-
-    loginf << "duckDB cleanup (" << time_diff.total_milliseconds() << "ms): "
-           << "FILE: " << db_size_before << " -> " << db_size_after
-           << " RAM: " << mem_before << " -> " << mem_after << " MB" 
-           << " (Limit: " << limit_after << ")"
-           << " " << (total_row_count / 1000.0) << "K.rows";
-           //<< " " << kb_per_row << " KB/row";
-
-    last_live_cleanup_time_ = boost::posix_time::microsec_clock::local_time();
+    auto res = db_instance_->cleanupDB();
+    if (!res.ok())
+        logerr << "cleanup failed: " << res.error();
 
     cleanup_in_progress_ = false;
 
-    return true;
+    return res;
+}
+
+/**
+ * Logs the db state: rows in all tables, blocks of the db file (free blocks are reused for new rows),
+ * wal size, memory used by duckdb and its limit, RAM of the process.
+ */
+void DBInterface::printDBState()
+{
+    #ifdef PROTECT_INSTANCE
+    boost::mutex::scoped_lock locker(instance_mutex_);
+    #endif
+
+    traced_assert(ready());
+
+    auto mb = [ & ] (std::uint64_t bytes)
+    {
+        std::stringstream ss;
+        ss << std::fixed << std::setprecision(1) << bytes / (1024.0 * 1024.0) << " MB";
+        return ss.str();
+    };
+
+    try
+    {
+        DBCommand command;
+        command.set("SELECT total_blocks::BIGINT, free_blocks::BIGINT, block_size::BIGINT, wal_size, memory_limit, "
+                    "(SELECT sum(memory_usage_bytes) FROM duckdb_memory())::BIGINT "
+                    "FROM pragma_database_size() WHERE database_name = current_database()");
+
+        PropertyList list;
+        list.addProperty("total_blocks", PropertyDataType::ULONGINT);
+        list.addProperty("free_blocks", PropertyDataType::ULONGINT);
+        list.addProperty("block_size", PropertyDataType::ULONGINT);
+        list.addProperty("wal_size", PropertyDataType::STRING);
+        list.addProperty("memory_limit", PropertyDataType::STRING);
+        list.addProperty("mem_bytes", PropertyDataType::ULONGINT);
+        command.list(list);
+
+        auto result = execute(command);
+        if (!result->containsData() || !result->buffer() || result->buffer()->size() != 1)
+        {
+            logwrn << "could not query db state";
+            return;
+        }
+
+        const auto& buffer = *result->buffer();
+
+        auto uintValue = [ & ] (const std::string& name)
+        {
+            const auto& vec = buffer.get<std::uint64_t>(name);
+            return vec.isNull(0) ? (std::uint64_t)0 : vec.get(0);
+        };
+
+        auto stringValue = [ & ] (const std::string& name)
+        {
+            const auto& vec = buffer.get<std::string>(name);
+            return vec.isNull(0) ? std::string("?") : vec.get(0);
+        };
+
+        const std::uint64_t total_blocks = uintValue("total_blocks");
+        const std::uint64_t free_blocks  = uintValue("free_blocks");
+        const std::uint64_t block_size   = uintValue("block_size");
+
+        std::uint64_t rows = 0;
+        for (const auto& [ table_name, table_info ] : db_instance_->tableInfo())
+        {
+            PropertyList count_list;
+            count_list.addProperty("num_rows", PropertyDataType::ULONGINT);
+
+            DBCommand count_command;
+            count_command.set("SELECT COUNT(*)::BIGINT FROM " + table_name);
+            count_command.list(count_list);
+
+            auto count_result = execute(count_command);
+            if (count_result->containsData() && count_result->buffer() && count_result->buffer()->size() == 1)
+                rows += count_result->buffer()->get<std::uint64_t>("num_rows").get(0);
+        }
+
+        loginf << "db state: rows " << rows
+               << ", file " << total_blocks << " blocks (" << free_blocks << " free) "
+               << mb(total_blocks * block_size)
+               << ", wal " << stringValue("wal_size")
+               << ", duckdb mem " << mb(uintValue("mem_bytes")) << " (limit " << stringValue("memory_limit") << ")"
+               << ", process RAM " << std::fixed << std::setprecision(2) << System::getProcessRAMinGB() << " GB";
+    }
+    catch (const std::exception& ex)
+    {
+        logwrn << "could not query db state: " << ex.what();
+    }
 }
 
 bool DBInterface::logVerbose() const
@@ -2072,9 +1979,6 @@ size_t DBInterface::removeOrphanReportTables(const std::set<std::string>& refere
         ++n;
     }
 
-    if (n)
-        cleanupDB(false);
-
     return n;
 }
 
@@ -2436,20 +2340,23 @@ void DBInterface::finalizeReadStatement()
 }
 
 /**
- * Runs the database cleanup if live_cleanup_time_min passed since the first call or the last cleanup.
+ * Logs the db state if PrintDBStateIntervalSecs passed since the first call or the last log.
+ * Notice: No cleanup needed in live mode, duckdb reuses the space of deleted rows.
  */
-void DBInterface::liveCleanupIfDue()
+void DBInterface::printDBStateIfDue()
 {
     traced_assert(ready());
     traced_assert(!cleanup_in_progress_);
 
-    if (last_live_cleanup_time_.is_not_a_date_time())
-        last_live_cleanup_time_ = boost::posix_time::microsec_clock::local_time();
+    const auto now = boost::posix_time::microsec_clock::local_time();
 
-    if (boost::posix_time::microsec_clock::local_time() - last_live_cleanup_time_ > boost::posix_time::seconds(live_cleanup_time_secs_))
+    if (last_print_db_state_time_.is_not_a_date_time())
+        last_print_db_state_time_ = now;
+
+    if (now - last_print_db_state_time_ > boost::posix_time::seconds(PrintDBStateIntervalSecs))
     {
-        loginf << "live cleanup time reached, doing cleanup";
-        cleanupDBInternal();
+        printDBState();
+        last_print_db_state_time_ = now;
     }
 }
 

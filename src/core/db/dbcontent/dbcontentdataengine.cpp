@@ -248,7 +248,7 @@ void DBContentDataEngine::finish()
 }
 
 /**
- * Delete by criteria: wipe the in-memory dataset, then run a cleanup delete job;
+ * Delete by criteria: wipe the in-memory dataset, then run a delete job;
  * on completion the deleted info is applied to the context and dataDeletedSignal fires.
  */
 void DBContentDataEngine::deleteData(const nlohmann::json& delete_info)
@@ -259,7 +259,6 @@ void DBContentDataEngine::deleteData(const nlohmann::json& delete_info)
 
     delete_job_ = make_shared<DBContentDeleteDBJob>(dbcont_man_.contentDB());
     delete_job_->setDeleteInfo(delete_info_);
-    delete_job_->cleanupDB(true);
 
     connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal,
             this, &DBContentDataEngine::finishDeletingSlot, Qt::QueuedConnection);

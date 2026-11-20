@@ -99,6 +99,7 @@ public:
 
     bool cleanupDB(bool show_dialog = false);
     bool cleanupInProgress() const { return cleanup_in_progress_; }
+    void printDBState(); // logs rows, db file blocks, wal size, duckdb memory and process RAM
 
     const std::map<std::string, DBTableInfo>& tableInfo() const;
     std::string dbFilename() const;
@@ -131,7 +132,7 @@ public:
     std::pair<std::shared_ptr<Buffer>, bool> readDataChunk(); // last one flag
     void finalizeReadStatement();
 
-    void liveCleanupIfDue(); // cleanup after live deletions, at most every live_cleanup_time_secs
+    void printDBStateIfDue(); // logs the db state after live deletions, at most every PrintDBStateIntervalSecs
 
     size_t count(const std::string& table);
 
@@ -240,7 +241,8 @@ public:
     //std::tuple<bool, unsigned int, unsigned int>>> queryADSBInfo();
     // ta -> mops versions, nucp_nics, nac_ps
 
-    static const size_t TableBulkUpdateMinRows;
+    static const size_t       TableBulkUpdateMinRows;
+    static const unsigned int PrintDBStateIntervalSecs; // min interval of the db state log in live mode
 
     bool useLiveInMemDB() const { return use_live_inmem_db_; }
     unsigned int maxRAMFileGB() const { return max_ram_file_gb_; }
@@ -265,12 +267,11 @@ protected:
     unsigned int max_ram_file_gb_{2};
     unsigned int max_ram_inmem_gb_{8};
     unsigned int num_threads_{8};
-    unsigned int live_cleanup_time_secs_{3600};
-    bool use_live_inmem_db_{true};
+    bool use_live_inmem_db_{false};
 
     bool preserve_insert_order_{true};
 
-    boost::posix_time::ptime last_live_cleanup_time_;
+    boost::posix_time::ptime last_print_db_state_time_;
 
     void openDBFileInternal(const std::string& filename, bool overwrite);
 
@@ -296,7 +297,7 @@ protected:
 
     mutable boost::mutex instance_mutex_;
 
-    // task log writes deferred while instance_mutex_ was busy (live cleanup reconnect)
+    // task log writes deferred while instance_mutex_ was busy (e.g. during a cleanup)
     std::vector<std::future<void>> pending_task_log_writes_;
     boost::mutex                   pending_task_log_writes_mutex_;
     std::atomic<unsigned int>      num_deferred_task_log_writes_{0};

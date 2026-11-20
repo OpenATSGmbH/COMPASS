@@ -1938,7 +1938,6 @@ void DataSourcesWidget::runDeleteDialog(std::function<void(DeleteDataDialog&)> p
     // create and run delete job
     delete_job_ = std::make_shared<DBContentDeleteDBJob>(dbcont_man_.contentDB());
     delete_job_->setDeleteInfo(delete_info);
-    delete_job_->cleanupDB(true);
 
     connect(delete_job_.get(), &DBContentDeleteDBJob::doneSignal,
             this, &DataSourcesWidget::deleteJobDoneSlot, Qt::QueuedConnection);

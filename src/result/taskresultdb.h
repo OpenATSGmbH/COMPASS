@@ -56,10 +56,8 @@ public:
     void createTaskResultsTable();
     void createReportContentsTable();
     void createReportSectionsTable();
-    Result saveResult(const TaskResult& result,
-                      bool cleanup_db_if_needed);
+    Result saveResult(const TaskResult& result);
     Result deleteResult(const TaskResult& result,
-                        bool cleanup_db_if_needed,
                         bool* deleted = nullptr,
                         bool keep_own_tables = false);
 
