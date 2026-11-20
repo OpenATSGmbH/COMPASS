@@ -1253,12 +1253,9 @@ void ReconstructorTask::endReconstruction()
 
     manager().endTaskResultWriting(true, true);
 
-    //cleanup db after reconstruction
-    manager().dbInterface().cleanupDB(true);
-
     if (!allow_user_interactions_)
     {
-        //auto-close dialog and immediately cleanup db
+        //auto-close dialog
         progress_dialog_->close();
     }
 }
@@ -1587,8 +1584,6 @@ void ReconstructorTask::deleteCalculatedReferences() // called in async
     DBContentManager& dbcontent_man = manager().dbContentManager();
 
     loginf << "deleting";
-
-    //cleanup db on delete (for re-compression)
 
     if (currentReconstructor()->settings().delete_all_calc_reftraj)
         dbcontent_man.dbContent("RefTraj").deleteDBContentData(

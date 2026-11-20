@@ -294,7 +294,7 @@ void TaskResultDB::writeReportSections(unsigned int result_id,
 
 /**
  */
-Result TaskResultDB::saveResult(const TaskResult& result, bool cleanup_db_if_needed)
+Result TaskResultDB::saveResult(const TaskResult& result)
 {
     traced_assert(db_interface_.ready());
 
@@ -317,14 +317,12 @@ Result TaskResultDB::saveResult(const TaskResult& result, bool cleanup_db_if_nee
         auto report_contents = result.report()->reportContents(true);
 
         //remove any old result with the same id/name, the report tables of this result stay
-        bool result_deleted = false;
-        auto del_result = deleteResult(result, false, &result_deleted, true);
+        auto del_result = deleteResult(result, nullptr, true);
         if (!del_result.ok())
             throw std::runtime_error(del_result.error());
 
         //drop report tables under this result id which the run did not write, left behind by an earlier run
-        if (db_interface_.removeReportTables(result.id(), result.reportTableNames()))
-            result_deleted = true;
+        db_interface_.removeReportTables(result.id(), result.reportTableNames());
 
         auto result_id   = result.id();
         auto result_name = result.name();
@@ -423,10 +421,6 @@ Result TaskResultDB::saveResult(const TaskResult& result, bool cleanup_db_if_nee
                 db_interface_.insertBuffer(ResultReport::SectionContent::DBTableName, buffer);
             }
         }
-
-        //cleanup db?
-        if (result_deleted && cleanup_db_if_needed)
-            db_interface_.cleanupDB(false);
     }
     catch(const std::exception& ex)
     {
@@ -445,7 +439,6 @@ Result TaskResultDB::saveResult(const TaskResult& result, bool cleanup_db_if_nee
 /**
  */
 Result TaskResultDB::deleteResult(const TaskResult& result,
-                                  bool cleanup_db_if_needed,
                                   bool* deleted,
                                   bool keep_own_tables)
 {
@@ -527,10 +520,6 @@ Result TaskResultDB::deleteResult(const TaskResult& result,
 
     if (deleted)
         *deleted = results_deleted;
-
-    //cleanup db?
-    if (results_deleted && cleanup_db_if_needed)
-        db_interface_.cleanupDB(false);
 
     return Result::succeeded();
 }

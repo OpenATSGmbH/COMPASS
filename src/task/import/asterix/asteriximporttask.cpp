@@ -1948,10 +1948,6 @@ void ASTERIXImportTask::checkAllDone()
 
         QApplication::restoreOverrideCursor();
 
-        //cleanup db after import
-        if (source_.isFileType())
-            manager().dbInterface().cleanupDB(true);
-
         // append this import to the persistent "ASTERIX Import" task result.
         // Skip on cancel/error: we never open the result so previous content
         // (from earlier imports) stays untouched.

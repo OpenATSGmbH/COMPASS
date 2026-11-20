@@ -198,8 +198,6 @@ public:
 
     void selectResultID(const std::string& id, bool show_figure) override;
 
-    static const bool CleanupDBIfNeeded;
-
 protected:
     GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
     virtual void checkSubConfigurables() override;

@@ -163,14 +163,12 @@ public:
                     std::shared_ptr<Buffer> buffer);
 
     // counts and targets have to be adjusted outside
-    void deleteDBContentData(bool cleanup_db = false);
-    void deleteDBContentData(unsigned int sac, 
+    void deleteDBContentData();
+    void deleteDBContentData(unsigned int sac,
+                             unsigned int sic);
+    void deleteDBContentData(unsigned int sac,
                              unsigned int sic,
-                             bool cleanup_db = false);
-    void deleteDBContentData(unsigned int sac, 
-                             unsigned int sic, 
-                             unsigned int line_id,
-                             bool cleanup_db = false);
+                             unsigned int line_id);
 
     bool isDeleting();
 

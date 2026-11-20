@@ -60,8 +60,6 @@
 
 using namespace Utils;
 
-const bool TaskManager::CleanupDBIfNeeded = true;
-
 /**
  */
 // TaskManager::TaskManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass)
@@ -664,11 +662,10 @@ void TaskManager::endTaskResultWriting(bool store_result, bool show_dialog)
         loginf << "Storing result...";
 
         auto result_ptr = current_result_.get();
-        bool cleanup_db = CleanupDBIfNeeded;
 
-        auto cb = [ this, result_ptr, cleanup_db ] (const AsyncTaskState& s, AsyncTaskProgressWrapper& p)
+        auto cb = [ this, result_ptr ] (const AsyncTaskState& s, AsyncTaskProgressWrapper& p)
         {
-            return result_db_->saveResult(*result_ptr, cleanup_db);
+            return result_db_->saveResult(*result_ptr);
         };
 
         AsyncFuncTask task(cb, "Save Result", "Saving result", false);
@@ -804,7 +801,7 @@ bool TaskManager::removeResult(const std::string& name,
     const auto& result = results_.at(id.value());
     traced_assert(result);
 
-    auto res = result_db_->deleteResult(*result, CleanupDBIfNeeded);
+    auto res = result_db_->deleteResult(*result);
     if (!res.ok())
         return false;
 

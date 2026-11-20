@@ -36,7 +36,6 @@ public:
     void setSpecificDBContent(const std::string& specific_dbcontent); // delete everything in dbcontent
     void setSpecificSacSic(unsigned int sac, unsigned int sic);
     void setSpecificLineId(unsigned int line_id);
-    void cleanupDB(bool cleanup_db);
 
     bool useSpecificDBContent() const;
     bool useBeforeTimestamp() const;
@@ -61,8 +60,6 @@ protected:
 
     bool use_specific_line_id_ {false};
     unsigned int specific_line_id_ {0};
-
-    bool cleanup_db_ = false;
 
     nlohmann::json delete_info_;
 };

@@ -20,18 +20,10 @@
 #include "duckdbconnection.h"
 
 #include "logger.h"
-#include "files.h"
-
-#include <boost/filesystem.hpp>
 
 #ifndef _WIN32
 #include <dlfcn.h>
 #endif
-
-#include <QString>
-#include <QFile>
-
-using namespace Utils;
 
 namespace
 {
@@ -153,92 +145,6 @@ ResultT<DBConnection*> DuckDBInstance::createConnection_impl(bool verbose)
 
 /**
  */
-Result DuckDBInstance::cleanupDB_impl(const std::string& db_fn)
-{
-    //this method should only be called if there is no active connection
-    traced_assert(!dbOpen());
-
-    // std::string dir      = boost::filesystem::path(db_fn).parent_path().string();
-    // std::string basename = boost::filesystem::path(db_fn).stem().string();
-    // std::string ext      = boost::filesystem::path(db_fn).extension().string();
-
-    //std::string fn_temp  = dir + "/" + basename + ext + ".tmp";
-
-    std::string fn_temp = db_fn + ".tmp";
-
-    if (Files::fileExists(fn_temp))
-    {
-        logwrn << "temp file '" << fn_temp << "' already exists, deleting";
-        Files::deleteFile(fn_temp);
-
-        if (Files::fileExists(fn_temp))
-        {
-            logerr << "deleting temp file '" << fn_temp << "' failed, aborting";
-            return Result::failed("Could not delete temorary database");
-        }
-    }
-
-    loginf << "moving db '" << db_fn << "' exists " << Files::fileExists(db_fn) << " to '"
-           << fn_temp << "' exists " << Files::fileExists(fn_temp);
-
-    //try to prepare current database for compression
-
-    if (!Files::moveFile(db_fn, fn_temp))
-        return Result::failed("Could not create temorary database");
-
-    // if (!QFile::rename(QString::fromStdString(db_fn), QString::fromStdString(fn_temp)))
-    //     return Result::failed("Could not create temorary database");
-
-    //connect to in-mem db
-    duckdb_database   db;
-    duckdb_connection con;
-
-    if (duckdb_open(NULL, &db) == DuckDBError) 
-    {
-        //revert back to old file (if possible)
-        //QFile::rename(QString::fromStdString(fn_temp), QString::fromStdString(db_fn));
-        Files::moveFile(fn_temp, db_fn);
-
-        return Result::failed("Could not open memory db");
-    }
-    if (duckdb_connect(db, &con) == DuckDBError) 
-    {
-        //revert back to old file (if possible)
-        //QFile::rename(QString::fromStdString(fn_temp), QString::fromStdString(db_fn));
-
-        Files::moveFile(fn_temp, db_fn);
-
-        return Result::failed("Could not open connection to memory db");
-    }
-
-    //perform compression into new file
-    std::string sql = "ATTACH '" + fn_temp + "' AS db1;" +
-                      "ATTACH '" + db_fn   + "' AS db2;" +
-                      "COPY FROM DATABASE db1 TO db2;";
-
-    auto state = duckdb_query(con, sql.c_str(), nullptr);
-    if (state != DuckDBSuccess)
-    {
-        //remove any failed result + revert back to old file (if possible)
-        QFile::remove(QString::fromStdString(db_fn));
-        //QFile::rename(QString::fromStdString(fn_temp), QString::fromStdString(db_fn));
-
-        Files::moveFile(fn_temp, db_fn);
-        return Result::failed("Compressing database failed");
-    }
-
-    //compression successful => try to remove old file
-    if (!QFile::remove(QString::fromStdString(fn_temp)))
-        logwrn << "Could not remove intermediate database file";
-    
-    duckdb_disconnect(&con);
-    duckdb_close(&db);
-
-    return Result::succeeded();
-}
-
-/**
- */
 Result DuckDBInstance::cleanupDB_impl()
 {
     loginf << "executing CHECKPOINT";
@@ -250,136 +156,6 @@ Result DuckDBInstance::cleanupDB_impl()
     res = defaultConnection().execute("VACUUM");
     if (!res.ok())
         return res;
-
-    return Result::succeeded();
-}
-
-/**
- */
-// Result DuckDBInstance::cleanupDBInMem_impl()
-// {
-//     loginf;
-
-//     std::string sql = std::string("ATTACH ':memory:' AS backup_db;") +
-//                       "COPY FROM DATABASE memory TO backup_db;" + 
-//                       "COPY FROM DATABASE backup_db TO memory;";
-
-//     duckdb_connection con;
-//     if (duckdb_connect(db_, &con) == DuckDBError) 
-//     {
-//         return Result::failed("Could not open connection to memory db");
-//     }
-    
-//     auto state = duckdb_query(con, sql.c_str(), nullptr);
-//     if (state != DuckDBSuccess)
-//     {
-//         return Result::failed("Compressing database failed");
-//     }
-
-//     duckdb_disconnect(&con);
-
-//     return Result::succeeded();
-// }
-
-/**
- */
-Result DuckDBInstance::cleanupDBInMem_impl()
-{
-    loginf;
-
-    // Use /dev/shm on Linux to store the temp file in RAM
-#ifdef __linux__
-    std::string temp_path = "/dev/shm/compass_memdb_cleanup.tmp";
-#else
-    // system temp folder, the working folder can be write-protected (e.g. on Windows)
-    std::string temp_path =
-        (boost::filesystem::temp_directory_path() / "compass_memdb_cleanup.tmp").generic_string();
-#endif
-
-    if (Files::fileExists(temp_path)) {
-        Files::deleteFile(temp_path);
-    }
-
-    // 1. Export using a local transient connection
-    // We attach this directly to the underlying db_ handle
-    duckdb_connection con;
-    if (duckdb_connect(db_, &con) == DuckDBError) 
-    {
-        return Result::failed("Could not open connection to memory db");
-    }
-    
-    // Perform a checkpoint to flush the WAL to the main storage.
-    // This ensures that the subsequent COPY operation reads from a consistent
-    // state and avoids potential corruption from concurrent operations.
-    duckdb_query(con, "FORCE CHECKPOINT;", nullptr);
-
-    std::string sql_export = "ATTACH '" + temp_path + "' AS backup_ram;" +
-                             "COPY FROM DATABASE memory TO backup_ram;";
-
-    //loginf << "UGA1";
-    auto state = duckdb_query(con, sql_export.c_str(), nullptr);
-
-    if (state != DuckDBSuccess)
-    {
-        Files::deleteFile(temp_path);
-        return Result::failed("Exporting database to RAM buffer failed");
-    }
-
-    //loginf << "UGA2";
-    duckdb_disconnect(&con);
-
-    // 2. FORCE CLOSE ALL CONNECTIONS
-    // Call the base class close(), which destroys default_connection_, 
-    // concurrent_connections_, and custom_connections_.
-    // This is critical to ensure the old duckdb_database handle refcount hits 0.
-    //loginf << "UGA3";
-    close();
-
-    // 3. Re-open the database (creates new duckdb_database instance)
-    // Use openInMemory() instead of open("") to avoid the base class assertion failure.
-    //loginf << "UGA4";
-    auto res = openInMemory(); 
-    if (!res.ok())
-    {
-        Files::deleteFile(temp_path);
-        return Result::failed(std::string("Could not reopen memory db: ") + res.error());
-    }
-
-    //loginf << "UGA5";
-    // 4. Import using a local transient connection on the NEW db_
-    if (duckdb_connect(db_, &con) == DuckDBError) 
-    {
-        Files::deleteFile(temp_path);
-        return Result::failed("Could not connect to new memory db");
-    }
-    
-    std::string sql_import = "ATTACH '" + temp_path + "' AS backup_ram;" +
-                             "COPY FROM DATABASE backup_ram TO memory;" + 
-                             "DETACH backup_ram;";
-
-    //loginf << "UGA6";
-    state = duckdb_query(con, sql_import.c_str(), nullptr);
-
-    if (state != DuckDBSuccess)
-    {
-        return Result::failed("Restoring database failed");
-    }
-
-    //loginf << "UGA7";
-    duckdb_disconnect(&con);
-    
-    Files::deleteFile(temp_path);
-
-    //loginf << "UGA8";
-
-    // [FIX] Update the C++ cache of existing tables.
-    // openInMemory() scanned an empty DB, so the cache currently thinks no tables exist.
-    // Since we just imported them back, we must refresh the table info map.
-    auto ti_res = updateTableInfo();
-    if (!ti_res.ok())
-    {
-        return Result::failed(std::string("Updating table info failed: ") + ti_res.error());
-    }
 
     return Result::succeeded();
 }

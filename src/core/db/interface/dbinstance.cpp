@@ -212,14 +212,9 @@ void DBInstance::close()
 
 /**
  */
-Result DBInstance::reconnect(bool cleanup_db, Result* cleanup_result)
+Result DBInstance::reconnect()
 {
     traced_assert(dbReady());
-
-    // if (cleanup_result)
-    //     *cleanup_result = Result::succeeded();
-
-    // return Result::succeeded();
 
     //no reconnection to in-mem db
     if (db_in_mem_)
@@ -234,17 +229,6 @@ Result DBInstance::reconnect(bool cleanup_db, Result* cleanup_result)
 
     //close db
     close();
-
-    if (cleanup_db)
-    {
-        loginf << "cleaning db...";
-
-        //cleanup closed db file (cleanup might need closing of db handles)
-        auto res = cleanupDB(fn);
-        
-        if (cleanup_result)
-            *cleanup_result = res;
-    }
 
     loginf << "reopening db...";
 
@@ -265,16 +249,6 @@ Result DBInstance::exportToFile(const std::string& file_name)
 
 /**
  */
-Result DBInstance::cleanupDB(const std::string& db_fn)
-{
-    traced_assert(!dbOpen());
-    traced_assert(!db_fn.empty());
-
-    return cleanupDB_impl(db_fn);
-}
-
-/**
- */
 Result DBInstance::cleanupDB()
 {
     traced_assert(dbOpen());
@@ -284,33 +258,7 @@ Result DBInstance::cleanupDB()
 
 /**
  */
-Result DBInstance::cleanupDBInMem()
-{
-    traced_assert(dbOpen());
-    traced_assert(dbInMem());
-
-    return cleanupDBInMem_impl();
-}
-
-/**
- */
-Result DBInstance::cleanupDB_impl(const std::string& db_fn)
-{
-    //derive if some special action is needed
-    return Result::succeeded();
-}
-
-/**
- */
 Result DBInstance::cleanupDB_impl()
-{
-    //derive if some special action is needed
-    return Result::succeeded();
-}
-
-/**
- */
-Result DBInstance::cleanupDBInMem_impl()
 {
     //derive if some special action is needed
     return Result::succeeded();

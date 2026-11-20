@@ -311,7 +311,7 @@ void DBContentDB::deleteRows(const DBContent& dbcontent, const std::string& filt
 }
 
 /**
- * Deletes the data older than the given timestamp (live mode), runs the periodic cleanup if due.
+ * Deletes the data older than the given timestamp (live mode), logs the db state if due.
  */
 void DBContentDB::deleteBefore(const DBContent& dbcontent, boost::posix_time::ptime before_timestamp)
 {
@@ -324,7 +324,7 @@ void DBContentDB::deleteBefore(const DBContent& dbcontent, boost::posix_time::pt
 
     deleteRows(dbcontent, ss.str());
 
-    db_interface_.liveCleanupIfDue();
+    db_interface_.printDBStateIfDue();
 }
 
 /**
