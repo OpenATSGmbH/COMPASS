@@ -119,7 +119,7 @@
             "images": [
                 {
                     "file": "ui/config/figures/configuration_show_content.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/config/ui_configuration_show_content.tex:10"
@@ -164,7 +164,7 @@
                 },
                 {
                     "file": "ui/config/figures/configure_ds_dettyp.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/config/ui_configuration_data_context_data_sources.tex:75"
@@ -193,7 +193,7 @@
                 },
                 {
                     "file": "ui/config/figures/configure_ds_jpda.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/config/ui_configuration_data_context_data_sources.tex:89"
@@ -242,7 +242,7 @@
                 },
                 {
                     "file": "ui/config/figures/configure_license_add.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/config/ui_configuration_licenses.tex:54"
@@ -268,7 +268,7 @@
                 },
                 {
                     "file": "ui/config/figures/configure_license_add2.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/config/ui_configuration_licenses.tex:62"
@@ -317,7 +317,7 @@
                 },
                 {
                     "file": "ui/config/figures/configure_licenses.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/config/ui_configuration_licenses.tex:10"
@@ -379,7 +379,7 @@
                 },
                 {
                     "file": "ui/config/figures/configure_network.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/config/ui_configuration_data_context_data_sources.tex:100"
@@ -406,7 +406,7 @@
                 },
                 {
                     "file": "ui/config/figures/configure_radar_accuracies.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/config/ui_configuration_data_context_data_sources.tex:148"
@@ -487,7 +487,7 @@
                 },
                 {
                     "file": "ui/config/figures/configure_sectors_import_dialog.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/config/ui_configuration_data_context_sectors.tex:81"
@@ -571,7 +571,7 @@
                 },
                 {
                     "file": "ui/config/figures/data_context_edit.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/config/ui_configuration_data_context.tex:9"
@@ -596,7 +596,7 @@
                 },
                 {
                     "file": "ui/config/figures/data_context_edit_airspace.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/config/ui_configuration_data_context_sectors.tex:101"
@@ -627,7 +627,7 @@
                 },
                 {
                     "file": "ui/config/figures/data_context_edit_asterix.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/config/ui_configuration_data_context_asterix.tex:9"
@@ -653,7 +653,7 @@
                 },
                 {
                     "file": "ui/config/figures/data_context_edit_colors.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/config/ui_configuration_data_context_colors.tex:9"
@@ -679,7 +679,7 @@
                 },
                 {
                     "file": "ui/config/figures/data_context_edit_ds.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/config/ui_configuration_data_context_data_sources.tex:9"
@@ -705,7 +705,7 @@
                 },
                 {
                     "file": "ui/config/figures/data_context_edit_ffts.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/config/ui_configuration_data_context_ffts.tex:9"
@@ -731,7 +731,7 @@
                 },
                 {
                     "file": "ui/config/figures/data_context_edit_rad_range.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/config/ui_configuration_data_context_data_sources.tex:127"
@@ -758,7 +758,7 @@
                 },
                 {
                     "file": "ui/config/figures/data_context_edit_sectors.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/config/ui_configuration_data_context_sectors.tex:9"
@@ -838,7 +838,7 @@
                 },
                 {
                     "file": "ui/figures/cross_selection_geo.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_views.tex:192"
@@ -871,7 +871,7 @@
                 },
                 {
                     "file": "ui/figures/cross_selection_hist.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_views.tex:191"
@@ -900,7 +900,7 @@
                 },
                 {
                     "file": "ui/figures/dark_mode.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_overview.tex:168"
@@ -929,7 +929,7 @@
                 },
                 {
                     "file": "ui/figures/main_window.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_main_window.tex:9"
@@ -952,7 +952,7 @@
                 },
                 {
                     "file": "ui/figures/ui_color_mode.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/datasources/data_sources.tex:94",
@@ -978,7 +978,7 @@
                 },
                 {
                     "file": "ui/figures/ui_configuration_menu.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_overview.tex:108"
@@ -1004,7 +1004,7 @@
                 },
                 {
                     "file": "ui/figures/ui_context_menu.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_overview.tex:43"
@@ -1030,7 +1030,7 @@
                 },
                 {
                     "file": "ui/figures/ui_file_menu.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_overview.tex:18"
@@ -1056,7 +1056,7 @@
                 },
                 {
                     "file": "ui/figures/ui_flight_deck.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_main_window.tex:56"
@@ -1080,7 +1080,7 @@
                 },
                 {
                     "file": "ui/figures/ui_flight_deck_config.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_main_window.tex:132"
@@ -1106,7 +1106,7 @@
                 },
                 {
                     "file": "ui/figures/ui_import_menu.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_overview.tex:69"
@@ -1132,7 +1132,7 @@
                 },
                 {
                     "file": "ui/figures/ui_layers_tree_datasource.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_views.tex:287"
@@ -1164,7 +1164,7 @@
                 },
                 {
                     "file": "ui/figures/ui_layers_tree_dstype.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_views.tex:281"
@@ -1189,7 +1189,7 @@
                 },
                 {
                     "file": "ui/figures/ui_process_menu.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_overview.tex:131"
@@ -1215,7 +1215,7 @@
                 },
                 {
                     "file": "ui/figures/ui_select_variable_reports.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_views.tex:33"
@@ -1246,7 +1246,7 @@
                 },
                 {
                     "file": "ui/figures/view_preset_add.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_views.tex:154"
@@ -1275,7 +1275,7 @@
                 },
                 {
                     "file": "ui/figures/view_preset_copy.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_views.tex:131"
@@ -1304,7 +1304,7 @@
                 },
                 {
                     "file": "ui/figures/view_preset_edit.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_views.tex:123"
@@ -1336,7 +1336,7 @@
                 },
                 {
                     "file": "ui/figures/view_preset_filter.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_views.tex:164"
@@ -1366,7 +1366,7 @@
                 },
                 {
                     "file": "ui/figures/view_preset_selection.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_views.tex:66"
@@ -1390,7 +1390,7 @@
                 },
                 {
                     "file": "ui/figures/view_preset_selection_modified.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_views.tex:75"
@@ -1423,7 +1423,7 @@
                 },
                 {
                     "file": "ui/figures/view_presets.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_views.tex:83"
@@ -1450,7 +1450,7 @@
                 },
                 {
                     "file": "ui/figures/view_presets_origin_openats.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_views.tex:96"
@@ -1477,7 +1477,7 @@
                 },
                 {
                     "file": "ui/figures/view_presets_origin_user.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_views.tex:97"
@@ -1515,7 +1515,7 @@
                 },
                 {
                     "file": "ui/figures/view_select_plot.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/ui_views.tex:209"
@@ -1541,7 +1541,7 @@
                 },
                 {
                     "file": "ui/import/figures/asterix_import_data.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/import/ui_import_asterix.tex:9"
@@ -1567,7 +1567,7 @@
                 },
                 {
                     "file": "ui/import/figures/asterix_import_data_dbcont_var_details.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/import/ui_import_asterix.tex:479"
@@ -1601,7 +1601,7 @@
                 },
                 {
                     "file": "ui/import/figures/asterix_import_data_decoder.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/import/ui_import_asterix.tex:300"
@@ -1629,7 +1629,7 @@
                 },
                 {
                     "file": "ui/import/figures/asterix_import_data_mappings.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/import/ui_import_asterix.tex:446"
@@ -1677,7 +1677,7 @@
                 },
                 {
                     "file": "ui/import/figures/asterix_import_data_override.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/import/ui_import_asterix.tex:399"
@@ -1705,7 +1705,7 @@
                 },
                 {
                     "file": "ui/import/figures/asterix_import_data_sources.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/import/ui_import_asterix.tex:338"
@@ -1753,7 +1753,7 @@
                 },
                 {
                     "file": "ui/import/figures/asterix_import_pcap.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/import/ui_import_pcap.tex:12"
@@ -1899,7 +1899,7 @@
                 },
                 {
                     "file": "ui/import/figures/gps_import_config.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/import/ui_import_gps.tex:74"
@@ -1938,7 +1938,7 @@
                 },
                 {
                     "file": "ui/import/figures/gps_import_task.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/import/ui_import_gps.tex:34"
@@ -1965,7 +1965,7 @@
                 },
                 {
                     "file": "ui/import/figures/import_json_data.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/import/ui_import_json.tex:9"
@@ -1993,7 +1993,7 @@
                 },
                 {
                     "file": "ui/import/figures/import_json_data_object_parser.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/import/ui_import_json.tex:33"
@@ -2061,7 +2061,7 @@
                 },
                 {
                     "file": "ui/import/figures/view_point_import.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/import/ui_import_view_points.tex:8"
@@ -2222,7 +2222,7 @@
                 },
                 {
                     "file": "ui/process/figures/artas_association_config.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/process/ui_process_associations_artas.tex:10"
@@ -2246,7 +2246,7 @@
                 },
                 {
                     "file": "ui/process/figures/proc_calc_radar.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/process/ui_process_radar_positions.tex:8"
@@ -2270,7 +2270,7 @@
                 },
                 {
                     "file": "ui/process/figures/proc_calc_radar_done.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "ui/process/ui_process_radar_positions.tex:48"
@@ -2305,7 +2305,7 @@
             "images": [
                 {
                     "file": "flightdeck/datasources/figures/fd_delete_data.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/datasources/data_sources.tex:117"
@@ -2334,7 +2334,7 @@
                 },
                 {
                     "file": "flightdeck/datasources/figures/fd_delete_data_cfrm.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/datasources/data_sources.tex:128"
@@ -2368,7 +2368,7 @@
                 },
                 {
                     "file": "flightdeck/datasources/figures/ui_color_mode.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/datasources/data_sources.tex:94"
@@ -2394,7 +2394,7 @@
                 },
                 {
                     "file": "flightdeck/datasources/figures/ui_data_source_configmenu.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/datasources/data_sources.tex:33"
@@ -2419,7 +2419,7 @@
                 },
                 {
                     "file": "flightdeck/datasources/figures/ui_data_source_configmenu_counts.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/datasources/data_sources.tex:73"
@@ -2467,7 +2467,7 @@
                 },
                 {
                     "file": "flightdeck/datasources/figures/ui_data_source_configmenu_lines.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/datasources/data_sources.tex:59"
@@ -2494,7 +2494,7 @@
                 },
                 {
                     "file": "flightdeck/datasources/figures/ui_data_source_configmenu_select.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/datasources/data_sources.tex:47"
@@ -2521,7 +2521,7 @@
                 },
                 {
                     "file": "flightdeck/datasources/figures/ui_data_sources.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/datasources/data_sources.tex:6"
@@ -2549,7 +2549,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_acad.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:76"
@@ -2575,7 +2575,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_acid.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:87"
@@ -2601,7 +2601,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_active.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:18"
@@ -2634,7 +2634,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_add.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:301"
@@ -2659,7 +2659,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_add_or.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:322"
@@ -2697,7 +2697,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_adsb_mops.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:66"
@@ -2723,7 +2723,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_adsb_quality.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:56"
@@ -2749,7 +2749,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_config.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:29"
@@ -2774,7 +2774,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_detection_type.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:97"
@@ -2800,7 +2800,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_excl_time_windows.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:121"
@@ -2835,7 +2835,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_ground_bit.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:131"
@@ -2861,7 +2861,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_mlatrus.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:141"
@@ -2888,7 +2888,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_mlatrus2.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:157"
@@ -2915,7 +2915,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_mode3a.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:166"
@@ -2941,7 +2941,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_modec.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:178"
@@ -2967,7 +2967,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_position.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:188"
@@ -2993,7 +2993,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_primary_only.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:198"
@@ -3019,7 +3019,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_reftrajacc.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:208"
@@ -3045,7 +3045,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_sectors.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:218"
@@ -3072,7 +3072,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_timestamp.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:246"
@@ -3098,7 +3098,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_tod.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:232"
@@ -3124,7 +3124,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_trackertracknum.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:273"
@@ -3150,7 +3150,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_tracknum.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:260"
@@ -3176,7 +3176,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/filter_utn.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:285"
@@ -3202,7 +3202,7 @@
                 },
                 {
                     "file": "flightdeck/filters/figures/ui_filters.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/filters/filters.tex:6"
@@ -3232,7 +3232,7 @@
                 },
                 {
                     "file": "flightdeck/reports/figures/content_figure.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/reports/reports.tex:322"
@@ -3261,7 +3261,7 @@
                 },
                 {
                     "file": "flightdeck/reports/figures/content_table.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/reports/reports.tex:335"
@@ -3288,7 +3288,7 @@
                 },
                 {
                     "file": "flightdeck/reports/figures/export_json.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/reports/reports.tex:111"
@@ -3339,7 +3339,7 @@
                 },
                 {
                     "file": "flightdeck/reports/figures/export_latex.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/reports/reports.tex:156"
@@ -3390,7 +3390,7 @@
                 },
                 {
                     "file": "flightdeck/reports/figures/export_options.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/reports/reports.tex:78"
@@ -3420,7 +3420,7 @@
                 },
                 {
                     "file": "flightdeck/reports/figures/export_pdf.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/reports/reports.tex:195"
@@ -3471,7 +3471,7 @@
                 },
                 {
                     "file": "flightdeck/reports/figures/navigation.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/reports/reports.tex:279"
@@ -3498,7 +3498,7 @@
                 },
                 {
                     "file": "flightdeck/reports/figures/refresh_lock.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/reports/reports.tex:59"
@@ -3524,7 +3524,7 @@
                 },
                 {
                     "file": "flightdeck/reports/figures/refresh_needed.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/reports/reports.tex:57"
@@ -3556,7 +3556,7 @@
                 },
                 {
                     "file": "flightdeck/reports/figures/refresh_uptodate.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/reports/reports.tex:55"
@@ -3583,7 +3583,7 @@
                 },
                 {
                     "file": "flightdeck/reports/figures/report_variable_scatter.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/reports/reports.tex:264"
@@ -3612,7 +3612,7 @@
                 },
                 {
                     "file": "flightdeck/reports/figures/reports.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/reports/reports.tex:7"
@@ -3643,7 +3643,7 @@
                 },
                 {
                     "file": "flightdeck/reports/figures/section_button.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/reports/reports.tex:297"
@@ -3679,7 +3679,7 @@
                 },
                 {
                     "file": "flightdeck/targets/figures/eval_global_excl_tw.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/targets/targets.tex:161"
@@ -3704,7 +3704,7 @@
                 },
                 {
                     "file": "flightdeck/targets/figures/eval_targets_context_menu.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/targets/targets.tex:184"
@@ -3733,7 +3733,7 @@
                 },
                 {
                     "file": "flightdeck/targets/figures/eval_targets_excl_req.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/targets/targets.tex:214"
@@ -3769,7 +3769,7 @@
                 },
                 {
                     "file": "flightdeck/targets/figures/eval_targets_excl_tw.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/targets/targets.tex:192"
@@ -3799,7 +3799,7 @@
                 },
                 {
                     "file": "flightdeck/targets/figures/filter_utns.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/targets/targets.tex:244"
@@ -3824,7 +3824,7 @@
                 },
                 {
                     "file": "flightdeck/targets/figures/filter_utns_done.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/targets/targets.tex:267"
@@ -3883,7 +3883,7 @@
                 },
                 {
                     "file": "flightdeck/targets/figures/ui_targets2.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/targets/targets.tex:62"
@@ -3913,7 +3913,7 @@
                 },
                 {
                     "file": "flightdeck/targets/figures/ui_targets3.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/targets/targets.tex:74"
@@ -3965,7 +3965,7 @@
                 },
                 {
                     "file": "flightdeck/targets/figures/ui_targets_config.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/targets/targets.tex:96"
@@ -3990,7 +3990,7 @@
                 },
                 {
                     "file": "flightdeck/targets/figures/ui_targets_config_eval.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/targets/targets.tex:142"
@@ -4018,7 +4018,7 @@
                 },
                 {
                     "file": "flightdeck/tasklog/figures/task_log.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/tasklog/task_log.tex:7"
@@ -4046,7 +4046,7 @@
                 },
                 {
                     "file": "flightdeck/viewpoints/figures/view_points.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/viewpoints/view_points.tex:10"
@@ -4070,7 +4070,7 @@
                 },
                 {
                     "file": "flightdeck/viewpoints/figures/view_points_edit_columns.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/viewpoints/view_points.tex:113"
@@ -4099,7 +4099,7 @@
                 },
                 {
                     "file": "flightdeck/viewpoints/figures/view_points_export_pdf.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/viewpoints/view_points.tex:241"
@@ -4128,7 +4128,7 @@
                 },
                 {
                     "file": "flightdeck/viewpoints/figures/view_points_export_pdf_status.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/viewpoints/view_points.tex:269"
@@ -4182,7 +4182,7 @@
                 },
                 {
                     "file": "flightdeck/viewpoints/figures/view_points_filter_status.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/viewpoints/view_points.tex:152"
@@ -4211,7 +4211,7 @@
                 },
                 {
                     "file": "flightdeck/viewpoints/figures/view_points_filter_type.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/viewpoints/view_points.tex:133"
@@ -4240,7 +4240,7 @@
                 },
                 {
                     "file": "flightdeck/viewpoints/figures/view_points_geoview_selected.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/viewpoints/view_points.tex:202"
@@ -4271,7 +4271,7 @@
                 },
                 {
                     "file": "flightdeck/viewpoints/figures/view_points_table.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/viewpoints/view_points.tex:82"
@@ -4304,7 +4304,7 @@
                 },
                 {
                     "file": "flightdeck/viewpoints/figures/view_points_table_selected.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/viewpoints/view_points.tex:93"
@@ -4331,7 +4331,7 @@
                 },
                 {
                     "file": "flightdeck/viewpoints/figures/view_points_tableview_selected.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/viewpoints/view_points.tex:191"
@@ -4368,7 +4368,7 @@
             "images": [
                 {
                     "file": "reconst/figures/created_targets.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "reconst/reconstructor.tex:376"
@@ -4396,7 +4396,7 @@
                 },
                 {
                     "file": "reconst/figures/dialog_class.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "reconst/reconstructor_config.tex:83"
@@ -4423,7 +4423,7 @@
                 },
                 {
                     "file": "reconst/figures/dialog_data_sources.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "reconst/reconstructor_config.tex:42"
@@ -4451,7 +4451,7 @@
                 },
                 {
                     "file": "reconst/figures/dialog_main.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "reconst/reconstructor_config.tex:11"
@@ -4475,7 +4475,7 @@
                 },
                 {
                     "file": "reconst/figures/dialog_probimm_analyse.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "reconst/reconstructor_config.tex:383"
@@ -4502,7 +4502,7 @@
                 },
                 {
                     "file": "reconst/figures/dialog_probimm_assoc.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "reconst/reconstructor_config.tex:202"
@@ -4529,7 +4529,7 @@
                 },
                 {
                     "file": "reconst/figures/dialog_probimm_assoc_jpda.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "reconst/reconstructor_config.tex:211"
@@ -4558,7 +4558,7 @@
                 },
                 {
                     "file": "reconst/figures/dialog_ref_calc.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "reconst/reconstructor_config.tex:93"
@@ -4585,7 +4585,7 @@
                 },
                 {
                     "file": "reconst/figures/dialog_scorum_assoc.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "reconst/reconstructor_config.tex:136"
@@ -4613,7 +4613,7 @@
                 },
                 {
                     "file": "reconst/figures/dialog_sectors.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "reconst/reconstructor_config.tex:59"
@@ -4700,7 +4700,7 @@
                 },
                 {
                     "file": "reconst/figures/target_ex1.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "reconst/reconstructor.tex:347"
@@ -4776,7 +4776,7 @@
             "images": [
                 {
                     "file": "analyze/figures/analyze_mlat.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "analyze/analyze_intro.tex:19",
@@ -4802,7 +4802,7 @@
                 },
                 {
                     "file": "analyze/figures/analyze_mlat_accuracy_settings.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "analyze/analyze_mlat_inspectors.tex:91"
@@ -4828,7 +4828,7 @@
                 },
                 {
                     "file": "analyze/figures/analyze_mlat_dataitem_settings.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "analyze/analyze_mlat_inspectors.tex:13"
@@ -4854,7 +4854,7 @@
                 },
                 {
                     "file": "analyze/figures/analyze_mlat_posacc_res.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "analyze/analyze_mlat_inspectors.tex:116"
@@ -4892,7 +4892,7 @@
                 },
                 {
                     "file": "analyze/figures/analyze_mlat_posacc_res2.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "analyze/analyze_mlat_inspectors.tex:123"
@@ -4927,7 +4927,7 @@
                 },
                 {
                     "file": "analyze/figures/analyze_mlat_report.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "analyze/analyze_results.tex:27"
@@ -4964,7 +4964,7 @@
                 },
                 {
                     "file": "analyze/figures/analyze_mlat_ru_cov.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "analyze/analyze_mlat_inspectors.tex:136"
@@ -5003,7 +5003,7 @@
                 },
                 {
                     "file": "analyze/figures/analyze_mlat_ru_dom.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "analyze/analyze_mlat_inspectors.tex:143"
@@ -5041,7 +5041,7 @@
                 },
                 {
                     "file": "analyze/figures/analyze_mlat_ru_effect_settings.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "analyze/analyze_mlat_inspectors.tex:160"
@@ -5068,7 +5068,7 @@
                 },
                 {
                     "file": "analyze/figures/analyze_mlat_scope_filter.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "analyze/analyze_dialog.tex:48"
@@ -5115,7 +5115,7 @@
                 },
                 {
                     "file": "analyze/figures/analyze_mlat_senscov_res.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "analyze/analyze_mlat_inspectors.tex:64"
@@ -5153,7 +5153,7 @@
                 },
                 {
                     "file": "analyze/figures/analyze_mlat_senscov_res2.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "analyze/analyze_mlat_inspectors.tex:71"
@@ -5188,7 +5188,7 @@
                 },
                 {
                     "file": "analyze/figures/analyze_mlat_senscov_settings.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "analyze/analyze_mlat_inspectors.tex:37"
@@ -5214,7 +5214,7 @@
                 },
                 {
                     "file": "analyze/figures/analyze_report_figure_background.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "analyze/analyze_dialog.tex:100"
@@ -5266,7 +5266,7 @@
                 },
                 {
                     "file": "eval/figures/eval_eval_status.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/evaluation.tex:410"
@@ -5319,7 +5319,7 @@
                 },
                 {
                     "file": "eval/figures/eval_main.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/evaluation.tex:86"
@@ -5350,7 +5350,7 @@
                 },
                 {
                     "file": "eval/figures/eval_overview.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/evaluation.tex:61"
@@ -5417,7 +5417,7 @@
                 },
                 {
                     "file": "eval/figures/eval_report_figure_background.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/evaluation.tex:361"
@@ -5445,7 +5445,7 @@
                 },
                 {
                     "file": "eval/figures/eval_report_overview.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_inspect.tex:16",
@@ -5495,7 +5495,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_acceleration.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_speed.tex:187"
@@ -5524,7 +5524,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_adsb_latency.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_adsb_latency.tex:8"
@@ -5554,7 +5554,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_coasting.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_trk_cst.tex:8"
@@ -5583,7 +5583,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_detection.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_det.tex:8"
@@ -5612,7 +5612,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_dubious_targets.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_dub.tex:8"
@@ -5641,7 +5641,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_dubious_tracks.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_dub.tex:138"
@@ -5670,7 +5670,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_extra_data.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_extra.tex:8"
@@ -5699,7 +5699,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_extra_track.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_extra.tex:81"
@@ -5728,7 +5728,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_id_change_delay.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_id.tex:158"
@@ -5758,7 +5758,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_id_correct.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_id.tex:8"
@@ -5787,7 +5787,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_id_correct_periods.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_id.tex:87"
@@ -5816,7 +5816,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_id_false.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_id.tex:250"
@@ -5845,7 +5845,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_m3a_false.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_m3a.tex:8"
@@ -5874,7 +5874,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_m3a_present.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_m3a.tex:85"
@@ -5903,7 +5903,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_mc_correct.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_mc.tex:8"
@@ -5932,7 +5932,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_mc_correct_periods.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_mc.tex:85"
@@ -5961,7 +5961,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_mc_false.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_mc.tex:156"
@@ -5990,7 +5990,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_mc_present.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_mc.tex:234"
@@ -6019,7 +6019,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_mom_long.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_mom.tex:8"
@@ -6048,7 +6048,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_mom_trans.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_mom.tex:90"
@@ -6077,7 +6077,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_mom_vert.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_mom.tex:172"
@@ -6106,7 +6106,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_pos_across.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_pos.tex:8"
@@ -6135,7 +6135,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_pos_along.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_pos.tex:91"
@@ -6164,7 +6164,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_pos_distance_correct.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_pos.tex:176"
@@ -6193,7 +6193,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_pos_distance_false.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_pos.tex:182"
@@ -6222,7 +6222,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_pos_distance_rms.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_pos.tex:304"
@@ -6251,7 +6251,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_pos_latency.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_pos.tex:386"
@@ -6280,7 +6280,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_pos_radar_azm.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_pos.tex:471"
@@ -6309,7 +6309,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_pos_radar_rng.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_pos.tex:557"
@@ -6338,7 +6338,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_rocd_correct.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_mc.tex:309"
@@ -6367,7 +6367,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_speed.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_speed.tex:8"
@@ -6396,7 +6396,7 @@
                 },
                 {
                     "file": "eval/figures/eval_req_track_angle.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_speed.tex:98"
@@ -6425,7 +6425,7 @@
                 },
                 {
                     "file": "eval/figures/eval_results_config.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/evaluation.tex:334"
@@ -6525,7 +6525,7 @@
                 },
                 {
                     "file": "eval/figures/eval_results_sec_det_example.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_inspect.tex:94"
@@ -6556,7 +6556,7 @@
                 },
                 {
                     "file": "eval/figures/eval_results_single_geoview.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_inspect.tex:107"
@@ -6593,7 +6593,7 @@
                 },
                 {
                     "file": "eval/figures/eval_results_target_example.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_inspect.tex:133"
@@ -6626,7 +6626,7 @@
                 },
                 {
                     "file": "eval/figures/eval_standard.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/evaluation.tex:163"
@@ -6655,7 +6655,7 @@
                 },
                 {
                     "file": "eval/figures/eval_standard_add_req.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/evaluation.tex:245"
@@ -6687,7 +6687,7 @@
                 },
                 {
                     "file": "eval/figures/eval_target_usage.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_targets.tex:117"
@@ -6720,7 +6720,7 @@
                 },
                 {
                     "file": "eval/figures/eval_targets_config_interest.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_targets.tex:101"
@@ -6787,7 +6787,7 @@
                 },
                 {
                     "file": "eval/figures/eval_targets_interest.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_targets.tex:61"
@@ -6852,7 +6852,7 @@
                 },
                 {
                     "file": "eval/figures/eval_targets_section.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_targets.tex:20"
@@ -6888,7 +6888,7 @@
                 },
                 {
                     "file": "eval/figures/eval_targets_table.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_targets.tex:29"
@@ -6919,7 +6919,7 @@
                 },
                 {
                     "file": "eval/figures/eval_unmap_min_height_filter.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/evaluation.tex:153"
@@ -6946,7 +6946,7 @@
                 },
                 {
                     "file": "eval/figures/geo_eval_detection.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_inspect.tex:67"
@@ -6983,7 +6983,7 @@
                 },
                 {
                     "file": "eval/figures/geo_eval_pos_correct.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_inspect.tex:74"
@@ -7020,7 +7020,7 @@
                 },
                 {
                     "file": "eval/figures/histogram_eval_pos_correct.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_inspect.tex:81"
@@ -7063,7 +7063,7 @@
             "images": [
                 {
                     "file": "tableview/figures/table_add.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "tableview/view.tex:105"
@@ -7129,7 +7129,7 @@
                 },
                 {
                     "file": "tableview/figures/table_loaded.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "tableview/view.tex:33"
@@ -7192,7 +7192,7 @@
                 },
                 {
                     "file": "tableview/figures/table_single.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "tableview/view.tex:42"
@@ -7227,7 +7227,7 @@
                 },
                 {
                     "file": "tableview/figures/table_sort.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "tableview/view.tex:55"
@@ -7257,7 +7257,7 @@
                 },
                 {
                     "file": "tableview/figures/table_start.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "tableview/view.tex:9"
@@ -7306,7 +7306,7 @@
                 },
                 {
                     "file": "histogramview/figures/histogram_color_ds.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "histogramview/view.tex:96"
@@ -7336,7 +7336,7 @@
                 },
                 {
                     "file": "histogramview/figures/histogram_loaded.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "histogramview/view.tex:30"
@@ -7363,7 +7363,7 @@
                 },
                 {
                     "file": "histogramview/figures/histogram_select.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "histogramview/view.tex:109"
@@ -7397,7 +7397,7 @@
                 },
                 {
                     "file": "histogramview/figures/histogram_selected.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "histogramview/view.tex:118"
@@ -7431,7 +7431,7 @@
                 },
                 {
                     "file": "histogramview/figures/histogram_start.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "histogramview/view.tex:9"
@@ -7456,7 +7456,7 @@
                 },
                 {
                     "file": "histogramview/figures/histogram_zoom.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "histogramview/view.tex:135"
@@ -7490,7 +7490,7 @@
                 },
                 {
                     "file": "histogramview/figures/histogram_zoom_active.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "histogramview/view.tex:156"
@@ -7524,7 +7524,7 @@
                 },
                 {
                     "file": "histogramview/figures/histogram_zoomed.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "histogramview/view.tex:144"
@@ -7564,7 +7564,7 @@
             "images": [
                 {
                     "file": "geographicview/figures/geoview_accuracy_ellipses.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_others_tab.tex:89"
@@ -7594,7 +7594,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_annotationops_viewpoint.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_annotation_ops.tex:30"
@@ -7625,7 +7625,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_arcgis.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_map_ops.tex:50"
@@ -7689,7 +7689,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_config_panel.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_config_panel.tex:6"
@@ -7736,7 +7736,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_connect_lines.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_style_tab.tex:29"
@@ -7804,7 +7804,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_depth_check.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_data_widget.tex:296"
@@ -7851,7 +7851,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_grid_coloring.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_annotation_ops.tex:133"
@@ -7890,7 +7890,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_gridops_grid.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_annotation_ops.tex:91"
@@ -7926,7 +7926,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_gridops_grids.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_annotation_ops.tex:66"
@@ -7963,7 +7963,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_groundspeed_vectors.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_others_tab.tex:62"
@@ -8067,7 +8067,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_import_geotiff_anno.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/view.tex:47"
@@ -8102,7 +8102,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_import_geotiff_dialog.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/view.tex:30"
@@ -8129,7 +8129,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_item_context_menu.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_geo_ops.tex:30"
@@ -8161,7 +8161,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_label_content_edit.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_labels_tab.tex:74"
@@ -8192,7 +8192,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_label_lod1.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_labels_tab.tex:129"
@@ -8224,7 +8224,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_label_lod2.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_labels_tab.tex:149"
@@ -8256,7 +8256,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_label_lod3.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_labels_tab.tex:158"
@@ -8327,7 +8327,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_label_tab_menu.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_labels_tab.tex:62"
@@ -8355,7 +8355,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_labels.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_data_widget.tex:64",
@@ -8384,7 +8384,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_labels_tab.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_labels_tab.tex:6"
@@ -8411,7 +8411,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_layer_context_menu.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_geo_ops.tex:9"
@@ -8460,7 +8460,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_measure1.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_data_widget.tex:220"
@@ -8494,7 +8494,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_measure2.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_data_widget.tex:235"
@@ -8537,7 +8537,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_measure3d.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_data_widget.tex:246"
@@ -8599,7 +8599,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_measure_ops.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_measure_ops.tex:13"
@@ -8639,7 +8639,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_minimal.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_map_ops.tex:62"
@@ -8663,7 +8663,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_mlat_rus.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_others_tab.tex:120"
@@ -8693,7 +8693,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_osm.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_map_ops.tex:74"
@@ -8721,7 +8721,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_osm_dark.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_map_ops.tex:95"
@@ -8756,7 +8756,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_osm_de.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_map_ops.tex:116"
@@ -8784,7 +8784,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_osm_vienna.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_map_ops.tex:83"
@@ -8814,7 +8814,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_osm_vienna_dark.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_map_ops.tex:104"
@@ -8848,7 +8848,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_others_tab.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_others_tab.tex:5"
@@ -8875,7 +8875,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_overview.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layout.tex:6"
@@ -8900,7 +8900,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_overview_loaded.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layout.tex:30"
@@ -8928,7 +8928,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_quick_menu.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_data_widget.tex:137"
@@ -8976,7 +8976,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_radars_ops.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_radars_ops.tex:31"
@@ -9062,7 +9062,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_render_order.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_style_tab.tex:104"
@@ -9090,7 +9090,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_sector_edit.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_sectors_ops.tex:136"
@@ -9125,7 +9125,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_sector_layer_menu.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_sectors_ops.tex:54"
@@ -9152,7 +9152,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_sectors2d.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_sectors_ops.tex:27"
@@ -9184,7 +9184,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_sectors3d.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_layers_sectors_ops.tex:34"
@@ -9230,7 +9230,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_select1.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_data_widget.tex:164"
@@ -9361,7 +9361,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_style_flight_level.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_style_tab.tex:93"
@@ -9392,7 +9392,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_style_tab.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_style_tab.tex:6"
@@ -9419,7 +9419,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_time_filter.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_data_widget.tex:267"
@@ -9450,7 +9450,7 @@
                 },
                 {
                     "file": "geographicview/figures/geoview_use_height.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_others_tab.tex:45"
@@ -9495,7 +9495,7 @@
                 },
                 {
                     "file": "geographicview/figures/presets.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "geographicview/geo_toolbar.tex:7"
@@ -9528,7 +9528,7 @@
             "images": [
                 {
                     "file": "scatterplotview/figures/scatter_loaded.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "scatterplotview/view.tex:28"
@@ -9554,7 +9554,7 @@
                 },
                 {
                     "file": "scatterplotview/figures/scatter_select.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "scatterplotview/view.tex:93"
@@ -9585,7 +9585,7 @@
                 },
                 {
                     "file": "scatterplotview/figures/scatter_selected.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "scatterplotview/view.tex:102"
@@ -9614,7 +9614,7 @@
                 },
                 {
                     "file": "scatterplotview/figures/scatter_start.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "scatterplotview/view.tex:9"
@@ -9645,7 +9645,7 @@
             "images": [
                 {
                     "file": "gridview/figures/grid_background.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "gridview/view.tex:173"
@@ -9680,7 +9680,7 @@
                 },
                 {
                     "file": "gridview/figures/grid_colorbox.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "gridview/view.tex:124"
@@ -9710,7 +9710,7 @@
                 },
                 {
                     "file": "gridview/figures/grid_export_geographic.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "gridview/view.tex:289"
@@ -9741,7 +9741,7 @@
                 },
                 {
                     "file": "gridview/figures/grid_loaded.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "gridview/view.tex:28"
@@ -9785,7 +9785,7 @@
                 },
                 {
                     "file": "gridview/figures/grid_modec_mean_limits.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "gridview/view.tex:157"
@@ -9821,7 +9821,7 @@
                 },
                 {
                     "file": "gridview/figures/grid_modec_mean_nolimits.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "gridview/view.tex:138"
@@ -9852,7 +9852,7 @@
                 },
                 {
                     "file": "gridview/figures/grid_start.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "gridview/view.tex:9"
@@ -9883,7 +9883,7 @@
             "images": [
                 {
                     "file": "live/figures/geo_live_mode.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "live/live.tex:144"
@@ -9992,7 +9992,7 @@
                 },
                 {
                     "file": "live/figures/live_mode.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "live/live.tex:34"
@@ -10042,7 +10042,7 @@
                 },
                 {
                     "file": "live/figures/sensor_status_detail.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "live/live.tex:112"
@@ -10071,7 +10071,7 @@
                 },
                 {
                     "file": "live/figures/sensor_status_log.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "live/live.tex:128"
@@ -10100,7 +10100,7 @@
                 },
                 {
                     "file": "live/figures/sensor_status_overview.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "live/live.tex:77"
@@ -10413,7 +10413,7 @@
                 },
                 {
                     "file": "appendix/figures/viewpoints_anno_example.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "appendix/appendix_view_points.tex:442"
@@ -10441,7 +10441,7 @@
                 },
                 {
                     "file": "appendix/figures/viewpoints_anno_example_colorvec.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "appendix/appendix_view_points.tex:881"
@@ -10467,7 +10467,7 @@
                 },
                 {
                     "file": "appendix/figures/viewpoints_anno_example_ellipses.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "appendix/appendix_view_points.tex:596"
@@ -10493,7 +10493,7 @@
                 },
                 {
                     "file": "appendix/figures/viewpoints_anno_example_grid.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "appendix/appendix_view_points.tex:702"
@@ -10519,7 +10519,7 @@
                 },
                 {
                     "file": "appendix/figures/viewpoints_anno_example_histogram.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "appendix/appendix_view_points.tex:771"
@@ -10545,7 +10545,7 @@
                 },
                 {
                     "file": "appendix/figures/viewpoints_anno_example_lines.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "appendix/appendix_view_points.tex:527"
@@ -10571,7 +10571,7 @@
                 },
                 {
                     "file": "appendix/figures/viewpoints_anno_example_linestring.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "appendix/appendix_view_points.tex:559"
@@ -10597,7 +10597,7 @@
                 },
                 {
                     "file": "appendix/figures/viewpoints_anno_example_nested.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "appendix/appendix_view_points.tex:953"
@@ -10627,7 +10627,7 @@
                 },
                 {
                     "file": "appendix/figures/viewpoints_anno_example_points.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "appendix/appendix_view_points.tex:494"
@@ -10653,7 +10653,7 @@
                 },
                 {
                     "file": "appendix/figures/viewpoints_anno_example_scatter.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "appendix/appendix_view_points.tex:816"
@@ -10679,7 +10679,7 @@
                 },
                 {
                     "file": "appendix/figures/viewpoints_anno_example_text.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "appendix/appendix_view_points.tex:622"
