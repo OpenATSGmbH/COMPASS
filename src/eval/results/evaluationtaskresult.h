@@ -106,10 +106,13 @@ private:
                                           EvaluationRequirementResult::Single::ContentInfo& info) const;
     std::shared_ptr<Buffer> loadReportTableRows(const ReportTableInfo& table,
                                                 unsigned int utn) const;
-    std::shared_ptr<nlohmann::json::object_t> createTargetViewable(const ReportTableInfo& table,
-                                                                   const Buffer& buffer,
-                                                                   const EvaluationRequirementResult::Single::ContentInfo& info,
-                                                                   boost::optional<unsigned int> highlight_row) const;
+    std::shared_ptr<nlohmann::json::object_t> createTargetRowViewable(const ReportTableInfo& table,
+                                                                      const Buffer& buffer,
+                                                                      const EvaluationRequirementResult::Single::ContentInfo& info,
+                                                                      unsigned int highlight_row) const;
+    std::shared_ptr<nlohmann::json::object_t> createTargetOverviewViewable(const ReportTableInfo& table,
+                                                                           const Buffer& buffer,
+                                                                           const EvaluationRequirementResult::Single::ContentInfo& info) const;
 
     void updateTargets();
     void updateInterestSwitches();
