@@ -6,6 +6,7 @@ Two root files, built into two PDFs by `make draft`:
 - `user_manual_appendix.tex` -> `user_manual_appendix_v<version>.pdf` ("User Manual Appendix"): the Appendix chapter, incl. the evaluation requirements.
 - Both load `preamble.tex` (shared preamble, title page macro `\compasstitlepage{<title>}`) and read the labels of the other document via `xr-hyper` (`\externaldocument`), so `\nameref` works across both PDFs.
 - The PDFs link to each other by file name: never rename them, keep both in the same folder.
+- All auxiliary files (aux, log, toc, idx, ...) go to `build/` (git-ignored). `make draft` copies the two PDFs from there into `doc/user_manual/`. `make clean` removes `build/` and these two PDFs.
 - The Makefile reads `<version>` from `CPACK_PACKAGE_VERSION_*` in the top-level `CMakeLists.txt` and passes it to LaTeX (`\compassversion` on the title page, `\compassfilesuffix` in the file names). Hotfix builds add a suffix: `make draft SUFFIX=_hf4` -> `user_manual_v1.1.0_hf4.pdf`. A plain `pdflatex user_manual.tex` builds unversioned files (`user_manual.pdf`) with "Version unknown".
 
 Current version: from `CMakeLists.txt`, release name ("Elegant Elk") in `preamble.tex`.  
