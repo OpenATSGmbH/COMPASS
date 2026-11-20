@@ -199,6 +199,30 @@ def screenShot(c, objs, dst, dpi):
     return box[:2]
 
 
+def grabParts(c, objs, dst, dpi):
+    # widgets taller than their scroll area, e.g. a report figure: each part is grabbed off-screen and placed at
+    # its screen position, the gaps get the window color of the first part (its top left pixel)
+    parts = []
+    for obj in objs.split('+'):
+        obj = obj.strip('"')
+        arg = '"{}"'.format(obj) if ' ' in obj else obj
+        tmp = '{}.{}.tmp.png'.format(dst, len(parts))
+        c.cmd('uiget {} --what "grab:{}"'.format(arg, tmp))
+        im = Image.open(tmp).convert('RGB')
+        im.load()
+        os.remove(tmp)
+        parts.append((screenBox(c, obj, visible=False), im))
+    x0 = min(p[0][0] for p in parts)
+    y0 = min(p[0][1] for p in parts)
+    x1 = max(p[0][2] for p in parts)
+    y1 = max(p[0][3] for p in parts)
+    canvas = Image.new('RGB', (x1 - x0, y1 - y0), parts[0][1].getpixel((0, 0)))
+    for box, im in parts:
+        canvas.paste(im, (box[0] - x0, box[1] - y0))
+    canvas.save(dst, dpi=(dpi, dpi))
+    return (x0, y0)
+
+
 def editImage(c, step, target, origin, dpi):
     # box / blur / crop / cropw / croph <objs>: on the image taken last, in screen coordinates relative
     # to its origin, cropw and croph crop only the width or the height
@@ -287,6 +311,8 @@ def takeImage(c, img, out_dir, dpi, report, ds):
             origin = screenBox(c, shlex.split(step)[1], visible=False)[:2]
         elif step.startswith('shot '):
             origin = screenShot(c, shlex.split(step)[1], target, dpi)
+        elif step.startswith('grabparts '):
+            origin = grabParts(c, shlex.split(step)[1], target, dpi)
         elif step.split(' ')[0] in ('box', 'blur', 'crop', 'cropw', 'croph'):
             origin = editImage(c, step, target, origin, dpi)
         else:
