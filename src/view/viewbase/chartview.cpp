@@ -64,6 +64,10 @@ namespace
 
         return 0.0;
     }
+
+    /// The lower limit of the chart margins, a property of the chart because the axes of the scatterplot and the
+    /// grid reserve their label margins on a range change, with the chart only.
+    const char* MinMarginProperty = "compass_min_margin";
 }
 
 /**
@@ -459,8 +463,9 @@ void ChartView::reserveHorizontalLabelMargins(QtCharts::QChart* chart)
     if (!chart)
         return;
 
-    //Qt's own default, the baseline this never falls below
-    const int MarginDefault = 20;
+    //Qt's own default or the narrow margin, the baseline this never falls below
+    const QVariant min_margin_property = chart->property(MinMarginProperty);
+    const int      min_margin          = min_margin_property.isValid() ? min_margin_property.toInt() : 20;
 
     //a little air so a glyph does not touch the edge
     const int Padding = 2;
@@ -492,11 +497,29 @@ void ChartView::reserveHorizontalLabelMargins(QtCharts::QChart* chart)
 
     //recompute both sides from scratch, otherwise a wide label would leave its
     //margin behind after zooming back out
-    margins.setLeft (std::max(MarginDefault, (int)std::ceil(needed_left ) + Padding));
-    margins.setRight(std::max(MarginDefault, (int)std::ceil(needed_right) + Padding));
+    margins.setLeft (std::max(min_margin, (int)std::ceil(needed_left ) + Padding));
+    margins.setRight(std::max(min_margin, (int)std::ceil(needed_right) + Padding));
 
     if (margins != chart->margins())
         chart->setMargins(margins);
+}
+
+/**
+ */
+void ChartView::useNarrowMargins()
+{
+    auto* c = chart();
+    if (!c)
+        return;
+
+    c->setProperty(MinMarginProperty, NarrowMargin);
+    c->setMargins(QMargins(NarrowMargin, NarrowMargin, NarrowMargin, NarrowMargin));
+
+    //the chart margin is the space right of a legend at the right side
+    if (c->legend() && c->legend()->layout())
+        c->legend()->layout()->setContentsMargins(NarrowMargin, 0, 0, 0);
+
+    reserveHorizontalLabelMargins(c);
 }
 
 /**

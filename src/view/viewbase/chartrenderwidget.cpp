@@ -82,6 +82,9 @@ std::unique_ptr<ChartView> ChartRenderWidget::buildChartView(bool& has_content, 
     view->usePixelSizeFonts(for_image ? QFont::PreferNoHinting : QFont::PreferDefaultHinting);
     view->setWheelIgnored(wheelIgnored());
 
+    if (narrowMargins())
+        view->useNarrowMargins();
+
     if (fixedPalette())
         view->setFixedPalette(*fixedPalette());
 

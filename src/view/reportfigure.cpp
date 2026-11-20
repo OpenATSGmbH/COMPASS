@@ -185,6 +185,7 @@ namespace
         const QSize& layout_size = entry.export_layout_size;
 
         widget.setWheelIgnored(true);
+        widget.setNarrowMargins(true);
         widget.setHeightForWidth(layout_size.height() / (double)layout_size.width(), WidgetMinHeight);
 
         if (image_palette)
