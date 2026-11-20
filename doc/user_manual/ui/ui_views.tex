@@ -1,15 +1,16 @@
 \section{Views}
 \label{sec:ui_views}
 
-The 'Add View' button \includegraphics[width=0.5cm,frame]{../../data/icons/crosshair_fat.png} on the top right in each window allows adding views to the current window or in a new window. \\
+Each View is contained in the \nameref{sec:ui_view_deck} of a window, where it has an icon in the icon bar. \\
 
-Each View is contained in a tab within a parent window.  At startup, by default only the main window exists, which also holds
-a Geographic View and a Table view. If the main window is closed, the COMPASS client shuts down. New Views can be added using the 'Add View' button, which opens a pull-down menu. Each View can either be added to the main window ('Add Here') or into a new window ('Add in New Window'). When added, a new tab exists in the containing window. \\
-
-New Views can be added either to currently existing windows as new tabs, or to a newly opened window. A window can be closed by the close button in the window decoration, which discards all contained Views within the window.  \\
-
-To close a single View, one can use the \includegraphics[width=0.5cm,frame]{../../data/icons/edit.png} button in the tab header and press 'Close'.
-This also frees all of the View's allocated resources. \\
+\begin{itemize}
+ \item At startup, by default only the main window exists, which holds a Geographic View and a Table View
+ \item If the main window is closed, the COMPASS client shuts down
+ \item New Views are added with the 'Add View' button \includegraphics[width=0.5cm,frame]{../../data/icons/crosshair_fat.png} at the end of the View Deck icon bar, either to the same window ('Add Here') or to a new window ('Add In New Window')
+ \item A window can be closed by the close button in the window decoration, which discards all Views of the window
+ \item A single View is closed with the \includegraphics[width=0.5cm,frame]{../../data/icons/delete.png} button on its icon in the View Deck. This also frees all of the View's allocated resources
+\end{itemize}
+\  \\
 
 Each View adds its required variables to the loading list for the database. During a loading process, the loading status of a View is shown in its Configuration Panel.\\
 
