@@ -164,6 +164,16 @@ evaluated sector layers, analysis: none). A value that is not readable is reject
 {"report_figure_background": {"borders_show": false, "map_opacity": 30}}
 ```
 
+They also take `report_figure_options`, the options of the report figures (`ReportFigureOptions`,
+`src/view/reportfigureoptions.h`): `histogram_log_scale` (default true, used for the histograms
+of one data series), `export_width` and `export_height` (the layout size of an exported figure
+image, default 1200 x 800, from 300 to 2400, the image has 2 times this number of pixels). A
+missing field gets its default. A value that is not readable is rejected.
+
+```json
+{"report_figure_options": {"histogram_log_scale": false, "export_width": 600, "export_height": 600}}
+```
+
 ## Examples
 
 Each invocation runs its options in order; multi-step workflows with different

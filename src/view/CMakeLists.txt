@@ -24,6 +24,8 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/viewcontainerwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/viewdeck.h"
         "${CMAKE_CURRENT_LIST_DIR}/reportfigure.h"
+        "${CMAKE_CURRENT_LIST_DIR}/reportfigureoptions.h"
+        "${CMAKE_CURRENT_LIST_DIR}/reportfiguresettingswidget.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/viewmanager.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/loadcontroller.cpp"
@@ -34,6 +36,8 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/viewcontainerwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/viewdeck.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/reportfigure.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/reportfigureoptions.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/reportfiguresettingswidget.cpp"
 )
 
 target_include_directories(compass_view PUBLIC "${CMAKE_CURRENT_LIST_DIR}")

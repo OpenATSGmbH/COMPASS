@@ -29,6 +29,7 @@
 #include "datasourcecompoundcoverage.h"
 #include "sectorsfilter.h"
 #include "gridbackgroundsettings.h"
+#include "reportfigureoptions.h"
 
 #include "target.h"
 
@@ -222,7 +223,11 @@ public:
     /// Sector layers that are hidden in the default sector selection: the layers that are not evaluated
     std::set<std::string> reportFigureDefaultHiddenLayers() const;
 
-    /// Checks the background set of the report figures, then applies the parameters
+    /// Stored options of the report figures (histogram log scale, export layout size), edited in the dialog
+    ReportFigureOptions reportFigureOptionsConfig() const;
+    void reportFigureOptionsConfig(const ReportFigureOptions& options);
+
+    /// Checks the background set and the options of the report figures, then applies the parameters
     Result applyJSONParameters(const nlohmann::json& params_json) override;
 
     // results

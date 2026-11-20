@@ -260,6 +260,7 @@ void EvaluationCalculator::readSettings()
 
     // background set of the geographic report figures
     registerParameter(ReportFigureBackground::ParameterName, &settings_.report_figure_background_, nlohmann::json::object());
+    registerParameter(ReportFigureOptions::ParameterName, &settings_.report_figure_options_, nlohmann::json::object());
 
     // eval task result calculator specific
     if (!is_default_calculator_)
@@ -1592,11 +1593,30 @@ std::set<std::string> EvaluationCalculator::reportFigureDefaultHiddenLayers() co
 
 /**
  */
+ReportFigureOptions EvaluationCalculator::reportFigureOptionsConfig() const
+{
+    ReportFigureOptions options;
+    if (!options.fromJSON(settings_.report_figure_options_))
+        logerr << "stored report figure options not readable, using the defaults";
+
+    return options;
+}
+
+/**
+ */
+void EvaluationCalculator::reportFigureOptionsConfig(const ReportFigureOptions& options)
+{
+    settings_.report_figure_options_ = options.toJSON();
+}
+
+/**
+ */
 Result EvaluationCalculator::applyJSONParameters(const nlohmann::json& params_json)
 {
-    const std::string error = ReportFigureBackground::checkParameter(params_json);
-    if (!error.empty())
-        return Result::failed(error);
+    for (const std::string& error : { ReportFigureBackground::checkParameter(params_json),
+                                      ReportFigureOptions::checkParameter(params_json) })
+        if (!error.empty())
+            return Result::failed(error);
 
     return Configurable::applyJSONParameters(params_json);
 }

@@ -352,6 +352,9 @@ std::unique_ptr<nlohmann::json::object_t> Base::createViewable(const AnnotationO
         (*viewable_ptr)[ViewPointGenFeatureGrid::ViewPointFieldNameBackground] =
             calculator_.reportFigureBackground(sector_layer_.name()).toJSON();
 
+    (*viewable_ptr)[ReportFigureOptions::ViewPointFieldExportLayoutSize] =
+        calculator_.reportFigureOptionsConfig().exportLayoutSizeJSON();
+
     return viewable_ptr;
 }
 

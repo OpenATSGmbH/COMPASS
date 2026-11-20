@@ -18,7 +18,7 @@
 #include "evaluationreporttabwidget.h"
 #include "evaluationcalculator.h"
 #include "evaluationmanager.h"
-#include "reportfigurebackgroundwidget.h"
+#include "reportfiguresettingswidget.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -106,18 +106,25 @@ EvaluationReportTabWidget::EvaluationReportTabWidget(EvaluationCalculator& calcu
     connect(grid_num_cells_y_box_, QOverload<int>::of(&QSpinBox::valueChanged), [ settings_ptr ] (int v) { settings_ptr->grid_num_cells_y = v; });
     layout->addRow("#Grid Cells Y", grid_num_cells_y_box_);
 
-    background_widget_ = new ReportFigureBackgroundWidget(
+    figure_settings_widget_ = new ReportFigureSettingsWidget(
         calculator.manager().dbContextManager(),
-        [ this ] () { return calculator_.reportFigureDefaultHiddenLayers(); });
-    background_widget_->setBackground(calculator.reportFigureBackgroundConfig());
-    connect(background_widget_, &ReportFigureBackgroundWidget::backgroundChangedSignal, this,
-            [ this ] () { calculator_.reportFigureBackgroundConfig(background_widget_->background()); });
+        [ this ] () { return calculator_.reportFigureDefaultHiddenLayers(); },
+        true);
+    figure_settings_widget_->setHistogramBars(eval_settings.histogram_num_bins);
+    figure_settings_widget_->setOptions(calculator.reportFigureOptionsConfig());
+    figure_settings_widget_->setBackground(calculator.reportFigureBackgroundConfig());
+    connect(figure_settings_widget_, &ReportFigureSettingsWidget::histogramBarsChangedSignal, this,
+            [ this ] () { calculator_.settings().histogram_num_bins = figure_settings_widget_->histogramBars(); });
+    connect(figure_settings_widget_, &ReportFigureSettingsWidget::optionsChangedSignal, this,
+            [ this ] () { calculator_.reportFigureOptionsConfig(figure_settings_widget_->options()); });
+    connect(figure_settings_widget_, &ReportFigureSettingsWidget::backgroundChangedSignal, this,
+            [ this ] () { calculator_.reportFigureBackgroundConfig(figure_settings_widget_->background()); });
 
     setContentsMargins(0, 0, 0, 0);
 
     QVBoxLayout* left_layout = new QVBoxLayout();
     left_layout->addLayout(layout);
-    left_layout->addWidget(background_widget_);
+    left_layout->addWidget(figure_settings_widget_);
     left_layout->addStretch();
 
     main_layout->addLayout(left_layout);
@@ -145,7 +152,9 @@ void EvaluationReportTabWidget::updateFromSettings()
     grid_num_cells_x_box_->setValue(eval_settings.grid_num_cells_x);
     grid_num_cells_y_box_->setValue(eval_settings.grid_num_cells_y);
 
-    background_widget_->setBackground(calculator_.reportFigureBackgroundConfig());
+    figure_settings_widget_->setHistogramBars(eval_settings.histogram_num_bins);
+    figure_settings_widget_->setOptions(calculator_.reportFigureOptionsConfig());
+    figure_settings_widget_->setBackground(calculator_.reportFigureBackgroundConfig());
 }
 
 /**

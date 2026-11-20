@@ -23,7 +23,7 @@
 #include "db_context_manager.h"
 #include "sectorlayer.h"
 #include "data_source.h"
-#include "reportfigurebackgroundwidget.h"
+#include "reportfiguresettingswidget.h"
 #include "ui_test_common.h"
 
 #include <QCheckBox>
@@ -542,13 +542,18 @@ QWidget* AnalyzeDataSourceDialog::buildReportWidget()
             });
     form->addRow("Max cells per axis", max_spin);
 
-    auto* background = new ReportFigureBackgroundWidget(
+    // the inspectors have their own number of histogram bars
+    auto* figure_settings = new ReportFigureSettingsWidget(
         task_.manager().dbContextManager(),
-        [ this ] () { return task_.reportFigureDefaultHiddenLayers(); });
-    background->setBackground(task_.reportFigureBackgroundConfig());
-    connect(background, &ReportFigureBackgroundWidget::backgroundChangedSignal, this,
-            [ this, background ] () { task_.reportFigureBackgroundConfig(background->background()); });
-    outer->addWidget(background);
+        [ this ] () { return task_.reportFigureDefaultHiddenLayers(); },
+        false);
+    figure_settings->setOptions(task_.reportFigureOptionsConfig());
+    figure_settings->setBackground(task_.reportFigureBackgroundConfig());
+    connect(figure_settings, &ReportFigureSettingsWidget::optionsChangedSignal, this,
+            [ this, figure_settings ] () { task_.reportFigureOptionsConfig(figure_settings->options()); });
+    connect(figure_settings, &ReportFigureSettingsWidget::backgroundChangedSignal, this,
+            [ this, figure_settings ] () { task_.reportFigureBackgroundConfig(figure_settings->background()); });
+    outer->addWidget(figure_settings);
     outer->addStretch(1);
 
     return w;

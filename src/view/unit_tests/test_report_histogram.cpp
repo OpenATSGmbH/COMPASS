@@ -243,6 +243,23 @@ TEST_CASE("report histogram of one named series shows the legend", "[view][repor
     CHECK(hasLogAxis(chart));
 }
 
+TEST_CASE("report histogram of one series with the log flag false has a linear axis", "[view][reportfigure]")
+{
+    RawHistogramCollection collection;
+    collection.addDataSeries(errorHistogram(10), "", QColor(0, 0, 255));
+    collection.setUseLogScale(false);
+
+    const auto entries = report_figure::selectRenderEntries(viewPoint(collection));
+    REQUIRE(entries.size() == 1);
+
+    for (const QSize& size : { GuiSize, report_figure::ExportLayoutSize })
+    {
+        auto widget = layoutWidget(entries[ 0 ], size);
+
+        CHECK(!hasLogAxis(chartOf(*widget)));
+    }
+}
+
 TEST_CASE("report histogram of stacked series has a linear axis", "[view][reportfigure]")
 {
     RawHistogramCollection collection;

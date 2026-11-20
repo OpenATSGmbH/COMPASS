@@ -196,6 +196,7 @@ AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager
     registerParameter("used_sectors",               &used_sectors_,               nlohmann::json::object());
 
     registerParameter(ReportFigureBackground::ParameterName, &report_figure_background_, nlohmann::json::object());
+    registerParameter(ReportFigureOptions::ParameterName, &report_figure_options_, nlohmann::json::object());
 
     tooltip_ = "Analyze a chosen data source from multiple angles "
                "(data items, sensor coverage / PD, position accuracy).";
@@ -260,9 +261,10 @@ Result AnalyzeDataSourceTask::applyJSONParameters(const nlohmann::json& params_j
     if (!params_json.is_object())
         return Configurable::applyJSONParameters(params_json);
 
-    const std::string background_error = ReportFigureBackground::checkParameter(params_json);
-    if (!background_error.empty())
-        return Result::failed(background_error);
+    for (const std::string& error : { ReportFigureBackground::checkParameter(params_json),
+                                      ReportFigureOptions::checkParameter(params_json) })
+        if (!error.empty())
+            return Result::failed(error);
 
     if (!params_json.contains(kInspectorSettingsKey))
         return Configurable::applyJSONParameters(params_json);
@@ -1123,7 +1125,7 @@ void AnalyzeDataSourceTask::run()
         logRAM("inspector " + ins->name() + " after writeReport");
     }
 
-    addReportFigureBackground(root);
+    addReportFigureSettings(root);
 
     advanceStep("Saving result...");
     tm.endTaskResultWriting(true, false);
@@ -1163,6 +1165,24 @@ void AnalyzeDataSourceTask::reportFigureBackgroundConfig(const ReportFigureBackg
 
 /**
  */
+ReportFigureOptions AnalyzeDataSourceTask::reportFigureOptionsConfig() const
+{
+    ReportFigureOptions options;
+    if (!options.fromJSON(report_figure_options_))
+        logerr << "stored report figure options not readable, using the defaults";
+
+    return options;
+}
+
+/**
+ */
+void AnalyzeDataSourceTask::reportFigureOptionsConfig(const ReportFigureOptions& options)
+{
+    report_figure_options_ = options.toJSON();
+}
+
+/**
+ */
 std::set<std::string> AnalyzeDataSourceTask::reportFigureDefaultHiddenLayers() const
 {
     std::set<std::string> hidden;
@@ -1174,15 +1194,17 @@ std::set<std::string> AnalyzeDataSourceTask::reportFigureDefaultHiddenLayers() c
 }
 
 /**
- * The inspectors write their figures as view points with annotations, the background set is added here for
- * all of them. The report GUI and the export draw the geographic grids with it.
+ * The inspectors write their figures as view points with annotations, the export layout size and the background
+ * set are added here for all of them. The report GUI and the export draw the figures with them.
  */
-void AnalyzeDataSourceTask::addReportFigureBackground(ResultReport::Section& section) const
+void AnalyzeDataSourceTask::addReportFigureSettings(ResultReport::Section& section) const
 {
     const nlohmann::json background =
         reportFigureBackgroundConfig().resolve(reportFigureDefaultHiddenLayers()).toJSON();
+    const nlohmann::json export_layout_size = reportFigureOptionsConfig().exportLayoutSizeJSON();
 
-    unsigned int num_figures = 0;
+    unsigned int num_figures     = 0;
+    unsigned int num_geo_figures = 0;
 
     for (const auto& content : section.recursiveContent(true))
     {
@@ -1194,13 +1216,17 @@ void AnalyzeDataSourceTask::addReportFigureBackground(ResultReport::Section& sec
         if (!view_point)
             continue;
 
+        (*view_point)[ ReportFigureOptions::ViewPointFieldExportLayoutSize ] = export_layout_size;
+        ++num_figures;
+
         auto annotations_it = view_point->find(ViewPointKeys::VP_ANNOTATION_KEY);
         if (annotations_it == view_point->end() || !report_figure::hasGeographicGrid(annotations_it->second))
             continue;
 
         (*view_point)[ ViewPointGenFeatureGrid::ViewPointFieldNameBackground ] = background;
-        ++num_figures;
+        ++num_geo_figures;
     }
 
-    loginf << "background set written into " << num_figures << " figures";
+    loginf << "export layout size written into " << num_figures << " figures, background set into "
+           << num_geo_figures << " figures";
 }

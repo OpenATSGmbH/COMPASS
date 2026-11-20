@@ -19,6 +19,7 @@
 
 #include "plotmetadata.h"
 #include "griddisplaydata.h"
+#include "reportfigureoptions.h"
 #include "json_fwd.hpp"
 
 #include <QSize>
@@ -68,12 +69,9 @@ struct RenderEntry
     bool                                    geographic = false; // a grid over longitude / latitude
     std::vector<GridTextLabel>              labels;     // the text features of the view point
     boost::optional<GridBackgroundSettings> background; // the background set of the view point
-};
 
-/// An exported image has the layout of this size, with ExportScale * ExportScale pixels per layout pixel.
-/// More pixels alone make the chart texts smaller, their font size is fixed.
-extern const QSize ExportLayoutSize;
-extern const double ExportScale;
+    QSize export_layout_size = ExportLayoutSize; // of the view point, also gives the height for width in the GUI
+};
 
 /// true if the annotations (the annotation array of a view point) hold a grid over longitude / latitude.
 /// The tasks write the background set only into such view points.
@@ -94,7 +92,7 @@ std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point);
 
 /// The render widget of an entry, with the display of a report figure: legend at the right side, no
 /// interaction (mouse wheel ignored, no tools, no drag), no OpenGL, and the height follows the width
-/// with the ratio of the export image. A histogram of one series has a log y axis, a histogram of several
+/// with the ratio of the export layout size of the entry. A histogram of one series has a log y axis, a histogram of several
 /// (stacked) series a linear one, unless the annotation sets the scale. A geographic grid without a
 /// background set in its view point gets GridBackgroundSettings::reportDefaults().
 /// Created without a model object or a view. ctx_man: gives the sector lines of geographic grids, none
@@ -103,7 +101,8 @@ std::unique_ptr<ViewRenderWidget> createRenderWidget(const RenderEntry& entry,
                                                      const context::DBContextManager* ctx_man = nullptr,
                                                      QWidget* parent = nullptr);
 
-/// The image of an entry for the report export, with the light palette.
+/// The image of an entry for the report export, with the light palette: the export layout size of the entry
+/// times ExportScale.
 bool renderExportImage(const RenderEntry& entry, QImage& image, const context::DBContextManager* ctx_man = nullptr);
 
 }
