@@ -951,6 +951,26 @@
                     "volatile": "version watermark in Geographic View, GPU-rendered pixels, window title (version, licensee) only in frame"
                 },
                 {
+                    "file": "ui/figures/ui_decks.png",
+                    "dirty": false,
+                    "used": true,
+                    "used_in": [
+                        "ui/ui_main_window.tex:25"
+                    ],
+                    "shows": "main_window.png with red frames around the Flight Deck icon bar (left) and the View Deck icon bar (right)",
+                    "category": "annotated",
+                    "automation": "manual",
+                    "database": null,
+                    "requires": "none",
+                    "filters": null,
+                    "flight_deck": true,
+                    "frame": true,
+                    "steps": null,
+                    "recipe_hint": "copy of main_window.png, PIL rectangles (0,22,63,773) and (1536,22,1599,773), red, width 3, same DPI. Make again after main_window.png changes",
+                    "gaps": "none",
+                    "volatile": "as main_window"
+                },
+                {
                     "file": "ui/figures/ui_color_mode.png",
                     "dirty": false,
                     "used": true,
