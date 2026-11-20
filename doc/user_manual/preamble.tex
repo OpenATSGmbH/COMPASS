@@ -8,6 +8,12 @@
 %   Maintainer: Lars Madsen (daleif at math dot au dot dk)
 %
 %\listfiles
+
+% Set by the Makefile from CMakeLists.txt. Defaults for a plain pdflatex run: no version,
+% unversioned file names (user_manual.pdf, user_manual_appendix.pdf).
+\providecommand{\compassversion}{unknown}
+\providecommand{\compassfilesuffix}{}
+
 \documentclass[oneside,a4paper]{memoir}
 %\documentclass[twoside,a4paper]{article}
 
@@ -209,7 +215,7 @@
 \normalsize\textsf{by Helmut Puhr\\ \& Philipp Wagner}\par
 \medskip
 \medskip
-\normalsize\textsf{Version 1.1.0 } \\ 
+\normalsize\textsf{Version \compassversion} \\
 \medskip
 \normalsize\textsf{\textit{Elegant Elk}} \\
 \medskip
