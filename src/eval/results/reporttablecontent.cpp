@@ -16,7 +16,6 @@
  */
 
 #include "results/reporttablecontent.h"
-#include "results/base/featuredefinition_grid.h"
 
 #include "buffer.h"
 #include "logger.h"
@@ -24,7 +23,6 @@
 #include "timeconv.h"
 #include "traced_assert.h"
 #include "viewpointgenerator.h"
-#include "viewpointkeys.h"
 
 #include "json.hpp"
 
@@ -461,155 +459,6 @@ void createHighlightAnnotations(nlohmann::json& annotations_json,
                                        positions.reference->first,
                                        positions.reference->second, type);
     }
-}
-
-/**
- */
-nlohmann::json& addRootAnnotation(nlohmann::json& view_point, const std::string& name)
-{
-    view_point[ ViewPointKeys::VP_ANNOTATION_KEY ] = nlohmann::json::array();
-    auto& annotations = view_point[ ViewPointKeys::VP_ANNOTATION_KEY ];
-
-    ViewPointGenAnnotation root_annotation(name);
-
-    nlohmann::json root_annotation_json;
-    root_annotation.toJSON(root_annotation_json);
-
-    annotations.push_back(root_annotation_json);
-
-    return ViewPointGenAnnotation::getChildrenJSON(annotations.at(0));
-}
-
-/**
- */
-QRectF overviewRegion(const ReportTableDefinition& definition,
-                      const Buffer& buffer,
-                      double min_size)
-{
-    //x = latitude, y = longitude
-    const QRectF bounds = failedRowBounds(definition, buffer);
-    if (bounds.isNull())
-        return QRectF();
-
-    const double lat_size = std::max(bounds.width() , min_size);
-    const double lon_size = std::max(bounds.height(), min_size);
-
-    return QRectF(bounds.center().y() - lon_size / 2.0,
-                  bounds.center().x() - lat_size / 2.0,
-                  lon_size,
-                  lat_size);
-}
-
-/**
- */
-std::unique_ptr<ViewPointGenFeatureGrid> createOverviewGrid(const ReportTableDefinition& definition,
-                                                            const Buffer& buffer,
-                                                            const QRectF& region,
-                                                            unsigned int num_cells_x,
-                                                            unsigned int num_cells_y)
-{
-    if (region.isEmpty())
-        return nullptr;
-
-    Grid2D grid;
-    std::string error;
-
-    if (!grid.create(region, grid2d::GridResolution().setCellCount(num_cells_x, num_cells_y), "wgs84", true, &error))
-    {
-        logerr << "could not create the target overview grid: " << error;
-        return nullptr;
-    }
-
-    const bool gaps = isGapTable(definition);
-
-    for (unsigned int row = 0; row < buffer.size(); ++row)
-    {
-        auto positions = rowPositions(definition, buffer, row);
-        if (!positions.valid())
-            continue;
-
-        const double v = rowIsOk(definition, buffer, row) ? 1.0 : 0.0;
-
-        if (gaps && positions.reference.has_value())
-        {
-            grid.addLine(positions.event->second,
-                         positions.event->first,
-                         positions.reference->second,
-                         positions.reference->first, v);
-        }
-        else
-        {
-            const auto& pos = positions.reference.has_value() ? positions.reference.value()
-                                                              : positions.event.value();
-            grid.addValue(pos.second, pos.first, v);
-        }
-    }
-
-    auto layer = grid.createLayer("Passed", FeatureDefinitionBinaryGrid::CellValueType);
-
-    return std::make_unique<ViewPointGenFeatureGrid>(*layer, FeatureDefinitionBinaryGrid::renderSettings());
-}
-
-/**
- * The grid comes first in the annotations, so the points and lines are drawn on top of it.
- */
-nlohmann::json createOverviewViewPoint(const ReportTableDefinition& definition,
-                                       const Buffer& buffer,
-                                       const OverviewFigureSettings& settings)
-{
-    nlohmann::json view_point = nlohmann::json::object();
-
-    const QRectF region = overviewRegion(definition, buffer, settings.min_region_size);
-
-    if (!region.isEmpty())
-    {
-        view_point[ ViewPointKeys::VP_POS_LAT_KEY     ] = region.center().y();
-        view_point[ ViewPointKeys::VP_POS_LON_KEY     ] = region.center().x();
-        view_point[ ViewPointKeys::VP_POS_WIN_LAT_KEY ] = region.height();
-        view_point[ ViewPointKeys::VP_POS_WIN_LON_KEY ] = region.width();
-    }
-
-    auto& annotations = addRootAnnotation(view_point, settings.annotation_name);
-
-    auto grid = createOverviewGrid(definition, buffer, region, settings.num_cells_x, settings.num_cells_y);
-
-    if (grid)
-    {
-        const std::string description = "Passed";
-
-        PlotMetadata metadata;
-        metadata.plot_group_   = settings.annotation_name;
-        metadata.title_        = settings.title;
-        metadata.subtitle_     = description;
-        metadata.x_axis_label_ = "Longitude (deg)";
-        metadata.y_axis_label_ = "Latitude (deg)";
-
-        grid->setName(description);
-        grid->setPlotMetadata(metadata);
-        grid->writeBinaryIfPossible(true);
-
-        auto feature_annotation = std::make_unique<ViewPointGenAnnotation>(description);
-        feature_annotation->addFeature(std::move(grid));
-
-        ViewPointGenAnnotation grid_annotation(settings.title);
-        grid_annotation.addAnnotation(std::move(feature_annotation));
-
-        nlohmann::json grid_annotation_json;
-        grid_annotation.toJSON(grid_annotation_json);
-
-        annotations.push_back(grid_annotation_json);
-
-        view_point[ ViewPointGenFeatureGrid::ViewPointFieldNameBackground ] = settings.background.toJSON();
-    }
-
-    //the row annotations are looked up by their type field, so they are built in an array of their own
-    nlohmann::json row_annotations = nlohmann::json::array();
-    createOverviewAnnotations(row_annotations, definition, buffer);
-
-    for (auto& a : row_annotations)
-        annotations.push_back(std::move(a));
-
-    return view_point;
 }
 
 }

@@ -19,9 +19,6 @@
 
 #include "results/base/single.h"
 
-#include "gridview/gridbackgroundsettings.h"
-
-#include <memory>
 #include <string>
 #include <vector>
 
@@ -32,7 +29,6 @@
 #include "json_fwd.hpp"
 
 class Buffer;
-class ViewPointGenFeatureGrid;
 
 /**
  * Report content built from the rows of a Report Table, without a result object.
@@ -107,48 +103,6 @@ namespace ReportTableContent
                                     const ReportTableDefinition& definition,
                                     const Buffer& buffer,
                                     unsigned int row);
-
-    /// adds the root annotation of a target viewable, returns its child annotation array
-    nlohmann::json& addRootAnnotation(nlohmann::json& view_point, const std::string& name);
-
-    /**
-     * Region of the "Target Errors Overview" grid, x = longitude, y = latitude. Centered on
-     * failedRowBounds(), at least min_size wide and high. Empty if no row has a position.
-     */
-    QRectF overviewRegion(const ReportTableDefinition& definition,
-                          const Buffer& buffer,
-                          double min_size);
-
-    /**
-     * Binary grid of the "Target Errors Overview" over the region (x = longitude, y = latitude), in
-     * the colors of the sector overview grids. A cell fails if a row in it failed, else it passes.
-     * A row adds its reference position, or its event position if it has no reference. A gap row
-     * adds the line of its span. Returns nullptr if the grid cannot be created.
-     */
-    std::unique_ptr<ViewPointGenFeatureGrid> createOverviewGrid(const ReportTableDefinition& definition,
-                                                                const Buffer& buffer,
-                                                                const QRectF& region,
-                                                                unsigned int num_cells_x,
-                                                                unsigned int num_cells_y);
-
-    struct OverviewFigureSettings
-    {
-        std::string            annotation_name;       // root annotation, also the plot group of the grid
-        std::string            title;                 // title of the grid
-        double                 min_region_size = 0.0; // smallest width and height of the region [deg]
-        unsigned int           num_cells_x     = 0;
-        unsigned int           num_cells_y     = 0;
-        GridBackgroundSettings background;            // background of the grid
-    };
-
-    /**
-     * View point of the "Target Errors Overview": loads no data, so the report draws it as a simple
-     * figure. Holds the grid of createOverviewGrid() over overviewRegion() and the point and line
-     * annotations of createOverviewAnnotations().
-     */
-    nlohmann::json createOverviewViewPoint(const ReportTableDefinition& definition,
-                                           const Buffer& buffer,
-                                           const OverviewFigureSettings& settings);
 }
 
 /**

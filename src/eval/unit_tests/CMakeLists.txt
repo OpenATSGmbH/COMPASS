@@ -1,4 +1,3 @@
 target_sources(compass_tests PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/test_evaluation_constraints.cpp
-    ${CMAKE_CURRENT_LIST_DIR}/test_target_overview_grid.cpp
 )

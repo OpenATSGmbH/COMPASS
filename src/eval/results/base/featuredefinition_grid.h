@@ -318,23 +318,6 @@ public:
     }
     virtual ~FeatureDefinitionBinaryGrid() = default;
 
-    /// a cell holds 0 (false) if any of its values is false, else 1 (true)
-    static constexpr grid2d::ValueType CellValueType = grid2d::ValueType::ValueTypeMin;
-
-    /**
-    */
-    static Grid2DRenderSettings renderSettings(const QColor& render_false_color = Qt::red,
-                                               const QColor& render_true_color = Qt::green)
-    {
-        Grid2DRenderSettings rsettings;
-        rsettings.min_value = 0.0;
-        rsettings.max_value = 1.0;
-        rsettings.color_map.create(render_false_color, render_true_color, 2, ColorMap::Type::Binary);
-        rsettings.show_selected = false;
-
-        return rsettings;
-    }
-
     /**
     */
     FeatureDefinitionBinaryGrid& addDataSeries(const ValueSource<bool>& value_source,
@@ -343,7 +326,10 @@ public:
                                                const QColor& render_false_color = Qt::red,
                                                const QColor& render_true_color = Qt::green)
     {
-        Grid2DRenderSettings rsettings = renderSettings(render_false_color, render_true_color);
+        Grid2DRenderSettings rsettings;
+        rsettings.min_value = 0.0;
+        rsettings.max_value = 1.0;
+        rsettings.color_map.create(render_false_color, render_true_color, 2, ColorMap::Type::Binary);
 
         auto invertFunc = [ invert_values ] (const bool& v)
         {
@@ -354,7 +340,7 @@ public:
         vsource.value_tr_func = invertFunc;
 
         addDataSeriesInternal(vsource,
-                              CellValueType,
+                              grid2d::ValueType::ValueTypeMin,
                               add_detail_mode,
                               rsettings);
         return *this;

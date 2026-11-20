@@ -353,84 +353,76 @@ std::shared_ptr<Buffer> EvaluationTaskResult::loadReportTableRows(const ReportTa
     return res.result();
 }
 
-namespace
-{
-    /// root annotation of the requirement, the same id the result objects use
-    std::string targetAnnotationName(const EvaluationRequirementResult::Single::ContentInfo& info)
-    {
-        return "Evaluation:" + info.id.req_name + ":UTN" + std::to_string(info.utn);
-    }
-}
-
 /**
- * Viewable of one row of the target, built from the rows of its Report Table. It loads the target,
- * the annotations show the rows with the row highlighted.
+ * Viewable of one target, built from the rows of its Report Table. The base viewable loads the
+ * target, the annotations show the rows, and one row is highlighted on demand.
  */
-std::shared_ptr<nlohmann::json::object_t> EvaluationTaskResult::createTargetRowViewable(
+std::shared_ptr<nlohmann::json::object_t> EvaluationTaskResult::createTargetViewable(
     const ReportTableInfo& table,
     const Buffer& buffer,
     const EvaluationRequirementResult::Single::ContentInfo& info,
-    unsigned int highlight_row) const
+    boost::optional<unsigned int> highlight_row) const
 {
     auto calc = calculator();
     if (!calc)
         return nullptr;
 
-    auto base_viewable = calc->getViewableForUTN(info.utn);
-    if (!base_viewable)
+    auto viewable = calc->getViewableForUTN(info.utn);
+    if (!viewable)
         return nullptr;
-
-    nlohmann::json viewable = std::move(*base_viewable);
 
     const double zoom = calc->settings().result_detail_zoom_;
 
-    auto positions = ReportTableContent::rowPositions(table, buffer, highlight_row);
-
-    if (positions.valid())
+    if (highlight_row.has_value())
     {
-        viewable[ ViewPointKeys::VP_POS_LAT_KEY     ] = positions.event->first;
-        viewable[ ViewPointKeys::VP_POS_LON_KEY     ] = positions.event->second;
-        viewable[ ViewPointKeys::VP_POS_WIN_LAT_KEY ] = zoom;
-        viewable[ ViewPointKeys::VP_POS_WIN_LON_KEY ] = zoom;
+        auto positions = ReportTableContent::rowPositions(table, buffer, highlight_row.value());
+
+        if (positions.valid())
+        {
+            (*viewable)[ ViewPointKeys::VP_POS_LAT_KEY     ] = positions.event->first;
+            (*viewable)[ ViewPointKeys::VP_POS_LON_KEY     ] = positions.event->second;
+            (*viewable)[ ViewPointKeys::VP_POS_WIN_LAT_KEY ] = zoom;
+            (*viewable)[ ViewPointKeys::VP_POS_WIN_LON_KEY ] = zoom;
+        }
+
+        auto timestamp = ReportTableContent::rowTimestamp(buffer, highlight_row.value());
+        if (timestamp.has_value())
+            (*viewable)[ ViewPointKeys::VP_LOAD_DATA_KEY ][ ViewPointKeys::VP_TIMESTAMP_KEY ] =
+                Utils::Time::toString(timestamp.value());
+    }
+    else
+    {
+        auto bounds = ReportTableContent::failedRowBounds(table, buffer);
+
+        if (!bounds.isEmpty() && !bounds.isNull())
+        {
+            (*viewable)[ ViewPointKeys::VP_POS_LAT_KEY ] = bounds.center().x();
+            (*viewable)[ ViewPointKeys::VP_POS_LON_KEY ] = bounds.center().y();
+
+            (*viewable)[ ViewPointKeys::VP_POS_WIN_LAT_KEY ] = std::max(bounds.width() , zoom);
+            (*viewable)[ ViewPointKeys::VP_POS_WIN_LON_KEY ] = std::max(bounds.height(), zoom);
+        }
     }
 
-    auto timestamp = ReportTableContent::rowTimestamp(buffer, highlight_row);
-    if (timestamp.has_value())
-        viewable[ ViewPointKeys::VP_LOAD_DATA_KEY ][ ViewPointKeys::VP_TIMESTAMP_KEY ] =
-            Utils::Time::toString(timestamp.value());
+    //root annotation of the requirement, the same id the result objects use
+    (*viewable)[ ViewPointKeys::VP_ANNOTATION_KEY ] = nlohmann::json::array();
+    auto& annotations = (*viewable)[ ViewPointKeys::VP_ANNOTATION_KEY ];
 
-    auto& result_annotations = ReportTableContent::addRootAnnotation(viewable, targetAnnotationName(info));
+    ViewPointGenAnnotation root_annotation("Evaluation:" + info.id.req_name + ":UTN" + std::to_string(info.utn));
+
+    nlohmann::json root_annotation_json;
+    root_annotation.toJSON(root_annotation_json);
+
+    annotations.push_back(root_annotation_json);
+
+    auto& result_annotations = ViewPointGenAnnotation::getChildrenJSON(annotations.at(0));
 
     ReportTableContent::createOverviewAnnotations(result_annotations, table, buffer);
-    ReportTableContent::createHighlightAnnotations(result_annotations, table, buffer, highlight_row);
 
-    return std::make_shared<nlohmann::json::object_t>(viewable.get<nlohmann::json::object_t>());
-}
+    if (highlight_row.has_value())
+        ReportTableContent::createHighlightAnnotations(result_annotations, table, buffer, highlight_row.value());
 
-/**
- * The "Target Errors Overview" figure, built from the rows of the Report Table of the target. It
- * loads no data, so the report draws it as a simple figure.
- */
-std::shared_ptr<nlohmann::json::object_t> EvaluationTaskResult::createTargetOverviewViewable(
-    const ReportTableInfo& table,
-    const Buffer& buffer,
-    const EvaluationRequirementResult::Single::ContentInfo& info) const
-{
-    auto calc = calculator();
-    if (!calc)
-        return nullptr;
-
-    ReportTableContent::OverviewFigureSettings settings;
-    settings.annotation_name = targetAnnotationName(info);
-    settings.title           = info.id.req_name;
-    settings.min_region_size = calc->settings().result_detail_zoom_;
-    settings.num_cells_x     = calc->settings().grid_num_cells_x;
-    settings.num_cells_y     = calc->settings().grid_num_cells_y;
-    settings.background      = calc->reportFigureBackground(info.id.sec_layer_name);
-
-    auto view_point = ReportTableContent::createOverviewViewPoint(table, buffer, settings);
-
-    return std::make_shared<nlohmann::json::object_t>(view_point.get<nlohmann::json::object_t>());
+    return std::make_shared<nlohmann::json::object_t>(*viewable);
 }
 
 /**
@@ -462,7 +454,7 @@ bool EvaluationTaskResult::loadOnDemandFigure_impl(ResultReport::SectionContentF
             if (!buffer)
                 return false;
 
-            auto viewable = createTargetOverviewViewable(*table, *buffer, info);
+            auto viewable = createTargetViewable(*table, *buffer, info, boost::optional<unsigned int>());
             if (!viewable)
                 return false;
 
@@ -577,7 +569,7 @@ bool EvaluationTaskResult::loadOnDemandViewable_impl(const ResultReport::Section
             if (!buffer || (unsigned int)row_index.x() >= buffer->size())
                 return false;
 
-            auto v = createTargetRowViewable(*report_table, *buffer, info, (unsigned int)row_index.x());
+            auto v = createTargetViewable(*report_table, *buffer, info, (unsigned int)row_index.x());
             if (!v)
                 return false;
 
