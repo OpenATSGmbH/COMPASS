@@ -99,7 +99,9 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
 
     //create inside/outside sector reference periods and extend to test data min max times
     TimePeriodCollection periods;
-    periods.createFromReference(target_data, sector_layer, max_ref_time_diff);
+    periods.createFromReference(target_data, sector_layer, max_ref_time_diff,
+                                [ & ] (const dbContent::TargetReport::DataID& ref_id)
+                                { return this->useReferenceUpdate(target_data, ref_id); });
 
     if (min_ref_period_s_.has_value() && min_ref_period_s_.value() > 0)
         periods.removeSmallPeriods(Utils::Time::partialSeconds(min_ref_period_s_.value()));
@@ -476,7 +478,7 @@ IntervalBase::DetailInfo IntervalBase::eventDetailInfo(const EvaluationTargetDat
             traced_assert(target_data.tstChain().posOpt(event.data_id).has_value());
 
             dinfo.evt_time        = event.data_id.timestamp();
-            dinfo.evt_comment     = "Outside sector/reference period";
+            dinfo.evt_comment     = outsidePeriodComment();
             dinfo.evt_position    = target_data.tstChain().pos(event.data_id);
             dinfo.evt_has_ref     = false;
             dinfo.generate_detail = true;

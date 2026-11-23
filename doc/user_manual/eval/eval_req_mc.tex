@@ -102,7 +102,21 @@ detection, which has to fulfill a given threshold.
     \item Use Miss Tolerance: Checkbox if miss tolerance should be used
     \item Miss Tolerance [s]: Acceptable time delta for miss detection
     \item Maximum Offset [ft]: Maximum absolute distance between reference and test value for Mode C code to be counted as correct
+    \item Level Flight Only: Checkbox if only reference periods in level flight should be used
+    \item Maximum Level ROCD [ft/min]: Maximum absolute reference rate of climb/descent for level flight, only used if 'Level Flight Only' is set
 \end{itemize}
+\ \\
+
+If 'Level Flight Only' is set, the following applies:
+\begin{itemize}
+    \item A reference update is in level flight if its rate of climb/descent (ROCD) exists and its absolute value is not larger than 'Maximum Level ROCD'.
+    \item The reference periods only contain reference updates inside the sector and in level flight. Climbing and descending segments are not evaluated.
+    \item A reference update without ROCD is not in level flight.
+    \item Test target reports outside these periods get the comment 'Outside sector/reference period or not in level flight'.
+\end{itemize}
+\ \\
+
+This option implements EUROCAE ED-142 section 6.4.3, which uses segments of trajectories with constant flight level only. In the supplied ED-142 standard it is set with a 'Maximum Level ROCD' of 300 ft/min. \\
 
 \subsubsection{Result Values}
 

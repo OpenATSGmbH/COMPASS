@@ -140,6 +140,12 @@ protected:
                                        const Event& event,
                                        std::vector<dbContent::TargetPosition>& ref_updates) const;
 
+    /// derive to use only some reference updates for the periods, e.g. only in level flight
+    virtual bool useReferenceUpdate(const EvaluationTargetData& target_data,
+                                    const dbContent::TargetReport::DataID& ref_id) const { return true; }
+    /// derive to name the condition of useReferenceUpdate() in the details
+    virtual std::string outsidePeriodComment() const { return "Outside sector/reference period"; }
+
     virtual Validity isValid(const dbContent::TargetReport::DataID& data_id,
                          const EvaluationTargetData& target_data,
                          const SectorLayer& sector_layer,

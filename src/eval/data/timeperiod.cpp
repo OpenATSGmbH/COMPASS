@@ -138,7 +138,8 @@ void TimePeriodCollection::add (TimePeriod&& period)
 */
 void TimePeriodCollection::createFromReference(const EvaluationTargetData& target_data, 
                                                const SectorLayer& sector_layer,
-                                               const boost::posix_time::time_duration& max_ref_time_diff)
+                                               const boost::posix_time::time_duration& max_ref_time_diff,
+                                               const RefUpdateFilter& ref_update_filter)
 {
     clear();
 
@@ -152,7 +153,8 @@ void TimePeriodCollection::createFromReference(const EvaluationTargetData& targe
         timestamp = ref_it.first;
 
         bool is_inside = target_data.isTimeStampNotExcluded(timestamp)
-                      && target_data.refPosInside(sector_layer, ref_it);
+                      && target_data.refPosInside(sector_layer, ref_it)
+                      && (!ref_update_filter || ref_update_filter(dbContent::TargetReport::DataID(ref_it)));
 
         if (is_inside)
         {

@@ -23,6 +23,7 @@
 #include <boost/optional.hpp>
 
 #include <vector>
+#include <functional>
 #include "traced_assert.h"
 
 #include <math.h>
@@ -87,9 +88,13 @@ public:
     void clear();
 
     void add (TimePeriod&& period);
+    /// reference update filter, false = the reference update is not used for the periods (e.g. not in level flight)
+    typedef std::function<bool(const dbContent::TargetReport::DataID&)> RefUpdateFilter;
+
     void createFromReference(const EvaluationTargetData& target_data, 
                              const SectorLayer& sector_layer,
-                             const boost::posix_time::time_duration& max_ref_time_diff);
+                             const boost::posix_time::time_duration& max_ref_time_diff,
+                             const RefUpdateFilter& ref_update_filter = RefUpdateFilter());
 
     void addUpdate(const TimePeriodUpdate& update);
 

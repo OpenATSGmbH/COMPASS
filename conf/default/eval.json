@@ -3005,6 +3005,20 @@
                                     }
                                 },
                                 {
+                                    "class_name": "EvaluationRequirementModeCFalseConfig",
+                                    "instance_name": "EvaluationRequirementModeCFalseConfigProbability of False Code Detection MC0",
+                                    "parameters": {
+                                        "comment": "Ref 3.3.7",
+                                        "max_difference": 300.0,
+                                        "maximum_probability_false": 0.001,
+                                        "name": "Probability of False Code Detection MC",
+                                        "prob": 0.001,
+                                        "prob_check_type": 1,
+                                        "short_name": "PFCD MC",
+                                        "use": true
+                                    }
+                                },
+                                {
                                     "class_name": "EvaluationRequirementIdentificationFalseConfig",
                                     "instance_name": "EvaluationRequirementIdentificationFalseConfigProbability of False Code Detection2",
                                     "parameters": {
@@ -3123,8 +3137,10 @@
                                     "parameters": {
                                         "comment": "Ref 3.3.6",
                                         "hold_for_any_target": false,
+                                        "level_flight_only": true,
                                         "max_distance_ft": 300.0,
                                         "max_gap_length_s": 5.0,
+                                        "max_level_rocd_ftpm": 300.0,
                                         "min_gap_length_s": 3.0,
                                         "miss_tolerance": 0.009999999776482582,
                                         "name": "Probability of Code Detection MC",
@@ -3271,8 +3287,10 @@
                                     "parameters": {
                                         "comment": "Ref 3.3.6",
                                         "hold_for_any_target": false,
+                                        "level_flight_only": true,
                                         "max_distance_ft": 300.0,
                                         "max_gap_length_s": 5.0,
+                                        "max_level_rocd_ftpm": 300.0,
                                         "min_gap_length_s": 3.0,
                                         "miss_tolerance": 0.009999999776482582,
                                         "name": "Probability of Code Detection MC",

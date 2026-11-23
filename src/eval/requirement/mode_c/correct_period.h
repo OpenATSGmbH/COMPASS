@@ -22,6 +22,7 @@
 #include "requirement/base/intervalbaseconfigwidget.h"
 
 class QLineEdit;
+class QCheckBox;
 
 namespace ResultReport
 {
@@ -46,7 +47,9 @@ public:
             float update_interval_s, 
             bool  use_miss_tolerance,
             float miss_tolerance_s,
-            float max_distance_ft);
+            float max_distance_ft,
+            bool  level_flight_only,
+            float max_level_rocd_ftpm);
 
     static std::string probabilityNameShortStatic();
     static std::string probabilityNameStatic();
@@ -67,7 +70,13 @@ protected:
                                                                               const TimePeriodCollection& periods,
                                                                               unsigned int sum_uis,
                                                                               unsigned int misses_total) override;
+    virtual bool useReferenceUpdate(const EvaluationTargetData& target_data,
+                                    const dbContent::TargetReport::DataID& ref_id) const override;
+    virtual std::string outsidePeriodComment() const override;
+
     float max_distance_ft_;
+    bool  level_flight_only_;
+    float max_level_rocd_ftpm_;
 };
 
 /**
@@ -84,12 +93,20 @@ public:
     float maxDistanceFt() const;
     void maxDistanceFt(float value);
 
+    bool levelFlightOnly() const;
+    void levelFlightOnly(bool value);
+
+    float maxLevelROCDFtpm() const;
+    void maxLevelROCDFtpm(float value);
+
 protected:
     virtual BaseConfigWidget* createWidget_impl() override;
     virtual void addCustomTableEntries(ResultReport::SectionContentTable& table) const override;
     virtual std::string probabilityDescription() const override;
 
-    float max_distance_ft_ = 300.0f;
+    float max_distance_ft_     = 300.0f;
+    bool  level_flight_only_   = false;
+    float max_level_rocd_ftpm_ = 300.0f;
 };
 
 /**
@@ -104,8 +121,12 @@ protected:
     ModeCCorrectPeriodConfig& config();
 
     void distanceChanged(const QString& value);
+    void levelFlightOnlyChanged(bool checked);
+    void maxLevelROCDChanged(const QString& value);
 
-    QLineEdit* distance_value_edit_ = nullptr;
+    QLineEdit* distance_value_edit_  = nullptr;
+    QCheckBox* level_flight_only_box_ = nullptr;
+    QLineEdit* max_level_rocd_edit_   = nullptr;
 };
 
 }
