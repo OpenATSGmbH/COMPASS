@@ -51,11 +51,13 @@ extern unsigned int numDecimals(double v, unsigned int dec_max = 9);
 /// @brief Returns angle (degrees) calculated from given values
 extern double calculateAngle(double degrees, double minutes, double seconds);
 
+/// @brief Returns the smallest signed angle (degrees) from a_deg to b_deg, i.e. b_deg - a_deg in [-180,180)
 extern double calculateMinAngleDifference(double a_deg, double b_deg);
+/// @brief Interpolates from a0_deg (factor 0) to a1_deg (factor 1) along the smaller angle, result in [0,360)
+extern double interpolateAngle(double a0_deg, double a1_deg, double factor);
 
 extern double deg2rad(double angle);
 extern double rad2deg(double angle);
-extern double rebaseAngle(double angle_deg, double new_base_deg);
 
 extern double knots2MPS(double knots);
 extern double mps2Knots(double mps);
@@ -64,11 +66,6 @@ extern std::pair<double, double> bearing2Vec(double bearing_deg);
 extern double vec2Bearing(double dx, double dy);
 extern std::pair<double, double> speedAngle2SpeedVec(double speed_mps, double bearing_deg);
 extern std::pair<double, double> speedVec2SpeedAngle(double vx_mps, double vy_mps);
-
-extern double interpolateBearing(double x0, double y0, 
-                                 double x1, double y1, 
-                                 double bearing0_deg, double bearing1_deg, 
-                                 double factor);
 
 //extern void convert(const std::string& conversion_type, NullableVector<unsigned int>& array_list);
 

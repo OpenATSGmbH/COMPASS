@@ -59,8 +59,7 @@ namespace
         {
             //interpolate speed and bearing individually
             double speed_interp    = interp(speed_angle0.first, speed_angle1.first, interp_factor);
-            double da              = Utils::Number::calculateMinAngleDifference(speed_angle1.second, speed_angle0.second);
-            double angle_interp    = speed_angle0.second + interp_factor * da;
+            double angle_interp    = Utils::Number::interpolateAngle(speed_angle0.second, speed_angle1.second, interp_factor);
             auto   speedvec_interp = Utils::Number::speedAngle2SpeedVec(speed_interp, angle_interp);
 
             vx_interp = speedvec_interp.first;

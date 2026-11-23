@@ -219,6 +219,19 @@ double calculateMinAngleDifference(double a_deg, double b_deg)
     return diff;
 }
 
+double interpolateAngle(double a0_deg, double a1_deg, double factor)
+{
+    double angle = a0_deg + calculateMinAngleDifference(a0_deg, a1_deg) * factor;
+
+    angle = std::fmod(angle, 360.0);
+    if (angle < 0.0)
+        angle += 360.0;
+    if (angle >= 360.0)
+        angle -= 360.0;
+
+    return angle;
+}
+
 double deg2rad(double angle)
 {
     return angle * M_PI / 180.0;
@@ -227,78 +240,6 @@ double deg2rad(double angle)
 double rad2deg(double angle)
 {
     return angle * 180.0 / M_PI;
-}
-
-namespace
-{
-    double normalizeAngle(double angle_deg)
-    {
-        if (angle_deg > 180.0)
-            return angle_deg - 360.0;
-        if (angle_deg < -180.0)
-            return 360.0 + angle_deg;
-        return angle_deg;
-    };
-}
-
-/**
- * Rotates the given angle to a new 0-basis angle.
- * @param angle_deg Angle in [-180,180]
- * @param new_base_deg New 0-basis in [-180,180] 
- */
-double rebaseAngle(double angle_deg, double new_base_deg)
-{
-    return normalizeAngle(angle_deg - new_base_deg);
-}
-
-/**
- * Interpolates the bearings given at the two positions at the given factor.
- * @param x0 First point x
- * @param y0 First point y
- * @param x1 Second point x
- * @param y1 Second point y
- * @param bearing0_deg Bearing at the first point in [-180,180]
- * @param bearing1_deg Bearing at the second point in [-180,180]
- * @param factor Interpolation factor in [0,1]
- */
-double interpolateBearing(double x0, double y0, 
-                          double x1, double y1, 
-                          double bearing0_deg, double bearing1_deg, 
-                          double factor)
-{
-    Eigen::Vector2d t(x1 - x0, y1 - y0);
-    double tn = t.norm();
-
-    //numerically instable?
-    if (tn < 1e-06)
-        return bearing0_deg;
-
-    //normalized tangent estimate
-    t /= tn;
-
-    //bearing of tangent
-    double angle_t_deg = rad2deg(atan2(t.x(), t.y()));
-
-    //rotate to tangent angle as origin
-    double da0 = rebaseAngle(bearing0_deg, angle_t_deg);
-    double da1 = rebaseAngle(bearing1_deg, angle_t_deg);
-
-    //which side of tangent are we on?
-    bool sign0 = (da0 >= 0);
-    bool sign1 = (da1 >= 0);
-
-    if (sign0 != sign1)
-    {
-        //speed vecs on different sides of tangent => directly interpolate between angles
-        double dinterp = da0 + (da1 - da0) * factor;
-
-        //rotate back interpolated angle to bearing 0 as origin and convert back to deg
-        return rebaseAngle(dinterp, -angle_t_deg);
-    }
-    
-    //speed vecs approximately on same side of tangent => interpolate with minimum angle
-    double diff = Number::calculateMinAngleDifference(bearing1_deg, bearing0_deg);
-    return bearing0_deg + diff * factor;
 }
 
 unsigned int dsIdFrom (unsigned int sac, unsigned int sic)

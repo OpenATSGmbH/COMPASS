@@ -147,6 +147,28 @@ TEST_CASE("calculateMinAngleDifference", "[number]")
     REQUIRE(calculateMinAngleDifference(0.0, 180.0) == Approx(-180.0));
 }
 
+TEST_CASE("interpolateAngle", "[number]")
+{
+    // from a0 (factor 0) to a1 (factor 1) along the smaller angle
+    REQUIRE(interpolateAngle(10.0, 20.0, 0.0) == Approx(10.0));
+    REQUIRE(interpolateAngle(10.0, 20.0, 1.0) == Approx(20.0));
+    REQUIRE(interpolateAngle(10.0, 20.0, 0.5) == Approx(15.0));
+    REQUIRE(interpolateAngle(20.0, 10.0, 0.5) == Approx(15.0));
+    REQUIRE(interpolateAngle(10.0, 20.0, 0.25) == Approx(12.5));
+
+    // across north, result in [0,360)
+    REQUIRE(interpolateAngle(350.0, 10.0, 0.5) == Approx(0.0).margin(1e-9));
+    REQUIRE(interpolateAngle(350.0, 10.0, 0.25) == Approx(355.0));
+    REQUIRE(interpolateAngle(10.0, 350.0, 0.75) == Approx(355.0));
+
+    // across south
+    REQUIRE(interpolateAngle(170.0, 190.0, 0.5) == Approx(180.0));
+
+    // bearings in [-180,180]
+    REQUIRE(interpolateAngle(-10.0, 10.0, 0.5) == Approx(0.0).margin(1e-9));
+    REQUIRE(interpolateAngle(-170.0, 170.0, 0.5) == Approx(180.0));
+}
+
 TEST_CASE("recNum encoding/decoding", "[number]")
 {
     std::uint64_t rec_num = 12345;

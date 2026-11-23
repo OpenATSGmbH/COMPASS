@@ -1216,15 +1216,7 @@ void Chain::addPositionsSpeedsToMapping (DataMapping& mapping) const
 
                     //loginf << "UGA spd1 " << spd1.speed_ << " 2 " << spd2.speed_ << " ipld " << speed;
 
-#if 1
-                    double angle_diff = Number::calculateMinAngleDifference(spd2->track_angle_, spd1->track_angle_);
-                    double turnrate   = angle_diff / d_t;
-
-                    angle_deg = spd1->track_angle_ + turnrate * d_t2;
-#else
-                    angle_deg = Number::interpolateBearing(
-                                0, 0, x_pos_orig, y_pos_orig, spd1->track_angle_, spd2->track_angle_, d_t2 / d_t);
-#endif
+                    angle_deg = Number::interpolateAngle(spd1->track_angle_, spd2->track_angle_, d_t2 / d_t);
 
                     //                        loginf << "UGA ang1 " << spd1.track_angle_ << " 2 " << spd2.track_angle_
                     //                               << " angle_diff " << angle_diff << " turnrate " << turnrate << " ipld " << angle;
