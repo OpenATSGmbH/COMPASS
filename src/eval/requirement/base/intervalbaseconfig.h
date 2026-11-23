@@ -42,7 +42,8 @@ public:
         UseMinGapLen = 1 << 0,
         UseMaxGapLen = 1 << 1,
         UseMissTol   = 1 << 2,
-        UseAnyTarget = 1 << 4
+        UseAnyTarget = 1 << 4,
+        UseExclDetMisses = 1 << 5
     };
 
     IntervalBaseConfig(nlohmann::json& config,
@@ -76,6 +77,9 @@ public:
     bool holdForAnyTarget() const;
     void holdForAnyTarget(bool value);
 
+    bool excludeDetectionMisses() const;
+    void excludeDetectionMisses(bool value);
+
     uint32_t configFlags() const;
 
     virtual void addToReport (std::shared_ptr<ResultReport::Report> report) override;
@@ -103,6 +107,8 @@ protected:
     float miss_tolerance_s_   = 0.0f;
 
     bool hold_for_any_target_ = false; // if requirement must hold for any target (all single targets)
+
+    bool exclude_detection_misses_ = false; // count only update intervals with a test target report
 };
 
 } // namespace EvaluationRequirement

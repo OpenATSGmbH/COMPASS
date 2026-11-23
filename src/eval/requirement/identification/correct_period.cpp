@@ -191,7 +191,7 @@ IdentificationCorrectPeriodConfig::IdentificationCorrectPeriodConfig(nlohmann::j
                                                                      Group* parent)
 :   IntervalBaseConfig(config, parent)
 {
-    configure(UseMissTol);
+    configure(UseMissTol | UseExclDetMisses);
 
     registerParameter("identification_type", reinterpret_cast<int*>(&identification_type_), (int)IdentificationType::AircraftAddress);
 }
@@ -211,6 +211,9 @@ std::shared_ptr<Base> IdentificationCorrectPeriodConfig::createRequirement()
                 use_miss_tolerance_, 
                 miss_tolerance_s_,
                 identification_type_);
+
+    req->excludeDetectionMisses(exclude_detection_misses_);
+
     return req;
 }
 

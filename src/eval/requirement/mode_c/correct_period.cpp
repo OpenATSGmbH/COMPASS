@@ -153,7 +153,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCCorrectPeriod::createR
  */
 std::string ModeCCorrectPeriod::probabilityNameShortStatic()
 {
-    return "PCMCD [%]";
+    return "PCMCD";
 }
 
 /**
@@ -187,7 +187,7 @@ ModeCCorrectPeriodConfig::ModeCCorrectPeriodConfig(nlohmann::json& config,
                                                    Group* parent)
 :   IntervalBaseConfig(config, parent)
 {
-    configure(UseMissTol);
+    configure(UseMissTol | UseExclDetMisses);
 
     registerParameter("max_distance_ft", &max_distance_ft_, 300.0f);
     registerParameter("level_flight_only", &level_flight_only_, false);
@@ -211,6 +211,9 @@ std::shared_ptr<Base> ModeCCorrectPeriodConfig::createRequirement()
                 max_distance_ft_,
                 level_flight_only_,
                 max_level_rocd_ftpm_);
+
+    req->excludeDetectionMisses(exclude_detection_misses_);
+
     return req;
 }
 

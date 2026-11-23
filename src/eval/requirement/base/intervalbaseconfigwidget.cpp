@@ -124,6 +124,18 @@ IntervalBaseConfigWidget::IntervalBaseConfigWidget(IntervalBaseConfig& cfg)
         form_layout_->addRow("Must hold for any target", hold_for_any_target_check_);
     }
 
+    // exclude detection misses
+    if (config_flags & IntervalBaseConfig::UseExclDetMisses)
+    {
+        exclude_detection_misses_check_ = new QCheckBox ();
+        exclude_detection_misses_check_->setChecked(config().excludeDetectionMisses());
+        exclude_detection_misses_check_->setToolTip("If only update intervals with a test target report should be counted");
+        connect(exclude_detection_misses_check_, &QCheckBox::clicked,
+                this, &IntervalBaseConfigWidget::toggleExcludeDetectionMissesSlot);
+
+        form_layout_->addRow("Exclude Detection Misses", exclude_detection_misses_check_);
+    }
+
     updateActive();
 }
 
@@ -250,6 +262,18 @@ void IntervalBaseConfigWidget::toggleHoldForAnyTargetSlot()
     if (hold_for_any_target_check_)
     {
         config().holdForAnyTarget(hold_for_any_target_check_->checkState() == Qt::Checked);
+    }
+}
+
+/**
+*/
+void IntervalBaseConfigWidget::toggleExcludeDetectionMissesSlot()
+{
+    loginf;
+
+    if (exclude_detection_misses_check_)
+    {
+        config().excludeDetectionMisses(exclude_detection_misses_check_->checkState() == Qt::Checked);
     }
 }
 

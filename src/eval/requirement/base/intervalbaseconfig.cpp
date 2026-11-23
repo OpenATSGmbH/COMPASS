@@ -46,6 +46,8 @@ IntervalBaseConfig::IntervalBaseConfig(nlohmann::json& config,
     registerParameter("miss_tolerance", &miss_tolerance_s_, 0.01f);
 
     registerParameter("hold_for_any_target", &hold_for_any_target_, false);
+
+    registerParameter("exclude_detection_misses", &exclude_detection_misses_, false);
 }
 
 /**
@@ -115,6 +117,12 @@ void IntervalBaseConfig::addToReport (std::shared_ptr<ResultReport::Report> repo
     {
         table.addRow({"Must hold for any Target", "Must hold for any target (every single target)",
                     Utils::String::boolToString(hold_for_any_target_)});
+    }
+
+    if (config_flags_ & ConfigFlags::UseExclDetMisses)
+    {
+        table.addRow({"Exclude Detection Misses", "Only update intervals with a test target report are counted",
+                      Utils::String::boolToString(exclude_detection_misses_)});
     }
 
     addCustomTableEntries(table);
@@ -230,6 +238,20 @@ bool IntervalBaseConfig::holdForAnyTarget() const
 void IntervalBaseConfig::holdForAnyTarget(bool value)
 {
     hold_for_any_target_ = value;
+}
+
+/**
+*/
+bool IntervalBaseConfig::excludeDetectionMisses() const
+{
+    return exclude_detection_misses_;
+}
+
+/**
+*/
+void IntervalBaseConfig::excludeDetectionMisses(bool value)
+{
+    exclude_detection_misses_ = value;
 }
 
 } // namespace EvaluationRequirement

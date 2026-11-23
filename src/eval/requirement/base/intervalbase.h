@@ -134,6 +134,9 @@ public:
 
     float missThreshold() const;
 
+    bool excludeDetectionMisses() const { return exclude_detection_misses_; }
+    void excludeDetectionMisses(bool value) { exclude_detection_misses_ = value; }
+
 protected:
     virtual uint32_t numMisses(double dt) const;
     virtual DetailInfo eventDetailInfo(const EvaluationTargetData& target_data,
@@ -167,12 +170,18 @@ private:
                                     const EvaluationTargetData& target_data,
                                     const SectorLayer& sector_layer,
                                     bool skip_no_data_details) const;
+    void excludeDetectionMisses(const TimePeriodCollection& periods,
+                                const std::vector<Event>& events,
+                                uint32_t& sum_uis,
+                                uint32_t& misses_total) const;
 
     float                  update_interval_s_;
     boost::optional<float> min_gap_length_s_;
     boost::optional<float> max_gap_length_s_;
     boost::optional<float> miss_tolerance_s_;
     boost::optional<float> min_ref_period_s_;
+
+    bool exclude_detection_misses_ = false; // count only update intervals with a test target report
 };
 
 } // namespace EvaluationRequirement

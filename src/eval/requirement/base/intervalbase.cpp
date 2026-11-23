@@ -25,8 +25,10 @@
 
 #include "timeconv.h"
 
+#include <algorithm>
+#include <set>
 
-namespace EvaluationRequirement 
+namespace EvaluationRequirement
 {
 
 /**
@@ -191,6 +193,9 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
                   detail_info.evt_comment);
     }
 
+    if (exclude_detection_misses_)
+        excludeDetectionMisses(periods, events, sum_uis, misses_total);
+
     //create derived-specific result
     return createResult("UTN:" + std::to_string(target_data.utn_),
                         instance,
@@ -200,6 +205,61 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
                         periods,
                         sum_uis,
                         misses_total);
+}
+
+/**
+ * Removes the update intervals without any test target report from the expected and the
+ * missed update intervals, e.g. EUROCAE ED-142 6.4.3: the probability of code detection
+ * only counts update intervals in which a target report was output.
+ *
+ * The detection misses are counted as the code misses, but over the gaps between all test
+ * target reports of an inside period (including period begin and end). An inside period
+ * without a valid update has no code misses from its events, so all its update intervals
+ * are counted as code misses here.
+ */
+void IntervalBase::excludeDetectionMisses(const TimePeriodCollection& periods,
+                                          const std::vector<Event>& events,
+                                          uint32_t& sum_uis,
+                                          uint32_t& misses_total) const
+{
+    //inside periods with at least one valid update (by inside period index)
+    std::set<uint32_t> periods_with_valid;
+
+    for (const auto& e : events)
+        if (e.period.has_value() && (e.type == Event::TypeValidFirst || e.type == Event::TypeValid))
+            periods_with_valid.insert(e.period.value());
+
+    uint32_t detection_misses = 0;
+    uint32_t inside_period_cnt = 0;
+
+    for (size_t i = 0; i < periods.size(); ++i)
+    {
+        const auto& period = periods.period(i);
+
+        if (period.type() != TimePeriod::Type::InsideSector)
+            continue;
+
+        if (!periods_with_valid.count(inside_period_cnt))
+            misses_total += numMisses(Utils::Time::partialSeconds(period.duration()));
+
+        ++inside_period_cnt;
+
+        auto t_last = period.begin();
+
+        for (const auto& update : period.getUpdates())
+        {
+            auto t = update.data_id.timestamp();
+
+            detection_misses += numMisses(Utils::Time::partialSeconds(t - t_last));
+            t_last = t;
+        }
+
+        detection_misses += numMisses(Utils::Time::partialSeconds(period.end() - t_last));
+    }
+
+    sum_uis      = sum_uis > detection_misses ? sum_uis - detection_misses : 0;
+    misses_total = misses_total > detection_misses ? misses_total - detection_misses : 0;
+    misses_total = std::min(misses_total, sum_uis);
 }
 
 /**
