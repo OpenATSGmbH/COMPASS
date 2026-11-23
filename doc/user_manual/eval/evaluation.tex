@@ -228,6 +228,7 @@ For the EUROCAE ED-142 standard, the following applies:
 \item The Probability of Code Detection MC requirements use the \nameref{sec:eval_req_mc_correct_periods} requirement with the 'Level Flight Only' option (ED-142 section 6.4.3, segments of trajectories with constant flight level only).
 \item The Probability of Long Position Gaps requirements use the \nameref{sec:eval_req_detection} requirement with a minimum gap length of 26.4 s (En-Route) and 16.5 s (TMA), without 'Use Gap Count'. As in ED-142 section 6.4.8, the missed update intervals in the long gaps are divided by the expected update intervals.
 \item The Probability of False pressure altitude (ED-142 section 3.3.7, at most 0.1 \%) is checked with the \nameref{sec:eval_req_mc_false} requirement.
+\item The output of changed ACID and Mode A codes (ED-142 section 3.3.2, within 24 s for En-Route and 15 s for TMA, with a probability of 95 \%) is checked with the \nameref{sec:eval_req_id_change_delay} requirement. Emergency codes are checked as Mode A changes with the same maximum delay, not within one update interval. SPI changes are not checked.
 \end{itemize}
 \ \\
 

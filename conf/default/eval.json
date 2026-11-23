@@ -3186,6 +3186,36 @@
                                         "threshold_value": 350.0,
                                         "use": true
                                     }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationChangeDelayConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationChangeDelayConfigACID Change Delay0",
+                                    "parameters": {
+                                        "comment": "Ref 3.3.2: The WAM system shall output changes of ACID and Mode A code within 3 times the maximum Update Interval (24 s) with a probability of 95%. The delay is measured from the final value set in the reference, transitional Mode A codes are ignored (minimum stable time filter).",
+                                        "identification_type": 0,
+                                        "max_delay_s": 24.0,
+                                        "min_stable_time_s": 10.0,
+                                        "name": "ACID Change Delay",
+                                        "prob": 0.95,
+                                        "prob_check_type": 3,
+                                        "short_name": "ACD",
+                                        "use": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationChangeDelayConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationChangeDelayConfigMode A Change Delay0",
+                                    "parameters": {
+                                        "comment": "Ref 3.3.2: The WAM system shall output changes of ACID and Mode A code within 3 times the maximum Update Interval (24 s) with a probability of 95%. The delay is measured from the final value set in the reference, transitional Mode A codes are ignored (minimum stable time filter).",
+                                        "identification_type": 1,
+                                        "max_delay_s": 24.0,
+                                        "min_stable_time_s": 10.0,
+                                        "name": "Mode A Change Delay",
+                                        "prob": 0.95,
+                                        "prob_check_type": 3,
+                                        "short_name": "MACD",
+                                        "use": true
+                                    }
                                 }
                             ]
                         },
@@ -3337,6 +3367,36 @@
                                         "ref_min_accuracy": 15.0,
                                         "short_name": "HPA",
                                         "threshold_value": 150.0,
+                                        "use": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationChangeDelayConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationChangeDelayConfigACID Change Delay0",
+                                    "parameters": {
+                                        "comment": "Ref 3.3.2: The WAM system shall output changes of ACID and Mode A code within 3 times the maximum Update Interval (15 s) with a probability of 95%. The delay is measured from the final value set in the reference, transitional Mode A codes are ignored (minimum stable time filter).",
+                                        "identification_type": 0,
+                                        "max_delay_s": 15.0,
+                                        "min_stable_time_s": 10.0,
+                                        "name": "ACID Change Delay",
+                                        "prob": 0.95,
+                                        "prob_check_type": 3,
+                                        "short_name": "ACD",
+                                        "use": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementIdentificationChangeDelayConfig",
+                                    "instance_name": "EvaluationRequirementIdentificationChangeDelayConfigMode A Change Delay0",
+                                    "parameters": {
+                                        "comment": "Ref 3.3.2: The WAM system shall output changes of ACID and Mode A code within 3 times the maximum Update Interval (15 s) with a probability of 95%. The delay is measured from the final value set in the reference, transitional Mode A codes are ignored (minimum stable time filter).",
+                                        "identification_type": 1,
+                                        "max_delay_s": 15.0,
+                                        "min_stable_time_s": 10.0,
+                                        "name": "Mode A Change Delay",
+                                        "prob": 0.95,
+                                        "prob_check_type": 3,
+                                        "short_name": "MACD",
                                         "use": true
                                     }
                                 }
