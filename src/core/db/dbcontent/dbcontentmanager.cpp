@@ -942,21 +942,6 @@ std::set<unsigned int> DBContentManager::getIgnoredUTNs() const
 
 /**
  */
-void DBContentManager::resetToStartupConfiguration()
-{
-    //    if (label_generator_)
-    //    {
-    //        label_generator_->setTmpDisableRemoveConfigOnDelete(true);
-
-    //        label_generator_ = nullptr;
-
-    //        createSubConfigurableFromConfig("DBContentLabelGenerator", "DBContentLabelGenerator0");
-    //        traced_assert(label_generator_);
-    //    }
-}
-
-/**
- */
 const dbContent::TargetModel* DBContentManager::targetModel() const
 {
     traced_assert(target_model_);

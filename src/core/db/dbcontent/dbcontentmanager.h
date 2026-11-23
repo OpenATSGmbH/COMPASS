@@ -224,8 +224,6 @@ public:
 
     std::set<unsigned int> getIgnoredUTNs() const;
 
-    void resetToStartupConfiguration(); // only resets label generator
-
     const dbContent::TargetModel* targetModel() const;
     dbContent::TargetListWidget* targetListWidget();
     void resizeTargetListWidget();

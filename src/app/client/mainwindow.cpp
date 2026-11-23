@@ -1197,9 +1197,6 @@ void MainWindow::resetViewsMenuSlot()
 
         Async::waitAndProcessEventsFor(50);
 
-        // reset stuff
-        compass_.dbContentManager().resetToStartupConfiguration();
-
         // enable all data source types, data sources and lines, as the confirmation promises
         compass_.dbContextManager().resetLoadingSelection();
 
