@@ -52,7 +52,7 @@ The structure of the 'reply' object will depend on the specific command.
 
 \textbf{Note} that some commands might not send reply data. \\
 
-\textit{Example}: The \textbf{netcat} tool can be used in a terminal to connect to a running COMPASS instance as follows.
+\textit{Example}: The \textbf{netcat} tool can be used in a terminal to connect to a running COMPASS instance as follows. Netcat is part of most Linux distributions, but not of Windows. On both operating systems, the \nameref{sec:rtcommand_python_example} can be used instead.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 > netcat 127.0.0.1 27960
@@ -668,6 +668,7 @@ Fetched JSON data: \\
 \end{lstlisting}
 
 \subsection{Python Example}
+\label{sec:rtcommand_python_example}
 
 The following example will make use of the python class \textit{COMPASSInstance}, 
 which makes it quite easy to start a COMPASS instance, connect to it, send commands,

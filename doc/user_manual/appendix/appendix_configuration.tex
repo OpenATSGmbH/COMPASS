@@ -1,15 +1,23 @@
 \section{Appendix: Configuration}
 \label{sec:appendix_configuration}
 
-The application configuration is stored in the user home directory in a sub-folder '.compass'. \\
+The application configuration is stored in the user home folder in a sub-folder '.compass':
 
-If such a folder does not exist, or the configuration is outdated, the default configuration is copied from the AppImage into said folder. \\
+\begin{itemize}
+\item Linux: \texttt{\textasciitilde/.compass}
+\item Windows: \texttt{C:\textbackslash Users\textbackslash <user>\textbackslash .compass}
+\end{itemize}
+\ \\
+
+In this appendix, the folder is written as \texttt{\textasciitilde/.compass}. \\
+
+If such a folder does not exist, or the configuration is outdated, the default configuration is copied from the application package (AppImage or Windows package) into said folder. \\
 
 Depending on the COMPASS version, different behaviors exist, as described in the following sections.
 
 \subsection{v0.6.0 and later}
 
-In the '~/.compass' folder, separate sub-folders exist for each application version, allowing for usage of different version of COMPASS.
+In the \texttt{\textasciitilde/.compass} folder, separate sub-folders exist for each application version, allowing for usage of different version of COMPASS.
 
 Directory structure:
 \begin{itemize}
@@ -24,7 +32,7 @@ Directory structure:
 
 \subsection{Pre-v0.6.0 and older}
 
-In the '~/.compass' folder, one configuration for the most current application version exists, which is kept up-to-date with an update mechanism.
+In the \texttt{\textasciitilde/.compass} folder, one configuration for the most current application version exists, which is kept up-to-date with an update mechanism.
 
 Directory structure:
 \begin{itemize}

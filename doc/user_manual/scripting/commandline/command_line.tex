@@ -9,7 +9,7 @@ Several command line options have been added to allow for semi-automated running
 
 To get a list of available command line options use e.g.:
 \begin{lstlisting}
-./COMPASS-release_x86_64.AppImage --help
+./COMPASS_1.1.0-x86_64.AppImage --help
 \end{lstlisting}
 
 \includegraphics[width=0.5cm]{../../data/icons/hint.png} Please note that the examples in this section use the AppImage. On Windows, \texttt{compass\_client.exe} accepts the same options, e.g.:
@@ -88,7 +88,7 @@ Triggers a reset of the user configuration and data. The bundled factory configu
 Overrides the 'default' configuration subfolder name with the given value. Configuration is then read from and written to \texttt{\textasciitilde/.compass/<version>/<arg>/} instead of \texttt{\textasciitilde/.compass/<version>/default/}, which allows separate configuration sets to coexist (e.g. 'org' for organization-specific settings).
 
 \begin{lstlisting}
-./COMPASS-release_x86_64.AppImage --override_cfg_path org
+./COMPASS_1.1.0-x86_64.AppImage --override_cfg_path org
 \end{lstlisting}
 
 \subsubsection{-{}-list\_contexts}
@@ -96,7 +96,7 @@ Overrides the 'default' configuration subfolder name with the given value. Confi
 Lists all available data contexts and indicates which one is currently active. The application exits immediately after printing the list.
 
 \begin{lstlisting}
-./COMPASS-release_x86_64.AppImage --list_contexts
+./COMPASS_1.1.0-x86_64.AppImage --list_contexts
 \end{lstlisting}
 
 Example output:
@@ -112,7 +112,7 @@ Available contexts:
 Sets the active data context to the given name before any database or import operations are performed. If the context does not exist, the application exits with an error.
 
 \begin{lstlisting}
-./COMPASS-release_x86_64.AppImage --set_context Test --open_db /data/file.db
+./COMPASS_1.1.0-x86_64.AppImage --set_context Test --open_db /data/file.db
 \end{lstlisting}
 
 \subsubsection{-{}-create\_db filename}
@@ -281,7 +281,7 @@ After a database with imported content exists, reconstruct reference trajectorie
 Overrides the reconstructor configuration with a JSON snippet, e.g. to switch the reconstructor or change a parameter for one batch run without altering the GUI configuration.
 
 \begin{lstlisting}
-./COMPASS-release_x86_64.AppImage --open_db /data/file.db \
+./COMPASS_1.1.0-x86_64.AppImage --open_db /data/file.db \
   --reconstruct_references_cfg '{"current_reconstructor_str": "Scoring + UMKalman"}' \
   --reconstruct_references --quit
 \end{lstlisting}
@@ -369,7 +369,7 @@ When an Evaluation task is started an automatic filtering of targets is performe
 Triggers the Analyze Data Source task for the given DSType. In the current release only 'MLAT' is accepted; see \nameref{chap:analyze}.
 
 \begin{lstlisting}
-./COMPASS-release_x86_64.AppImage --open_db /data/file.db --analyze_data_source MLAT --quit
+./COMPASS_1.1.0-x86_64.AppImage --open_db /data/file.db --analyze_data_source MLAT --quit
 \end{lstlisting}
 
 \subsubsection{-{}-analyze\_parameters 'str'}

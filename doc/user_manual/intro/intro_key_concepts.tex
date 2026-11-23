@@ -35,16 +35,17 @@ Using this configuration, a user can have a specific program configuration for a
 
 
 \begin{itemize}
-\item Stored in a home folder for current AppImage version
+\item Stored in the home folder of the user, per application version
 \begin{itemize}
-\item e.g. \textasciitilde/.compass/0.9.0
+\item Linux: e.g. \texttt{\textasciitilde/.compass/1.1.0}
+\item Windows: e.g. \texttt{C:\textbackslash Users\textbackslash <user>\textbackslash .compass\textbackslash 1.1.0}
 \end{itemize}
 \item Read at application startup
 \item Written at application shutdown (if wanted)
 \item Not written at application crash
 \item If not existing for current version
 \begin{itemize}
-\item Default configuration copied by AppImage
+\item Default configuration copied from the application package (AppImage or Windows package)
 \end{itemize}
 \end{itemize}
 

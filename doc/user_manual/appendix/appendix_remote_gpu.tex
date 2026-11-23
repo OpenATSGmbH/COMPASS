@@ -132,14 +132,14 @@ your-server-ip:1
 Once inside the VNC session, open a terminal and run the COMPASS AppImage with \texttt{vglrun}:
 
 \begin{lstlisting}
-vglrun ./COMPASS-x86_64_release.AppImage
+vglrun ./COMPASS_1.1.0-x86_64.AppImage
 \end{lstlisting}
 
 Alternatively, when connecting via SSH with VirtualGL forwarding:
 
 \begin{lstlisting}
 vglconnect user@your-server
-vglrun ./COMPASS-x86_64_release.AppImage
+vglrun ./COMPASS_1.1.0-x86_64.AppImage
 \end{lstlisting}
 
 This redirects all OpenGL rendering to the server's physical GPU, streaming the rendered frames to the VNC client with full OpenGL support.

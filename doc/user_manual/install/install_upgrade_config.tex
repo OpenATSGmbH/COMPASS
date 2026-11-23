@@ -1,6 +1,15 @@
 \section{Configuration Upgrade}
+\label{sec:install_config_folder}
 
-If the used version of COMPASS has never been run on the workstation, the configuration (and additional application data) will be copied into a subfolder of the home directory (e.g. \textasciitilde/.compass/0.9.0/). \\
+If the used version of COMPASS has never been run on the workstation, the configuration (and additional application data) will be copied into a version subfolder of the folder '.compass' in the user's home folder:
+
+\begin{itemize}
+\item Linux: \texttt{\textasciitilde/.compass/<version>/}, e.g. \texttt{/home/<user>/.compass/1.1.0/}
+\item Windows: \texttt{C:\textbackslash Users\textbackslash <user>\textbackslash .compass\textbackslash <version>\textbackslash}, e.g. \texttt{C:\textbackslash Users\textbackslash <user>\textbackslash .compass\textbackslash 1.1.0\textbackslash}
+\end{itemize}
+\ \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please \textbf{note} that this manual writes this folder as \texttt{\textasciitilde/.compass}, with '/' as path separator. On Windows, '\textasciitilde' is \texttt{C:\textbackslash Users\textbackslash <user>}. \\
 
 \includegraphics[width=0.5cm]{../../data/icons/hint.png} When switching from an older COMPASS version to a newer one, it is no longer required to re-import data sources. But previously saved View presets or added custom DB filters will have to be re-created. \\
 

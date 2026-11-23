@@ -1,7 +1,7 @@
 \section{Appendix: Adding/Changing Maps}
 \label{sec:appendix_maps}
 
-As with all configuration, a local version is kept in the home folder of the user. The map files are loaded from the hidden folder \texttt{\textasciitilde/.compass/<version>/data/maps} ('\textasciitilde' is the user's home directory, like /home/user). \\
+As with all configuration, a local version is kept in the home folder of the user. The map files are loaded from the folder \texttt{\textasciitilde/.compass/<version>/data/maps} ('\textasciitilde' is the user's home folder, e.g. \texttt{/home/<user>} on Linux or \texttt{C:\textbackslash Users\textbackslash <user>} on Windows, the folder is hidden on Linux). \\
 
 In this folder, the previously discussed maps exist as osgEarth '.earth' files, each in a 3D and a 2D version (suffix '\_2d'). The subfolder 'shapefiles' holds the ESRI shapefiles used by the minimal maps:
 
@@ -196,7 +196,7 @@ Please note that due to osgEarth constraints the graticule is not always display
 
 \subsection{Offline OpenStreetMap Example}
 
-There exist a number of options how OpenStreetMap maps can be made available in an offline environment. The most convenient option the author found was using the QGIS tool (\href{https://www.qgis.org/}{Link}), which should be available in all common Linux distributions. \\
+There exist a number of options how OpenStreetMap maps can be made available in an offline environment. The most convenient option the author found was using the QGIS tool (\href{https://www.qgis.org/}{Link}), which is available for Linux and Windows. \\
 
 Using this tool, OpenStreetMap tiles can be downloaded and saved in a number of formats. To allow for efficient usage, the MBTiles format was used successfully. In this format, OpenStreetMap (and other online tile-based maps) can be stored in a single file and transferred to an offline environment.
 
@@ -250,7 +250,7 @@ After these options were set, the 'Run' button can be clicked. \\
 
 Please review and consider the OpenStreetMap copyright and license when creating such offline maps (\href{https://www.openstreetmap.org/copyright}{Link}). \\
 
-After successful completion of this task, the resulting MBTiles file has to be copied to any \textasciitilde'/.compass location and be used in a .earth file like the following:
+After successful completion of this task, the resulting MBTiles file has to be copied to a folder below \texttt{\textasciitilde/.compass} and be used in a .earth file like the following:
 
 \begin{lstlisting}
 <map name="OpenStreetMap" type="projected" version="2">

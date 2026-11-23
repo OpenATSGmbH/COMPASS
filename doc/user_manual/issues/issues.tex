@@ -3,6 +3,8 @@
 
 \section{Known Issues}
 
+All known issues in this section concern the Linux AppImage. \\
+
 \subsection{CentOS Fuse Usermount Permissions}
 
 On some operating systems, the following error message is shown when starting the AppImage:
@@ -71,7 +73,7 @@ This is due to the the used graphics libraries OpenSceneGraph and osgEarth depen
 There exists a workaround which might work for you: There exists the issue that in some cases the shaders are supported in the used Mesa graphics driver, but are not detected correctly. One can override the reported OpenGL version for one application using a system variable and start the app in that mode using:
 
 \begin{lstlisting}
-MESA_GL_VERSION_OVERRIDE=3.3 ./COMPASS-release.AppImage
+MESA_GL_VERSION_OVERRIDE=3.3 ./COMPASS_1.1.0-x86_64.AppImage
 \end{lstlisting}
 
 At least on the authors workstation with an Intel graphics card and for some other users this resolved the issue. \\
@@ -127,7 +129,7 @@ plugins.xsettings' does not contain a key named 'antialiasing'
 a possible fix can be to start the application using 
 
 \begin{verbatim}
-GDK_BACKEND=X11 ./NAME_OF_THE_APPIMAGE.AppImage
+GDK_BACKEND=X11 ./COMPASS_1.1.0-x86_64.AppImage
 \end{verbatim}
 
 \section{Reporting Issues}
@@ -146,7 +148,7 @@ Also, if you're planning on using COMPASS, it is of benefit if you register on \
 
 \subsection{Already Reported Issues}
 
-Please refer to \url{https://github.com/hpuhr/COMPASS/issues} for a list of the currently known issues. An issue can be ``Open'' meaning it was not yet fixed, or ``Closed'', meaning it was at least fixed in the source code. If it is closed, it does not mean that the fix is already included in the current AppImage, but that it will be in the next release. \\
+Please refer to \url{https://github.com/hpuhr/COMPASS/issues} for a list of the currently known issues. An issue can be ``Open'' meaning it was not yet fixed, or ``Closed'', meaning it was at least fixed in the source code. If it is closed, it does not mean that the fix is already included in the current release, but that it will be in the next release. \\
 
 Please look through the issues and make sure that yours isn't already listed. If so, you can comment on it to indicate the severity for you. If not, please proceed to the next step.
 
@@ -163,7 +165,7 @@ Basically everything that is needed to reproduce the error should be submitted. 
 
 If the application crashed, it would also be of interest to get a stacktrace. While this is most of the time added in the console log, it might be requested to create one manually. This can be achieved by running the application using gdb (\url{https://www.gnu.org/software/gdb/}), which might have to be installed.
 
-Then, the application can be run using ``gdb ./COMPASS-XXX.AppImage''. The output will look similiar to this:
+Then, on Linux, the application can be run using \texttt{gdb ./COMPASS\_1.1.0-x86\_64.AppImage}. The output will look similiar to this:
 
 \begin{verbatim}
 GNU gdb (Ubuntu 8.0.1-0ubuntu1) 8.0.1
