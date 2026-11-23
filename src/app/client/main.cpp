@@ -95,6 +95,9 @@ static void writeCrashText(const std::string& text)
         std::ofstream file(crash_log_path, std::ios::app);
         if (file)
             file << text << std::flush;
+
+        // where the report is kept, for the user (the console is gone with the process)
+        std::cerr << "\nLog file: " << crash_log_path << std::endl;
     }
 }
 
@@ -328,6 +331,13 @@ void safeSignalHandler(int signum, siginfo_t* info, void* context)
 
     // --- stderr (captured in log.txt when redirected) ---
     writeCrashInfo(STDERR_FILENO, signum, info, uc, frames, count);
+
+    if (crash_log_path[0] != '\0')
+    {
+        crash_breadcrumbs::writeStr(STDERR_FILENO, "\nLog file: ");
+        crash_breadcrumbs::writeStr(STDERR_FILENO, crash_log_path);
+        crash_breadcrumbs::writeStr(STDERR_FILENO, "\n");
+    }
 
     // --- log file ---
     if (crash_log_path[0] != '\0')

@@ -2,6 +2,7 @@
 
 #include "msghandler.h"
 #include "exit_hooks.h"
+#include "logger.h"
 #include "stacktrace_format.h"
 
 #include <cstdio>
@@ -63,6 +64,10 @@ namespace compass_assert
         {
             logToCerr();
         }
+
+        // where the report is kept, for the user (the console is gone with the process)
+        if (!Logger::getInstance().logFile().empty())
+            std::cerr << "\nLog file: " << Logger::getInstance().logFile() << std::endl;
 
         // make buffered diagnostics survive the abort: this message and any preceding
         // log output would otherwise be lost when stdout is a block-buffered redirect

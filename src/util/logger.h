@@ -180,6 +180,7 @@ class Logger : public Singleton
     static Logger* log_instance_;
     log4cpp::Appender* console_appender_;
     log4cpp::Appender* file_appender_;
+    std::string        log_file_;
 
     logger::EventLog* event_log_ = nullptr;
 
@@ -194,6 +195,9 @@ class Logger : public Singleton
 
     /// log file of this start in the folder, the same for all calls: <prefix><start time>_<pid>.log
     static const std::string& logFilePath(const std::string& log_dir);
+
+    /// the log file given to init(), empty if none
+    const std::string& logFile() const { return log_file_; }
 
     static constexpr const char* LogFilePrefix     = "compass_";
     static const size_t          MaxLogFileSize    = 5 * 1024 * 1024;

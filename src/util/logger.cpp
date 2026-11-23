@@ -151,6 +151,8 @@ void Logger::init(const std::string& log_config_filename, bool enable_event_log,
     //configuration folder and a name per start, and existing copies of the properties file stay valid
     if (!log_file.empty())
     {
+        log_file_ = log_file;
+
         const std::filesystem::path dir = std::filesystem::path(log_file).parent_path();
 
         std::error_code ec;
