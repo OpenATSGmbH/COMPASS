@@ -136,6 +136,7 @@ void FilterGeneratorDialog::createGUIElements()
     condition_layout->addWidget(label_abs, 0, 1);
 
     condition_absolute_ = new QCheckBox("");
+    condition_absolute_->setObjectName("condition_absolute");
     condition_layout->addWidget(condition_absolute_, 1, 1, Qt::AlignHCenter);
 
     // Operator (col 2)

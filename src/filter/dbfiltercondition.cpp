@@ -419,8 +419,21 @@ bool DBFilterCondition::checkValueInvalid(const std::string& new_value)
     }
     else
     {
-        traced_assert(hasVariable(variable_dbcontent_name_));
-        dbcontent_names.push_back(variable_dbcontent_name_);
+        // a Report Variable is named by its report, its values are checked for its host data contents
+        dbcontent_names = var_resolver_.reportVariableDBContentNames(variable_name_, variable_dbcontent_name_);
+
+        if (dbcontent_names.empty())
+        {
+            if (!hasVariable(variable_dbcontent_name_))
+            {
+                // e.g. a Report Variable of a report that is not in the database
+                logwrn << instanceName() << ": variable '" << variable_name_ << "' of '"
+                       << variable_dbcontent_name_ << "' not available, value invalid";
+                return true;
+            }
+
+            dbcontent_names.push_back(variable_dbcontent_name_);
+        }
     }
 
     bool invalid = true;

@@ -59,6 +59,8 @@ public:
     bool reportVariableExistsIn(const std::string& var_name,
                                 const std::string& var_dbcontent_name,
                                 const std::string& dbcontent_name) const override;
+    std::vector<std::string> reportVariableDBContentNames(
+        const std::string& var_name, const std::string& var_dbcontent_name) const override;
 
     std::vector<std::string> metaVariableDBContentNames(
         const std::string& var_name) const override;

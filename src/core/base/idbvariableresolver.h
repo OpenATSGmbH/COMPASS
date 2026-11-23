@@ -66,6 +66,11 @@ public:
     virtual bool reportVariableExistsIn(const std::string& var_name,
                                         const std::string& var_dbcontent_name,
                                         const std::string& dbcontent_name) const = 0;
+    // host data contents of a Report Variable, empty if var_dbcontent_name is no report or the
+    // report has no such variable
+    virtual std::vector<std::string> reportVariableDBContentNames(
+        const std::string& var_name, const std::string& var_dbcontent_name) const
+    { return {}; }
 
     // returns dbcontent names that a meta variable has concrete variables for
     virtual std::vector<std::string> metaVariableDBContentNames(

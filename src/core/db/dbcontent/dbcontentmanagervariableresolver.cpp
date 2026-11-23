@@ -121,6 +121,20 @@ bool DBContentManagerVariableResolver::reportVariableExistsIn(
     return content.variable(var_name).existsIn(dbcontent_name);
 }
 
+std::vector<std::string> DBContentManagerVariableResolver::reportVariableDBContentNames(
+    const std::string& var_name, const std::string& var_dbcontent_name) const
+{
+    if (!dbcontent_man_.existsReportContent(var_dbcontent_name))
+        return {};
+
+    auto& content = dbcontent_man_.reportContent(var_dbcontent_name);
+
+    if (!content.hasVariable(var_name))
+        return {};
+
+    return content.variable(var_name).hostDBContents();
+}
+
 dbContent::Variable& DBContentManagerVariableResolver::resolveVariable(
     const std::string& dbcontent_name, const std::string& var_name,
     const std::string& var_dbcontent_name) const
