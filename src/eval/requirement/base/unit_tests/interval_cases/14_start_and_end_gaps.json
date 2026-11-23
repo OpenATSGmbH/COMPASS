@@ -1,0 +1,58 @@
+{
+    "description": "Valid updates from 20 s to 56 s: 20 s gap at the start (2 misses), 24 s gap at the end (3 misses).",
+    "params": {
+        "update_interval_s": 8.0
+    },
+    "periods": [
+        [
+            0,
+            80
+        ]
+    ],
+    "updates": [
+        [
+            20,
+            "valid"
+        ],
+        [
+            24,
+            "valid"
+        ],
+        [
+            28,
+            "valid"
+        ],
+        [
+            32,
+            "valid"
+        ],
+        [
+            36,
+            "valid"
+        ],
+        [
+            40,
+            "valid"
+        ],
+        [
+            44,
+            "valid"
+        ],
+        [
+            48,
+            "valid"
+        ],
+        [
+            52,
+            "valid"
+        ],
+        [
+            56,
+            "valid"
+        ]
+    ],
+    "expected": {
+        "sum_uis": 10,
+        "misses": 5
+    }
+}

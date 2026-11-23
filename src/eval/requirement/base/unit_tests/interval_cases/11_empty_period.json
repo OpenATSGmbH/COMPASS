@@ -1,0 +1,17 @@
+{
+    "description": "Period without any test update: no misses (detection matter).",
+    "params": {
+        "update_interval_s": 8.0
+    },
+    "periods": [
+        [
+            0,
+            80
+        ]
+    ],
+    "updates": [],
+    "expected": {
+        "sum_uis": 10,
+        "misses": 0
+    }
+}

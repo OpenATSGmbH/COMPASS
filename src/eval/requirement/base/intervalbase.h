@@ -18,6 +18,7 @@
 #pragma once
 
 #include "probabilitybase.h"
+#include "intervalhelpers.h"
 #include "dbcontent/target/targetreportdefs.h"
 #include "targetposition.h"
 
@@ -36,40 +37,6 @@ namespace dbContent
 
 namespace EvaluationRequirement
 {
-
-/**
- * Describes certain events happening when traversing the reference data time periods.
- */
-struct Event
-{
-    enum Type
-    {
-        TypeNoReference = 0,          // update is not part of an inside sector reference time period
-        TypeEnterPeriod,              // a new in-sector reference period is entered
-        TypeFirstValidUpdateInPeriod, // the first valid update of an in-sector reference period is encountered
-        TypeValidFirst,               // a valid update is checked at the start of an in-sector reference period
-        TypeValid,                    // a valid update is checked inside an in-sector reference period
-        TypeValidLast,                // a valid update is checked at the end of an in-sector reference period
-        TypeInvalid,                  // an invalid update was encountered inside an in-sector reference period
-        TypeDataMissing,              // update misses (e.g. reference) data to perform validity check
-        TypeLastValidUpdateInPeriod,  // the last valid update of an in-sector reference period is encountered
-        TypeLeavePeriod,              // an in-sector reference period is being left
-        TypeEmptyPeriod,              // an in-sector reference period without updates is encountered
-    };
-
-    boost::posix_time::time_duration dt() const;
-    double dtSeconds() const;
-
-    Type                            type;           // event type
-    dbContent::TargetReport::DataID data_id;        // data id of the update causing the event (if an update is involved)
-    boost::optional<uint32_t>       period;         // index to the period the event happened in
-    std::string                     error;          // error description in case of an invalid update
-    boost::posix_time::ptime        interval_time0; // start time of the event interval (note: =/= period start!)
-    boost::posix_time::ptime        interval_time1; // end time of the event interval (note: =/= period end!)
-    bool                            had_ref_data;   // reference data was available
-
-    uint32_t                        misses = 0;     // misses caused by the event
-};
 
 /**
  * Base class for interval-based evaluation requirements.
@@ -94,18 +61,7 @@ public:
         bool generate_detail = false; // generate a detail for this event
     };
 
-    struct Validity
-    {
-        enum class Value
-        {
-            Valid = 0,     // update is valid
-            Invalid,       // update is invalid
-            RefDataMissing // reference data is missing => could not check validity
-        };
-
-        Value        value = Value::Invalid; // validity value
-        std::string  comment;                // additional textual info
-    };
+    typedef IntervalValidity Validity;
 
     IntervalBase(const std::string& name, 
                  const std::string& short_name, 
@@ -133,12 +89,12 @@ public:
     const boost::optional<float>& missTolerance() const { return miss_tolerance_s_; }
 
     float missThreshold() const;
+    IntervalHelpers::MissParams missParams() const;
 
     bool excludeDetectionMisses() const { return exclude_detection_misses_; }
     void excludeDetectionMisses(bool value) { exclude_detection_misses_ = value; }
 
 protected:
-    virtual uint32_t numMisses(double dt) const;
     virtual DetailInfo eventDetailInfo(const EvaluationTargetData& target_data,
                                        const Event& event,
                                        std::vector<dbContent::TargetPosition>& ref_updates) const;
@@ -162,18 +118,6 @@ protected:
                                                                               unsigned int sum_uis,
                                                                               unsigned int misses_total) = 0;
 private:
-    std::vector<Event> periodEvents(const TimePeriod& period,
-                                    const EvaluationTargetData& target_data,
-                                    const SectorLayer& sector_layer,
-                                    bool skip_no_data_details) const;
-    std::vector<Event> periodEvents(const TimePeriodCollection& periods,
-                                    const EvaluationTargetData& target_data,
-                                    const SectorLayer& sector_layer,
-                                    bool skip_no_data_details) const;
-    void excludeDetectionMisses(const TimePeriodCollection& periods,
-                                uint32_t& sum_uis,
-                                uint32_t& misses_total) const;
-
     float                  update_interval_s_;
     boost::optional<float> min_gap_length_s_;
     boost::optional<float> max_gap_length_s_;

@@ -1,0 +1,55 @@
+{
+    "description": "As 07 with Exclude Detection Misses: 10-3 expected, 4-3 missed.",
+    "params": {
+        "update_interval_s": 8.0,
+        "exclude_detection_misses": true
+    },
+    "periods": [
+        [
+            0,
+            80
+        ]
+    ],
+    "updates": [
+        [
+            0,
+            "valid"
+        ],
+        [
+            8,
+            "valid"
+        ],
+        [
+            16,
+            "valid"
+        ],
+        [
+            24,
+            "invalid"
+        ],
+        [
+            48,
+            "valid"
+        ],
+        [
+            56,
+            "valid"
+        ],
+        [
+            64,
+            "valid"
+        ],
+        [
+            72,
+            "valid"
+        ],
+        [
+            80,
+            "valid"
+        ]
+    ],
+    "expected": {
+        "sum_uis": 7,
+        "misses": 1
+    }
+}

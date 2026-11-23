@@ -1,0 +1,62 @@
+{
+    "description": "Period with updates, none with a correct code: all 10 update intervals are missed.",
+    "params": {
+        "update_interval_s": 8.0
+    },
+    "periods": [
+        [
+            0,
+            80
+        ]
+    ],
+    "updates": [
+        [
+            0,
+            "invalid"
+        ],
+        [
+            8,
+            "invalid"
+        ],
+        [
+            16,
+            "invalid"
+        ],
+        [
+            24,
+            "invalid"
+        ],
+        [
+            32,
+            "invalid"
+        ],
+        [
+            40,
+            "invalid"
+        ],
+        [
+            48,
+            "invalid"
+        ],
+        [
+            56,
+            "invalid"
+        ],
+        [
+            64,
+            "invalid"
+        ],
+        [
+            72,
+            "invalid"
+        ],
+        [
+            80,
+            "invalid"
+        ]
+    ],
+    "expected": {
+        "sum_uis": 10,
+        "misses": 10
+    }
+}

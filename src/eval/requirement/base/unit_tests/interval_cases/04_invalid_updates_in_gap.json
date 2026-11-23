@@ -1,0 +1,62 @@
+{
+    "description": "Updates at 24 s and 32 s without a correct code: the gap between valid updates is 24 s, 3 misses.",
+    "params": {
+        "update_interval_s": 8.0
+    },
+    "periods": [
+        [
+            0,
+            80
+        ]
+    ],
+    "updates": [
+        [
+            0,
+            "valid"
+        ],
+        [
+            8,
+            "valid"
+        ],
+        [
+            16,
+            "valid"
+        ],
+        [
+            24,
+            "invalid"
+        ],
+        [
+            32,
+            "invalid"
+        ],
+        [
+            40,
+            "valid"
+        ],
+        [
+            48,
+            "valid"
+        ],
+        [
+            56,
+            "valid"
+        ],
+        [
+            64,
+            "valid"
+        ],
+        [
+            72,
+            "valid"
+        ],
+        [
+            80,
+            "valid"
+        ]
+    ],
+    "expected": {
+        "sum_uis": 10,
+        "misses": 3
+    }
+}

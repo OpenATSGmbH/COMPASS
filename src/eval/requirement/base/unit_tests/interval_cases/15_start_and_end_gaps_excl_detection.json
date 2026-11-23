@@ -1,0 +1,59 @@
+{
+    "description": "As 14 with Exclude Detection Misses: both gaps have no test update.",
+    "params": {
+        "update_interval_s": 8.0,
+        "exclude_detection_misses": true
+    },
+    "periods": [
+        [
+            0,
+            80
+        ]
+    ],
+    "updates": [
+        [
+            20,
+            "valid"
+        ],
+        [
+            24,
+            "valid"
+        ],
+        [
+            28,
+            "valid"
+        ],
+        [
+            32,
+            "valid"
+        ],
+        [
+            36,
+            "valid"
+        ],
+        [
+            40,
+            "valid"
+        ],
+        [
+            44,
+            "valid"
+        ],
+        [
+            48,
+            "valid"
+        ],
+        [
+            52,
+            "valid"
+        ],
+        [
+            56,
+            "valid"
+        ]
+    ],
+    "expected": {
+        "sum_uis": 5,
+        "misses": 0
+    }
+}

@@ -16,6 +16,7 @@
  */
 
 #include "intervalbase.h"
+#include "intervalhelpers.h"
 #include "timeperiod.h"
 #include "evaluationcalculator.h"
 #include "timeconv.h"
@@ -25,24 +26,9 @@
 
 #include "timeconv.h"
 
-#include <algorithm>
 
 namespace EvaluationRequirement
 {
-
-/**
-*/
-boost::posix_time::time_duration Event::dt() const
-{
-    return interval_time1 - interval_time0;
-}
-
-/**
-*/
-double Event::dtSeconds() const
-{
-    return Utils::Time::partialSeconds(dt());
-}
 
 /**
 */
@@ -76,6 +62,19 @@ float IntervalBase::missThreshold() const
 
 /**
 */
+IntervalHelpers::MissParams IntervalBase::missParams() const
+{
+    IntervalHelpers::MissParams p;
+    p.update_interval_s = update_interval_s_;
+    p.min_gap_length_s  = min_gap_length_s_;
+    p.max_gap_length_s  = max_gap_length_s_;
+    p.miss_tolerance_s  = miss_tolerance_s_;
+
+    return p;
+}
+
+/**
+*/
 std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(const EvaluationTargetData& target_data, 
                                                                             std::shared_ptr<Base> instance,
                                                                             const SectorLayer& sector_layer)
@@ -89,15 +88,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
 
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 
-    //determine min max test times
-    boost::optional<boost::posix_time::ptime> tmin_tst;
-    boost::optional<boost::posix_time::ptime> tmax_tst;
-    if (!tst_data.empty())
-    {
-        tmin_tst = tst_data.begin()->first;
-        tmax_tst = tst_data.rbegin()->first;
-    }
-
     //create inside/outside sector reference periods and extend to test data min max times
     TimePeriodCollection periods;
     periods.createFromReference(target_data, sector_layer, max_ref_time_diff,
@@ -107,26 +97,22 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
     if (min_ref_period_s_.has_value() && min_ref_period_s_.value() > 0)
         periods.removeSmallPeriods(Utils::Time::partialSeconds(min_ref_period_s_.value()));
     
-    periods.fillInOutsidePeriods(tmin_tst, tmax_tst);
+    //extend to test data min max times and sort test updates into ref periods
+    std::vector<dbContent::TargetReport::DataID> tst_updates;
+    tst_updates.reserve(tst_data.size());
 
-    uint32_t sum_uis = periods.getUIs(update_interval_s_);
-
-    //sort test updates into ref periods
     for (const auto& tst_it : tst_data)
-    {
-        auto timestamp = tst_it.first;
+        tst_updates.emplace_back(tst_it);
 
-        bool inside_period = periods.isInside(timestamp);
-        traced_assert(inside_period); //!should _always_ land in a period!
-
-        TimePeriodUpdate update;
-        update.data_id = dbContent::TargetReport::DataID(tst_it);
-
-        periods.addUpdate(update);
-    }
+    IntervalHelpers::addTestUpdates(periods, tst_updates);
 
     //create events from periods
-    auto events = periodEvents(periods, target_data, sector_layer, skip_no_data_details);
+    auto validity = [ & ] (const dbContent::TargetReport::DataID& data_id)
+    {
+        return isValid(data_id, target_data, sector_layer, max_ref_time_diff);
+    };
+
+    auto events = IntervalHelpers::periodEvents(periods, validity, missParams(), skip_no_data_details);
 
     //process events and create details
     Details details;
@@ -192,8 +178,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
                   detail_info.evt_comment);
     }
 
-    if (exclude_detection_misses_)
-        excludeDetectionMisses(periods, sum_uis, misses_total);
+    auto counts = IntervalHelpers::counts(periods, events, missParams(), exclude_detection_misses_);
 
     //create derived-specific result
     return createResult("UTN:" + std::to_string(target_data.utn_),
@@ -202,252 +187,8 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
                         sector_layer,
                         details,
                         periods,
-                        sum_uis,
-                        misses_total);
-}
-
-/**
- * Removes the update intervals without any test target report from the expected and the
- * missed update intervals, e.g. EUROCAE ED-142 6.4.3: the probability of code detection
- * only counts update intervals in which a target report was output.
- *
- * The detection misses are counted as the code misses, but over the gaps between all test
- * target reports of an inside period (including period begin and end). An inside period
- * without any test target report has no code misses, its update intervals are only removed
- * from the expected ones.
- */
-void IntervalBase::excludeDetectionMisses(const TimePeriodCollection& periods,
-                                          uint32_t& sum_uis,
-                                          uint32_t& misses_total) const
-{
-    uint32_t detection_misses       = 0; // in periods with test target reports
-    uint32_t empty_period_misses    = 0; // in periods without test target reports
-
-    for (size_t i = 0; i < periods.size(); ++i)
-    {
-        const auto& period = periods.period(i);
-
-        if (period.type() != TimePeriod::Type::InsideSector)
-            continue;
-
-        if (period.getUpdates().empty())
-        {
-            empty_period_misses += numMisses(Utils::Time::partialSeconds(period.duration()));
-            continue;
-        }
-
-        auto t_last = period.begin();
-
-        for (const auto& update : period.getUpdates())
-        {
-            auto t = update.data_id.timestamp();
-
-            detection_misses += numMisses(Utils::Time::partialSeconds(t - t_last));
-            t_last = t;
-        }
-
-        detection_misses += numMisses(Utils::Time::partialSeconds(period.end() - t_last));
-    }
-
-    uint32_t uis_removed = detection_misses + empty_period_misses;
-
-    sum_uis      = sum_uis > uis_removed ? sum_uis - uis_removed : 0;
-    misses_total = misses_total > detection_misses ? misses_total - detection_misses : 0;
-    misses_total = std::min(misses_total, sum_uis);
-}
-
-/**
-*/
-std::vector<Event> IntervalBase::periodEvents(const TimePeriodCollection& periods,
-                                              const EvaluationTargetData& target_data,
-                                              const SectorLayer& sector_layer,
-                                              bool skip_no_data_details) const
-{
-    std::vector<Event> events;
-
-    uint32_t inside_period_cnt = 0;
-
-    for (size_t i = 0; i < periods.size(); ++i)
-    {
-        const auto& period = periods.period(i);
-
-        //create events for period
-        auto events_period = periodEvents(period, target_data, sector_layer, skip_no_data_details);
-
-        //period is inside period?
-        if (period.type() == TimePeriod::Type::InsideSector)
-        {
-            //add inside period index to events
-            for (auto& e : events_period)
-                e.period = inside_period_cnt;
-
-            ++inside_period_cnt;
-        }
-
-        //collect
-        if (!events_period.empty())
-            events.insert(events.end(), events_period.begin(), events_period.end());
-    }
-
-    return events;
-}
-
-/**
-*/
-std::vector<Event> IntervalBase::periodEvents(const TimePeriod& period,
-                                              const EvaluationTargetData& target_data,
-                                              const SectorLayer& sector_layer,
-                                              bool skip_no_data_details) const
-{
-    std::vector<Event> events;
-
-    auto logEvent = [ & ] (std::vector<Event>& events,
-                           Event::Type type, 
-                           const TimePeriodUpdate* update,
-                           const boost::posix_time::ptime& time0,
-                           const boost::posix_time::ptime& time1,
-                           const std::string& error,
-                           bool has_ref_data,
-                           bool compute_misses)
-    {
-        traced_assert(time1 >= time0);
-
-        Event e;
-        e.type           = type;
-        e.error          = error;
-        e.interval_time0 = time0;
-        e.interval_time1 = time1;
-
-        if (update)
-            e.data_id = update->data_id;
-
-        if (compute_misses)
-        {
-            double dt = Utils::Time::partialSeconds(time1 - time0);
-
-            e.misses = numMisses(dt);
-        }
-
-        e.had_ref_data = has_ref_data;
-
-        events.push_back(e);
-    };
-
-    //outside sector period => add all updates as OutsideSector
-    if (period.type() == TimePeriod::Type::OutsideSector)
-    {
-        if (!skip_no_data_details)
-        {
-            for (const auto& update : period.getUpdates())
-            {
-                logEvent(events, Event::TypeNoReference, &update, update.data_id.timestamp(), update.data_id.timestamp(), "", true, false);
-            }
-        }
-
-        return events;
-    }
-
-    //log period entered
-    if (!skip_no_data_details)
-        logEvent(events, Event::TypeEnterPeriod, nullptr, period.begin(), period.end(), "", true, false);
-
-    //inside sector period
-    const auto& updates = period.getUpdates();
-
-    if (updates.empty())
-    {
-        //no updates in period => add single event for this case
-        if (!skip_no_data_details)
-            logEvent(events, Event::TypeEmptyPeriod, nullptr, period.begin(), period.end(), "", true, false);
-    }
-    else
-    {
-        //period obtains updates
-        auto max_ref_time_diff = Utils::Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
-
-        size_t n = updates.size();
-
-        const TimePeriodUpdate* valid_last     = nullptr;
-        bool                    had_ref_data   = true;
-        int                     valid_last_idx = -1;
-
-        for (size_t i = 0; i < n; ++i)
-        {
-            const auto& update = updates[ i ];
-
-            //check if update is valid
-            auto validity = isValid(update.data_id, target_data, sector_layer, max_ref_time_diff);
-
-            //invalid update => log and skip
-            if (validity.value == Validity::Value::Invalid)
-            {
-                logEvent(events, Event::TypeInvalid, &update, update.data_id.timestamp(), update.data_id.timestamp(), validity.comment, true, false);
-                continue;
-            }
-
-            //was reference data missing? => yields a valid update (in dubio pro reo)
-            had_ref_data = validity.value != Validity::Value::RefDataMissing;
-
-            //first valid update? => log
-            if (!valid_last && !skip_no_data_details)
-                logEvent(events, Event::TypeFirstValidUpdateInPeriod, &update, update.data_id.timestamp(), update.data_id.timestamp(), "", had_ref_data, false);
-
-            //valid update => check for misses
-            logEvent(events, 
-                     valid_last ? Event::TypeValid : Event::Type::TypeValidFirst,
-                     &update,
-                     valid_last ? valid_last->data_id.timestamp() : period.begin(),      // time0 is either the last valid update or period begin
-                     update.data_id.timestamp(),                                         // time1 always update time
-                     "",
-                     had_ref_data,
-                     true);                                                              // check misses in both cases
-
-            valid_last     = &updates[ i ];
-            valid_last_idx = (int)events.size();
-        }
-
-        //add event for last valid update
-        if (valid_last)
-        {
-            std::vector<Event> last_events;
-
-            if (!skip_no_data_details)
-                logEvent(last_events, Event::TypeLastValidUpdateInPeriod, valid_last, valid_last->data_id.timestamp(), valid_last->data_id.timestamp(), "", had_ref_data, false);
-            logEvent(last_events, Event::TypeValidLast, valid_last, valid_last->data_id.timestamp(), period.end(), "", had_ref_data, true);
-
-            events.insert(events.begin() + valid_last_idx, last_events.begin(), last_events.end());
-        }
-
-        //no valid updates in period => add single event for this case, the whole period is missed
-        //(test target reports without a correct code, as between valid updates)
-        if (!valid_last)
-            logEvent(events, Event::TypeEmptyPeriod, nullptr, period.begin(), period.end(), "", true, true);
-    }
-
-    //log period left
-    if (!skip_no_data_details)
-        logEvent(events, Event::TypeLeavePeriod, nullptr, period.begin(), period.end(), "", true, false);
-
-    return events;
-}
-
-/**
-*/
-uint32_t IntervalBase::numMisses(double dt) const
-{
-    if (miss_tolerance_s_.has_value())
-        dt -= miss_tolerance_s_.value();
-
-    if (min_gap_length_s_.has_value() && dt < min_gap_length_s_.value()) // supress gaps smaller as min gap length
-        return 0;
-
-    if (max_gap_length_s_.has_value() && dt > max_gap_length_s_.value()) // supress gaps larger as max gap length
-        return 0;
-
-    if (dt <= update_interval_s_)
-        return 0;
-
-    return (uint32_t)std::floor(dt / update_interval_s_);
+                        counts.sum_uis,
+                        counts.misses);
 }
 
 /**

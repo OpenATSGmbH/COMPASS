@@ -1,0 +1,54 @@
+{
+    "description": "Valid until 16 s, invalid at 24 s, no update until 48 s: code gap 32 s (4 misses), detection gap 24 s (3).",
+    "params": {
+        "update_interval_s": 8.0
+    },
+    "periods": [
+        [
+            0,
+            80
+        ]
+    ],
+    "updates": [
+        [
+            0,
+            "valid"
+        ],
+        [
+            8,
+            "valid"
+        ],
+        [
+            16,
+            "valid"
+        ],
+        [
+            24,
+            "invalid"
+        ],
+        [
+            48,
+            "valid"
+        ],
+        [
+            56,
+            "valid"
+        ],
+        [
+            64,
+            "valid"
+        ],
+        [
+            72,
+            "valid"
+        ],
+        [
+            80,
+            "valid"
+        ]
+    ],
+    "expected": {
+        "sum_uis": 10,
+        "misses": 4
+    }
+}

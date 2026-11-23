@@ -1,0 +1,62 @@
+{
+    "description": "Reference has no code: updates count as valid (in dubio pro reo).",
+    "params": {
+        "update_interval_s": 8.0
+    },
+    "periods": [
+        [
+            0,
+            80
+        ]
+    ],
+    "updates": [
+        [
+            0,
+            "no_ref"
+        ],
+        [
+            8,
+            "no_ref"
+        ],
+        [
+            16,
+            "no_ref"
+        ],
+        [
+            24,
+            "no_ref"
+        ],
+        [
+            32,
+            "no_ref"
+        ],
+        [
+            40,
+            "no_ref"
+        ],
+        [
+            48,
+            "no_ref"
+        ],
+        [
+            56,
+            "no_ref"
+        ],
+        [
+            64,
+            "no_ref"
+        ],
+        [
+            72,
+            "no_ref"
+        ],
+        [
+            80,
+            "no_ref"
+        ]
+    ],
+    "expected": {
+        "sum_uis": 10,
+        "misses": 0
+    }
+}
