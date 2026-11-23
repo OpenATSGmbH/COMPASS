@@ -39,7 +39,7 @@ protected:
 private:
     CompassRoot& root_;
 
-    DECLARE_RTCOMMAND(import_view_points, "imports view points JSON file with given filename, e.g. '/data/file1.json'")
+    DECLARE_RTCOMMAND(import_view_points, "imports a view points JSON file with the given filename, e.g. '/data/file1.json'")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -176,7 +176,7 @@ protected:
 private:
     CompassRoot& root_;
 
-    DECLARE_RTCOMMAND(import_asterix_network, "imports ASTERIX from defined network UDP streams")
+    DECLARE_RTCOMMAND(import_asterix_network, "imports ASTERIX from the configured network UDP streams")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -191,7 +191,7 @@ protected:
 private:
     CompassRoot& root_;
 
-    DECLARE_RTCOMMAND(import_asterix_network_stop, "stops import ASTERIX from network")
+    DECLARE_RTCOMMAND(import_asterix_network_stop, "stops the ASTERIX network import")
     DECLARE_RTCOMMAND_NOOPTIONS
 };
 
@@ -242,7 +242,7 @@ protected:
 private:
     CompassRoot& root_;
 
-    DECLARE_RTCOMMAND(import_json, "imports JSON file with given filename, e.g. ’/data/file1.json’")
+    DECLARE_RTCOMMAND(import_json, "imports a JSON file with the given filename, e.g. '/data/file1.json'")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -271,7 +271,7 @@ protected:
 private:
     CompassRoot& root_;
 
-    DECLARE_RTCOMMAND(import_gps_trail, "imports gps trail NMEA with given filename, e.g. ’/data/file2.txt’")
+    DECLARE_RTCOMMAND(import_gps_trail, "imports a GPS trail NMEA file with the given filename, e.g. '/data/file2.txt'")
     DECLARE_RTCOMMAND_OPTIONS
 };
 

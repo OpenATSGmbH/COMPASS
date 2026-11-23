@@ -110,7 +110,7 @@ void RTCommandImportViewPointsFile::collectOptions_impl(OptionsDescription& opti
                                                         PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.json’");
+    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.json'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -160,7 +160,7 @@ rtcommand::IsValid  RTCommandImportASTERIXFile::valid() const
     CHECK_RTCOMMAND_INVALID_CONDITION(!filename_.size(), "Filename empty")
     CHECK_RTCOMMAND_INVALID_CONDITION(!Files::fileExists(filename_), "File '"+filename_+"' does not exist")
 
-    if (framing_.size()) // ’none’, ’ioss’, ’ioss_seq’, ’rff’
+    if (framing_.size()) // 'none', 'ioss', 'ioss_seq', 'rff'
     {
         CHECK_RTCOMMAND_INVALID_CONDITION(
             !(framing_ == "none" || framing_ == "ioss" || framing_ == "ioss_seq" || framing_ == "rff"),
@@ -323,22 +323,22 @@ void RTCommandImportASTERIXFile::collectOptions_impl(OptionsDescription& options
                                                      PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filename", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.json’");
+    ("filename", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.ff'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("framing,f", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given  ASTERIX framing, e.g. ’none’, ’ioss’, ’ioss_seq’, ’rff’");
+     "ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff'");
     ADD_RTCOMMAND_OPTIONS(options)
-    ("line,l", po::value<std::string>()->default_value(""), "imports ASTERIX file with given line e.g. ’L2’");
+    ("line,l", po::value<std::string>()->default_value(""), "line to import the data into, e.g. 'L2'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("date,d", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given date, in YYYY-MM-DD format e.g. ’2020-04-20’");
+     "date of the data, in YYYY-MM-DD format, e.g. '2020-04-20'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("time_offset,t", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ’");
+     "Time of Day offset, in HH:MM:SS.ZZZ format, e.g. '00:00:10.000'");
     ADD_RTCOMMAND_OPTIONS(options)("ignore_time_jumps,i", "ignore 24h time jumps");
     ADD_RTCOMMAND_OPTIONS(options)
     ("config,c", po::value<std::string>()->default_value(""),
-     "ASTERIX import parameters as json string, e.g. '{\"obfuscate_secondary_info\": true}'");
+     "ASTERIX import parameters as JSON string, e.g. '{\"obfuscate_secondary_info\": true}'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -370,7 +370,7 @@ rtcommand::IsValid RTCommandImportASTERIXFiles::valid() const
     for (const auto& filename : split_filenames_)
         CHECK_RTCOMMAND_INVALID_CONDITION(!Files::fileExists(filename), "File '"+filename+"' does not exist")
 
-    if (framing_.size()) // ’none’, ’ioss’, ’ioss_seq’, ’rff’
+    if (framing_.size()) // 'none', 'ioss', 'ioss_seq', 'rff'
     {
         CHECK_RTCOMMAND_INVALID_CONDITION(
             !(framing_ == "none" || framing_ == "ioss" || framing_ == "ioss_seq" || framing_ == "rff"),
@@ -553,19 +553,19 @@ void RTCommandImportASTERIXFiles::collectOptions_impl(OptionsDescription& option
     ("filenames", po::value<std::string>()->required(), "given filenames, e.g. '/data/file1.ff;/data/file2.ff'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("framing,f", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given  ASTERIX framing, e.g. ’none’, ’ioss’, ’ioss_seq’, ’rff’");
+     "ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff'");
     ADD_RTCOMMAND_OPTIONS(options)
-    ("line,l", po::value<std::string>()->default_value(""), "imports ASTERIX file with given line e.g. ’L2’");
+    ("line,l", po::value<std::string>()->default_value(""), "line to import the data into, e.g. 'L2'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("date,d", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given date, in YYYY-MM-DD format e.g. ’2020-04-20’");
+     "date of the data, in YYYY-MM-DD format, e.g. '2020-04-20'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("time_offset,t", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ’");
+     "Time of Day offset, in HH:MM:SS.ZZZ format, e.g. '00:00:10.000'");
     ADD_RTCOMMAND_OPTIONS(options)("ignore_time_jumps,i", "ignore 24h time jumps");
     ADD_RTCOMMAND_OPTIONS(options)
     ("config,c", po::value<std::string>()->default_value(""),
-     "ASTERIX import parameters as json string, e.g. '{\"obfuscate_secondary_info\": true}'");
+     "ASTERIX import parameters as JSON string, e.g. '{\"obfuscate_secondary_info\": true}'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filenames") // give position
 }
@@ -741,19 +741,19 @@ void RTCommandImportASTERIXPCAPFile::collectOptions_impl(OptionsDescription& opt
                                                          PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filename", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.json’");
+    ("filename", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.pcap'");
     ADD_RTCOMMAND_OPTIONS(options)
-    ("line,l", po::value<std::string>()->default_value(""), "imports ASTERIX file with given line e.g. ’L2’");
+    ("line,l", po::value<std::string>()->default_value(""), "line to import the data into, e.g. 'L2'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("date,d", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given date, in YYYY-MM-DD format e.g. ’2020-04-20’");
+     "date of the data, in YYYY-MM-DD format, e.g. '2020-04-20'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("time_offset,t", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ’");
+     "Time of Day offset, in HH:MM:SS.ZZZ format, e.g. '00:00:10.000'");
     ADD_RTCOMMAND_OPTIONS(options)("ignore_time_jumps,i", "ignore 24h time jumps");
     ADD_RTCOMMAND_OPTIONS(options)
     ("config,c", po::value<std::string>()->default_value(""),
-     "ASTERIX import parameters as json string, e.g. '{\"obfuscate_secondary_info\": true}'");
+     "ASTERIX import parameters as JSON string, e.g. '{\"obfuscate_secondary_info\": true}'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -931,19 +931,19 @@ void RTCommandImportASTERIXPCAPFiles::collectOptions_impl(OptionsDescription& op
                                                           PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filenames", po::value<std::string>()->required(), "given filenames, e.g. '/data/file1.ff;/data/file2.ff'");
+    ("filenames", po::value<std::string>()->required(), "given filenames, e.g. '/data/file1.pcap;/data/file2.pcap'");
     ADD_RTCOMMAND_OPTIONS(options)
-    ("line,l", po::value<std::string>()->default_value(""), "imports ASTERIX file with given line e.g. ’L2’");
+    ("line,l", po::value<std::string>()->default_value(""), "line to import the data into, e.g. 'L2'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("date,d", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given date, in YYYY-MM-DD format e.g. ’2020-04-20’");
+     "date of the data, in YYYY-MM-DD format, e.g. '2020-04-20'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("time_offset,t", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ’");
+     "Time of Day offset, in HH:MM:SS.ZZZ format, e.g. '00:00:10.000'");
     ADD_RTCOMMAND_OPTIONS(options)("ignore_time_jumps,i", "ignore 24h time jumps");
     ADD_RTCOMMAND_OPTIONS(options)
     ("config,c", po::value<std::string>()->default_value(""),
-     "ASTERIX import parameters as json string, e.g. '{\"obfuscate_secondary_info\": true}'");
+     "ASTERIX import parameters as JSON string, e.g. '{\"obfuscate_secondary_info\": true}'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filenames") // give position
 }
@@ -1157,7 +1157,7 @@ void RTCommandImportASTERIXNetworkStart::collectOptions_impl(OptionsDescription&
 {
     ADD_RTCOMMAND_OPTIONS(options)
     ("time_offset,t", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ’");
+     "Time of Day offset, in HH:MM:SS.ZZZ format, e.g. '00:00:10.000'");
 
     ADD_RTCOMMAND_OPTIONS(options)
     ("max_lines,m", po::value<int>()->default_value(-1),
@@ -1167,12 +1167,12 @@ void RTCommandImportASTERIXNetworkStart::collectOptions_impl(OptionsDescription&
 
     ADD_RTCOMMAND_OPTIONS(options)
     ("config,c", po::value<std::string>()->default_value(""),
-     "ASTERIX import parameters as json string, e.g. '{\"obfuscate_secondary_info\": true}'");
+     "ASTERIX import parameters as JSON string, e.g. '{\"obfuscate_secondary_info\": true}'");
 
     ADD_RTCOMMAND_OPTIONS(options)
     ("replay_file", po::value<std::string>()->default_value(""),
      "simulates live input by replaying the given IOSS-framed ASTERIX recordings via UDP "
-     "to a configured network line, e.g. '/data/file1.ff;/data/file2.ff'. the files are "
+     "to a configured network line, e.g. '/data/file1.ff;/data/file2.ff'. The files are "
      "replayed simultaneously keeping their relative timing, and record Time of Day values "
      "are aligned to the current time unless a time_offset is given explicitly");
 
@@ -1400,7 +1400,7 @@ void RTCommandImportJSONFile::collectOptions_impl(OptionsDescription& options,
                                                   PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.json’");
+    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.json'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -1540,16 +1540,16 @@ void RTCommandImportGPSTrail::collectOptions_impl(OptionsDescription& options,
                                                   PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.nmea'")
-    ("name,n", po::value<std::string>()->default_value(""), "optional data source name, e.g. ’GPS Trail'")
-    ("sac", po::value<int>()->default_value(-1), "optional sac, e.g. 255")
-    ("sic", po::value<int>()->default_value(-1), "optional sic, e.g. 0")
-    ("tod_offset,t", po::value<double>(), "optional time of day offset, e.g. -10000.0")
-    ("date,d", po::value<std::string>()->default_value(""), "optional override date, e.g. ’2025-01-01'")
-    ("mode3a,m", po::value<std::string>()->default_value(""), "optional mode3a code in octal, e.g. ")
-    ("address,a", po::value<std::string>()->default_value(""), "optional aircraft address in hex, e.g. ’0xffffff'")
-    ("id,i", po::value<std::string>()->default_value(""), "optional aircraft identification, e.g. ’ENTE'")
-    ("config,c", po::value<std::string>()->default_value(""), "configuration as json string, will override existing settings or other provided parameters");
+    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.nmea'")
+    ("name,n", po::value<std::string>()->default_value(""), "optional data source name, e.g. 'GPS Trail'")
+    ("sac", po::value<int>()->default_value(-1), "optional SAC, e.g. 255")
+    ("sic", po::value<int>()->default_value(-1), "optional SIC, e.g. 0")
+    ("tod_offset,t", po::value<double>(), "optional Time of Day offset in seconds, e.g. -10000.0")
+    ("date,d", po::value<std::string>()->default_value(""), "optional override date, e.g. '2025-01-01'")
+    ("mode3a,m", po::value<std::string>()->default_value(""), "optional Mode 3/A code in octal, e.g. '7000'")
+    ("address,a", po::value<std::string>()->default_value(""), "optional aircraft address in hex, e.g. '0xffffff'")
+    ("id,i", po::value<std::string>()->default_value(""), "optional aircraft identification, e.g. 'ENTE'")
+    ("config,c", po::value<std::string>()->default_value(""), "configuration as JSON string, will override existing settings or other provided parameters");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }

@@ -170,7 +170,7 @@ void RTCommandImportDataSourcesFile::collectOptions_impl(OptionsDescription& opt
                                           PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-        ("filename,f", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.json'");
+        ("filename,f", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.json'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -280,7 +280,7 @@ void RTCommandImportSectorsJSON::collectOptions_impl(OptionsDescription& options
                                           PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-        ("filename,f", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.json’");
+        ("filename,f", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.json'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -466,8 +466,8 @@ void RTCommandReconstructReferences::collectOptions_impl(OptionsDescription& opt
                                                          PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-        ("config,c", po::value<std::string>()->default_value(""), "reconstructor configuration as json string")
-        ("disable_sensors,d", po::value<std::string>()->default_value(""), "optional list of sensor names to disables, e.g. ‘GPS Trail 1;GPS Trail 2’");
+        ("config,c", po::value<std::string>()->default_value(""), "reconstructor configuration as JSON string")
+        ("disable_sensors,d", po::value<std::string>()->default_value(""), "optional list of sensor names to disable, separated by ';', e.g. 'GPS Trail 1;GPS Trail 2'");
 }
 
 void RTCommandReconstructReferences::assignVariables_impl(const VariablesMap& variables)
@@ -554,7 +554,7 @@ void RTCommandAnalyzeDataSource::collectOptions_impl(OptionsDescription& options
         ("ds_type,t", po::value<std::string>()->required(),
          "DSType to analyze (mandatory), e.g. 'MLAT'")
         ("config,c", po::value<std::string>()->default_value(""),
-         "analyze data source configuration as json string");
+         "analyze data source configuration as JSON string");
 }
 
 void RTCommandAnalyzeDataSource::assignVariables_impl(const VariablesMap& variables)
@@ -669,7 +669,7 @@ void RTCommandExportViewPointsReport::collectOptions_impl(OptionsDescription& op
                                           PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-        ("filename,f", po::value<std::string>()->required(), "given filename, e.g. ’/data/db2/report.tex'");
+        ("filename,f", po::value<std::string>()->required(), "given filename, e.g. '/data/db2/report.tex'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -745,7 +745,7 @@ void RTCommandExportReport::collectOptions_impl(OptionsDescription& options,
     ADD_RTCOMMAND_OPTIONS(options)
         ("report,r", po::value<std::string>()->required(), "report name, e.g. 'EUROCAE ED-87E Evaluation'")
         ("dir,f", po::value<std::string>()->default_value(""), "export directory, e.g. '/data/report2/'")
-        ("mode,m", po::value<std::string>()->required(), "export mode, i.e. 'DocX','JSON','Latex','PDF'");
+        ("mode,m", po::value<std::string>()->required(), "export mode, one of 'DocX', 'JSON', 'Latex', 'PDF'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "report")
     ADD_RTCOMMAND_POS_OPTION(positional, "dir"   )
@@ -1104,8 +1104,8 @@ void RTCommandReconfigure::collectOptions_impl(OptionsDescription& options,
                                                PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-        ("path", po::value<std::string>()->required(), "configurable to reconfigure")
-        ("config", po::value<std::string>()->required(), "json configuration to apply");
+        ("path", po::value<std::string>()->required(), "path or name of the configurable to reconfigure")
+        ("config", po::value<std::string>()->required(), "JSON configuration to apply");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "path")
     ADD_RTCOMMAND_POS_OPTION(positional, "config")

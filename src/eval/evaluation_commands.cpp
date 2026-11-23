@@ -108,7 +108,7 @@ void RTCommandEvaluate::collectOptions_impl(OptionsDescription& options,
                                           PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-        ("config,c", po::value<std::string>()->default_value(""), "evaluation configuration as json string")
+        ("config,c", po::value<std::string>()->default_value(""), "evaluation configuration as JSON string")
         ("result,r", po::value<std::string>()->default_value(""), "name under which the evaluation result will be stored, default name if empty")
         ("run_filter,f", "run evaluation filter before evaluation");
 }
@@ -188,7 +188,7 @@ void RTCommandFilterEvalTargets::collectOptions_impl(OptionsDescription& options
                                                      PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-        ("config,c", po::value<std::string>()->default_value(""), "evaluation target filter configuration as json string")
+        ("config,c", po::value<std::string>()->default_value(""), "evaluation target filter configuration as JSON string")
         ("use_all,a", "use all targets before the filter runs")
         ("no_run,n", "do not run the filter, only apply the configuration and use_all");
 }

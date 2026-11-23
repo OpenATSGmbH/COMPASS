@@ -40,7 +40,7 @@ protected:
 private:
     CompassRoot& root_;
 
-    DECLARE_RTCOMMAND(open_db, "opens existing database file with given filename, e.g. ’/data/file1.db’")
+    DECLARE_RTCOMMAND(open_db, "opens an existing database file with the given filename, e.g. '/data/file1.db'")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -81,7 +81,7 @@ protected:
 private:
     CompassRoot& root_;
 
-    DECLARE_RTCOMMAND(create_db, "creates and opens new database file with given filename, e.g. ’/data/file1.db’")
+    DECLARE_RTCOMMAND(create_db, "creates and opens a new database file with the given filename, e.g. '/data/file1.db'")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -97,7 +97,7 @@ protected:
 private:
     CompassRoot& root_;
 
-    DECLARE_RTCOMMAND(close_db, "closes a currently opened database")
+    DECLARE_RTCOMMAND(close_db, "closes the opened database")
     DECLARE_RTCOMMAND_OPTIONS
 };
 

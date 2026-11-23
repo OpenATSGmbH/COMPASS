@@ -68,7 +68,7 @@ protected:
 private:
     context::DBContextManager& ctx_man_;
 
-    DECLARE_RTCOMMAND(get_data_source_counts, "retrieves per data source per dbcontent per line inserted record counts")
+    DECLARE_RTCOMMAND(get_data_source_counts, "retrieves the inserted record counts per data source, DBContent and line")
     DECLARE_RTCOMMAND_NOOPTIONS
 };
 

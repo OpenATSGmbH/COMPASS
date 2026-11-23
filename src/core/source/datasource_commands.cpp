@@ -278,7 +278,7 @@ void RTCommandSetDataSources::collectOptions_impl(OptionsDescription &options,
                                                   PosOptionsDescription &positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-            ("data_sources", po::value<std::string>()->required(), "Data sources JSON definition");
+            ("data_sources", po::value<std::string>()->required(), "data sources JSON definition");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "data_sources")
 }
@@ -350,7 +350,7 @@ void RTCommandDeleteData::collectOptions_impl(OptionsDescription& options,
                                               PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-            ("delete_info", po::value<std::string>()->required(), "Delete info JSON array");
+            ("delete_info", po::value<std::string>()->required(), "JSON array of delete entries, each with optional 'dbcontent' and optional 'data_sources' (list of objects with 'ds_id' and optional 'line_ids'), a missing key means all");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "delete_info")
 }

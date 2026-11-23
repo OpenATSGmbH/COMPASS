@@ -183,43 +183,43 @@ Client::Client(int& argc,
     po::options_description desc("Allowed options");
     po::options_description hidden_options("Hidden options");
 
-    desc.add_options()("help", "produce help message")
-        ("reset,r", po::bool_switch(&config_and_data_copy_wanted_) ,"reset user configuration and data")
+    desc.add_options()("help", "shows this help message")
+        ("reset,r", po::bool_switch(&config_and_data_copy_wanted_) ,"resets the user configuration and data")
         ("override_cfg_path", po::value<std::string>(&override_cfg_path_),
          "overrides 'default' config subfolder to other value, e.g. 'org'")
-        ("expert_mode", po::bool_switch(&expert_mode_) ,"set expert mode")
+        ("expert_mode", po::bool_switch(&expert_mode_) ,"sets the expert mode")
         ("create_db", po::value<std::string>(&create_new_db_filename_),
-         "creates and opens new DuckDB database with given filename, e.g. '/data/file1.db'")
+         "creates and opens a new DuckDB database with the given filename, e.g. '/data/file1.db'")
         ("open_db", po::value<std::string>(&open_db_filename_),
-         "opens existing DuckDB database with given filename, e.g. '/data/file1.db'")
+         "opens an existing DuckDB database with the given filename, e.g. '/data/file1.db'")
         ("import_data_sources_file", po::value<std::string>(&import_data_sources_filename_),
-         "imports data sources JSON file with given filename, e.g. '/data/ds1.json'")
+         "imports a data sources JSON file with the given filename, e.g. '/data/ds1.json'")
         ("import_view_points", po::value<std::string>(&import_view_points_filename_),
-         "imports view points JSON file with given filename, e.g. '/data/file1.json'")
+         "imports a view points JSON file with the given filename, e.g. '/data/file1.json'")
         ("import_asterix_file", po::value<std::string>(&import_asterix_filename_),
-         "imports ASTERIX file with given filename, e.g. '/data/file1.ff'")
+         "imports an ASTERIX file with the given filename, e.g. '/data/file1.ff'")
         ("import_asterix_files", po::value<std::string>(&import_asterix_filenames_),
-         "imports multiple ASTERIX files with given filenames, e.g. '/data/file1.ff;/data/file2.ff'")
+         "imports multiple ASTERIX files with the given filenames, e.g. '/data/file1.ff;/data/file2.ff'")
         ("import_asterix_pcap_file", po::value<std::string>(&import_asterix_pcap_filename_),
-         "imports ASTERIX PCAP file with given filename, e.g. '/data/file1.pcap'")
+         "imports an ASTERIX PCAP file with the given filename, e.g. '/data/file1.pcap'")
         ("import_asterix_pcap_files", po::value<std::string>(&import_asterix_pcap_filenames_),
-         "imports multiple ASTERIX PCAP files with given filenames, e.g. '/data/file1.pcap;/data/file2.pcap'")
+         "imports multiple ASTERIX PCAP files with the given filenames, e.g. '/data/file1.pcap;/data/file2.pcap'")
         ("import_asterix_file_line", po::value<std::string>(&import_asterix_file_line_),
-         "imports ASTERIX file with given line, e.g. 'L2'")
+         "line to import the ASTERIX data into, e.g. 'L2'")
         ("import_asterix_date", po::value<std::string>(&import_asterix_date_),
-         "imports ASTERIX file with given date, in YYYY-MM-DD format e.g. '2020-04-20'")
+         "date of the imported ASTERIX data, in YYYY-MM-DD format, e.g. '2020-04-20'")
         ("import_asterix_file_time_offset", po::value<std::string>(&import_asterix_file_time_offset_),
-         "used time offset during ASTERIX file import Time of Day override, in HH:MM:SS.ZZZ'")
+         "Time of Day offset for the ASTERIX file import, in HH:MM:SS.ZZZ format, e.g. '00:00:10.000'")
         ("import_asterix_ignore_time_jumps", po::bool_switch(&import_asterix_ignore_time_jumps_),
-         "imports ASTERIX file ignoring 24h time jumps")
+         "ignores 24h time jumps during the ASTERIX file import")
         ("import_asterix_network", po::bool_switch(&import_asterix_network_),
-         "imports ASTERIX from defined network UDP streams")
+         "imports ASTERIX from the configured network UDP streams")
         ("import_asterix_network_time_offset", po::value<std::string>(&import_asterix_network_time_offset_),
-         "additive time offset during ASTERIX network import, in HH:MM:SS.ZZZ'")
+         "Time of Day offset added during the ASTERIX network import, in HH:MM:SS.ZZZ format, e.g. '00:00:10.000'")
         ("import_asterix_network_max_lines", po::value<int>(&import_asterix_network_max_lines_),
          "maximum number of lines per data source during ASTERIX network import, 1..4")
         ("import_asterix_network_ignore_future_ts", po::bool_switch(&import_asterix_network_ignore_future_ts_),
-         "keep target reports with future timestamps during ASTERIX network import, skips the future timestamp check")
+         "keeps target reports with future timestamps during the ASTERIX network import, skips the future timestamp check")
         ("import_asterix_network_replay_file", po::value<std::string>(&import_asterix_network_replay_file_),
          "simulates live input by replaying the given IOSS-framed ASTERIX recordings simultaneously "
          "via UDP to a configured network line, e.g. '/data/file1.ff;/data/file2.ff'")
@@ -228,56 +228,56 @@ Client::Client(int& argc,
         ("import_asterix_network_replay_line", po::value<std::string>(&import_asterix_network_replay_line_),
          "network line the replayed data is sent to, L1..L4")
         ("import_asterix_network_replay_stop_at_end", po::bool_switch(&import_asterix_network_replay_stop_at_end_),
-         "stop the ASTERIX network import when the replay file ends")
+         "stops the ASTERIX network import when the replay file ends")
         ("asterix_framing", po::value<std::string>(&asterix_framing),
-         "sets ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff'. if not set configuration value is used")
+         "sets ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff', the configured value is used if not set")
         ("asterix_decoder_cfg", po::value<std::string>(&asterix_decoder_cfg),
-         "sets ASTERIX decoder config using JSON string, e.g. ''{\"10\":{\"edition\":\"0.31\"}}''"
+         "sets the ASTERIX decoder configuration as JSON string, e.g. ''{\"10\":{\"edition\":\"0.31\"}}''"
          " (including one pair of single quotes)")
         ("import_asterix_parameters", po::value<std::string>(&import_asterix_parameters_),
          "ASTERIX import parameters as JSON string, e.g. ''{\"filter_modec_active\": true,\"filter_modec_max\": 50000.0,\"filter_modec_min\": -10000.0}'' (including one pair of single quotes)")
         ("import_json", po::value<std::string>(&import_json_filename_),
-         "imports JSON file with given filename, e.g. '/data/file1.json'")
+         "imports a JSON file with the given filename, e.g. '/data/file1.json'")
         ("import_gps_trail", po::value<std::string>(&import_gps_trail_filename_),
-         "imports gps trail NMEA with given filename, e.g. '/data/file2.txt'")
+         "imports a GPS trail NMEA file with the given filename, e.g. '/data/file2.txt'")
         ("import_gps_parameters", po::value<std::string>(&import_gps_parameters_),
-         "import GPS parameters as JSON string, e.g. ''{\"callsign\": \"ENTRPRSE\", \"ds_name\": \"GPS Trail\", \"ds_sac\": 0, \"ds_sic\": 0, \"mode_3a_code\": 961, \"set_callsign\": true, \"set_mode_3a_code\": true, \"set_target_address\": true, \"target_address\": 16702992, \"tod_offset\": 0.0}'' (including one pair of single quotes)")
+         "GPS trail import parameters as JSON string, e.g. ''{\"callsign\": \"ENTRPRSE\", \"ds_name\": \"GPS Trail\", \"ds_sac\": 0, \"ds_sic\": 0, \"mode_3a_code\": 961, \"set_callsign\": true, \"set_mode_3a_code\": true, \"set_target_address\": true, \"target_address\": 16702992, \"tod_offset\": 0.0}'' (including one pair of single quotes)")
         ("import_sectors_json", po::value<std::string>(&import_sectors_filename_),
-         "imports exported sectors JSON with given filename, e.g. '/data/sectors.json'")
+         "imports an exported sectors JSON file with the given filename, e.g. '/data/sectors.json'")
         ("list_contexts", po::bool_switch(&list_contexts_),
          "lists all available data contexts and exits")
         ("set_context", po::value<std::string>(&set_context_name_),
          "sets the active data context, e.g. 'Test'")
         ("calculate_radar_plot_positions", po::bool_switch(&calculate_radar_plot_positions_),
-         "calculate radar plot positions")
-        ("calculate_artas_tr_usage", po::bool_switch(&calculate_artas_tr_usage_), "associate target reports based on ARTAS usage")
+         "runs the Calculate Radar Plot Positions task")
+        ("calculate_artas_tr_usage", po::bool_switch(&calculate_artas_tr_usage_), "associates target reports based on the ARTAS track usage")
         ("reconstruct_references", po::bool_switch(&reconstruct_references_),
-         "reconstruct references from sensor and tracker data")
+         "runs the Reconstruct References task (references from sensor and tracker data)")
         ("reconstruct_references_cfg", po::value<std::string>(&reconstruct_references_cfg_),
          "reconstructor configuration as JSON string, e.g. ''{\"current_reconstructor_str\": \"Scoring + UMKalman\"}''")
         ("analyze_data_source", po::value<std::string>(&analyze_data_source_ds_type_),
-         "analyze data sources of the given DSType, 'MLAT', 'ADSB' or 'SMR'")
+         "analyzes the data sources of the given DSType, 'MLAT', 'ADSB' or 'SMR'")
         ("analyze_parameters", po::value<std::string>(&analyze_data_source_cfg_),
          "analyze data source parameters as JSON string, e.g. ''{\"line_id_tst\": 0, \"cell_size_m\": 50.0, \"inspector_settings\": {\"MLATCoverageInspector\": {\"pd_method_int\": 1}}}'' (including one pair of single quotes)")
-        ("load_data", po::bool_switch(&load_data_), "load data after start")
+        ("load_data", po::bool_switch(&load_data_), "loads the data into the Views after the start")
         ("export_view_points_report", po::value<std::string>(&export_view_points_report_filename_),
-         "export view points report after start with given filename, e.g. '/data/db2/report.tex")
-        ("evaluate", po::bool_switch(&evaluate_), "run evaluation")
+         "exports the view points report after the start to the given filename, e.g. '/data/db2/report.tex'")
+        ("evaluate", po::bool_switch(&evaluate_), "runs the evaluation")
         ("evaluation_parameters", po::value<std::string>(&evaluation_parameters_),
          "evaluation parameters as JSON string, e.g. ''{\"current_standard\": \"test\", \"dbcontent_name_ref\": \"CAT062\", \"dbcontent_name_tst\": \"CAT020\"}'' (including one pair of single quotes)")
-        ("evaluate_run_filter", po::bool_switch(&evaluate_run_filter_), "run evaluation filter before evaluation")
+        ("evaluate_run_filter", po::bool_switch(&evaluate_run_filter_), "runs the evaluation filter before the evaluation")
         
-        ("export_report", po::value<std::string>(&export_report_name_), "report name to export, e.g. 'EUROCAE ED-87E Evaluation', PDF per default")
+        ("export_report", po::value<std::string>(&export_report_name_), "name of the report to export, e.g. 'EUROCAE ED-87E Evaluation', as PDF if no export mode is given")
         ("export_report_directory", po::value<std::string>(&export_report_directory_), "export directory, e.g. '/data/report2/'")
-        ("export_report_mode", po::value<std::string>(&export_report_mode_), "export mode, i.e. 'DocX','JSON','Latex','PDF'")
+        ("export_report_mode", po::value<std::string>(&export_report_mode_), "export mode, one of 'DocX', 'JSON', 'Latex', 'PDF'")
         
-         ("no_cfg_save", po::bool_switch(&no_config_save_), "do not save configuration upon quitting")
-        ("open_rt_cmd_port", po::bool_switch(&open_rt_cmd_port_), "open runtime command port (default at 27960)")
-        ("enable_event_log", po::bool_switch(&enable_event_log_), "collect warnings and errors in the event log")
-        ("quit", po::bool_switch(&quit_), "quit after finishing all previous steps")
-        ("no_highdpi", "disable Qt high-DPI scaling (fixes double-sized UI on some systems)")
+         ("no_cfg_save", po::bool_switch(&no_config_save_), "does not save the configuration on quit")
+        ("open_rt_cmd_port", po::bool_switch(&open_rt_cmd_port_), "opens the runtime command port (default 27960)")
+        ("enable_event_log", po::bool_switch(&enable_event_log_), "collects warnings and errors in the event log")
+        ("quit", po::bool_switch(&quit_), "quits after all previous steps are finished")
+        ("no_highdpi", "disables Qt high-DPI scaling (fixes double-sized UI on some systems)")
         ("bundled_font", po::value<float>(&bundled_font_size_),
-         "use the bundled Ubuntu font at the given point size, e.g. '11' for reproducible screenshots")
+         "uses the bundled Ubuntu font at the given point size, e.g. '11' for reproducible screenshots")
         ;
 
     // add hidden options

@@ -82,7 +82,7 @@ protected:
 private:
     DBContentManager& dbcont_man_;
 
-    DECLARE_RTCOMMAND(get_utns, "retrieves UTNS with (optional) target descriptions")
+    DECLARE_RTCOMMAND(get_utns, "retrieves the UTNs with their target descriptions (optional)")
     DECLARE_RTCOMMAND_OPTIONS
 };
 

@@ -46,7 +46,7 @@ protected:
 private:
     EvaluationManager& eval_manager_;
 
-    DECLARE_RTCOMMAND(evaluate, "run evaluation, replies with the name of the stored report")
+    DECLARE_RTCOMMAND(evaluate, "runs the evaluation, replies with the name of the stored report")
     DECLARE_RTCOMMAND_OPTIONS
 };
 

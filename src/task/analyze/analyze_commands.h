@@ -46,6 +46,6 @@ private:
     TaskManager& task_manager_;
 
     DECLARE_RTCOMMAND(get_analyze_inspectors,
-                      "list inspectors registered on the analyze data source task for a given DSType")
+                      "lists the inspectors of the Analyze Data Source task for the given DSType")
     DECLARE_RTCOMMAND_OPTIONS
 };

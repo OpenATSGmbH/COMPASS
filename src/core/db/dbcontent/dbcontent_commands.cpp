@@ -225,9 +225,9 @@ void RTCommandGetData::collectOptions_impl(OptionsDescription &options,
 {
     ADD_RTCOMMAND_OPTIONS(options)
         ("dbcontent", po::value<std::string>()->required(), "DBContent to retrieve data for")
-        ("variables", po::value<std::string>()->required(), "variables to retrieve data for")
+        ("variables", po::value<std::string>()->required(), "variables to retrieve, separated by '|'")
         ("utn"      , po::value<unsigned int>()           , "UTN to retrieve data for"      )
-        ("max_size" , po::value<unsigned int>()           , "maximum number of results rows");
+        ("max_size" , po::value<unsigned int>()           , "maximum number of result rows");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "dbcontent")
     ADD_RTCOMMAND_POS_OPTION(positional, "variables")
@@ -302,7 +302,7 @@ void RTCommandGetUTNs::collectOptions_impl(OptionsDescription &options,
                                            PosOptionsDescription &positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-        ("nodesc", "Return a list of existing UTNs without target descriptions");
+        ("nodesc", "returns only the UTNs, without target descriptions");
 }
 
 /**

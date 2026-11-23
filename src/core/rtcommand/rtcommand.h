@@ -200,7 +200,7 @@ struct RTCommandEmpty : public RTCommand
 protected:
     virtual bool run_impl() override { return true; } 
 
-    DECLARE_RTCOMMAND(empty, "the empty command...does...nothing")
+    DECLARE_RTCOMMAND(empty, "does nothing, used for tests")
     DECLARE_RTCOMMAND_NOOPTIONS
 };
 
@@ -236,7 +236,7 @@ struct RTCommandHelp : public RTCommand
 protected:
     virtual bool run_impl() override;
 
-    DECLARE_RTCOMMAND(help, "the help command, generates help information")
+    DECLARE_RTCOMMAND(help, "lists all commands, or describes the given command, with --details also their options")
     DECLARE_RTCOMMAND_OPTIONS
 };
 

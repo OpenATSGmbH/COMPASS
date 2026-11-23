@@ -55,7 +55,7 @@ void RTCommandUIObject::collectOptions_impl(OptionsDescription& options,
 {
     //add basic command options here
     ADD_RTCOMMAND_OPTIONS(options)
-        ("object,o", po::value<std::string>()->default_value(""), "name of an ui element, object names separated by '.', e.g. 'mainwindow.window1.geographicview1.toolbar'");
+        ("object,o", po::value<std::string>()->default_value(""), "name of a UI element, object names separated by '.', e.g. 'mainwindow.window1.geographicview1.toolbar'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "object")
 }
@@ -127,7 +127,7 @@ void RTCommandUISet::collectOptions_impl(OptionsDescription& options,
     RTCommandUIInjection::collectOptions_impl(options, positional);
 
     ADD_RTCOMMAND_OPTIONS(options)
-        ("value,v", po::value<std::string>()->default_value(""), "new value to set, content depending on the addressed ui element");
+        ("value,v", po::value<std::string>()->default_value(""), "new value to set, content depending on the addressed UI element");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "value")
 }
@@ -321,10 +321,10 @@ void RTCommandUIGet::collectOptions_impl(OptionsDescription& options,
     RTCommandUIObject::collectOptions_impl(options, positional);
 
     ADD_RTCOMMAND_OPTIONS(options)
-        ("what,w", po::value<std::string>()->default_value(""), "which value to retrieve from the ui element (empty = default behavior)")
-        ("json", "if present, the result will be returned as a json struct instead of a string")
-        ("visible", "if present, the visibility of the ui element will be returned")
-        ("enabled", "if present, the enabled state of the ui element will be returned");
+        ("what,w", po::value<std::string>()->default_value(""), "which value to retrieve from the UI element (empty = default behavior)")
+        ("json", "if present, the result will be returned as a JSON struct instead of a string")
+        ("visible", "if present, the visibility of the UI element will be returned")
+        ("enabled", "if present, the enabled state of the UI element will be returned");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "what")
 }
@@ -400,8 +400,8 @@ void RTCommandUIGetJSON::collectOptions_impl(OptionsDescription& options,
     RTCommandUIObject::collectOptions_impl(options, positional);
 
     ADD_RTCOMMAND_OPTIONS(options)
-        ("what,w", po::value<std::string>()->default_value(""), "which value to retrieve from the ui element (empty = default behavior)")
-        ("visible", "if present, the visibility of the ui element will be returned");
+        ("what,w", po::value<std::string>()->default_value(""), "which value to retrieve from the UI element (empty = default behavior)")
+        ("visible", "if present, the visibility of the UI element will be returned");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "what")
 }
@@ -456,7 +456,7 @@ void RTCommandUIInject::collectOptions_impl(OptionsDescription& options,
     RTCommandUIInjection::collectOptions_impl(options, positional);
 
     ADD_RTCOMMAND_OPTIONS(options)
-        ("event,e", po::value<std::string>()->default_value(""), "event to inject into the ui element");
+        ("event,e", po::value<std::string>()->default_value(""), "event to inject into the UI element");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "event")
 }

@@ -43,7 +43,7 @@ protected:
 private:
     CompassRoot& root_;
 
-    DECLARE_RTCOMMAND(import_data_sources, "imports data sources JSON file with given filename, e.g. '/data/ds1.json'")
+    DECLARE_RTCOMMAND(import_data_sources, "imports a data sources JSON file with the given filename, e.g. '/data/ds1.json'")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -78,7 +78,7 @@ private:
     CompassRoot& root_;
 
     DECLARE_RTCOMMAND(import_sectors_json,
-                      "imports exported sectors JSON with given filename, e.g. ’/data/sectors.json’")
+                      "imports an exported sectors JSON file with the given filename, e.g. '/data/sectors.json'")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -93,7 +93,7 @@ protected:
 private:
     CompassRoot& root_;
 
-    DECLARE_RTCOMMAND(calculate_radar_plot_positions , "calculate radar plot positions")
+    DECLARE_RTCOMMAND(calculate_radar_plot_positions , "runs the Calculate Radar Plot Positions task")
     DECLARE_RTCOMMAND_NOOPTIONS
 };
 
@@ -109,7 +109,7 @@ protected:
 private:
     CompassRoot& root_;
 
-    DECLARE_RTCOMMAND(calculate_artas_tr_usage, "associate target reports based on ARTAS usage")
+    DECLARE_RTCOMMAND(calculate_artas_tr_usage, "associates target reports based on the ARTAS track usage")
     DECLARE_RTCOMMAND_NOOPTIONS
 };
 
@@ -127,7 +127,7 @@ protected:
 private:
     CompassRoot& root_;
 
-    DECLARE_RTCOMMAND(reconstruct_references, "reconstruct references")
+    DECLARE_RTCOMMAND(reconstruct_references, "runs the Reconstruct References task")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -145,7 +145,7 @@ protected:
 private:
     CompassRoot& root_;
 
-    DECLARE_RTCOMMAND(analyze_data_source, "analyze a data source by DSType (e.g. 'MLAT'), replies with the name of the stored report")
+    DECLARE_RTCOMMAND(analyze_data_source, "analyzes a data source by DSType (e.g. 'MLAT'), replies with the name of the stored report")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -160,7 +160,7 @@ protected:
 private:
     CompassRoot& root_;
 
-    DECLARE_RTCOMMAND(load_data, "load data")
+    DECLARE_RTCOMMAND(load_data, "loads the data from the database into the Views, as the Load button")
     DECLARE_RTCOMMAND_NOOPTIONS
 };
 
@@ -180,7 +180,7 @@ private:
     CompassRoot& root_;
 
     DECLARE_RTCOMMAND(export_view_points_report,
-                      "export view points report after with given filename, e.g. ’/data/db2/report.tex'")
+                      "exports the view points report to the given filename, e.g. '/data/db2/report.tex'")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -202,7 +202,7 @@ private:
     CompassRoot& root_;
 
     DECLARE_RTCOMMAND(export_report,
-                      "export existing report")
+                      "exports an existing report")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -244,7 +244,7 @@ protected:
 private:
     CompassRoot& root_;
 
-    DECLARE_RTCOMMAND(get_report, "obtain report json data")
+    DECLARE_RTCOMMAND(get_report, "retrieves report data as JSON: the section IDs of the report, or the given section")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -268,7 +268,7 @@ protected:
 private:
     CompassRoot& root_;
 
-    DECLARE_RTCOMMAND(get_report_figure, "obtain the stored view points of the figures in a report section")
+    DECLARE_RTCOMMAND(get_report_figure, "retrieves the stored view points of the figures in a report section")
     DECLARE_RTCOMMAND_OPTIONS
 };
 

@@ -45,6 +45,6 @@ protected:
 private:
     ViewManager& view_manager_;
 
-    DECLARE_RTCOMMAND(set_view_point, "sets defined view point")
+    DECLARE_RTCOMMAND(set_view_point, "sets the given view point")
     DECLARE_RTCOMMAND_OPTIONS
 };

@@ -98,8 +98,8 @@ void RTCommandOpenDB::collectOptions_impl(OptionsDescription& options,
                                           PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.db’")
-        ("assure_open", "Only opens the file if it is not already opened");
+    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.db'")
+        ("assure_open", "succeeds without action if the file is already opened");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -196,7 +196,7 @@ void RTCommandOpenRecentDB::collectOptions_impl(OptionsDescription& options,
                                                 PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filename,f", po::value<std::string>()->default_value(""), "filename listed in the recent file history, e.g. ’file1.db’")
+    ("filename,f", po::value<std::string>()->default_value(""), "filename listed in the recent file history, e.g. 'file1.db'")
         ("index,i", po::value<int>()->default_value(-1), "index in the recent file history");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
@@ -257,7 +257,7 @@ void RTCommandCreateDB::collectOptions_impl(OptionsDescription& options,
                                             PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.db’");
+    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.db'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
