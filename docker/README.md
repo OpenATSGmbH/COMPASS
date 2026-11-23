@@ -99,6 +99,6 @@ The Windows build is written to `build_win_deb12` in the repository:
 - `COMPASS_<version>_win64.zip` - the file to distribute (version from `CPACK_PACKAGE_VERSION_*` in
   `CMakeLists.txt`). It is not an installer: on Windows 10 or later, extract it anywhere and start
   `COMPASS_<version>_win64\compass_client.exe`.
-- `compass_deploy/` - the same content unpacked, plus the debug information (`*.debug`, not in the ZIP file).
-  Keep a copy for each released version: with it, gdb shows readable stacks of crashes (the `.debug` files must
-  lie next to the executables and DLLs).
+- `compass_deploy/` - the same content unpacked. The COMPASS executables, DLLs and plugins contain their
+  debug information (`-g1`: function names and line tables), so stack traces show function, file and line
+  (`src/util/stacktrace_format.h`). For full debugging with gdb, build with `-DCOMPASS_FULL_DEBUG_INFO=ON`.

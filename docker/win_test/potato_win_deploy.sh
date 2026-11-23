@@ -14,8 +14,8 @@
 #
 # Usage: potato_win_deploy.sh [package] [debug] [py] [config] [data <dataset> ...] [gdb]
 #   no arguments: package debug py config data at_20230422
-#   debug: compass_client.exe.debug and libcompass_*.dll.debug (debug information, not in the zip)
-#          into the package folder
+#   debug: nothing to do any more, the package contains the debug information (-g1: function names
+#          and line tables, see stacktrace_format.h), kept as a step for existing calls
 #   gdb:   one time - gdb with its DLLs and Python library, the crash script, the AeDebug
 #          registry key that starts the crash script on a crash, and Windows Error Reporting
 #          enabled without dialog (AeDebug needs it) - needs admin rights
@@ -66,9 +66,7 @@ while [ $i -lt ${#STEPS[@]} ]; do
             remote "tar -xf 'C:\\compass\\$NAME.zip' -C 'C:\\compass'; Remove-Item 'C:\\compass\\$NAME.zip'"
             ;;
         debug)
-            echo "debug information $NAME"
-            # compass_client.exe.debug and libcompass_*.dll.debug (one DLL per module)
-            scp -q -o BatchMode=yes "$COMPASS_DIR"/build_win_deb12/compass_deploy/*.debug "$HOST:C:/compass/$NAME/"
+            echo "debug information $NAME: in the package (-g1), nothing to copy"
             ;;
         gdb)
             echo "gdb"

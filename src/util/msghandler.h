@@ -24,6 +24,8 @@
 
 class LogStore;
 
+#include "stacktrace_format.h"
+
 #include <boost/stacktrace.hpp>
 #include <boost/thread/mutex.hpp>
 
@@ -32,7 +34,7 @@ class LogStore;
 #define GET_MACRO_0123(_1,_2,_3,NAME,...) NAME
 
 #define GET_COMPONENT(Component) (std::string(#Component).empty() ? FORMAT_FUNC_NAME() : #Component)
-#define GET_STACKTRACE() (std::stringstream() << boost::stacktrace::stacktrace()).str()
+#define GET_STACKTRACE() stacktrace_format::current()
 
 #define sloginf0() \
     msghandler::MessageHandler::getStream((loginf.getStream()), msghandler::Severity::Info, FORMAT_FUNC_NAME(), -1, __FILE__, __LINE__, {}, "", false)

@@ -20,6 +20,7 @@
 #include "crashbreadcrumbs.h"
 #include "cxa_throw_hook.h"
 #include "exit_hooks.h"
+#include "stacktrace_format.h"
 #include "global.h"
 #include "logger.h"
 #include "msghandler.h"
@@ -106,7 +107,7 @@ void terminateHandler()
     if (!last_throw_trace.empty())
     {
         std::cerr << "\nStacktrace at throw site:\n"
-                  << last_throw_trace << std::endl;
+                  << stacktrace_format::toString(last_throw_trace) << std::endl;
     }
 
     // try to print the exception message
@@ -127,7 +128,7 @@ void terminateHandler()
     }
 
     std::cerr << "\nStacktrace at terminate:\n"
-              << boost::stacktrace::stacktrace() << std::endl;
+              << stacktrace_format::current() << std::endl;
 
 #ifdef _WIN32
     // abort() unloads the DLLs on Windows (exit_hooks.h), not on Linux
@@ -165,7 +166,7 @@ static LONG WINAPI unhandledExceptionHandler(EXCEPTION_POINTERS* info)
 
     crash_breadcrumbs::dumpTo(fd);
 
-    std::cerr << "\nStacktrace at exception:\n" << boost::stacktrace::stacktrace() << std::endl;
+    std::cerr << "\nStacktrace at exception:\n" << stacktrace_format::current() << std::endl;
 
     return EXCEPTION_CONTINUE_SEARCH; // default handling: process terminates
 }
@@ -506,11 +507,11 @@ void signalHandler(int signum)
     if (!last_throw_trace.empty())
     {
         std::cerr << "\nStacktrace at throw site:\n"
-                  << last_throw_trace << std::endl;
+                  << stacktrace_format::toString(last_throw_trace) << std::endl;
     }
     else
         std::cerr << "\nStacktrace at signal:\n"
-                << boost::stacktrace::stacktrace() << std::endl;
+                << stacktrace_format::current() << std::endl;
 
 #ifdef _WIN32
     // the default action ends the process with ExitProcess, which unloads the DLLs (exit_hooks.h)
@@ -683,7 +684,7 @@ int main(int argc, char** argv)
         cerr << "main: caught exception '" << ex.what() << "'" << endl;
 
         if (!last_throw_trace.empty())
-            cerr << "\nStacktrace at throw site:\n" << last_throw_trace << endl;
+            cerr << "\nStacktrace at throw site:\n" << stacktrace_format::toString(last_throw_trace) << endl;
 
         return -1;
     }
@@ -692,7 +693,7 @@ int main(int argc, char** argv)
         cerr << "main: caught exception" << endl;
 
         if (!last_throw_trace.empty())
-            cerr << "\nStacktrace at throw site:\n" << last_throw_trace << endl;
+            cerr << "\nStacktrace at throw site:\n" << stacktrace_format::toString(last_throw_trace) << endl;
 
         return -1;
     }

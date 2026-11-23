@@ -32,6 +32,7 @@ target_sources(compass_util
         "${CMAKE_CURRENT_LIST_DIR}/msghandler.h"
         "${CMAKE_CURRENT_LIST_DIR}/traced_assert.h"
         "${CMAKE_CURRENT_LIST_DIR}/exit_hooks.h"
+        "${CMAKE_CURRENT_LIST_DIR}/stacktrace_format.h"
         "${CMAKE_CURRENT_LIST_DIR}/accuracy.h"
         "${CMAKE_CURRENT_LIST_DIR}/cartesian_product.h"
         "${CMAKE_CURRENT_LIST_DIR}/cartesian_product_score_based.h"
@@ -59,6 +60,7 @@ target_sources(compass_util
         "${CMAKE_CURRENT_LIST_DIR}/timewindow.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/traced_assert.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/exit_hooks.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/stacktrace_format.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/msghandler.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/accuracy.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/probability.cpp"
@@ -72,6 +74,13 @@ target_sources(compass_util
 target_include_directories(compass_util PUBLIC
     "${CMAKE_CURRENT_LIST_DIR}"
 )
+
+# libbacktrace: function, file and line of the stack trace frames (stacktrace_format.cpp), static with
+# position independent code in the Linux image, static in the Windows image
+find_path(BACKTRACE_INCLUDE_DIR backtrace.h REQUIRED)
+find_library(BACKTRACE_LIBRARY NAMES backtrace REQUIRED)
+target_include_directories(compass_util PRIVATE "${BACKTRACE_INCLUDE_DIR}")
+target_link_libraries(compass_util PRIVATE "${BACKTRACE_LIBRARY}")
 
 target_link_libraries(compass_util
     PUBLIC

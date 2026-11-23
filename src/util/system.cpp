@@ -18,6 +18,7 @@
 #include "system.h"
 
 #include "tbbhack.h"
+#include "stacktrace_format.h"
 
 #include <fstream>
 #include <limits>
@@ -226,22 +227,7 @@ int tbbCurrentThreadID()
 }
 
 void printBacktrace() {
-#ifdef _WIN32
-    std::cerr << "Stack trace:\n" << boost::stacktrace::stacktrace(0, 25);
-#else
-    const int MAX_FRAMES = 25;
-    void* buffer[MAX_FRAMES];
-    int frames = backtrace(buffer, MAX_FRAMES);
-    char** symbols = backtrace_symbols(buffer, frames);
-
-    std::cerr << "Stack trace (" << frames << " frames):\n";
-
-    for (int i = 0; i < frames; ++i) {
-        std::cerr << symbols[i] << '\n';
-    }
-
-    free(symbols);
-#endif
+    std::cerr << "Stack trace:\n" << stacktrace_format::current(25);
 }
 
 void trimMemory()

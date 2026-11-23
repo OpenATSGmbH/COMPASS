@@ -4,8 +4,9 @@
 # folder (paths as in win_build.sh), in the same layout as the AppImage (see Utils::System::appDir):
 #
 #   compass_client.exe, compass_handler.exe, *.dll   executables and runtime libraries
-#   compass_client.exe.debug, libcompass_*.dll.debug  debug information for gdb (not in the zip)
-#   plugins/compass_plugin_*.dll                      plugin modules (+ .debug)
+#   plugins/compass_plugin_*.dll                      plugin modules
+#   (the COMPASS executables, libraries and plugins keep their debug information: -g1, function
+#   names and line tables, for stack traces with function, file and line, see stacktrace_format.h)
 #   platforms/, styles/, imageformats/, iconengines/  Qt plugins
 #   lib/osgPlugins-<version>/                         OSG/osgEarth plugins
 #   compass/conf, compass/data, compass/presets       COMPASS configuration, data, view presets
@@ -47,39 +48,18 @@ done
 EXES="compass_client.exe compass_handler.exe"
 if [ $WITH_TESTS == 1 ]; then EXES="$EXES compass_tests.exe"; fi
 
-# executables without debug information (about 2 GB each with it). The debug information of
-# compass_client.exe goes to compass_client.exe.debug next to it, with a debug link, so gdb
-# finds it there. The MinGW debug sections are part of the PE image and would be mapped at
-# every start, so they cannot stay in the executable.
-OBJCOPY=x86_64-w64-mingw32-objcopy
+# executables, COMPASS libraries (one DLL per module, with the "lib" prefix of MinGW) and plugin
+# modules (in plugins/, where compass_client loads them) with their debug information (-g1)
 for exe in $EXES; do
-    if [ "$exe" == "compass_client.exe" ]; then
-        $OBJCOPY --only-keep-debug "$BUILD/bin/$exe" "$DEPLOY/$exe.debug"
-        $STRIP -o "$DEPLOY/$exe" "$BUILD/bin/$exe"
-        (cd "$DEPLOY" && $OBJCOPY --add-gnu-debuglink="$exe.debug" "$exe")
-    else
-        $STRIP -o "$DEPLOY/$exe" "$BUILD/bin/$exe"
-    fi
+    cp "$BUILD/bin/$exe" "$DEPLOY/$exe"
 done
 
-# COMPASS libraries (one DLL per module, with the "lib" prefix of MinGW): debug information
-# split off as for compass_client.exe, into <name>.dll.debug next to them
-for dll in "$BUILD"/bin/libcompass_*.dll; do
-    name=$(basename "$dll")
-    $OBJCOPY --only-keep-debug "$dll" "$DEPLOY/$name.debug"
-    $STRIP -o "$DEPLOY/$name" "$dll"
-    (cd "$DEPLOY" && $OBJCOPY --add-gnu-debuglink="$name.debug" "$name")
-done
+cp "$BUILD"/bin/libcompass_*.dll "$DEPLOY/"
 
-# plugin modules in plugins/, where compass_client loads them; debug information split off as for the
-# libraries
 mkdir -p "$DEPLOY/plugins"
 for dll in "$BUILD"/lib/compass_plugins/compass_plugin_*.dll; do
     [ -e "$dll" ] || continue # build without experimental source
-    name=$(basename "$dll")
-    $OBJCOPY --only-keep-debug "$dll" "$DEPLOY/plugins/$name.debug"
-    $STRIP -o "$DEPLOY/plugins/$name" "$dll"
-    (cd "$DEPLOY/plugins" && $OBJCOPY --add-gnu-debuglink="$name.debug" "$name")
+    cp "$dll" "$DEPLOY/plugins/"
 done
 
 # jASTERIX (shared, installed by win_build.sh)
@@ -120,8 +100,7 @@ if [ $ZIP == 1 ]; then
     rm -rf "$STAGE" "$OUT/$NAME.zip"
     mkdir -p "$STAGE"
     ln -s "$DEPLOY" "$STAGE/$NAME"
-    # without the debug file (about 2 GB), potato_win_deploy.sh copies it separately
-    (cd "$STAGE" && 7z a -tzip -mx=7 -l "-xr!*.debug" "$OUT/$NAME.zip" "$NAME" > /dev/null)
+    (cd "$STAGE" && 7z a -tzip -mx=7 -l "$OUT/$NAME.zip" "$NAME" > /dev/null)
     rm -rf "$STAGE"
     echo "zip file $OUT/$NAME.zip"
     ls -la "$OUT/$NAME.zip"

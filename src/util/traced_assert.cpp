@@ -2,6 +2,7 @@
 
 #include "msghandler.h"
 #include "exit_hooks.h"
+#include "stacktrace_format.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -16,8 +17,6 @@ namespace compass_assert
                                  const boost::stacktrace::stacktrace& stack_trace,
                                  bool expr_is_message)
     {
-        std::stringstream ss;
-        ss << stack_trace;
 
         //compile message
         msghandler::Message msg;
@@ -25,7 +24,7 @@ namespace compass_assert
         msg.content     = expr_is_message ? std::string(expr) : "Assertion '" + std::string(expr) + "' failed";
         msg.file        = std::string(file);
         msg.line        = (int)line;
-        msg.stack_trace = ss.str();
+        msg.stack_trace = stacktrace_format::toString(stack_trace);
         msg.user_level  = false;
 
         auto logToCerr = [ & ] ()

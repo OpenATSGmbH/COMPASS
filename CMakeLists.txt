@@ -8,6 +8,17 @@ cmake_minimum_required(VERSION 3.28)
 set ( CMAKE_BUILD_TYPE RelWithDebInfo ) #Debug RelWithDebInfo Release
 
 project( COMPASS )
+
+# Debug information: function names and line tables only (-g1). Enough for stack traces with function,
+# file and line (stacktrace_format.h), without types and local variables: smaller binaries, and the
+# closed-source plugins expose less. -DCOMPASS_FULL_DEBUG_INFO=ON for full debugging with gdb (-g).
+option(COMPASS_FULL_DEBUG_INFO "full debug information (-g) instead of -g1" OFF)
+if (NOT COMPASS_FULL_DEBUG_INFO)
+    foreach (lang C CXX)
+        string(REGEX REPLACE "(^| )-g( |$)" "\\1-g1\\2" CMAKE_${lang}_FLAGS_RELWITHDEBINFO "${CMAKE_${lang}_FLAGS_RELWITHDEBINFO}")
+    endforeach()
+endif()
+message("  Debug information: ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
 SET(CPACK_PACKAGE_VERSION_MAJOR "1")
 SET(CPACK_PACKAGE_VERSION_MINOR "1")
 SET(CPACK_PACKAGE_VERSION_PATCH "0")
