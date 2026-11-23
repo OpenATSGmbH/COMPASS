@@ -79,7 +79,7 @@ const std::map<std::string, std::string> Group::requirement_type_mapping_
     {"EvaluationRequirementPositionLatencyConfig", "Position Latency"},
     {"EvaluationRequirementADSBLatencyConfig", "ADS-B Latency"},
     {"EvaluationRequirementSpeedConfig", "Speed"},
-    {"EvaluationRequirementTrackAngleConfig", "TrackAngle"},
+    {"EvaluationRequirementTrackAngleConfig", "Track Angle"},
     {"EvaluationRequirementMoMLongAccConfig", "MoM Longitudinal Acceleration Correct"},
     {"EvaluationRequirementMoMTransAccConfig", "MoM Transversal Acceleration Correct"},
     {"EvaluationRequirementMoMVertRateConfig", "MoM Vertical Rate Correct"},

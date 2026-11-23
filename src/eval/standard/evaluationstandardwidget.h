@@ -68,8 +68,8 @@ public:
 
     void showRequirementWidget(QWidget* widget); // can be nullptr
 
-    void showMenu ();
-    void showGroupMenu (Group& group);
+    void showMenu (const QPoint& global_pos);
+    void showGroupMenu (Group& group, const QPoint& global_pos);
 
 protected:
     void showContextMenu(const QPoint& pos);

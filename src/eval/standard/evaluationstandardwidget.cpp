@@ -123,12 +123,15 @@ void EvaluationStandardWidget::showContextMenu(const QPoint& pos)
     EvaluationStandardTreeItem* item = static_cast<EvaluationStandardTreeItem*>(index.internalPointer());
     traced_assert(item);
 
+    //at the clicked item, not at the mouse cursor (e.g. a context menu opened with the keyboard)
+    const QPoint global_pos = tree_view_->viewport()->mapToGlobal(pos);
+
     if (dynamic_cast<EvaluationStandard*>(item))
     {
         loginf << "got standard";
 
         //EvaluationStandard* std = dynamic_cast<EvaluationStandard*>(item);
-        showMenu();
+        showMenu(global_pos);
 
     }
     else if (dynamic_cast<Group*>(item))
@@ -137,7 +140,7 @@ void EvaluationStandardWidget::showContextMenu(const QPoint& pos)
 
         Group* group = dynamic_cast<Group*>(item);
         traced_assert(group);
-        showGroupMenu(*group);
+        showGroupMenu(*group, global_pos);
     }
 }
 
@@ -349,12 +352,12 @@ void EvaluationStandardWidget::showRequirementWidget(QWidget* widget)
     requirements_widget_->setCurrentWidget(widget);
 }
 
-void EvaluationStandardWidget::showMenu ()
+void EvaluationStandardWidget::showMenu (const QPoint& global_pos)
 {
-    menu_.exec(QCursor::pos());
+    menu_.exec(global_pos);
 }
 
-void EvaluationStandardWidget::showGroupMenu (Group& group)
+void EvaluationStandardWidget::showGroupMenu (Group& group, const QPoint& global_pos)
 {
     QMenu menu;
 
@@ -366,10 +369,15 @@ void EvaluationStandardWidget::showGroupMenu (Group& group)
         // requirements
         QMenu* req_menu = menu.addMenu("Add Requirement");
 
+        //readable names in alphabetical order, the action adds the requirement of the class
+        std::map<std::string, std::string> class_by_name;
         for (auto& req_it : Group::requirement_type_mapping_)
+            class_by_name[ req_it.second ] = req_it.first;
+
+        for (auto& name_it : class_by_name)
         {
-            std::string class_name = req_it.first;
-            QAction* action = req_menu->addAction(class_name.c_str());
+            std::string class_name = name_it.second;
+            QAction* action = req_menu->addAction(name_it.first.c_str());
             connect(action, &QAction::triggered, [this,&group,class_name]() {this->addRequirementSlot(group, class_name);});
         }
 
@@ -401,7 +409,7 @@ void EvaluationStandardWidget::showGroupMenu (Group& group)
         }
     }
 
-    menu.exec(QCursor::pos());
+    menu.exec(global_pos);
 }
 
 
