@@ -41,7 +41,16 @@ public:
     typedef std::function<Vector(const Vector&)> ZFunc;
     typedef std::function<Matrix(const Matrix&)> RFunc;
 
-    KalmanFilter(size_t dim_x, 
+    // minimum time step in seconds used to generate the process noise Q:
+    // for near-duplicate measurements (dt in the millisecond range) the process noise of
+    // velocity and acceleration becomes so small against the position variance that the
+    // covariance can no longer be inverted in double precision (e.g. in the RTS smoother)
+    static constexpr double MinProcessNoiseDt = 0.1;
+
+    // returns the time step to use for the process noise Q
+    static double processNoiseDt(double dt) { return dt < MinProcessNoiseDt ? MinProcessNoiseDt : dt; }
+
+    KalmanFilter(size_t dim_x,
                  size_t dim_z);
     virtual ~KalmanFilter();
 

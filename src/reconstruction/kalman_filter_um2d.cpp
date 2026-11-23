@@ -69,7 +69,7 @@ void KalmanFilterUM2D::configureFMat(Matrix& F, double dt) const
 */
 void KalmanFilterUM2D::configureQMat(Matrix& Q, double dt, double Q_var) const
 {
-    KalmanFilter::continuousWhiteNoise(Q, 2, dt, Q_var, 2);
+    KalmanFilter::continuousWhiteNoise(Q, 2, KalmanFilter::processNoiseDt(dt), Q_var, 2);
 }
 
 /**
