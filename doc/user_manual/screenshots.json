@@ -9909,7 +9909,7 @@
                         "import_asterix_network_stop",
                         "sleep 5000"
                     ],
-                    "recipe_hint": "set_context, create_db, start import_asterix_network with UDP multicast replay of an ioss recording (as db_task_log_during_cleanup.py), uiset mainwindow.view_deck \"Geographic View 0\", wait for display, grab mainwindow.geographicview0",
+                    "recipe_hint": "set_context, create_db, start import_asterix_network with UDP multicast replay of an ioss recording (as system_live_close.py), uiset mainwindow.view_deck \"Geographic View 0\", wait for display, grab mainwindow.geographicview0",
                     "gaps": "none",
                     "volatile": "live mode: times, counts and the data shown change with every run",
                     "order": 9
