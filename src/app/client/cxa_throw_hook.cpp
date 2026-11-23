@@ -39,11 +39,13 @@
 #ifdef _WIN32
 
 // Windows: no hook yet (no dlsym(RTLD_NEXT) to reach the real __cxa_throw), the throw-site
-// stacktrace stays empty
+// stacktrace stays empty, the crash handlers report the stack at the handler instead
 
 #include "cxa_throw_hook.h"
 
-thread_local boost::stacktrace::stacktrace last_throw_trace;
+// empty until a throw: the default constructor of boost::stacktrace captures the current stack,
+// which the crash handlers would report as the throw site
+thread_local boost::stacktrace::stacktrace last_throw_trace(0, 0);
 
 #else
 
@@ -81,7 +83,9 @@ extern "C" void __cxa_throw(void* thrown_exception,
 
 #include "cxa_throw_hook.h"
 
-thread_local boost::stacktrace::stacktrace last_throw_trace;
+// empty until a throw: the default constructor of boost::stacktrace captures the current stack,
+// which the crash handlers would report as the throw site
+thread_local boost::stacktrace::stacktrace last_throw_trace(0, 0);
 
 // guard against recursion (boost::stacktrace itself may throw internally)
 static thread_local bool in_cxa_throw_hook = false;

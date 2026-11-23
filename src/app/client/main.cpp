@@ -538,14 +538,9 @@ void signalHandler(int signum)
 
     ss << "\nCaught signal: " << signum << std::endl;
 
-    if (!last_throw_trace.empty())
-    {
-        ss << "\nStacktrace at throw site:\n"
-           << stacktrace_format::toString(last_throw_trace) << std::endl;
-    }
-    else
-        ss << "\nStacktrace at signal:\n"
-           << stacktrace_format::current() << std::endl;
+    // not the last throw site: it belongs to an exception which was probably caught long ago
+    ss << "\nStacktrace at signal:\n"
+       << stacktrace_format::current() << std::endl;
 
     writeCrashText(ss.str());
 
