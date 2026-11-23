@@ -993,10 +993,9 @@ void Client::checkAndSetupConfig()
             string proj_path = string(appdir) + "/proj";
             qputenv("PROJ_DATA", proj_path.c_str());
 
-            // osgEarth loads arial.ttf as default font on Windows only, use the font the
-            // geographic view sets later anyway
-            string font_path = system_install_path_ + "data/fonts/times.ttf";
-            qputenv("OSGEARTH_DEFAULT_FONT", font_path.c_str());
+            // no OSGEARTH_DEFAULT_FONT here: osgEarth reads it when its DLL loads, before main. Its
+            // attempt with arial.ttf then fails ("Error reading file arial.ttf"), harmless: the
+            // geographic view sets times.ttf as default font (GeographicViewRenderWidget)
 #endif
         }
 #endif
