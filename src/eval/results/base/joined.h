@@ -142,10 +142,9 @@ protected:
     /// returns infos for the sector overview table
     virtual std::vector<SectorInfo> sectorInfos() const = 0;
 
-    /// true if the sector overview figure has data to show, else the sector section gets no overview figure.
-    /// By default true if the result defines overview annotations. A result whose annotations depend on its
-    /// data overrides it.
-    virtual bool hasOverviewData() const;
+    /// true if the sector overview figure has data to show, else the sector section gets no overview figure:
+    /// the result defines overview annotations and has a value (an update was assessed).
+    bool hasOverviewData() const;
 
     std::vector<std::shared_ptr<Single>> results_;
 

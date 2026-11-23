@@ -390,14 +390,6 @@ FeatureDefinitions JoinedGeneric::getCustomAnnotationDefinitions() const
 }
 
 /**
- * The grid of the overview shows the updates assessed as correct or false, the others have no value.
-*/
-bool JoinedGeneric::hasOverviewData() const
-{
-    return Joined::hasOverviewData() && num_correct_ + num_false_ > 0;
-}
-
-/**
  */
 void SingleGeneric::addReportTableColumns(ReportTableDefinition& def) const
 {

@@ -384,8 +384,9 @@ bool Joined::exportAsCSV() const
 */
 bool Joined::hasOverviewData() const
 {
-    //the overview holds the custom annotations only (createAnnotations())
-    return !getCustomAnnotationDefinitions().definitions().empty();
+    //the overview holds the custom annotations only (createAnnotations()). Their data are the details of the
+    //assessed updates, without any the result has no value and the grids and histograms stay empty.
+    return !getCustomAnnotationDefinitions().definitions().empty() && result().has_value();
 }
 
 /**

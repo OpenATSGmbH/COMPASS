@@ -149,7 +149,6 @@ protected:
     virtual std::vector<SectorInfo> sectorInfos() const override;
 
     virtual FeatureDefinitions getCustomAnnotationDefinitions() const override;
-    virtual bool hasOverviewData() const override;
 };
 
 }
