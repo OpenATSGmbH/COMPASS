@@ -262,18 +262,19 @@ RUN cd /opt/mingw/x86_64-w64-mingw32/include \
   && ln -s wininet.h WinInet.h \
   && ln -s shobjidl.h ShObjIdl.h
 
-# osgEarth 3.8 (tag), the world.tif test image is kept for tests
-RUN git clone --branch osgearth-3.8 --depth 1 --recurse-submodules https://github.com/gwaldron/osgearth.git osgearth-3.8 \
-  && git -C osgearth-3.8 rev-parse HEAD > /opt/win64/osgearth_commit.txt \
-  && mkdir -p /opt/win64/share/osgearth_test_data && cp osgearth-3.8/data/world.tif /opt/win64/share/osgearth_test_data/ \
+# osgEarth 3.8.1 (tag), the world.tif test image is kept for tests. LERC is optional and skipped
+# when its package is missing
+RUN git clone --branch osgearth-3.8.1 --depth 1 --recurse-submodules https://github.com/pelicanmapping/osgearth.git osgearth-3.8.1 \
+  && git -C osgearth-3.8.1 rev-parse HEAD > /opt/win64/osgearth_commit.txt \
+  && mkdir -p /opt/win64/share/osgearth_test_data && cp osgearth-3.8.1/data/world.tif /opt/win64/share/osgearth_test_data/ \
   && cmake ${WIN_CMAKE} -DOSGEARTH_BUILD_TESTS=OFF -DOSGEARTH_BUILD_EXAMPLES=OFF -DOSGEARTH_BUILD_DOCS=OFF \
      -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_LIBDIR=lib \
      -DCMAKE_CXX_FLAGS="-DWIN32 -D_WIN32_WINNT=0x0A00" -DCMAKE_C_FLAGS="-DWIN32 -D_WIN32_WINNT=0x0A00" \
      -DCMAKE_CXX_STANDARD_LIBRARIES="-lkernel32 -luser32 -lgdi32 -lwinspool -lshell32 -lole32 -loleaut32 -luuid -lcomdlg32 -ladvapi32 -ldbghelp" \
      -DSQLite3_INCLUDE_DIR=/opt/win64/include -DSQLite3_LIBRARY=/opt/win64/lib/libsqlite3.dll.a \
-     -S osgearth-3.8 -B osgearth-build \
+     -S osgearth-3.8.1 -B osgearth-build \
   && cmake --build osgearth-build && cmake --install osgearth-build \
-  && rm -rf osgearth-3.8 osgearth-build
+  && rm -rf osgearth-3.8.1 osgearth-build
 
 # Qt5 host tools (moc, uic, rcc) for the cross build
 COPY qt5_host_tools.cmake /opt/qt5_host_tools.cmake

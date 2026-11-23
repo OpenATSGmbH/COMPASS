@@ -159,11 +159,13 @@ RUN if [ ! -e /usr/lib64/cmake/libzip ]; then \
     echo ')' >> /usr/lib64/cmake/libzip/libzip-config.cmake; \
     fi
 
-RUN git clone --branch osgearth-3.8 --depth 1 --recurse-submodules https://github.com/gwaldron/osgearth.git osgearth-3.8
-RUN mkdir osgearth-3.8/build
-RUN cd osgearth-3.8/build && cmake -DOSGEARTH_BUILD_TESTS=OFF -DOSGEARTH_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release ..
-RUN cd osgearth-3.8/build && make -j$(nproc)
-RUN cd osgearth-3.8/build && make install
+# osgEarth 3.8.1 (tag), LERC and the sqlite3 cache plugin are optional and skipped when their
+# packages are missing
+RUN git clone --branch osgearth-3.8.1 --depth 1 --recurse-submodules https://github.com/pelicanmapping/osgearth.git osgearth-3.8.1
+RUN mkdir osgearth-3.8.1/build
+RUN cd osgearth-3.8.1/build && cmake -DOSGEARTH_BUILD_TESTS=OFF -DOSGEARTH_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release ..
+RUN cd osgearth-3.8.1/build && make -j$(nproc)
+RUN cd osgearth-3.8.1/build && make install
 
 # bump when hpuhr/NemaTode master changes, to invalidate the cached layers below
 ARG NEMATODE_REV=11650f3
