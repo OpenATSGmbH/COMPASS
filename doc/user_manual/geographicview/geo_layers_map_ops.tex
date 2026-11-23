@@ -24,8 +24,6 @@ The following maps are commonly available:
  \item openstreetmap.earth*
  \item openstreetmap\_dark.earth*
  \item openstreetmap\_german.earth*
- \item readymap.earth
- \item readymap-detailed.earth
 \end{itemize}
  \ \\
  
@@ -34,15 +32,15 @@ The following maps are commonly available:
  \textbf{Note}: If a map is selected which only contains either a 2D or 3D version, 
  the 'Switch Map Dimensions' button \includegraphics[width=0.5cm,frame]{../../data/icons/2d.png}/\includegraphics[width=0.5cm,frame]{../../data/icons/3d.png} in the toolbar will be deactivated.\\
  
-The map loading and display is based on the geoEarth library (\url{http://geoearth.org/}), as are the map file definitions.  \\
+The map loading and display is based on the osgEarth library (\url{https://github.com/gwaldron/osgearth}), as are the map file definitions.  \\
 
-The map which can be set using this dialog is simply a file list from the folder '\textasciitilde/.compass/data/maps'. So, changes can be made to the supplied ones or custom user maps can be added to this folder. \\
+The map which can be set using this dialog is simply a file list from the folder \texttt{\textasciitilde/.compass/<version>/data/maps}. So, changes can be made to the supplied ones or custom user maps can be added to this folder. \\
 Please refer to section \nameref{sec:appendix_maps} for further details.
 
 \newpage
 \paragraph{ArcGIS Map}
 
-As supplied in the geoEarth example files, this map data is obtained from ArcGIS Online (\url{https://doc.arcgis.com/en/arcgis-online/reference/what-is-agol.htm}). It shows satellite imagery, supplied with elevation data from ReadyMap. 
+As supplied in the osgEarth example files, this map data is obtained from ArcGIS Online (\url{https://doc.arcgis.com/en/arcgis-online/reference/what-is-agol.htm}). It shows satellite imagery (World Imagery), without elevation data. 
 
 \begin{figure}[H]
     \centering
@@ -118,28 +116,5 @@ This very useful map shows map data from \url{https://www.openstreetmap.de/}.
 \end{figure}
 
 It is possible to zoom in to a very high level of detail, to even inspect airport layouts.
-
-\newpage
-\paragraph{ReadyMap \& ReadyMap Detailed}
-
-This map also shows satellite data, from \url{http://web.pelicanmapping.com/readymap-tiles/}.
-
-\begin{figure}[H]
-    \centering
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm,frame]{figures/geoview_ready.png}
-  \caption{Geographic View ReadyMap}
-\end{figure}
-
-This detailed version shows the same data as ReadyMap, but to a higher detail level. \\
-
-Please note that this map includes an elevation layer, so mountains are modeled in 3D.
-
-\begin{figure}[H]
-    \centering
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm]{figures/geoview_readymap_elav.png}
-  \caption{Geographic View ReadyMap detailed elevation}
-\end{figure}
 
 

@@ -9065,64 +9065,6 @@
                     "volatile": "none"
                 },
                 {
-                    "file": "geographicview/figures/geoview_ready.png",
-                    "dirty": true,
-                    "used": true,
-                    "used_in": [
-                        "geographicview/geo_layers_map_ops.tex:130"
-                    ],
-                    "shows": "Geographic View 3D globe with ReadyMap satellite imagery, old ATSDB v0.5.0 UI",
-                    "category": "view",
-                    "automation": "manual",
-                    "database": null,
-                    "requires": "none",
-                    "filters": null,
-                    "flight_deck": false,
-                    "frame": false,
-                    "steps": null,
-                    "recipe_hint": "none: ReadyMap .earth files are not shipped any more (data/maps has arcgis.earth instead), manual section needs an update",
-                    "gaps": "map no longer available",
-                    "volatile": "GPU-rendered map and data pixels (llvmpipe under Xvfb), overlay text 'OpenATS COMPASS <version> <license>', Begin/End/Loaded counts depend on dataset, OSM map tiles loaded from the network (content and load state change)"
-                },
-                {
-                    "file": "geographicview/figures/geoview_ready_detail.png",
-                    "dirty": false,
-                    "used": false,
-                    "used_in": [],
-                    "shows": "Very old Geographic View (ATSDB v0.1.0) with ReadyMap globe",
-                    "category": "view",
-                    "automation": "manual",
-                    "database": null,
-                    "requires": "none",
-                    "filters": null,
-                    "flight_deck": false,
-                    "frame": false,
-                    "steps": null,
-                    "recipe_hint": "not referenced, skip",
-                    "gaps": "none",
-                    "volatile": "none"
-                },
-                {
-                    "file": "geographicview/figures/geoview_readymap_elav.png",
-                    "dirty": true,
-                    "used": true,
-                    "used_in": [
-                        "geographicview/geo_layers_map_ops.tex:141"
-                    ],
-                    "shows": "Geographic View tilted 3D ReadyMap with elevation (Alps), old ATSDB v0.5.0 UI",
-                    "category": "view",
-                    "automation": "manual",
-                    "database": null,
-                    "requires": "none",
-                    "filters": null,
-                    "flight_deck": false,
-                    "frame": false,
-                    "steps": null,
-                    "recipe_hint": "none: ReadyMap .earth files are not shipped any more (data/maps has arcgis, minimal, openstreetmap*), manual section needs an update",
-                    "gaps": "map no longer available; no command to set camera pitch/heading for a tilted 3D view (set_view_point sets position and window only, verified in geographicviewrenderwidget.cpp:3175; middle-button drag via mouse(middle,rect,...) unverified)",
-                    "volatile": "GPU-rendered map and data pixels (llvmpipe under Xvfb), overlay text 'OpenATS COMPASS <version> <license>', Begin/End/Loaded counts depend on dataset, OSM map tiles loaded from the network (content and load state change)"
-                },
-                {
                     "file": "geographicview/figures/geoview_render_order.png",
                     "dirty": false,
                     "used": true,
@@ -10372,26 +10314,6 @@
                     "recipe_hint": "as GEOview_qgis_osm1 with the combined .earth file",
                     "gaps": "tex references 'geoview_qgis_osm2.png' (lowercase), file is 'GEOview_qgis_osm2.png' (case differs); Geographic View is a plugin",
                     "volatile": "GPU-rendered OSG pixels, tile content, version text in overlay"
-                },
-                {
-                    "file": "appendix/figures/geoview_maps_config.png",
-                    "dirty": false,
-                    "used": true,
-                    "used_in": [
-                        "appendix/appendix_maps.tex:8"
-                    ],
-                    "shows": "GNOME file manager showing the maps folder ~/.atsdb/data/maps with .earth files",
-                    "category": "external",
-                    "automation": "manual",
-                    "database": null,
-                    "requires": "none",
-                    "filters": null,
-                    "flight_deck": true,
-                    "frame": true,
-                    "steps": null,
-                    "recipe_hint": "none (OS file manager)",
-                    "gaps": "not COMPASS; also shows old .atsdb path",
-                    "volatile": "desktop theme, folder content"
                 },
                 {
                     "file": "appendix/figures/qgis_osm1.png",
