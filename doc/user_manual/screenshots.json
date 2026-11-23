@@ -6734,7 +6734,7 @@
                         "wait popup",
                         "uiinject popup \"openmenu(Add Requirement)\"",
                         "sleep 800",
-                        "shot dialog+popup1+popup"
+                        "grabparts dialog+popup1+popup"
                     ],
                     "recipe_hint": "open DB, uiset mainwindow.mainmenu \"Process|Evaluate\" --async, uiset dialog.tab_widget \"Standard\", uiinject <standard tree> \"contextmenu(Tracker Comparison|Mandatory)\", open submenu \"Add Requirement\" without triggering, grab dialog + popup + submenu and compose",
                     "gaps": "none",
