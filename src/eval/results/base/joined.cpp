@@ -18,6 +18,7 @@
 #include "results/base/joined.h"
 #include "results/base/single.h"
 #include "results/base/result_t.h"
+#include "results/base/featuredefinition.h"
 
 #include "report/sectioncontenttable.h"
 #include "report/section.h"
@@ -191,7 +192,8 @@ void Joined::addSectorToOverviewTable(std::shared_ptr<ResultReport::Report> repo
 
     auto ref = getRequirementSectionID(); // this gives the associated requirement section link 
                                           // needed to retrieve the correct section from the report
-    auto fig = SectorOverviewID;          // overview figure added in addSectorDetailsToReport()
+    auto fig = hasOverviewData() ? SectorOverviewID     // overview figure added in addSectorDetailsToReport()
+                                 : std::string();       // no overview figure, no link
 
     if (must_hold_for_any_target.has_value() && must_hold_for_any_target.value())
     {
@@ -337,8 +339,9 @@ void Joined::addSectorDetailsToReport(std::shared_ptr<ResultReport::Report> repo
     for (const auto& info : infos_condition)
         sec_det_table.addRow({ info.info_name, info.info_comment, info.info_value });
 
-    // figure
-    addOverview(sector_section);
+    // figure, left out if it would show nothing
+    if (hasOverviewData())
+        addOverview(sector_section);
 }
 
 /**
@@ -375,6 +378,14 @@ bool Joined::exportAsCSV() const
     }
 
     return true;
+}
+
+/**
+*/
+bool Joined::hasOverviewData() const
+{
+    //the overview holds the custom annotations only (createAnnotations())
+    return !getCustomAnnotationDefinitions().definitions().empty();
 }
 
 /**
