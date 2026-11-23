@@ -71,7 +71,8 @@ class ViewContainer : public QObject, public Configurable
     /// true if the View Deck shows only its icon bar, so no view is visible
     bool viewDeckCollapsed() const;
 
-    void resetToStartupConfiguration();
+    /// Replaces the views by the views of the given container config entry.
+    void resetToConfig(const nlohmann::json& container_config);
 
     /// creation sequence number, a higher number means created later
     std::uint64_t created() const { return creation_index_; }

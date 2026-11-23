@@ -33,6 +33,8 @@
 #include "rtcommand_helpers.h"
 #include "viewwidget.h"
 
+#include "json.hpp"
+
 #include <QInputDialog>
 #include <QMenu>
 
@@ -287,16 +289,26 @@ void ViewContainer::showAddViewMenuSlot()
     menu.exec(QCursor::pos());
 }
 
-void ViewContainer::resetToStartupConfiguration()
+void ViewContainer::resetToConfig(const nlohmann::json& container_config)
 {
-    //remove views
     while (!views_.empty())
+        views_.pop_back(); // removes the view config entry
+
+    if (container_config.contains(Configuration::SubConfigSection))
     {
-        views_.rbegin()->get()->setTmpDisableRemoveConfigOnDelete(true);
-        views_.pop_back();
+        for (const auto& view_config : container_config.at(Configuration::SubConfigSection))
+        {
+            const auto& class_name    = Configuration::getClassName(view_config);
+            const auto& instance_name = Configuration::getInstanceName(view_config);
+
+            // the entry of a skipped view (plugin not present) is kept unchanged
+            if (getConfiguration().hasSubConfiguration(class_name, instance_name))
+                continue;
+
+            addNewSubConfiguration(class_name, instance_name) = view_config;
+        }
     }
 
-    //recreate views from config
     createSubConfigurables();
 }
 

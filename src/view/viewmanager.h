@@ -270,6 +270,7 @@ class COMPASS_VIEW_API ViewManager : public QObject, public Configurable, public
     // used for the duration of a report export - see LoadController
     void setLoadDialogsSuppressed(bool suppressed);
 
+    /// Restores the views and view windows of the application start, closes the added ones.
     void resetToStartupConfiguration();
 
     bool isInitialized() const;
@@ -378,6 +379,11 @@ protected:
 
     std::map<std::string, ViewContainer*> containers_;
     std::map<std::string, ViewContainerWidget*> container_widgets_;
+
+    // copies of the ViewContainer and ViewContainerWidget config entries at the start, with their
+    // nested view configs: a created view takes the nested config out of its entry
+    std::vector<nlohmann::json> startup_container_configs_;
+
     std::map<std::string, View*> views_;
 
     std::shared_ptr<DBContentDataSet> current_source_; // subscribed data source

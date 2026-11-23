@@ -238,6 +238,21 @@ void ViewManager::init(ViewDeck* main_view_deck)
 
     initialized_ = true;
 
+    const auto& storage = getConfiguration().subConfigStorage();
+
+    for (const std::string class_name : { "ViewContainer", "ViewContainerWidget" })
+    {
+        auto it = storage.find(class_name);
+        if (it == storage.end())
+            continue;
+
+        for (const auto& entry : it->second)
+        {
+            startup_container_configs_.push_back(*entry);
+            Configuration::convertSubConfigsFormat(startup_container_configs_.back());
+        }
+    }
+
     createSubConfigurables();
     updateFeatures();
 }
@@ -918,45 +933,42 @@ void ViewManager::resetToStartupConfiguration()
 
     enableStoredReadSets();
 
-    // logdbg << "deleting container widgets";
-    // while (container_widgets_.size())
-    // {
-    //     auto first_it = container_widgets_.begin();
-    //     logdbg << "deleting container widget " << first_it->first;
+    // deleted directly: deleteLater() would delete a recreated window of the same name
+    while (!container_widgets_.empty())
+    {
+        auto first_it = container_widgets_.begin();
+        logdbg << "deleting container widget " << first_it->first;
+        delete first_it->second; // removes its view container and its config entry
+        container_widgets_.erase(first_it);
+    }
 
-    //     first_it->second->setTmpDisableRemoveConfigOnDelete(true);
-    //     delete first_it->second; // deletes the respective view container, which removes itself from this
+    auto startupConfig = [ & ] (const std::string& class_name, const std::string& instance_name) -> const nlohmann::json*
+    {
+        for (const auto& config : startup_container_configs_)
+            if (Configuration::getClassName(config) == class_name
+                && Configuration::getInstanceName(config) == instance_name)
+                return &config;
+        return nullptr;
+    };
 
-    //     container_widgets_.erase(first_it);
-    // }
-
-    // logdbg << "deleting containers size " << containers_.size();
-    // while (containers_.size())
-    // {
-    //     auto first_it = containers_.begin();
-    //     logdbg << "deleting container " << first_it->first;
-
-    //     first_it->second->setTmpDisableRemoveConfigOnDelete(true);
-    //     delete first_it->second;
-    //     //containers_.erase(first_it);  // TODO CAUSES SEGFAULT, FIX THIS
-    // }
-
-    logdbg << "resettings containers";
-
-    for (auto& cw : container_widgets_)
-        cw.second->setVisible(false);
-
+    // only the main containers are left, a container created after the start gets no views
     for (auto& c : containers_)
-        c.second->resetToStartupConfiguration();
+    {
+        logdbg << "resetting container " << c.first;
+        const nlohmann::json* config = startupConfig(c.second->className(), c.first);
+        c.second->resetToConfig(config ? *config : nlohmann::json::object());
+    }
 
-    for (auto& cw : container_widgets_)
-        cw.second->setVisible(true);
+    for (const auto& config : startup_container_configs_)
+    {
+        if (Configuration::getClassName(config) != "ViewContainerWidget")
+            continue;
 
-    //logdbg << "view points generator";
-    //view_points_report_gen_->setTmpDisableRemoveConfigOnDelete(true);
-    //view_points_report_gen_ = nullptr;
-
-    //createSubConfigurables();
+        logdbg << "creating container widget " << Configuration::getInstanceName(config);
+        auto& entry = addNewSubConfiguration("ViewContainerWidget", Configuration::getInstanceName(config));
+        entry = config;
+        createSubConfigurable(entry);
+    }
 
     disableStoredReadSets();
 }
