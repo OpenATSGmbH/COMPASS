@@ -15,6 +15,8 @@
 #include <osgDB/Registry>
 #endif
 
+#include <osgEarth/weejobs.h>
+
 #include <QApplication>
 #include <QLocale>
 #include <clocale>
@@ -64,5 +66,12 @@ int main(int argc, char* argv[])
     extra_analysis_plugin.initCore();
 #endif
 
-    return Catch::Session().run(argc, argv);
+    const int result = Catch::Session().run(argc, argv);
+
+    // stop the osgEarth job pool (started by tests with osgEarth::initialize()) while its threads
+    // still run: on Windows the threads are killed before the static destructors, and the
+    // destructor of the pool then waits for them forever (the process does not exit)
+    jobs::shutdown();
+
+    return result;
 }

@@ -60,6 +60,11 @@ public:
     /// renders the lon/lat area to an image of the size, the cancel function stops between and in tile requests
     Result render(const QRectF& lonlat, const QSize& size, const CancelFunc& cancel) const;
 
+    /// stops the osgEarth job pool if a tile source initialized osgEarth. Called at shutdown after all
+    /// views are closed: on Windows the pool threads are killed before the static destructors, and
+    /// the destructor of the pool then waits for them forever (the process does not exit).
+    static void shutdownOsgEarth();
+
 private:
     struct Impl;
 

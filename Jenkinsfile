@@ -355,10 +355,12 @@ pipeline {
                     // compass_tests.exe runs from a deployment with all DLLs and Qt plugins.
                     // It finds the repository through COMPASS_SOURCE_DIR, the Linux path of the
                     // build (/workspace/compass), which Wine resolves on drive Z:.
+                    // The shell timeout fails the Windows build on a hang (e.g. a process that does
+                    // not exit), a Jenkins timeout would abort the whole build (osStep).
                     osStep(WIN_OS) {
                         sh dockerRun('winunittests', WIN_IMAGE,
                                      '--user $(id -u):$(id -g) -v $(pwd):/workspace/compass -w /workspace/compass/docker',
-                                     "set -e; export WORKSPACE_BASE=/workspace; ./win_deploy.sh --with_tests; ${wineInit()}; xvfb-run -a wine /workspace/compass/build_${WIN_OS}/compass_deploy/compass_tests.exe")
+                                     "set -e; export WORKSPACE_BASE=/workspace; ./win_deploy.sh --with_tests; ${wineInit()}; xvfb-run -a timeout -k 30s 20m wine /workspace/compass/build_${WIN_OS}/compass_deploy/compass_tests.exe")
                     }
                 }
             }
