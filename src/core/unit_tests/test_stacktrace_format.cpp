@@ -18,6 +18,8 @@
 #include "catch.hpp"
 #include "stacktrace_format.h"
 
+#include <cstdint>
+#include <cstring>
 #include <string>
 #include <utility>
 
@@ -30,6 +32,23 @@ namespace stacktrace_test
         std::string trace = stacktrace_format::current(1);
 
         return { trace, line };
+    }
+
+    /// address of the code of stacktrace_format::current in compass_util
+    const void* currentFunctionAddress()
+    {
+        auto code = (const unsigned char*)(void*)&stacktrace_format::current;
+
+#ifdef _WIN32
+        //MinGW: the address of a DLL function is the import stub in the executable, jmp *[rip+disp32]
+        if (code[ 0 ] == 0xFF && code[ 1 ] == 0x25)
+        {
+            int32_t disp;
+            std::memcpy(&disp, code + 2, sizeof(disp));
+            code = *(const unsigned char* const*)(code + 6 + disp);
+        }
+#endif
+        return code;
     }
 }
 
@@ -49,7 +68,7 @@ TEST_CASE("a stack trace frame in a library names the library", "[util][stacktra
 {
     // an address inside stacktrace_format::current (compass_util): the start of the function plus one,
     // resolve() looks up the byte before a return address
-    const void* address = (const char*)(void*)&stacktrace_format::current + 1;
+    const void* address = (const char*)stacktrace_test::currentFunctionAddress() + 1;
 
     auto frame = stacktrace_format::resolve(address);
 

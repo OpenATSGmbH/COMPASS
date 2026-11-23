@@ -257,33 +257,57 @@ std::string toString(const Frame& frame, const void* address)
     return line;
 }
 
+namespace
+{
+    /// the frames [first, first + count) of the trace, numbered from 0
+    std::string formatFrames(const boost::stacktrace::stacktrace& trace, std::size_t first, std::size_t count)
+    {
+        std::ostringstream ss;
+
+        for (std::size_t i = first; i < trace.size() && i - first < count; ++i)
+        {
+            const void* address = trace[ i ].address();
+            if (!address)
+                continue;
+
+            char idx[16];
+            std::snprintf(idx, sizeof(idx), "%2u# ", (unsigned)(i - first));
+
+            ss << idx << toString(resolve(address), address) << "\n";
+        }
+
+        return ss.str();
+    }
+}
+
 /**
  */
 std::string toString(const boost::stacktrace::stacktrace& trace)
 {
-    std::ostringstream ss;
-
-    for (std::size_t i = 0; i < trace.size(); ++i)
-    {
-        const void* address = trace[ i ].address();
-        if (!address)
-            continue;
-
-        char idx[16];
-        std::snprintf(idx, sizeof(idx), "%2u# ", (unsigned)i);
-
-        ss << idx << toString(resolve(address), address) << "\n";
-    }
-
-    return ss.str();
+    return formatFrames(trace, 0, trace.size());
 }
 
 /**
  */
 std::string current(std::size_t max_depth)
 {
-    //skip this function
-    return toString(boost::stacktrace::stacktrace(1, max_depth));
+    //the caller is the frame with the return address of this function. A fixed number of frames to skip
+    //does not work: the capture of Boost has one internal frame more on Windows than on Linux.
+    const void* caller = __builtin_return_address(0);
+
+    boost::stacktrace::stacktrace trace(0, max_depth + 8);
+
+    std::size_t first = 0;
+    for (std::size_t i = 0; i < trace.size(); ++i)
+    {
+        if (trace[ i ].address() == caller)
+        {
+            first = i;
+            break;
+        }
+    }
+
+    return formatFrames(trace, first, max_depth);
 }
 
 }
