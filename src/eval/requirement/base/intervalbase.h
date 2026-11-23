@@ -171,7 +171,6 @@ private:
                                     const SectorLayer& sector_layer,
                                     bool skip_no_data_details) const;
     void excludeDetectionMisses(const TimePeriodCollection& periods,
-                                const std::vector<Event>& events,
                                 uint32_t& sum_uis,
                                 uint32_t& misses_total) const;
 

@@ -26,7 +26,6 @@
 #include "timeconv.h"
 
 #include <algorithm>
-#include <set>
 
 namespace EvaluationRequirement
 {
@@ -194,7 +193,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
     }
 
     if (exclude_detection_misses_)
-        excludeDetectionMisses(periods, events, sum_uis, misses_total);
+        excludeDetectionMisses(periods, sum_uis, misses_total);
 
     //create derived-specific result
     return createResult("UTN:" + std::to_string(target_data.utn_),
@@ -214,23 +213,15 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
  *
  * The detection misses are counted as the code misses, but over the gaps between all test
  * target reports of an inside period (including period begin and end). An inside period
- * without a valid update has no code misses from its events, so all its update intervals
- * are counted as code misses here.
+ * without any test target report has no code misses, its update intervals are only removed
+ * from the expected ones.
  */
 void IntervalBase::excludeDetectionMisses(const TimePeriodCollection& periods,
-                                          const std::vector<Event>& events,
                                           uint32_t& sum_uis,
                                           uint32_t& misses_total) const
 {
-    //inside periods with at least one valid update (by inside period index)
-    std::set<uint32_t> periods_with_valid;
-
-    for (const auto& e : events)
-        if (e.period.has_value() && (e.type == Event::TypeValidFirst || e.type == Event::TypeValid))
-            periods_with_valid.insert(e.period.value());
-
-    uint32_t detection_misses = 0;
-    uint32_t inside_period_cnt = 0;
+    uint32_t detection_misses       = 0; // in periods with test target reports
+    uint32_t empty_period_misses    = 0; // in periods without test target reports
 
     for (size_t i = 0; i < periods.size(); ++i)
     {
@@ -239,10 +230,11 @@ void IntervalBase::excludeDetectionMisses(const TimePeriodCollection& periods,
         if (period.type() != TimePeriod::Type::InsideSector)
             continue;
 
-        if (!periods_with_valid.count(inside_period_cnt))
-            misses_total += numMisses(Utils::Time::partialSeconds(period.duration()));
-
-        ++inside_period_cnt;
+        if (period.getUpdates().empty())
+        {
+            empty_period_misses += numMisses(Utils::Time::partialSeconds(period.duration()));
+            continue;
+        }
 
         auto t_last = period.begin();
 
@@ -257,7 +249,9 @@ void IntervalBase::excludeDetectionMisses(const TimePeriodCollection& periods,
         detection_misses += numMisses(Utils::Time::partialSeconds(period.end() - t_last));
     }
 
-    sum_uis      = sum_uis > detection_misses ? sum_uis - detection_misses : 0;
+    uint32_t uis_removed = detection_misses + empty_period_misses;
+
+    sum_uis      = sum_uis > uis_removed ? sum_uis - uis_removed : 0;
     misses_total = misses_total > detection_misses ? misses_total - detection_misses : 0;
     misses_total = std::min(misses_total, sum_uis);
 }
@@ -424,12 +418,10 @@ std::vector<Event> IntervalBase::periodEvents(const TimePeriod& period,
             events.insert(events.begin() + valid_last_idx, last_events.begin(), last_events.end());
         }
 
-        //no valid updates in period => add single event for this case
+        //no valid updates in period => add single event for this case, the whole period is missed
+        //(test target reports without a correct code, as between valid updates)
         if (!valid_last)
-        {
-            if (!skip_no_data_details)
-                logEvent(events, Event::TypeEmptyPeriod, nullptr, period.begin(), period.end(), "", true, false);
-        }
+            logEvent(events, Event::TypeEmptyPeriod, nullptr, period.begin(), period.end(), "", true, true);
     }
 
     //log period left
@@ -701,7 +693,7 @@ IntervalBase::DetailInfo IntervalBase::eventDetailInfo(const EvaluationTargetDat
             traced_assert(target_data.refChain().posOpt(event.interval_time1).has_value());
 
             dinfo.evt_time         = event.interval_time1;
-            dinfo.evt_comment      = has_miss ? "Miss detected in empty period " + period + " " + miss + ", between " + evt_interval : "";
+            dinfo.evt_comment      = has_miss ? "Miss detected in period " + period + " without valid update " + miss + ", between " + evt_interval : "";
             dinfo.evt_position     = target_data.refChain().pos(event.interval_time1);
             dinfo.evt_position_ref = target_data.refChain().pos(event.interval_time0);
             dinfo.evt_has_ref      = true;

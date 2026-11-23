@@ -94,6 +94,7 @@ For each target existing in the reference data (within the current sector) a tes
 be detected correctly within each test update interval. Correctly here means up to a certain configurable threshold.
 Update intervals without correct Mode C code are counted as misses, which are used to calculate the probability of correct Mode C
 detection, which has to fulfill a given threshold.
+A reference period with test target reports, but without a correct Mode C code, counts all its update intervals as missed. A test target report without a Mode C code is not correct. If the reference has no Mode C code, the test target report counts as correct.
 
 \begin{itemize}  
     \item Probability [1]: Probability of correct Mode C code detection
@@ -123,7 +124,6 @@ If 'Exclude Detection Misses' is set, the following applies:
 \begin{itemize}
     \item Detection misses are update intervals without any test target report. They are counted from the gaps between all test target reports, in the same way as the misses.
     \item The detection misses are removed from the expected and from the missed update intervals. The probability is then the probability of a correct Mode C code within an update interval in which a test target report was output.
-    \item A reference period with test target reports, but without a correct Mode C code, counts all its update intervals as missed.
     \item This option implements EUROCAE ED-142 section 6.4.3. It is set in the supplied ED-142 standard.
 \end{itemize}
 \ \\
