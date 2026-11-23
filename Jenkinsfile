@@ -85,6 +85,18 @@ def wineInit() {
            'WINEDLLOVERRIDES="mscoree,mshtml=" xvfb-run -a sh -c "wineboot -i && wineserver -w"'
 }
 
+// Prepares the Wine of the host for the Windows integration tests: a fresh prefix, Mono and
+// Gecko disabled (their install dialogs would block wineboot, COMPASS needs neither), no
+// crash dialog (it would block the run on the display, a crash ends the process). OpenGL of
+// the host GPU. LANG: Wine maps the Unix file names with the locale charset.
+def wineHostInit(String prefix) {
+    return "export PATH='${env.WINE_DIR}/bin':\$PATH WINEPREFIX='${prefix}' WINEDEBUG=-all LANG=C.UTF-8 && " +
+           "rm -rf '${prefix}' && mkdir -p '${prefix}' && " +
+           "WINEDLLOVERRIDES='mscoree,mshtml=' wineboot -i && " +
+           "wine reg add 'HKCU\\Software\\Wine\\WineDbg' /v ShowCrashDialog /t REG_DWORD /d 0 /f && " +
+           "wineserver -w"
+}
+
 // Runs the integration tests of all checked datasets for one OS build. suiteCmd(dataset,
 // suiteArgs) returns the shell command that runs test_suite.py in <RUN_DIR>/scripts/test_infra
 // with the given arguments. Each dataset writes into its own output dir
@@ -184,7 +196,7 @@ pipeline {
         booleanParam(name: 'BUILD_LINUX',             defaultValue: true,  description: 'Linux: build, unit tests and AppImage (alma8 image)')
         booleanParam(name: 'LINUX_INTEGRATION_TESTS', defaultValue: true,  description: 'Linux: integration tests against the AppImage (needs BUILD_LINUX)')
         booleanParam(name: 'BUILD_WINDOWS',           defaultValue: false, description: 'Windows: cross build, unit tests in Wine and ZIP file (win_deb12 image)')
-        booleanParam(name: 'WIN_INTEGRATION_TESTS',   defaultValue: false, description: 'Windows: integration tests in Wine, in the win_deb12 image under Xvfb (needs BUILD_WINDOWS)')
+        booleanParam(name: 'WIN_INTEGRATION_TESTS',   defaultValue: false, description: 'Windows: integration tests in the Wine of the host, OpenGL on its GPU (needs BUILD_WINDOWS)')
 
         // Build options
         booleanParam(name: 'CLEAN_BUILD',            defaultValue: false, description: 'Clean build (remove the build dirs before building, Linux and Windows)')
@@ -209,6 +221,9 @@ pipeline {
         LINUX_IMAGE     = "compass/build_${LINUX_OS}"
         WIN_OS          = 'win_deb12'
         WIN_IMAGE       = "compass/build_${WIN_OS}"
+        // Wine 10 on the host for the Windows integration tests (built from source, EPEL
+        // has no installable Wine for EL 9.8), see readme_ci.md
+        WINE_DIR        = '/home/user/opt/wine-10'
         DISPLAY             = ':0'
         COMPASS_EXTRA_ARGS  = '--no_highdpi -r'
         PYTHONUNBUFFERED    = '1'
@@ -404,18 +419,14 @@ pipeline {
                         // by compass_client_wine.sh
                         def deployDir = sh(script: "ls -d ${env.RUN_DIR}/win64/COMPASS_*_win64 | head -1", returnStdout: true).trim()
 
-                        // in the Windows image, one container per dataset (fresh Wine prefix),
-                        // under Xvfb with software OpenGL. The run dir and the test data are
-                        // mounted at their host paths, which Wine resolves on drive Z:. --gui:
-                        // COMPASS windows on the Xvfb display (the Linux offscreen default is
-                        // not used for the Windows build). Python: venv of the image (pandas).
+                        // natively on the host as the Linux tests, for OpenGL on its GPU (DISPLAY):
+                        // Wine of the host (WINE_DIR), a fresh Wine prefix per dataset in the run
+                        // dir. Linux paths in the arguments work unchanged, Wine resolves them on
+                        // drive Z:. --gui: COMPASS windows on the display.
                         runIntegrationTests(WIN_OS) { dataset, suiteArgs ->
-                            dockerRun("wintests-${dataset.name}", env.WIN_IMAGE,
-                                      "--user \$(id -u):\$(id -g) -v ${env.CI_DIR}:${env.CI_DIR} " +
-                                      "-e COMPASS_EXTRA_ARGS -e PYTHONUNBUFFERED " +
-                                      "-e COMPASS_WIN_DEPLOY=${deployDir} -e PYTHONPATH=${env.RUN_DIR}/scripts " +
-                                      "-w ${env.RUN_DIR}/scripts/test_infra",
-                                      "set -e; ${wineInit()}; xvfb-run -a -s \"-screen 0 1920x1080x24\" /opt/py_tests/bin/python3 test_suite.py --binary=\"${env.RUN_DIR}/compass_client_wine.sh\" ${suiteArgs}")
+                            "${wineHostInit("${env.RUN_DIR}/wine/${dataset.name}")} && " +
+                            "COMPASS_WIN_DEPLOY='${deployDir}' PYTHONPATH='${env.RUN_DIR}/scripts' " +
+                            "python3 test_suite.py --binary='${env.RUN_DIR}/compass_client_wine.sh' ${suiteArgs}"
                         }
                     }
                 }
