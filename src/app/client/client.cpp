@@ -1030,8 +1030,11 @@ void Client::checkAndSetupConfig()
         string log_config_path = HOME_CONF_DIRECTORY + config.getString("log_properties_file");
         Files::verifyFileExists(log_config_path);
 
-        cout << "COMPASSClient: initializing logger using '" << log_config_path << "'" << endl;
-        Logger::getInstance().init(log_config_path, enable_event_log_);
+        const std::string& log_file = Logger::logFilePath(HOME_LOG_DIRECTORY);
+
+        cout << "COMPASSClient: initializing logger using '" << log_config_path << "', log file '"
+             << log_file << "'" << endl;
+        Logger::getInstance().init(log_config_path, enable_event_log_, log_file);
 
         loginf << "startup version " << VERSION;
         string config_version = config.getString("version");

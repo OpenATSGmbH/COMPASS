@@ -46,6 +46,9 @@ static const std::string HOME_CONF_DIRECTORY   = HOME_VERSION_SUBDIRECTORY + CON
 static const std::string HOME_DATA_DIRECTORY   = HOME_VERSION_SUBDIRECTORY + DATA_SUBDIRECTORY;
 static const std::string HOME_PRESET_DIRECTORY = HOME_VERSION_SUBDIRECTORY + PRESET_SUBDIRECTORY;
 
+/// log files of the client, one per start (Logger::logFilePath), the crash handlers append their reports to it
+static const std::string HOME_LOG_DIRECTORY = HOME_VERSION_SUBDIRECTORY + "log/";
+
 static const std::string LICENSE_SUBDIRECTORY       = HOME_SUBDIRECTORY + "license/";
 static const std::string DATA_CONTEXTS_SUBDIRECTORY = HOME_SUBDIRECTORY + "data_contexts/";
 

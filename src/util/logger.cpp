@@ -18,8 +18,17 @@
 #include "event_log.h"
 
 #include "log4cpp/PropertyConfigurator.hh"
+#include "log4cpp/PatternLayout.hh"
+#include "log4cpp/RollingFileAppender.hh"
 
 #include <boost/thread.hpp>
+
+#include <QCoreApplication>
+
+#include <algorithm>
+#include <ctime>
+#include <filesystem>
+#include <vector>
 
 #define MAX_EVENTS_PER_CATEGORY 1000
 
@@ -66,6 +75,62 @@ std::string formatFuncName(const char* pretty_function)
     }
 }
 
+namespace
+{
+    /// start time of the process for the log file name, e.g. 2026-11-23_19-42-10
+    std::string startTimeString()
+    {
+        std::time_t now = std::time(nullptr);
+        std::tm tm_local {};
+#ifdef _WIN32
+        localtime_s(&tm_local, &now);
+#else
+        localtime_r(&now, &tm_local);
+#endif
+        char buf[32];
+        std::strftime(buf, sizeof(buf), "%Y-%m-%d_%H-%M-%S", &tm_local);
+        return buf;
+    }
+
+    /// keeps the newest keep log files of earlier starts (with their backups), deletes the others
+    void removeOldLogFiles(const std::filesystem::path& dir, size_t keep)
+    {
+        std::error_code ec;
+        std::vector<std::filesystem::path> logs;
+
+        for (const auto& entry : std::filesystem::directory_iterator(dir, ec))
+        {
+            const std::string name = entry.path().filename().string();
+            if (name.rfind(Logger::LogFilePrefix, 0) == 0 && entry.path().extension() == ".log")
+                logs.push_back(entry.path());
+        }
+
+        if (logs.size() <= keep)
+            return;
+
+        //the names start with the start time, so the name order is the time order
+        std::sort(logs.begin(), logs.end());
+
+        for (size_t i = 0; i + keep < logs.size(); ++i)
+        {
+            std::filesystem::remove(logs[ i ], ec);
+
+            for (int b = 1; b <= Logger::MaxLogFileBackups; ++b)
+                std::filesystem::remove(logs[ i ].string() + "." + std::to_string(b), ec);
+        }
+    }
+}
+
+/**
+ */
+const std::string& Logger::logFilePath(const std::string& log_dir)
+{
+    //computed once: the crash handlers (main.cpp) and the logger use the same file
+    static const std::string path = log_dir + LogFilePrefix + startTimeString() + "_"
+                                    + std::to_string(QCoreApplication::applicationPid()) + ".log";
+    return path;
+}
+
 Logger::Logger() : console_appender_(0), file_appender_(0), event_log_(new logger::EventLog(MAX_EVENTS_PER_CATEGORY)) {}
 
 /**
@@ -78,9 +143,30 @@ Logger& Logger::getInstance()
     return instance;
 }
 
-void Logger::init(const std::string& log_config_filename, bool enable_event_log)
+void Logger::init(const std::string& log_config_filename, bool enable_event_log, const std::string& log_file)
 {
     log4cpp::PropertyConfigurator::configure(log_config_filename);
+
+    //the log file is added here and not in the properties file: it needs the absolute path in the
+    //configuration folder and a name per start, and existing copies of the properties file stay valid
+    if (!log_file.empty())
+    {
+        const std::filesystem::path dir = std::filesystem::path(log_file).parent_path();
+
+        std::error_code ec;
+        std::filesystem::create_directories(dir, ec);
+
+        //the file of this start is not there yet: keep one less of the earlier starts
+        removeOldLogFiles(dir, MaxLogFiles - 1);
+
+        auto layout = new log4cpp::PatternLayout();
+        layout->setConversionPattern("%d{%Y-%m-%d %H:%M:%S.%l} [%p] %m%n");
+
+        auto appender = new log4cpp::RollingFileAppender("logFile", log_file, MaxLogFileSize, MaxLogFileBackups);
+        appender->setLayout(layout);
+
+        logger::rootCategory().addAppender(appender); //the category owns the appender
+    }
 
     logger::refreshLevels(); //the configured priority is cached, not queried per log call
 

@@ -188,7 +188,17 @@ class Logger : public Singleton
   public:
     static Logger& getInstance(); // out of line: one instance across all shared libraries
 
-    void init(const std::string& log_config_filename, bool enable_event_log = false);
+    /// log_file: also log into this file (rolling: MaxLogFileSize, MaxLogFileBackups backups), empty for none.
+    /// Log files of earlier starts in the same folder are deleted except the newest MaxLogFiles - 1.
+    void init(const std::string& log_config_filename, bool enable_event_log = false, const std::string& log_file = "");
+
+    /// log file of this start in the folder, the same for all calls: <prefix><start time>_<pid>.log
+    static const std::string& logFilePath(const std::string& log_dir);
+
+    static constexpr const char* LogFilePrefix     = "compass_";
+    static const size_t          MaxLogFileSize    = 5 * 1024 * 1024;
+    static const int             MaxLogFileBackups = 1;
+    static const size_t          MaxLogFiles       = 10; // starts kept, incl. the current one
 
     virtual ~Logger();
 };
