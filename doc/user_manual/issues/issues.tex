@@ -157,13 +157,58 @@ Please look through the issues and make sure that yours isn't already listed. If
 Basically everything that is needed to reproduce the error should be submitted. Depending on the type of the error, this can differ, but at least the following information should be given:
 
 \begin{itemize}  
-\item Console log of the application
+\item Log file of the session with the error, see \nameref{sec:issues_log_files}
 \item Exact steps taken until the error occured
 \end{itemize} 
 
+\subsubsection{Log Files}
+\label{sec:issues_log_files}
+
+COMPASS writes a log file for each start of the application:
+
+\begin{itemize}
+\item Folder: the subfolder \texttt{log} of the configuration folder (see \nameref{sec:install_config_folder}):
+\begin{itemize}
+\item Linux: \texttt{\textasciitilde/.compass/<version>/log/}, e.g. \texttt{/home/<user>/.compass/1.1.0/log/}
+\item Windows: \texttt{C:\textbackslash Users\textbackslash <user>\textbackslash .compass\textbackslash <version>\textbackslash log\textbackslash}
+\end{itemize}
+\item File name: \texttt{compass\_<date>\_<time>\_<process id>.log}, with the date and time of the start, e.g. \texttt{compass\_2026-11-23\_20-59-53\_21396.log}
+\item Contents:
+\begin{itemize}
+\item The same messages as the console, each with date and time
+\item After a crash: a crash report at the end of the file, with the stack trace (function, source file and line of each step)
+\end{itemize}
+\item Size:
+\begin{itemize}
+\item At most 5 MB per file
+\item A full file is renamed to \texttt{.log.1} and a new file is started, so the file pair holds the last 5 to 10 MB of the session
+\end{itemize}
+\item Only the log files of the last 10 starts are kept, older files are deleted at the start of COMPASS
+\end{itemize}
+\ \\
+
+The console shows the path of the log file at the start of COMPASS, in a line like this (shortened):
+\begin{verbatim}
+COMPASSClient: initializing logger using '...', log file
+'~/.compass/1.1.0/log/compass_2026-11-23_20-59-53_21396.log'
+\end{verbatim}
+
+To report an issue:
+\begin{itemize}
+\item Find the log file of the session with the error, by the start time in the file name
+\item Attach the log file to the report, and the \texttt{.log.1} file of the session if it exists
+\end{itemize}
+\ \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please \textbf{note} that the log file of a session is deleted after 10 further starts. Copy the log file of the session with the error to another folder before you start COMPASS again several times. \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} The console log (see \nameref{sec:appendix_logging}) is not changed by the log file, it still shows all messages. \\
+
 \subsubsection{For Application Crashes}
 
-If the application crashed, it would also be of interest to get a stacktrace. While this is most of the time added in the console log, it might be requested to create one manually. This can be achieved by running the application using gdb (\url{https://www.gnu.org/software/gdb/}), which might have to be installed.
+If the application crashed, the log file of the session contains a crash report with a stack trace at its end (see \nameref{sec:issues_log_files}). Please attach this log file to the report. \\
+
+In some cases a stack trace created manually might be requested. This can be achieved by running the application using gdb (\url{https://www.gnu.org/software/gdb/}), which might have to be installed.
 
 Then, on Linux, the application can be run using \texttt{gdb ./COMPASS\_1.1.0-x86\_64.AppImage}. The output will look similiar to this:
 

@@ -192,7 +192,7 @@ This feature can be configured using the configuration options listed in \namere
 
 The application is optimized for long-term running, and can be run continuously. During Live mode, data older than 1 hour is removed from the database. \\
 
-In this use case, usage of a rotating log file (as described in \nameref{sec:appendix_logging_rotate}) is recommended.
+In this use case, usage of a rotating log file (as described in \nameref{sec:appendix_logging_rotate}) is recommended: the log file COMPASS writes for each start (see \nameref{sec:issues_log_files}) holds only the last 5 to 10 MB of the session.
 
 \section{Configuration Options of Interest}
 

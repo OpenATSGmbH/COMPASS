@@ -34,7 +34,7 @@ log4cpp.appender.consoleAppender.layout.ConversionPattern=[%p] %m%n
 #log4cpp.appender.A3.layout.ConversionPattern=%d [%p] %m%n 
 \end{lstlisting}
 
-Per default, only a console-log is defined.
+Per default, only a console log is defined in this file. In addition, COMPASS always writes a log file for each start, which is not defined in the log4cpp.properties file. For the log files, their location and their use in error reports please refer to section \nameref{sec:issues_log_files}.
 
 \subsection{Log Formatting}
 The format of the log message can be changed using the 'ConversionPattern' setting, the following contents are possible:
@@ -66,6 +66,8 @@ which would result in log messages like:
 
 
 \subsection{Log File}
+
+COMPASS writes a log file for each start in any case (see \nameref{sec:issues_log_files}), which holds the last 5 to 10 MB of the session. The following subsections show how to define further log files. \\
 
 To (additionally to the console log) create a log 'compass\_log.txt' file, the log4cpp.properties file can be changed as follows:
 
