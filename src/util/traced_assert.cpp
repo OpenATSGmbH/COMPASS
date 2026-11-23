@@ -71,9 +71,12 @@ namespace compass_assert
         std::cerr.flush();
         std::fflush(nullptr);
 
+#ifdef _WIN32
         //stop what has to be stopped before the process ends (on Windows abort() unloads the DLLs,
-        //a static destructor which waits for threads would wait forever, see exit_hooks.h)
+        //a static destructor which waits for threads would wait forever, see exit_hooks.h). Not on
+        //Linux: abort() runs no destructors there, and the core dump keeps all threads.
         exit_hooks::run();
+#endif
 
         //then abort
         std::abort();

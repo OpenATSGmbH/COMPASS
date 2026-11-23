@@ -129,7 +129,10 @@ void terminateHandler()
     std::cerr << "\nStacktrace at terminate:\n"
               << boost::stacktrace::stacktrace() << std::endl;
 
+#ifdef _WIN32
+    // abort() unloads the DLLs on Windows (exit_hooks.h), not on Linux
     exit_hooks::run();
+#endif
 
     // reset SIGABRT to default so abort() doesn't trigger our signal handler
     // (we already printed everything useful above)

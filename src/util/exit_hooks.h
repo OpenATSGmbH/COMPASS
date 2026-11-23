@@ -22,7 +22,8 @@
 
 /**
  * Functions which must run before the process ends, on every path: the normal return from main,
- * a failed assertion, std::terminate and termination signals.
+ * and on Windows also a failed assertion, std::terminate, SIGTERM and the console control events
+ * (there abort() and the default actions end the process with ExitProcess, which unloads the DLLs).
  *
  * Example: a library which joins its worker threads in a static destructor. On Windows the process
  * exit ends all other threads before the static destructors of the DLLs run, so such a destructor
