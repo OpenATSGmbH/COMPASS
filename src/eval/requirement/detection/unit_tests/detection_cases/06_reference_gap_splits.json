@@ -1,0 +1,79 @@
+{
+    "description": "Reference gap of 10 s (more than 5 s) gives 2 periods. The test report at 45 s is outside the periods and counts nothing.",
+    "params": {
+        "update_interval_s": 8.0,
+        "max_ref_time_diff_s": 5.0
+    },
+    "ref_series": [
+        [
+            0,
+            40,
+            1,
+            true
+        ],
+        [
+            50,
+            90,
+            1,
+            true
+        ]
+    ],
+    "tst": [
+        [
+            0,
+            "ok"
+        ],
+        [
+            8,
+            "ok"
+        ],
+        [
+            16,
+            "ok"
+        ],
+        [
+            24,
+            "ok"
+        ],
+        [
+            32,
+            "ok"
+        ],
+        [
+            40,
+            "ok"
+        ],
+        [
+            45,
+            "ok"
+        ],
+        [
+            50,
+            "ok"
+        ],
+        [
+            58,
+            "ok"
+        ],
+        [
+            66,
+            "ok"
+        ],
+        [
+            74,
+            "ok"
+        ],
+        [
+            82,
+            "ok"
+        ],
+        [
+            90,
+            "ok"
+        ]
+    ],
+    "expected": {
+        "sum_expected": 10,
+        "sum_missed": 0
+    }
+}

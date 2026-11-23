@@ -17,6 +17,7 @@
 
 #include "requirement/detection/detection.h"
 #include "requirement/detection/detection_pd_helpers.h"
+#include "requirement/detection/detection_walk.h"
 #include "results/detection/detection.h"
 #include "standard/evaluationstandard.h"
 
@@ -33,6 +34,7 @@
 using namespace std;
 using namespace Utils;
 using namespace boost::posix_time;
+
 
 namespace EvaluationRequirement
 {
@@ -289,66 +291,20 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                                                                          std::shared_ptr<Base> instance,
                                                                          const SectorLayer& sector_layer)
 {
-    bool debug = false; //target_data.utn_ == 613;
-
-    if (debug)
-        loginf << "'" << name_ << ": utn " << target_data.utn_
-               << " update_interval " << update_interval_s_ << " prob " << threshold()
-               << " use_miss_tolerance " << use_miss_tolerance_ << " miss_tolerance " << miss_tolerance_s_;
-
     time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
     // create ref time periods
-    TimePeriodCollection ref_periods;
-
-    boost::optional<dbContent::TargetPosition> ref_pos;
-    ptime timestamp, last_ts;
-
-    bool is_inside, was_inside;
+    std::vector<std::pair<ptime, bool>> ref_inside;
     {
         const auto& ref_data = target_data.refChain().timestampIndexes();
-        bool first {true};
+        ref_inside.reserve(ref_data.size());
 
         for (auto& ref_it : ref_data)
-        {
-            timestamp = ref_it.first;
-            was_inside = is_inside;
-
-            is_inside = target_data.isTimeStampNotExcluded(timestamp)
-                     && target_data.refPosInside(sector_layer, ref_it);
-
-            if (first)
-            {
-                if (is_inside) // create time period
-                    ref_periods.add({timestamp, timestamp});
-
-                first = false;
-
-                continue;
-            }
-
-            // not first, was_inside is valid
-
-            if (was_inside)
-            {
-                if (is_inside)
-                {
-                    // extend last time period, if possible, or finish last and create new one
-                    if (ref_periods.lastPeriod().isCloseToEnd(timestamp, max_ref_time_diff)) // 4.9
-                        ref_periods.lastPeriod().extend(timestamp);
-                    else
-                        ref_periods.add({timestamp, timestamp});
-                }
-            }
-            else if (is_inside) // was not inside and is now inside
-                ref_periods.add({timestamp, timestamp}); // create new time period
-        }
+            ref_inside.emplace_back(ref_it.first, target_data.isTimeStampNotExcluded(ref_it.first)
+                                                  && target_data.refPosInside(sector_layer, ref_it));
     }
-    ref_periods.removeSmallPeriods(Time::partialSeconds(1));
 
-    if (debug)
-        loginf << "'" << name_ << ": utn " << target_data.utn_
-               << " periods '" << ref_periods.print() << "'";
+    TimePeriodCollection ref_periods = DetectionWalk::referencePeriods(ref_inside, max_ref_time_diff);
 
     // status-message method, when the test data source reports its update cycles.
     // Without cycles the time-difference method below applies. The gap count mode
@@ -362,37 +318,51 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
             return evaluateStatusCycles(target_data, instance, sector_layer, ref_periods, cycles);
     }
 
-    timestamp = {};
-    last_ts   = {};
-
-    // evaluate test data
+    // walk the test data through the reference periods
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 
-    // expected total: number of test reports accepted by the walk (gap count mode),
-    // reference duration in seconds (time-ratio mode) or number of update intervals
-    // (counting mode). In gap count mode the accepted reports are counted below,
-    // wherever a report updates period_last_tst_times.
-    double sum_expected = use_gap_count_  ? 0.0
-                        : use_time_ratio_ ? ref_periods.getDurationSeconds()
-                                          : (double)ref_periods.getUIs(update_interval_s_);
+    std::vector<ptime>                           tst_times;
+    std::vector<dbContent::TargetReport::DataID> tst_ids;
+    tst_times.reserve(tst_data.size());
+    tst_ids.reserve(tst_data.size());
 
-    float t_diff;
-    float gap_ui; // gap-specific update interval (stationary UI support)
+    for (const auto& tst_it : tst_data)
+    {
+        tst_times.push_back(tst_it.first);
+        tst_ids.emplace_back(tst_it);
+    }
 
-    // missed update intervals (counting mode) or missed seconds (time-ratio mode)
-    double sum_missed {0};
-    bool was_outside {false};
-    is_inside = false;
-    //bool ok;
+    DetectionWalk::Params params;
+    params.miss_params    = missTestParams(update_interval_s_);
+    params.use_gap_count  = use_gap_count_;
+    params.use_time_ratio = use_time_ratio_;
 
+    auto has_ref_pos = [ & ] (size_t i)
+    {
+        return target_data.mappedRefPos(tst_ids[ i ], max_ref_time_diff).has_value();
+    };
+
+    auto inside_sector = [ & ] (size_t i)
+    {
+        return target_data.isTimeStampNotExcluded(tst_times[ i ])
+            && target_data.mappedRefPosInside(sector_layer, tst_ids[ i ]);
+    };
+
+    auto gap_ui = [ & ] (const ptime& t0, const ptime& t1)
+    {
+        return updateIntervalFor(target_data, t0, t1);
+    };
+
+    auto walk = DetectionWalk::walk(ref_periods, tst_times, has_ref_pos, inside_sector, gap_ui, params);
+
+    // create the details from the walk steps
     typedef EvaluationRequirementResult::SingleDetection Result;
     typedef EvaluationDetail                             Detail;
     typedef Result::EvaluationDetails                    Details;
+    typedef boost::optional<dbContent::TargetPosition>   OptPos;
+    typedef DetectionWalk::Step                          Step;
+
     Details details;
-
-    dbContent::TargetPosition pos_current;
-
-    unsigned int tst_data_size = tst_data.size();
 
     auto addDetail = [ & ] (const ptime& ts,
                          const std::vector<dbContent::TargetPosition>& positions,
@@ -451,393 +421,126 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
         ref_updates.push_back(pos1.value());
     };
 
-    if (!tst_data_size) // if not test data, add everything as misses
-    {
-        if (debug)
-            loginf << "'" << name_ << ": utn " << target_data.utn_
-                   << " no tst_data_size";
-
-        for (auto& period_it : ref_periods)
-        {
-            last_ts = period_it.begin();
-            timestamp = period_it.end();
-
-            t_diff = Time::partialSeconds(timestamp - last_ts);
-            gap_ui = updateIntervalFor(target_data, last_ts, timestamp);
-
-            if (isMiss(t_diff, gap_ui))
-            {
-                sum_missed += getMissed(t_diff, gap_ui);
-
-                pos_current = target_data.refChain().pos(timestamp);
-
-                if (debug)
-                    loginf << "'" << name_ << ": utn " << target_data.utn_
-                           << " miss of " << String::timeStringFromDouble(t_diff)
-                           << " missed " << getMissed(t_diff, gap_ui)
-                           << " at [" << Time::toString(last_ts)
-                           << "," << Time::toString(timestamp)
-                           << "] sum_missed " << sum_missed;
-
-                string comment = "Miss detected (DToD > "
-                                 +String::doubleToStringPrecision(missThreshold(), 2)
-                                 +"), last was "+Time::toString(last_ts);
-
-                auto last_pos = target_data.refChain().pos(last_ts);
-
-                storeRefUpdates(ref_updates, last_ts, timestamp, last_pos, pos_current);
-                addDetail(timestamp, ref_updates, t_diff, true, sum_missed, comment); 
-            }
-        }
-
-        auto ret = make_shared<EvaluationRequirementResult::SingleDetection>(
-            "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
-            calculator_, details, sum_expected, sum_missed, ref_periods);
-
-        return ret;
-    }
-
-    // collect test times in ref periods
-    map<unsigned int, ptime> period_last_tst_times; // period number -> lst tst times
-    set<unsigned int> finalized_periods;
-
-    bool is_inside_ref_time_period {false};//, was_inside_ref_time_period {false};
-    unsigned int period_index {0};
-
-    set<unsigned int> finished_periods;
-
-    int period_max_index_before_ts;
-
-    typedef boost::optional<dbContent::TargetPosition> OptPos;
-
-    string comment;
+    std::string thres = String::doubleToStringPrecision(missThreshold(), 2);
 
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
 
-    for (const auto& tst_it : tst_data)
+    dbContent::TargetPosition pos_current;
+    int   last_tst_index = -1;
+    ptime timestamp; // time of the current test report
+
+    for (const auto& step : walk.steps)
     {
-        comment = "";
-
-        last_ts = timestamp;
-        timestamp = tst_it.first;
-        pos_current = target_data.tstChain().pos(tst_it);
-
-        if (debug)
-            loginf << "'" << name_ << ": utn " << target_data.utn_ << " tod " << timestamp;
-
-        //was_inside_ref_time_period = is_inside_ref_time_period;
-        is_inside_ref_time_period = ref_periods.isInside(timestamp);
-
-        // check if previous periods need to be finalized
-        period_max_index_before_ts = ref_periods.getPeriodMaxIndexBefore(timestamp);
-
-        if (debug)
-            loginf << "'" << name_ << ": utn " << target_data.utn_
-                   << " is_inside_ref_time_period " << is_inside_ref_time_period
-                   << " period_max_index_before_ts " << period_max_index_before_ts;
-
-        if (period_max_index_before_ts != -1)
+        // new test report: its position is the current one (finished periods overwrite it)
+        if (step.tst_index >= 0 && step.tst_index != last_tst_index)
         {
-            traced_assert(period_max_index_before_ts >= 0);
+            last_tst_index = step.tst_index;
+            timestamp      = tst_times[ step.tst_index ];
+            pos_current    = target_data.tstChain().pos(tst_ids[ step.tst_index ]);
+        }
 
-            for (unsigned int period_cnt=0; period_cnt <= static_cast<unsigned int>(period_max_index_before_ts); ++period_cnt)
+        double sum_missed_before = step.sum_missed - step.missed;
+
+        switch (step.type)
+        {
+            case Step::Type::PeriodWithoutTestData:
             {
-                if (!finished_periods.count(period_cnt)) // previous not finalized
-                {
-                    ptime last_period_ts = ref_periods.period(period_cnt).begin();
-                    bool tst_time_found = false;
-                    ptime last_period_ts_end = ref_periods.period(period_cnt).end();
+                if (!step.miss)
+                    break;
 
-                    if (period_last_tst_times.count(period_cnt))
-                    {
-                        last_period_ts = period_last_tst_times.at(period_cnt);
-                        tst_time_found = true;
-                    }
+                pos_current   = target_data.refChain().pos(step.t1);
+                auto last_pos = target_data.refChain().pos(step.t0);
 
-                    traced_assert(last_period_ts_end >= last_period_ts);
+                std::string comment = "Miss detected (DToD > " + thres + "), last was " + Time::toString(step.t0);
 
-                    t_diff = Time::partialSeconds(last_period_ts_end - last_period_ts);
-                    gap_ui = updateIntervalFor(target_data, last_period_ts, last_period_ts_end);
-
-                    pos_current = target_data.refChain().pos(last_period_ts_end);
-
-                    boost::optional<dbContent::TargetPosition> last_pos;
-
-                    if (tst_time_found)
-                        last_pos = target_data.tstChain().pos(last_period_ts);
-                    else
-                        last_pos = target_data.refChain().pos(last_period_ts);
-                    
-                    if (isMiss(t_diff, gap_ui))
-                    {
-                        sum_missed += getMissed(t_diff, gap_ui);
-
-                        if (debug)
-                            loginf << "'" << name_ << ": utn " << target_data.utn_
-                                   << " miss of " << String::timeStringFromDouble(t_diff)
-                                   << " missed " << getMissed(t_diff, gap_ui)
-                                   << " at [" << Time::toString(last_period_ts)
-                                   << "," << Time::toString(ref_periods.period(period_cnt).end())
-                                   << "] missed_uis " << sum_missed;
-
-                        comment = "Miss detected in previous period "+to_string(period_cnt)
-                                  +" (DToD > " +String::doubleToStringPrecision(missThreshold(), 2)
-                                  +"), between ["+Time::toString(last_period_ts)+", "
-                                  +Time::toString(ref_periods.period(period_cnt).end())+"]\n";
-
-                        storeRefUpdates(ref_updates, last_period_ts, last_period_ts_end, tst_time_found ? OptPos() : OptPos(last_pos), pos_current);
-                        addDetail(timestamp, ref_updates, t_diff, true, sum_missed, comment);
-                    }
-                    else
-                    {
-                        comment = "Previous period "+to_string(period_cnt)
-                                  +" OK (DToD <= "+String::doubleToStringPrecision(missThreshold(), 2)+")\n";
-
-                        storeRefUpdates(ref_updates, last_period_ts, last_period_ts_end,
-                                        tst_time_found ? OptPos() : OptPos(last_pos), pos_current);
-                        addDetail(timestamp, ref_updates, t_diff, false, sum_missed, comment);
-                    }
-
-                    finished_periods.insert(period_cnt);
-                }
+                storeRefUpdates(ref_updates, step.t0, step.t1, last_pos, pos_current);
+                addDetail(step.t1, ref_updates, step.t_diff, true, step.sum_missed, comment);
+                break;
             }
-        }
-
-        if (!is_inside_ref_time_period)
-        {
-            if (debug)
-                loginf << "'" << name_ << ": utn " << target_data.utn_ << " outside ref time perionds";
-
-            if (!skip_no_data_details)
-                addDetail(timestamp, { pos_current }, {}, false, sum_missed,
-                          "Outside of reference time periods");
-
-            // TODO undetected previous miss possible
-            continue;
-        }
-
-        // is inside period
-        period_index = ref_periods.getPeriodIndex(timestamp);
-
-        ref_pos = target_data.mappedRefPos(tst_it, max_ref_time_diff, debug);
-
-        //        ref_pos = ret_pos.first;
-        //        ok = ret_pos.second;
-        //assert (ok); // must be since inside ref time interval
-
-        if (!ref_pos.has_value()) // only happens if test time is exact beginning of reference interval
-        {
-            if (debug)
-                loginf << "'" << name_ << ": utn " << target_data.utn_ << " no ref_pos value";
-
-            if (!skip_no_data_details)
-                addDetail(timestamp, { pos_current }, {}, false, sum_missed,
-                          "At exact beginning of reference time period");
-
-            continue;
-        }
-
-        is_inside = target_data.isTimeStampNotExcluded(timestamp)
-                    && target_data.mappedRefPosInside(sector_layer, tst_it);
-
-        if (!is_inside)
-        {
-            if (debug)
-                loginf << "'" << name_ << ": utn " << target_data.utn_
-                       << " outside";
-
-            if (!skip_no_data_details)
-                addDetail(timestamp, { pos_current }, {}, false, sum_missed, "Outside sector");
-
-            was_outside = true;
-
-            //++num_pos_outside;
-            continue;
-        }
-
-        if (!period_last_tst_times.count(period_index) || was_outside) // first in period or was outside
-        {
-            if (debug)
-                loginf << "'" << name_ << ": utn " << target_data.utn_
-                       << " first in period " << period_index <<" (" << period_last_tst_times.count(period_index)
-                       << ") or was_outside " << was_outside;
-
-            if (was_outside)
+            case Step::Type::PeriodEnd:
             {
-                storeRefUpdate(ref_updates, tst_it);
-                addDetail(timestamp, ref_updates, {}, false, sum_missed, "First target report after outside sector");
-            }
-            else // first in period
-            {
-                storeRefUpdate(ref_updates, tst_it);
-                addDetail(timestamp, ref_updates, {}, false, sum_missed, "First target report in period " + to_string(period_index));
+                pos_current = target_data.refChain().pos(step.t1);
 
-                // check if begin time in period is miss
+                OptPos last_pos;
+                if (!step.t0_is_tst)
+                    last_pos = target_data.refChain().pos(step.t0);
 
-                t_diff = Time::partialSeconds(timestamp - ref_periods.period(period_index).begin());
-                gap_ui = updateIntervalFor(target_data, ref_periods.period(period_index).begin(), timestamp);
-
-                auto last_pos = target_data.refChain().pos(ref_periods.period(period_index).begin());
-
-                if (isMiss(t_diff, gap_ui))
-                {
-                    sum_missed += getMissed(t_diff, gap_ui);
-
-                    if (debug)
-                       loginf << "'" << name_ << ": utn " << target_data.utn_
-                               << " miss of " << String::timeStringFromDouble(t_diff)
-                               << " missed " << getMissed(t_diff, gap_ui)
-                               << " at [" << Time::toString(ref_periods.period(period_index).begin())
-                               << "," << Time::toString(timestamp)
-                               << "] missed_uis " << sum_missed;
-
-                    comment = "Miss detected in current period " + to_string(period_index)
-                              +" (DToD > " +String::doubleToStringPrecision(missThreshold(), 2)
-                              +"), between ["+Time::toString(ref_periods.period(period_index).begin())
-                              +", "+Time::toString(timestamp)+"]\n";
-
-                    storeRefUpdates(ref_updates, ref_periods.period(period_index).begin(), timestamp, last_pos, {});
-                    addDetail(timestamp, ref_updates, t_diff, true, sum_missed, comment);
-                }
+                std::string comment;
+                if (step.miss)
+                    comment = "Miss detected in previous period " + to_string(step.period)
+                              + " (DToD > " + thres + "), between [" + Time::toString(step.t0) + ", "
+                              + Time::toString(step.t1) + "]\n";
                 else
-                {
-                    std::string comment = "Current period " + to_string(period_index)
-                                          + " OK (DToD <= " + String::doubleToStringPrecision(missThreshold(), 2) + ")\n";
+                    comment = "Previous period " + to_string(step.period) + " OK (DToD <= " + thres + ")\n";
 
-                    storeRefUpdates(ref_updates, ref_periods.period(period_index).begin(), timestamp, last_pos, {});
-                    addDetail(timestamp, ref_updates, t_diff, false, sum_missed, comment);
-                }
+                storeRefUpdates(ref_updates, step.t0, step.t1, last_pos, pos_current);
+                addDetail(timestamp, ref_updates, step.t_diff, step.miss, step.sum_missed, comment);
+                break;
             }
-
-            was_outside = false;
-            period_last_tst_times[period_index] = timestamp;
-
-            if (use_gap_count_)
-                sum_expected += 1.0;
-
-            continue;
-        }
-
-        traced_assert(timestamp >= last_ts);
-        t_diff = Time::partialSeconds(timestamp - last_ts);
-        gap_ui = updateIntervalFor(target_data, last_ts, timestamp);
-
-        if (debug)
-            loginf << "'" << name_ << ": utn " << target_data.utn_
-                   << " ts " << Time::toString(timestamp) << " d_tod " << String::timeStringFromDouble(t_diff);
-
-        if (isMiss(t_diff, gap_ui))
-        {
-            sum_missed += getMissed(t_diff, gap_ui);
-
-            if (debug)
-                loginf << "'" << name_ << ": utn " << target_data.utn_
-                       << " miss of " << String::timeStringFromDouble(t_diff)
-                       << " missed " << getMissed(t_diff, gap_ui)
-                       << " at [" << Time::toString(last_ts)
-                       << "," << Time::toString(timestamp)
-                       << "] sum_missed " << sum_missed;
-
-            string comment = "Miss detected (DToD > "
-                             +String::doubleToStringPrecision(missThreshold(), 2)
-                             +"), last was "+Time::toString(last_ts);
-            
-            storeRefUpdates(ref_updates, last_ts, timestamp, {}, {});
-            addDetail(timestamp, ref_updates, t_diff, true, sum_missed, comment);
-        }
-        else
-        {
-            if (debug)
-                loginf << "'" << name_ << ": utn " << target_data.utn_
-                       << " update ok";
-
-            std::string comment = "OK (DToD <= " + String::doubleToStringPrecision(missThreshold(), 2) + ")";
-
-            storeRefUpdates(ref_updates, last_ts, timestamp, {}, {});
-            addDetail(timestamp, ref_updates, t_diff, false, sum_missed, comment);
-        }
-
-        period_last_tst_times[period_index] = timestamp;
-
-        if (use_gap_count_)
-            sum_expected += 1.0;
-    }
-
-    // finalize unfinished periods
-    if (debug)
-        loginf << "'" << name_ << ": utn " << target_data.utn_ << " finalizing " << ref_periods.size()
-               << " unfinished periods";
-
-    for (unsigned int period_cnt=0; period_cnt < ref_periods.size(); ++period_cnt)
-    {
-        if (!finished_periods.count(period_cnt)) // previous not finalized
-        {
-            ptime last_period_tod = ref_periods.period(period_cnt).begin();
-            bool tst_time_found = false;
-            ptime last_period_end = ref_periods.period(period_cnt).end();
-
-            if (period_last_tst_times.count(period_cnt))
+            case Step::Type::OutsideRefPeriods:
             {
-                last_period_tod = period_last_tst_times.at(period_cnt);
-                tst_time_found = true;
+                if (!skip_no_data_details)
+                    addDetail(timestamp, { pos_current }, {}, false, step.sum_missed,
+                              "Outside of reference time periods");
+                break;
             }
-
-            traced_assert(last_period_end >= last_period_tod);
-
-            t_diff = Time::partialSeconds(last_period_end - last_period_tod);
-            gap_ui = updateIntervalFor(target_data, last_period_tod, last_period_end);
-
-            pos_current = target_data.refChain().pos(last_period_end);
-
-            boost::optional<dbContent::TargetPosition> last_pos;
-
-            if (tst_time_found)
-                last_pos = target_data.tstChain().pos(last_period_tod);
-            else
-                last_pos = target_data.refChain().pos(last_period_tod);
-
-            if (isMiss(t_diff, gap_ui))
+            case Step::Type::NoRefPos:
             {
-                sum_missed += getMissed(t_diff, gap_ui); // TODO substract miss_tolerance_s_?
-
-                if (debug)
-                    loginf << "'" << name_ << ": utn " << target_data.utn_
-                           << " miss of " << String::timeStringFromDouble(t_diff)
-                           << " missed " << getMissed(t_diff, gap_ui)
-                           << " at [" << Time::toString(last_period_tod) << ","
-                           << Time::toString(ref_periods.period(period_cnt).end())
-                           << "] missed_uis " << sum_missed;
-
-                comment = "Miss detected in previous period "+to_string(period_cnt)
-                          +" (DToD > " +String::doubleToStringPrecision(missThreshold(), 2)
-                          +"), between ["+Time::toString(last_period_tod)+", "
-                          +Time::toString(ref_periods.period(period_cnt).end())+"]\n";
-
-                storeRefUpdates(ref_updates, last_period_tod, last_period_end, tst_time_found ? OptPos() : OptPos(last_pos), pos_current);
-                addDetail(timestamp, ref_updates, t_diff, true, sum_missed, comment);
+                if (!skip_no_data_details)
+                    addDetail(timestamp, { pos_current }, {}, false, step.sum_missed,
+                              "At exact beginning of reference time period");
+                break;
             }
-            else
+            case Step::Type::OutsideSector:
             {
-                comment = "Previous period "+to_string(period_cnt) +" OK (DToD <= "+String::doubleToStringPrecision(missThreshold(), 2)+")\n";
-
-                storeRefUpdates(ref_updates, last_period_tod, last_period_end, tst_time_found ? OptPos() : OptPos(last_pos), pos_current);
-                addDetail(timestamp, ref_updates, t_diff, false, sum_missed, comment);
+                if (!skip_no_data_details)
+                    addDetail(timestamp, { pos_current }, {}, false, step.sum_missed, "Outside sector");
+                break;
             }
+            case Step::Type::FirstAfterOutside:
+            {
+                storeRefUpdate(ref_updates, tst_ids[ step.tst_index ]);
+                addDetail(timestamp, ref_updates, {}, false, step.sum_missed, "First target report after outside sector");
+                break;
+            }
+            case Step::Type::FirstInPeriod:
+            {
+                storeRefUpdate(ref_updates, tst_ids[ step.tst_index ]);
+                addDetail(timestamp, ref_updates, {}, false, sum_missed_before,
+                          "First target report in period " + to_string(step.period));
 
-            finished_periods.insert(period_cnt);
+                // gap from the period begin
+                auto last_pos = target_data.refChain().pos(step.t0);
+
+                std::string comment;
+                if (step.miss)
+                    comment = "Miss detected in current period " + to_string(step.period)
+                              + " (DToD > " + thres + "), between [" + Time::toString(step.t0)
+                              + ", " + Time::toString(step.t1) + "]\n";
+                else
+                    comment = "Current period " + to_string(step.period) + " OK (DToD <= " + thres + ")\n";
+
+                storeRefUpdates(ref_updates, step.t0, step.t1, last_pos, {});
+                addDetail(timestamp, ref_updates, step.t_diff, step.miss, step.sum_missed, comment);
+                break;
+            }
+            case Step::Type::Gap:
+            {
+                std::string comment = step.miss ? "Miss detected (DToD > " + thres + "), last was " + Time::toString(step.t0)
+                                                : "OK (DToD <= " + thres + ")";
+
+                storeRefUpdates(ref_updates, step.t0, step.t1, {}, {});
+                addDetail(timestamp, ref_updates, step.t_diff, step.miss, step.sum_missed, comment);
+                break;
+            }
         }
     }
 
-    if (debug)
-        loginf << "'" << name_ << ": utn " << target_data.utn_
-               << " sum_expected " << sum_expected;
-
-    auto ret = make_shared<EvaluationRequirementResult::SingleDetection>(
+    return make_shared<EvaluationRequirementResult::SingleDetection>(
         "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
-        calculator_, details, sum_expected, sum_missed, ref_periods);
-
-    return ret;
+        calculator_, details, walk.sum_expected, walk.sum_missed, ref_periods);
 }
+
 
 /**
 */
@@ -852,43 +555,6 @@ PDHelpers::MissTestParams Detection::missTestParams(float update_interval_s) con
     p.use_max_gap_length = use_max_gap_length_;
     p.max_gap_length_s   = max_gap_length_s_;
     return p;
-}
-
-/**
-*/
-bool Detection::isMiss (float d_tod, float update_interval_s) const
-{
-    return PDHelpers::isMiss(d_tod, missTestParams(update_interval_s));
-}
-
-/**
-*/
-unsigned int Detection::getNumMisses(float d_tod, float update_interval_s) const
-{
-    traced_assert(isMiss(d_tod, update_interval_s));
-    return PDHelpers::numMisses(d_tod, missTestParams(update_interval_s));
-}
-
-/**
-*/
-float Detection::getMissedTime(float d_tod, float update_interval_s) const
-{
-    traced_assert(isMiss(d_tod, update_interval_s));
-    return PDHelpers::missDuration(d_tod, missTestParams(update_interval_s));
-}
-
-/**
- * Missed amount attributed to a gap classified as miss: one gap (gap count mode),
- * missed seconds (time-ratio mode) or number of missed update intervals
- * (counting mode).
-*/
-double Detection::getMissed(float d_tod, float update_interval_s) const
-{
-    if (use_gap_count_)
-        return 1.0;
-
-    return use_time_ratio_ ? (double)getMissedTime(d_tod, update_interval_s)
-                           : (double)getNumMisses(d_tod, update_interval_s);
 }
 
 /**

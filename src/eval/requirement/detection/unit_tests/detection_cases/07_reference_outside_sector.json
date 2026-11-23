@@ -1,0 +1,77 @@
+{
+    "description": "Reference outside the sector from 30 s to 50 s gives the periods [0,29] and [51,80]. Test reports between them count nothing.",
+    "params": {
+        "update_interval_s": 8.0,
+        "max_ref_time_diff_s": 5.0
+    },
+    "ref_series": [
+        [
+            0,
+            29,
+            1,
+            true
+        ],
+        [
+            30,
+            50,
+            1,
+            false
+        ],
+        [
+            51,
+            80,
+            1,
+            true
+        ]
+    ],
+    "tst": [
+        [
+            0,
+            "ok"
+        ],
+        [
+            8,
+            "ok"
+        ],
+        [
+            16,
+            "ok"
+        ],
+        [
+            24,
+            "ok"
+        ],
+        [
+            32,
+            "ok"
+        ],
+        [
+            40,
+            "ok"
+        ],
+        [
+            48,
+            "ok"
+        ],
+        [
+            56,
+            "ok"
+        ],
+        [
+            64,
+            "ok"
+        ],
+        [
+            72,
+            "ok"
+        ],
+        [
+            80,
+            "ok"
+        ]
+    ],
+    "expected": {
+        "sum_expected": 6,
+        "sum_missed": 0
+    }
+}

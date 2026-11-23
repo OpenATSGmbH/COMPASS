@@ -79,10 +79,6 @@ protected:
 
     PDHelpers::MissTestParams missTestParams(float update_interval_s) const;
 
-    bool isMiss (float d_tod, float update_interval_s) const;
-    unsigned int getNumMisses(float d_tod, float update_interval_s) const;
-    float getMissedTime(float d_tod, float update_interval_s) const;
-    double getMissed(float d_tod, float update_interval_s) const;
 
     // gap-specific update interval: the stationary UI when the reference
     // ground speed near the gap midpoint is below the speed threshold

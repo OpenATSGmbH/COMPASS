@@ -1,0 +1,58 @@
+{
+    "description": "As 13 with 1 s miss tolerance: no miss.",
+    "params": {
+        "update_interval_s": 8.0,
+        "max_ref_time_diff_s": 5.0,
+        "miss_tolerance_s": 1.0
+    },
+    "ref_series": [
+        [
+            0,
+            72,
+            1,
+            true
+        ]
+    ],
+    "tst": [
+        [
+            0,
+            "ok"
+        ],
+        [
+            9,
+            "ok"
+        ],
+        [
+            18,
+            "ok"
+        ],
+        [
+            27,
+            "ok"
+        ],
+        [
+            36,
+            "ok"
+        ],
+        [
+            45,
+            "ok"
+        ],
+        [
+            54,
+            "ok"
+        ],
+        [
+            63,
+            "ok"
+        ],
+        [
+            72,
+            "ok"
+        ]
+    ],
+    "expected": {
+        "sum_expected": 9,
+        "sum_missed": 0
+    }
+}
