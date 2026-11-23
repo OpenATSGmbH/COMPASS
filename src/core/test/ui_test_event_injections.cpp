@@ -54,6 +54,33 @@
 namespace ui_test
 {
 
+namespace
+{
+
+/**
+ * A shortcut with the default window context (e.g. Escape ending a view tool) fires only in the
+ * active window. Headless runs (offscreen platform, Xvfb without a window manager) have no active
+ * window, so the window of the target widget is made the active one before a key is injected.
+ * Popups are left alone: an open popup takes the keys itself and must stay open.
+ */
+void activateWindowOf(QWidget* widget)
+{
+    if (!widget)
+        return;
+
+    QWidget* window = widget->window();
+
+    if (!window || window->windowType() == Qt::Popup || QApplication::activePopupWidget())
+        return;
+
+    if (QApplication::activeWindow() == window)
+        return;
+
+    QApplication::setActiveWindow(window);
+}
+
+}
+
 /**
  * Injects key clicks into a widget.
 */
@@ -71,6 +98,7 @@ bool injectKeyEvent(QWidget* root,
 
     loginf << "injecting key " << QKeySequence(key).toString(QKeySequence::NativeText).toStdString();
 
+    activateWindowOf(w.second);
     QTest::keyClick(w.second, key, Qt::NoModifier, delay);
 
     return true;
@@ -95,6 +123,8 @@ bool injectKeysEvent(QWidget* root,
     //nothing to do?
     if (keys.isEmpty())
         return true;
+
+    activateWindowOf(w.second);
 
     //split text at page breaks
     //@TODO: Add Qt::KeepEmptyParts in future Qt version
@@ -181,6 +211,7 @@ bool injectKeyCmdEvent(QWidget* root,
     if (obj.second->isWidgetType())
     {
         injectionMsg("widget");
+        activateWindowOf(dynamic_cast<QWidget*>(obj.second));
         QTest::keyClick(dynamic_cast<QWidget*>(obj.second), key, modifier, delay);
     }
     else //window
