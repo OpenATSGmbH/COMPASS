@@ -24,6 +24,7 @@
 #include "json.hpp"
 #include "dbcontent/dbcontent.h"
 
+#include <algorithm>
 #include <map>
 #include <set>
 #include <string>
@@ -60,6 +61,24 @@ public:
         direct_vars_[{dbcontent_name, prop.name()}] = info;
         known_dbcontents_.insert(dbcontent_name);
     }
+
+    /// a Report Variable named "<report name>: <display name>", joined onto its host data
+    /// contents through the Report Table join alias
+    void addReportVariable(const std::string& report_name, const std::string& var_name,
+                           const std::vector<std::string>& host_dbcontents,
+                           const std::string& join_alias, const std::string& db_column,
+                           PropertyDataType data_type)
+    {
+        ReportVarInfo info;
+        info.host_dbcontents = host_dbcontents;
+        info.join_alias = join_alias;
+        info.db_column = db_column;
+        info.data_type = data_type;
+        report_vars_[{report_name, var_name}] = info;
+    }
+
+    /// variables added to a read set, as "<dbcontent>|<var dbcontent>|<variable>"
+    const std::vector<std::string>& readSetAdds() const { return read_set_adds_; }
 
     // --- Property-based resolution ---
 
@@ -151,12 +170,22 @@ public:
         return false;
     }
 
-    /// the mock offers no Report Variables
     bool reportVariableExistsIn(const std::string& var_name,
                                 const std::string& var_dbcontent_name,
                                 const std::string& dbcontent_name) const override
     {
-        return false;
+        const ReportVarInfo* info = reportVar(var_name, var_dbcontent_name);
+        if (!info) return false;
+        return std::find(info->host_dbcontents.begin(), info->host_dbcontents.end(),
+                         dbcontent_name) != info->host_dbcontents.end();
+    }
+
+    std::vector<std::string> reportVariableDBContentNames(
+        const std::string& var_name, const std::string& var_dbcontent_name) const override
+    {
+        const ReportVarInfo* info = reportVar(var_name, var_dbcontent_name);
+        if (!info) return {};
+        return info->host_dbcontents;
     }
 
     std::vector<std::string> metaVariableDBContentNames(
@@ -182,6 +211,8 @@ public:
             if (it != meta_vars_.end())
                 return it->second.dbcontent_to_column.at(dbcontent_name);
         }
+        if (const ReportVarInfo* info = reportVar(var_name, var_dbcontent_name))
+            return info->db_column;
         // direct: find by var_name
         for (auto& kv : direct_vars_)
         {
@@ -196,6 +227,8 @@ public:
                                     const std::string& var_name,
                                     const std::string& var_dbcontent_name) const override
     {
+        if (const ReportVarInfo* info = reportVar(var_name, var_dbcontent_name))
+            return info->join_alias;
         return dbcontent_name;
     }
 
@@ -209,6 +242,8 @@ public:
             if (it != meta_vars_.end())
                 return it->second.data_type;
         }
+        if (const ReportVarInfo* info = reportVar(var_name, var_dbcontent_name))
+            return info->data_type;
         for (auto& kv : direct_vars_)
         {
             if (kv.first.first == var_dbcontent_name && kv.second.var_name == var_name)
@@ -245,7 +280,8 @@ public:
                               const std::string& var_dbcontent_name,
                               dbContent::VariableSet& read_set) const override
     {
-        // no-op
+        // no variable objects in the mock, the call is recorded
+        read_set_adds_.push_back(dbcontent_name + "|" + var_dbcontent_name + "|" + var_name);
     }
 
     // --- Selection variables ---
@@ -292,9 +328,25 @@ private:
         PropertyDataType data_type{PropertyDataType::STRING};
     };
 
+    struct ReportVarInfo {
+        std::vector<std::string> host_dbcontents;
+        std::string join_alias;
+        std::string db_column;
+        PropertyDataType data_type{PropertyDataType::STRING};
+    };
+
+    const ReportVarInfo* reportVar(const std::string& var_name,
+                                   const std::string& report_name) const
+    {
+        auto it = report_vars_.find({report_name, var_name});
+        return it == report_vars_.end() ? nullptr : &it->second;
+    }
+
     std::map<std::string, MetaVarInfo> meta_vars_;
     std::map<std::pair<std::string, std::string>, DirectVarInfo> direct_vars_;
     std::map<std::pair<std::string, std::string>, std::vector<std::string>> selection_candidates_;
+    std::map<std::pair<std::string, std::string>, ReportVarInfo> report_vars_; // (report, variable)
+    mutable std::vector<std::string> read_set_adds_;
     std::set<std::string> known_dbcontents_;
 };
 
