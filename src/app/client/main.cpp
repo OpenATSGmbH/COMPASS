@@ -19,6 +19,7 @@
 #include "compassroot.h"
 #include "crashbreadcrumbs.h"
 #include "cxa_throw_hook.h"
+#include "exit_hooks.h"
 #include "global.h"
 #include "logger.h"
 #include "msghandler.h"
@@ -128,6 +129,8 @@ void terminateHandler()
     std::cerr << "\nStacktrace at terminate:\n"
               << boost::stacktrace::stacktrace() << std::endl;
 
+    exit_hooks::run();
+
     // reset SIGABRT to default so abort() doesn't trigger our signal handler
     // (we already printed everything useful above)
     signal(SIGABRT, SIG_DFL);
@@ -162,6 +165,17 @@ static LONG WINAPI unhandledExceptionHandler(EXCEPTION_POINTERS* info)
     std::cerr << "\nStacktrace at exception:\n" << boost::stacktrace::stacktrace() << std::endl;
 
     return EXCEPTION_CONTINUE_SEARCH; // default handling: process terminates
+}
+
+// Windows: Ctrl+C, Ctrl+Break and closing the console window end the process with ExitProcess,
+// which unloads the DLLs => run the exit hooks first (exit_hooks.h). Runs in its own thread.
+static BOOL WINAPI consoleCtrlHandler(DWORD ctrl_type)
+{
+    (void)ctrl_type;
+
+    exit_hooks::run();
+
+    return FALSE; // default handling: process terminates
 }
 
 #else
@@ -495,6 +509,11 @@ void signalHandler(int signum)
         std::cerr << "\nStacktrace at signal:\n"
                 << boost::stacktrace::stacktrace() << std::endl;
 
+#ifdef _WIN32
+    // the default action ends the process with ExitProcess, which unloads the DLLs (exit_hooks.h)
+    exit_hooks::run();
+#endif
+
     signal(signum, SIG_DFL);
     raise(signum);
 }
@@ -555,6 +574,10 @@ int main(int argc, char** argv)
 
     try
     {
+        // hooks which must run before the process ends (exit_hooks.h), on every return path out of
+        // main: declared first, so they run after the destruction of the client
+        exit_hooks::Scope exit_hooks_scope;
+
         std::set_terminate(terminateHandler);
 
         //resolve crash-log path before installing handlers so a very early
@@ -565,6 +588,7 @@ int main(int argc, char** argv)
 
 #ifdef _WIN32
         SetUnhandledExceptionFilter(unhandledExceptionHandler);
+        SetConsoleCtrlHandler(consoleCtrlHandler, TRUE);
         signal(SIGTERM, signalHandler);      // external term - stack intact
 #else
         logCoreDumpLimit();

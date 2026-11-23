@@ -15,7 +15,7 @@
 #include <osgDB/Registry>
 #endif
 
-#include <osgEarth/weejobs.h>
+#include "exit_hooks.h"
 
 #include <QApplication>
 #include <QLocale>
@@ -23,6 +23,10 @@
 
 int main(int argc, char* argv[])
 {
+    // stops e.g. the osgEarth job pool before the process ends (exit_hooks.h): on Windows the
+    // process exit waits forever otherwise. Declared first, so it runs after all other locals.
+    exit_hooks::Scope exit_hooks_scope;
+
     // Run without visible windows (and without a display, e.g. in CI) unless a platform
     // is requested explicitly, e.g. QT_QPA_PLATFORM=xcb to watch widget tests.
     if (!qEnvironmentVariableIsSet("QT_QPA_PLATFORM"))
@@ -66,12 +70,5 @@ int main(int argc, char* argv[])
     extra_analysis_plugin.initCore();
 #endif
 
-    const int result = Catch::Session().run(argc, argv);
-
-    // stop the osgEarth job pool (started by tests with osgEarth::initialize()) while its threads
-    // still run: on Windows the threads are killed before the static destructors, and the
-    // destructor of the pool then waits for them forever (the process does not exit)
-    jobs::shutdown();
-
-    return result;
+    return Catch::Session().run(argc, argv);
 }

@@ -23,7 +23,6 @@
 #include "asteriximporttask.h"
 #include "reconstructortask.h"
 #include "viewmanager.h"
-#include "gridbackgroundtilesource.h"
 #include "filtermanager.h"
 
 #include "compass.h"
@@ -543,10 +542,6 @@ void CompassRoot::shutdown()
     // plugins release their resources (e.g. GeoView: OSG textures, GL contexts, osgEarth job pool)
     for (auto plugin : app_hooks_.plugins)
         plugin->shutdown();
-
-    // Grid View map backgrounds initialize osgEarth without the GeoView plugin, so its job pool
-    // is stopped here as well (on Windows the process does not exit otherwise)
-    GridBackgroundTileSource::shutdownOsgEarth();
 
     traced_assert(filter_manager_);
     filter_manager_ = nullptr;

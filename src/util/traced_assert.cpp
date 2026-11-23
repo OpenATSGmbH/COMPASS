@@ -1,6 +1,7 @@
 #include "traced_assert.h"
 
 #include "msghandler.h"
+#include "exit_hooks.h"
 
 #include <cstdio>
 #include <cstdlib>
@@ -69,6 +70,10 @@ namespace compass_assert
         std::cout.flush();
         std::cerr.flush();
         std::fflush(nullptr);
+
+        //stop what has to be stopped before the process ends (on Windows abort() unloads the DLLs,
+        //a static destructor which waits for threads would wait forever, see exit_hooks.h)
+        exit_hooks::run();
 
         //then abort
         std::abort();

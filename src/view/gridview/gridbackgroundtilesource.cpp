@@ -17,6 +17,7 @@
 
 #include "gridbackgroundtilesource.h"
 #include "gridbackground_defs.h"
+#include "osgearthruntime.h"
 
 #include "logger.h"
 
@@ -28,7 +29,6 @@
 #include <osgEarth/Progress>
 #include <osgEarth/TileKey>
 #include <osgEarth/Profile>
-#include <osgEarth/weejobs.h>
 #include <osgDB/ReadFile>
 
 #include <QPainter>
@@ -74,9 +74,6 @@ namespace
 
         return copy;
     }
-
-    /// set when a tile source initialized osgEarth, see shutdownOsgEarth()
-    std::atomic<bool> osgearth_initialized { false };
 }
 
 /**
@@ -94,9 +91,7 @@ GridBackgroundTileSource::GridBackgroundTileSource(const std::string& earth_file
 :   file_path_(earth_file_path)
 ,   impl_     (new Impl)
 {
-    //the geographic view initializes osgEarth on its own as well, a second call is harmless
-    static std::once_flag init_flag;
-    std::call_once(init_flag, [] () { osgEarth::initialize(); osgearth_initialized = true; });
+    osgearth_runtime::initialize();
 
     auto t0 = boost::posix_time::microsec_clock::local_time();
 
@@ -139,15 +134,6 @@ GridBackgroundTileSource::GridBackgroundTileSource(const std::string& earth_file
 /**
  */
 GridBackgroundTileSource::~GridBackgroundTileSource() = default;
-
-/**
- */
-void GridBackgroundTileSource::shutdownOsgEarth()
-{
-    //a second shutdown (e.g. after the geographic view plugin) does nothing
-    if (osgearth_initialized)
-        jobs::shutdown();
-}
 
 /**
  */

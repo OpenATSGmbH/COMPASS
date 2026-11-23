@@ -94,7 +94,11 @@ def wineHostInit(String prefix) {
            "rm -rf '${prefix}' && mkdir -p '${prefix}' && " +
            "WINEDLLOVERRIDES='mscoree,mshtml=' wineboot -i && " +
            "wine reg add 'HKCU\\Software\\Wine\\WineDbg' /v ShowCrashDialog /t REG_DWORD /d 0 /f && " +
-           "wineserver -w"
+           "wineserver -w && " +
+           // the license of the host user, as the Linux tests use it: the client reads it from
+           // the home folder of the Wine user (drive_c/users/<user>/.compass/license)
+           "mkdir -p '${prefix}/drive_c/users/'\$(id -un)'/.compass' && " +
+           "cp -r \$HOME/.compass/license '${prefix}/drive_c/users/'\$(id -un)'/.compass/'"
 }
 
 // Runs the integration tests of all checked datasets for one OS build. suiteCmd(dataset,
@@ -357,10 +361,16 @@ pipeline {
                     // build (/workspace/compass), which Wine resolves on drive Z:.
                     // The shell timeout fails the Windows build on a hang (e.g. a process that does
                     // not exit), a Jenkins timeout would abort the whole build (osStep).
+                    // The second run checks that a failed assertion ends the process while osgEarth
+                    // jobs exist (exit_hooks.h): any exit code but 0 and the ones of the timeout.
+                    def tests = "/workspace/compass/build_${WIN_OS}/compass_deploy/compass_tests.exe"
                     osStep(WIN_OS) {
                         sh dockerRun('winunittests', WIN_IMAGE,
                                      '--user $(id -u):$(id -g) -v $(pwd):/workspace/compass -w /workspace/compass/docker',
-                                     "set -e; export WORKSPACE_BASE=/workspace; ./win_deploy.sh --with_tests; ${wineInit()}; xvfb-run -a timeout -k 30s 20m wine /workspace/compass/build_${WIN_OS}/compass_deploy/compass_tests.exe")
+                                     "set -e; export WORKSPACE_BASE=/workspace; ./win_deploy.sh --with_tests; ${wineInit()}; " +
+                                     "xvfb-run -a timeout -k 30s 20m wine ${tests}; " +
+                                     "rc=0; xvfb-run -a timeout -k 10s 120s wine ${tests} \"[osgearthexitabort]\" >/dev/null 2>&1 || rc=\$?; " +
+                                     "echo \"assertion exit check: exit code \$rc\"; [ \$rc -ne 0 ] && [ \$rc -ne 124 ] && [ \$rc -ne 137 ]")
                     }
                 }
             }
