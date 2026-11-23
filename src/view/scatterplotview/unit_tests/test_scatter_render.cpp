@@ -591,8 +591,9 @@ TEST_CASE("scatter selection series is on top with OpenGL", "[view][scatterplot]
         //the rectangle of a selection is above all data
         REQUIRE(render_widget.chartView()->selectionSeries());
 
+        //only accelerated series are drawn in pointer order
         for (auto series : chartOf(render_widget)->series())
-            if (series != render_widget.chartView()->selectionSeries())
+            if (series->useOpenGL() && series != render_widget.chartView()->selectionSeries())
                 CHECK((const void*)series < (const void*)render_widget.chartView()->selectionSeries());
     }
 }

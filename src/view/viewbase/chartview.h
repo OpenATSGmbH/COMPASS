@@ -112,13 +112,6 @@ public:
     /// series, so callers walking the series have to skip it.
     const QtCharts::QAbstractSeries* selectionSeries() const;
 
-    /// Allocates a line series whose pointer is above every series already in
-    /// the chart. Qt Charts keeps accelerated series in a map keyed by the
-    /// series pointer, so they render in ascending pointer order and only the
-    /// highest one is guaranteed to stay on top. Public so that the invariant
-    /// can be asserted from outside.
-    static QtCharts::QLineSeries* allocateTopMostSeries(const QtCharts::QChart* chart);
-
     virtual void onToolChanged();
 
 public slots:

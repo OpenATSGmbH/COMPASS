@@ -16,6 +16,7 @@
  */
 
 #include "chartview.h"
+#include "chartseriesarena.h"
 #include <logger.h>
 
 #include <QApplication>
@@ -68,49 +69,6 @@ namespace
     /// The lower limit of the chart margins, a property of the chart because the axes of the scatterplot and the
     /// grid reserve their label margins on a range change, with the chart only.
     const char* MinMarginProperty = "compass_min_margin";
-}
-
-/**
- */
-QtCharts::QLineSeries* ChartView::allocateTopMostSeries(const QtCharts::QChart* chart)
-{
-    const void* highest = nullptr;
-
-    for (auto s : chart->series())
-        if (!highest || (const void*)s > highest)
-            highest = (const void*)s;
-
-    //The loop is guaranteed to end. A rejected candidate is held, never freed,
-    //so the allocator cannot hand out that block again. Only finitely many free
-    //blocks sit below the current top, and once they are drained the heap has to
-    //grow upwards. The cap is generous because rebuilding a chart frees the
-    //series of the previous one first, which leaves a pile of blocks of exactly
-    //the right size below the top.
-    const int MaxTries = 4096;
-
-    std::vector<QtCharts::QLineSeries*> rejected;
-    QtCharts::QLineSeries*              series = nullptr;
-
-    for (int i = 0; i < MaxTries && !series; ++i)
-    {
-        auto candidate = new QtCharts::QLineSeries;
-
-        if (!highest || (const void*)candidate > highest)
-            series = candidate;
-        else
-            rejected.push_back(candidate);
-    }
-
-    for (auto s : rejected)
-        delete s;
-
-    if (!series)
-    {
-        logwrn << "no free block above the existing series, selection may be covered";
-        series = new QtCharts::QLineSeries;
-    }
-
-    return series;
 }
 
 /**
@@ -688,10 +646,10 @@ void ChartView::createDisplayElements(QtCharts::QChart* chart)
         p.setStyle(Qt::PenStyle::DashLine);
         p.setWidth(2);
 
-        //the pointer decides the render order, so the selection has to be
-        //allocated above every series already in the chart, the pooled
-        //"Selected" overlay of the scatter plot included
-        selection_lines_ = allocateTopMostSeries(chart);
+        //the pointer decides the render order, so the selection comes from the
+        //upper region of the series arena, above every accelerated data series,
+        //the pooled "Selected" overlay of the scatter plot included
+        selection_lines_ = chart_series_arena::createSelectionLineSeries();
         selection_lines_->setUseOpenGL(true);
         selection_lines_->setPen(p);
 

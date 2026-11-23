@@ -17,6 +17,7 @@
 
 #include "catch.hpp"
 #include "chartview.h"
+#include "chartseriesarena.h"
 
 #include <QtCharts/QChart>
 #include <QtCharts/QLineSeries>
@@ -51,7 +52,7 @@ namespace
 
         for (int i = 0; i < num_series; ++i)
         {
-            auto data = new QtCharts::QScatterSeries;
+            auto data = chart_series_arena::createDataScatterSeries();
             data->append(0.0, 0.0);
             data->append(1.0, 1.0);
             data->setUseOpenGL(true);

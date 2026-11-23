@@ -19,6 +19,7 @@
 #include "scatterplotviewchartview.h"
 #include "scatterplotpointsitem.h"
 #include "axisticks.h"
+#include "chartseriesarena.h"
 #include "files.h"
 #include "logger.h"
 #include "traced_assert.h"
@@ -298,6 +299,7 @@ namespace
         //generate needed series and sort pointers
         //qtcharts when rendering opengl will sort the series into a map using the pointer of the series as a key
         //we exploit this behavior to obtain a fixed render order for our data
+        //the series come from the data region of the series arena, below the selection of the chart view
 
         const auto& data_series = data.series.dataSeries();
 
@@ -314,13 +316,13 @@ namespace
 
             auto& s = series.back();
 
-            s.scatter_series = new QScatterSeries;
+            s.scatter_series = chart_series_arena::createDataScatterSeries();
             s.scatter_series->setMarkerShape(QScatterSeries::MarkerShapeCircle);
             s.scatter_series->setUseOpenGL(true);
 
             if (use_connection_lines)
             {
-                s.line_series = new QLineSeries;
+                s.line_series = chart_series_arena::createDataLineSeries();
                 QPen pen = s.line_series->pen();
                 pen.setWidthF(ScatterPlotPointsItem::ConnectionLineWidth);
                 s.line_series->setPen(pen);
