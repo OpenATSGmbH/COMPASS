@@ -268,7 +268,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
 
         addDetail(timestamp, tst_pos,
                     ref_pos,
-                    is_inside, d_along, along_ok, // pos_inside, value, value_ok
+                    is_inside, latency, along_ok, // pos_inside, value, value_ok
                     num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                     num_value_ok, num_value_nok,
                     comment);

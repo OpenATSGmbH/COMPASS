@@ -88,11 +88,11 @@ std::vector<Single::TargetInfo> SinglePositionLatency::targetInfos() const
              { "#PosInside [1]" , "Number of updates inside sector"            , num_pos_inside_                    },
              { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_     },
              { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
-             { "LTMin [m]"      , "Minimum of latency"                         , formatValue(accumulator_.min())    }, 
-             { "LTMax [m]"      , "Maximum of latency"                         , formatValue(accumulator_.max())    },
-             { "LTAvg [m]"      , "Average of latency"                         , formatValue(accumulator_.mean())   }, 
-             { "LTSDev [m]"     , "Standard Deviation of latency"              , formatValue(accumulator_.stddev()) }, 
-             { "LTVar [m^2]"    , "Variance of latency"                        , formatValue(accumulator_.var())    }, 
+             { "LTMin [s]"      , "Minimum of latency"                         , formatValue(accumulator_.min())    }, 
+             { "LTMax [s]"      , "Maximum of latency"                         , formatValue(accumulator_.max())    },
+             { "LTAvg [s]"      , "Average of latency"                         , formatValue(accumulator_.mean())   }, 
+             { "LTSDev [s]"     , "Standard Deviation of latency"              , formatValue(accumulator_.stddev()) }, 
+             { "LTVar [s^2]"    , "Variance of latency"                        , formatValue(accumulator_.var())    }, 
              { "#LTOK [1]"      , "Number of updates with acceptable latency"  , num_passed_                        }, 
              { "#LTNOK [1]"     , "Number of updates with unacceptable latency", num_failed_                        } };
 }
@@ -121,11 +121,11 @@ std::vector<Joined::SectorInfo> JoinedPositionLatency::sectorInfos() const
              { "#PosInside [1]" , "Number of updates inside sector"            , num_pos_inside_                    },
              { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   },
              { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
-             { "LTMin [m]"      , "Minimum of latency"                         , formatValue(accumulator_.min())    }, 
-             { "LTMax [m]"      , "Maximum of latency"                         , formatValue(accumulator_.max())    },
-             { "LTAvg [m]"      , "Average of latency"                         , formatValue(accumulator_.mean())   }, 
-             { "LTSDev [m]"     , "Standard Deviation of latency"              , formatValue(accumulator_.stddev()) }, 
-             { "LTVar [m^2]"    , "Variance of latency"                        , formatValue(accumulator_.var())    }, 
+             { "LTMin [s]"      , "Minimum of latency"                         , formatValue(accumulator_.min())    }, 
+             { "LTMax [s]"      , "Maximum of latency"                         , formatValue(accumulator_.max())    },
+             { "LTAvg [s]"      , "Average of latency"                         , formatValue(accumulator_.mean())   }, 
+             { "LTSDev [s]"     , "Standard Deviation of latency"              , formatValue(accumulator_.stddev()) }, 
+             { "LTVar [s^2]"    , "Variance of latency"                        , formatValue(accumulator_.var())    }, 
              { "#LTOK [1]"      , "Number of updates with acceptable latency"  , num_passed_                        }, 
              { "#LTNOK [1]"     , "Number of updates with unacceptable latency", num_failed_                        } };
 }
