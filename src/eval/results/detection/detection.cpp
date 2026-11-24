@@ -392,7 +392,7 @@ FeatureDefinitions JoinedDetection::getCustomAnnotationDefinitions() const
 {
     FeatureDefinitions defs;
 
-    defs.addDefinition<FeatureDefinitionBinaryGrid>("Missed Update Intervals", calculator_, "Miss Occurred").
+    defs.addDefinition<FeatureDefinitionIssueCountGrid>("Missed Update Intervals", calculator_, "Issues").
             addDataSeries(SingleDetection::DetailKey::MissOccurred, GridAddDetailMode::AddPositionsAsPolyLine, true);
 
     return defs;

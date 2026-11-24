@@ -26,11 +26,17 @@
 #include "gridview/grid2dlayer.h"
 #include "gridview/grid2drendersettings.h"
 
+#include "colorlegend.h"
+#include "traced_assert.h"
+
 #include "points/viewpointgenerator.h"
 
 #include "evaluationcalculator.h"
 
+#include <algorithm>
+#include <cmath>
 #include <string>
+#include <vector>
 
 namespace EvaluationRequirementResult
 {
@@ -160,8 +166,11 @@ public:
             //get render settings and override some values
             Grid2DRenderSettings render_settings = ds.render_settings;
 
+            auto layer = grid.createLayer(ds.series_name, ds.value_type);
+            finishLayer(grid, *layer, render_settings);
+
             //store layer
-            grid.addToLayers(layers, ds.series_name, ds.value_type);
+            layers.addLayer(std::move(layer));
 
             //store render settings
             render_settings_map[ ds.series_name ] = render_settings;
@@ -211,6 +220,11 @@ protected:
 
         data_series_.push_back(ds);
     }
+
+    /// Adapts the layer of a data series and its render settings after the grid is filled.
+    virtual void finishLayer(const Grid2D& grid,
+                             Grid2DLayer& layer,
+                             Grid2DRenderSettings& render_settings) const {}
 
     std::function<double(const T&)> converter_;
 
@@ -302,35 +316,32 @@ public:
 };
 
 /**
- * Binary grid definition.
+ * Grid of the issues of a requirement: per cell the number of values with an issue, i.e. the values that made a
+ * cell red in the former pass / fail grid (false after the inversion).
+ * Green: the cell has values, none of them with an issue. Yellow to red: 1 issue up to the highest count of
+ * the grid, logarithmic. Cells without values stay empty.
 */
-class FeatureDefinitionBinaryGrid : public FeatureDefinitionGridBase<bool>
+class FeatureDefinitionIssueCountGrid : public FeatureDefinitionGridBase<bool>
 {
 public:
-    FeatureDefinitionBinaryGrid(const EvaluationCalculator& calculator,
-                                const std::string& feature_description,
-                                const boost::optional<unsigned int>& grid_num_cells_x = boost::optional<unsigned int>(),
-                                const boost::optional<unsigned int>& grid_num_cells_y = boost::optional<unsigned int>())
-    :   FeatureDefinitionGridBase<bool>(calculator, "binary_grid", feature_description, grid_num_cells_x, grid_num_cells_y)
+    FeatureDefinitionIssueCountGrid(const EvaluationCalculator& calculator,
+                                    const std::string& feature_description,
+                                    const boost::optional<unsigned int>& grid_num_cells_x = boost::optional<unsigned int>(),
+                                    const boost::optional<unsigned int>& grid_num_cells_y = boost::optional<unsigned int>())
+    :   FeatureDefinitionGridBase<bool>(calculator, "issue_count_grid", feature_description, grid_num_cells_x, grid_num_cells_y)
     {
-        //converts bool -> double
-        converter_ = [ & ] (const bool& v) { return v ? 1.0 : 0.0; };
+        //an issue counts 1, a value without issue 0
+        converter_ = [ & ] (const bool& ok) { return ok ? 0.0 : 1.0; };
     }
-    virtual ~FeatureDefinitionBinaryGrid() = default;
+    virtual ~FeatureDefinitionIssueCountGrid() = default;
 
     /**
+     * invert_values: true if the value is true for an issue (e.g. a miss occurred).
     */
-    FeatureDefinitionBinaryGrid& addDataSeries(const ValueSource<bool>& value_source,
-                                               GridAddDetailMode add_detail_mode,
-                                               bool invert_values,
-                                               const QColor& render_false_color = Qt::red,
-                                               const QColor& render_true_color = Qt::green)
+    FeatureDefinitionIssueCountGrid& addDataSeries(const ValueSource<bool>& value_source,
+                                                   GridAddDetailMode add_detail_mode,
+                                                   bool invert_values)
     {
-        Grid2DRenderSettings rsettings;
-        rsettings.min_value = 0.0;
-        rsettings.max_value = 1.0;
-        rsettings.color_map.create(render_false_color, render_true_color, 2, ColorMap::Type::Binary);
-
         auto invertFunc = [ invert_values ] (const bool& v)
         {
             return invert_values ? !v : v;
@@ -339,11 +350,91 @@ public:
         ValueSource<bool> vsource = value_source;
         vsource.value_tr_func = invertFunc;
 
+        //the mean of the 0 / 1 values, made a count in finishLayer()
         addDataSeriesInternal(vsource,
-                              grid2d::ValueType::ValueTypeMin,
+                              grid2d::ValueType::ValueTypeMean,
                               add_detail_mode,
-                              rsettings);
+                              renderSettings(0));
         return *this;
+    }
+
+    /**
+     * Color map and legend for the issue counts 0 to max_issues: 0 green, then yellow to red in logarithmic
+     * steps from 1 to the maximum. The legend lists the counts of each color that can occur.
+    */
+    static Grid2DRenderSettings renderSettings(unsigned int max_issues)
+    {
+        const size_t NumSteps = FeatureDefinition::NumColorStepsDefault;
+
+        //a range of at least [1, 2], a single issue is yellow
+        const double vmax = std::max(2.0, (double)max_issues);
+
+        //"<" color (no issue), the steps, the color at and above the maximum
+        const auto steps = ColorMap::sample(QColor(255, 255, 0), QColor(255, 0, 0), NumSteps);
+
+        std::vector<QColor> colors;
+        colors.push_back(QColor(0, 255, 0));
+        colors.insert(colors.end(), steps.begin(), steps.end());
+        colors.push_back(steps.back());
+
+        Grid2DRenderSettings rs;
+        rs.min_value     = 1.0;
+        rs.max_value     = vmax;
+        rs.show_selected = false;
+
+        rs.color_map.create(colors, ColorMap::Type::LinearRanges, std::make_pair(1.0, vmax));
+        rs.color_map.setLogScale(true);
+
+        ColorLegend legend;
+        legend.addEntry(colors.front(), "0");
+
+        unsigned int first = 1;
+        while (first <= max_issues)
+        {
+            const QColor color = rs.color_map.sampleValue(first);
+
+            unsigned int last = first;
+            while (last < max_issues && rs.color_map.sampleValue(last + 1) == color)
+                ++last;
+
+            legend.addEntry(color, first == last ? std::to_string(first)
+                                                 : std::to_string(first) + " - " + std::to_string(last));
+            first = last + 1;
+        }
+
+        rs.legend_entries = legend;
+
+        return rs;
+    }
+
+protected:
+    /**
+     * The mean of the 0 / 1 values times their number is the number of issues.
+    */
+    void finishLayer(const Grid2D& grid,
+                     Grid2DLayer& layer,
+                     Grid2DRenderSettings& render_settings) const override
+    {
+        const Eigen::MatrixXd counts = grid.getValues(grid2d::ValueType::ValueTypeCountValid);
+
+        traced_assert(counts.size() == layer.data.size());
+
+        double*       d = layer.data.data();
+        const double* c = counts.data();
+
+        unsigned int max_issues = 0;
+
+        for (Eigen::Index i = 0; i < layer.data.size(); ++i)
+        {
+            if (d[ i ] == Grid2D::InvalidValue || c[ i ] == Grid2D::InvalidValue)
+                continue;
+
+            d[ i ] = std::round(d[ i ] * c[ i ]);
+
+            max_issues = std::max(max_issues, (unsigned int)d[ i ]);
+        }
+
+        render_settings = renderSettings(max_issues);
     }
 };
 

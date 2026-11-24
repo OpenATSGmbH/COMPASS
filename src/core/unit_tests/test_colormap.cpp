@@ -50,9 +50,26 @@ TEST_CASE("ColorMap logarithmic value mapping", "[colormap]")
 
     SECTION("values at or below the lower bound get the first color")
     {
-        REQUIRE(cm.factorOfValue(0.5, 1.0, 100.0) == Approx(0.0));
-        REQUIRE(cm.factorOfValue(0.0, 1.0, 100.0) == Approx(0.0));
+        REQUIRE(cm.factorOfValue(0.5, 1.0, 100.0) < 0.0);
+        REQUIRE(cm.factorOfValue(0.0, 1.0, 100.0) < 0.0);
         REQUIRE(cm.sampleValue(0.2) == cm.sampleValue(1.0));
+        REQUIRE(cm.sampleValue(0.2) == cm.getColor(0));
+    }
+
+    SECTION("a ranges map gives values below the lower bound the '<' color, as in the linear mapping")
+    {
+        ColorMap ranges;
+        ranges.create({ Qt::green, Qt::yellow, QColor(255, 128, 0), Qt::red }, ColorMap::Type::LinearRanges,
+                      ColorMap::ValueRange(1.0, 100.0));
+        ranges.setLogScale(true);
+
+        REQUIRE(ranges.sampleValue(0.0)   == QColor(Qt::green));
+        REQUIRE(ranges.sampleValue(1.0)   == QColor(Qt::yellow));
+        REQUIRE(ranges.sampleValue(20.0)  == QColor(255, 128, 0));
+        REQUIRE(ranges.sampleValue(100.0) == QColor(Qt::red));
+
+        ranges.setLogScale(false);
+        REQUIRE(ranges.sampleValue(0.0) == QColor(Qt::green));
     }
 
     SECTION("valueAtFactor is the inverse")

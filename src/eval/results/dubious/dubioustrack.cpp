@@ -427,7 +427,7 @@ FeatureDefinitions JoinedDubiousTrack::getCustomAnnotationDefinitions() const
         return boost::optional<bool>(SingleDubiousTrack::detailIsOkStatic(detail));
     };
 
-    defs.addDefinition<FeatureDefinitionBinaryGrid>(requirement()->name(), calculator_, "Passed")
+    defs.addDefinition<FeatureDefinitionIssueCountGrid>(requirement()->name(), calculator_, "Issues")
         .addDataSeries(ValueSource<bool>(getValue), 
                        GridAddDetailMode::AddEvtPosition, 
                        false);

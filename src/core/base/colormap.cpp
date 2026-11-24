@@ -584,7 +584,11 @@ double ColorMap::factorOfValue(double v, double vmin, double vmax) const
     }
 
     auto b = logBounds(vmin, vmax, log_floor_);
-    if (v <= b.first)
+
+    //below the lower bound as in the linear mapping: the "<" color of a LinearRanges map, the first color else
+    if (v < b.first)
+        return -1.0;
+    if (v == b.first)
         return 0.0;
 
     return (std::log(v) - std::log(b.first)) / (std::log(b.second) - std::log(b.first));

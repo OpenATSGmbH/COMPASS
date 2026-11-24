@@ -352,7 +352,7 @@ FeatureDefinitions JoinedCorrectBase::getCustomAnnotationDefinitions() const
 {
     FeatureDefinitions defs;
 
-    defs.addDefinition<FeatureDefinitionBinaryGrid>(requirement()->name(), calculator_, "Passed")
+    defs.addDefinition<FeatureDefinitionIssueCountGrid>(requirement()->name(), calculator_, "Issues")
         .addDataSeries(SingleCorrectBase::DetailKey::IsNotCorrect, 
                        GridAddDetailMode::AddEvtRefPosition, 
                        true);

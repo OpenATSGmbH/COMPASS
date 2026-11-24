@@ -38,7 +38,13 @@ Different requirement results may use different views to display additional resu
 \begin{itemize}  
 \item Geographic View
 \begin{itemize}  
-\item Overview grid: 2D grid showing all grid cells with at least 1 issue as red, green otherwise
+\item Overview grid: 2D grid with the number of issues per grid cell
+\begin{itemize}
+\item Green: the cell has target reports, none of them with an issue
+\item Yellow to red: the number of issues, from 1 to the highest number of the grid, on a logarithmic scale
+\item The legend lists the numbers of issues of each color
+\item Cells without target reports have no color
+\end{itemize}
 \item Per-target issue display: Mark test target reports with issues with red border, green otherwise
 \end{itemize}
 \item Histogram Views
@@ -64,7 +70,7 @@ The radar position requirements show the same histograms with the value of the r
 \end{itemize}
 \ \\
 
-The ADS-B latency and identification change delay requirements show a sector overview grid of the passed and failed updates, the counts (\#LTNOK and \#LTOK, \#CDNOK and \#CDOK) and the 'Full distribution' in s. \\
+The ADS-B latency and identification change delay requirements show a sector overview grid of the issues, the counts (\#LTNOK and \#LTOK, \#CDNOK and \#CDOK) and the 'Full distribution' in s. \\
 
 \subsection{Results Overview}
 

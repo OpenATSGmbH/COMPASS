@@ -558,7 +558,7 @@ FeatureDefinitions JoinedPositionBase::common_getCustomAnnotationDefinitions(con
 
     //grids (as geoimages)
     if (labels.update_check)
-        defs.addDefinition<FeatureDefinitionBinaryGrid>(labels.value_name, calculator, "Comparison Passed")
+        defs.addDefinition<FeatureDefinitionIssueCountGrid>(labels.value_name, calculator, "Issues")
             .addDataSeries(SinglePositionBaseCommon::DetailKey::CheckPassed, 
                            GridAddDetailMode::AddEvtRefPosition, 
                            invert);

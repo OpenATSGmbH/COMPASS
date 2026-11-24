@@ -436,7 +436,7 @@ FeatureDefinitions JoinedTrackAngle::getCustomAnnotationDefinitions() const
 {
     FeatureDefinitions defs;
 
-    defs.addDefinition<FeatureDefinitionBinaryGrid>(requirement()->name(), calculator_, "Passed")
+    defs.addDefinition<FeatureDefinitionIssueCountGrid>(requirement()->name(), calculator_, "Issues")
         .addDataSeries(SingleTrackAngle::DetailKey::CheckPassed, 
                        GridAddDetailMode::AddEvtRefPosition,
                        false);

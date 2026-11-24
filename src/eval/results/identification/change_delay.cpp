@@ -266,7 +266,7 @@ FeatureDefinitions JoinedIdentificationChangeDelay::getCustomAnnotationDefinitio
 {
     FeatureDefinitions defs;
 
-    defs.addDefinition<FeatureDefinitionBinaryGrid>(requirement()->name(), calculator_, "Passed")
+    defs.addDefinition<FeatureDefinitionIssueCountGrid>(requirement()->name(), calculator_, "Issues")
         .addDataSeries(SingleIdentificationChangeDelay::DetailKey::CheckPassed,
                        GridAddDetailMode::AddEvtPosition,
                        false);

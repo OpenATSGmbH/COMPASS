@@ -261,7 +261,7 @@ FeatureDefinitions JoinedExtraData::getCustomAnnotationDefinitions() const
 {
     FeatureDefinitions defs;
 
-    defs.addDefinition<FeatureDefinitionBinaryGrid>(requirement()->name(), calculator_, "Passed")
+    defs.addDefinition<FeatureDefinitionIssueCountGrid>(requirement()->name(), calculator_, "Issues")
         .addDataSeries(SingleExtraData::DetailKey::Extra, 
                        GridAddDetailMode::AddEvtPosition, 
                        true);
