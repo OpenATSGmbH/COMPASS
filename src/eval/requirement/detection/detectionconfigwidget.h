@@ -50,6 +50,9 @@ public slots:
     void toggleUseTimeRatioSlot();
     void toggleUseGapCountSlot();
 
+    void toggleUseTRITSlot();
+    void tritEditSlot(QString value);
+
     void toggleUseStationaryUISlot();
     void stationaryUIEditSlot(QString value);
     void stationarySpeedThresholdEditSlot(QString value);
@@ -77,6 +80,9 @@ protected:
 
     QCheckBox* use_time_ratio_check_{nullptr};
     QCheckBox* use_gap_count_check_{nullptr};
+
+    QCheckBox* use_trit_check_{nullptr};
+    QLineEdit* trit_edit_{nullptr};
 
     QCheckBox* use_stationary_ui_check_{nullptr};
     QLineEdit* stationary_ui_edit_{nullptr};

@@ -24,6 +24,8 @@ The 'Detection' requirement can be used to check whether targets are detected at
 \item Miss Tolerance [s]: Acceptable time delta for miss detection
 \item Use Time-Based Calculation: Checkbox if the probability should be calculated as missed time over reference duration (EUROCAE ED-129C Appendix C 'Interarrivaltime' method) instead of missed update intervals over expected update intervals
 \item Use Gap Count: Checkbox if the probability should be calculated as number of gaps over number of test target reports (EUROCAE ED-117A Section 6.4.8, EUROCAE ED-87E Section 5.3.14) instead of missed update intervals over expected update intervals
+\item Use Track Initiation Time: Checkbox if a stretch at the begin of a reference period up to a track start should not count as a gap, if it is at most the track initiation time (EUROCAE ED-87 TRIT)
+\item Track Initiation Time [s]: Longest stretch before a track start that does not count as a gap
 \item Use Stationary Update Interval: Checkbox if a speed-dependent update interval should be used, for surface targets transmitting at a lower rate when stationary (EUROCAE ED-129C ORQ 627, APT services)
 \item Stationary Update Interval [s]: Update interval for stationary targets
 \item Stationary Speed Threshold [m/s]: Reference ground speed below this counts as stationary
@@ -75,6 +77,31 @@ With 'Use Gap Count' active, the probability is calculated as a number of gaps o
 The time differences between target reports are always used in this mode, so a 'PD Calculation Method' of 'status\_message' has no effect on such a requirement. In the result tables, the values '\#Reports' and '\#Gaps' replace '\#EUIs' and '\#MUIs'. \\
 
 Since gaps are counted against target reports rather than against expected update intervals, more gaps than target reports are possible, and the calculated value can become negative for a badly performing system. A target whose target reports all fall outside the sector layer carries no value of its own, but its gaps are counted for the sector layer. \\
+
+\paragraph{Track Initiation Time}
+
+EUROCAE ED-87C/D/E give a target report initiation time (TRIT) for each area. A system needs this time to start a new track. With 'Use Track Initiation Time' active, a compliant track initiation does not count as a gap:
+
+\begin{itemize}
+\item The exception applies only to the stretch from the begin of a reference period to the first test target report in it.
+\item The first test target report must start a system track.
+\item The stretch must be at most the 'Track Initiation Time [s]'. A longer stretch counts as one gap, as without the exception.
+\item At a sector entry of an existing track, the first test target report does not start a track. The stretch then counts as a gap.
+\item Gaps between test target reports, gaps at the end of a reference period, and the status message method are not affected.
+\end{itemize}
+\ \\
+
+COMPASS uses the track status of the test target report to find a track start:
+
+\begin{itemize}
+\item If 'Track Begin' is set (CAT062 I062/080 TSB), its value decides.
+\item Else, a tentative test target report starts a track ('Track Confirmed' is false, e.g. CAT010 or CAT020 CNF).
+\item Else, the first test target report of a 'Track Number' in the target starts a track.
+\item Else, the test target report does not start a track.
+\end{itemize}
+\ \\
+
+The 'Sector Overview' table then shows the row '\#Initiations [1]'. It gives the number of leading stretches that the exception did not count as a gap. The target report details show such a stretch as 'track initiated within TRIT'. \\
 
 \paragraph{Time-Based Calculation}
 

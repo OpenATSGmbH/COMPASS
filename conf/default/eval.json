@@ -504,7 +504,7 @@
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigTC/GAPS30",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87E Table 3-1",
+                                        "comment": "From EUROCAE ED-87E Table 3-1, a leading gap within the target report initiation time (TRIT) is not counted",
                                         "hold_for_any_target": false,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
@@ -520,7 +520,9 @@
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": false,
-                                        "target_selection": "all"
+                                        "target_selection": "all",
+                                        "use_trit": true,
+                                        "trit_s": 15.0
                                     }
                                 },
                                 {
@@ -703,7 +705,7 @@
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigTrack Continuity 3-5s0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87E Table 3-1",
+                                        "comment": "From EUROCAE ED-87E Table 3-1, a leading gap within the target report initiation time (TRIT) is not counted",
                                         "hold_for_any_target": false,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
@@ -719,14 +721,16 @@
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true,
-                                        "target_selection": "all"
+                                        "target_selection": "all",
+                                        "use_trit": true,
+                                        "trit_s": 8.0
                                     }
                                 },
                                 {
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigTrack Continuity 5s0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87E Table 3-1",
+                                        "comment": "From EUROCAE ED-87E Table 3-1, a leading gap within the target report initiation time (TRIT) is not counted",
                                         "hold_for_any_target": false,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
@@ -742,7 +746,9 @@
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": false,
-                                        "target_selection": "all"
+                                        "target_selection": "all",
+                                        "use_trit": true,
+                                        "trit_s": 8.0
                                     }
                                 },
                                 {
@@ -1003,7 +1009,7 @@
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigTrack Continuity 3-5s0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87E Table 3-1",
+                                        "comment": "From EUROCAE ED-87E Table 3-1, a leading gap within the target report initiation time (TRIT) is not counted",
                                         "hold_for_any_target": false,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
@@ -1019,14 +1025,16 @@
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true,
-                                        "target_selection": "all"
+                                        "target_selection": "all",
+                                        "use_trit": true,
+                                        "trit_s": 5.0
                                     }
                                 },
                                 {
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigTrack Continuity 5s0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87E Table 3-1",
+                                        "comment": "From EUROCAE ED-87E Table 3-1, a leading gap within the target report initiation time (TRIT) is not counted",
                                         "hold_for_any_target": false,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
@@ -1042,7 +1050,9 @@
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": false,
-                                        "target_selection": "all"
+                                        "target_selection": "all",
+                                        "use_trit": true,
+                                        "trit_s": 5.0
                                     }
                                 },
                                 {
@@ -1252,7 +1262,7 @@
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigTC/GAPS30",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87D Table 3-1",
+                                        "comment": "From EUROCAE ED-87D Table 3-1, a leading gap within the target report initiation time (TRIT) is not counted",
                                         "hold_for_any_target": false,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
@@ -1268,7 +1278,9 @@
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": false,
-                                        "target_selection": "all"
+                                        "target_selection": "all",
+                                        "use_trit": true,
+                                        "trit_s": 15.0
                                     }
                                 },
                                 {
@@ -1451,7 +1463,7 @@
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigTrack Continuity 3-5s0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87D Table 3-1",
+                                        "comment": "From EUROCAE ED-87D Table 3-1, a leading gap within the target report initiation time (TRIT) is not counted",
                                         "hold_for_any_target": false,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
@@ -1467,14 +1479,16 @@
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true,
-                                        "target_selection": "all"
+                                        "target_selection": "all",
+                                        "use_trit": true,
+                                        "trit_s": 8.0
                                     }
                                 },
                                 {
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigTrack Continuity 5s0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87D Table 3-1",
+                                        "comment": "From EUROCAE ED-87D Table 3-1, a leading gap within the target report initiation time (TRIT) is not counted",
                                         "hold_for_any_target": false,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
@@ -1490,7 +1504,9 @@
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": false,
-                                        "target_selection": "all"
+                                        "target_selection": "all",
+                                        "use_trit": true,
+                                        "trit_s": 8.0
                                     }
                                 },
                                 {
@@ -1751,7 +1767,7 @@
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigTrack Continuity 3-5s0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87D Table 3-1",
+                                        "comment": "From EUROCAE ED-87D Table 3-1, a leading gap within the target report initiation time (TRIT) is not counted",
                                         "hold_for_any_target": false,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
@@ -1767,14 +1783,16 @@
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true,
-                                        "target_selection": "all"
+                                        "target_selection": "all",
+                                        "use_trit": true,
+                                        "trit_s": 5.0
                                     }
                                 },
                                 {
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigTrack Continuity 5s0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87D Table 3-1",
+                                        "comment": "From EUROCAE ED-87D Table 3-1, a leading gap within the target report initiation time (TRIT) is not counted",
                                         "hold_for_any_target": false,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
@@ -1790,7 +1808,9 @@
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": false,
-                                        "target_selection": "all"
+                                        "target_selection": "all",
+                                        "use_trit": true,
+                                        "trit_s": 5.0
                                     }
                                 },
                                 {
@@ -3447,7 +3467,7 @@
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigTC/GAPS30",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87C Table 3-1",
+                                        "comment": "From EUROCAE ED-87C Table 3-1, a leading gap within the target report initiation time (TRIT) is not counted",
                                         "hold_for_any_target": false,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
@@ -3463,7 +3483,9 @@
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": false,
-                                        "target_selection": "all"
+                                        "target_selection": "all",
+                                        "use_trit": true,
+                                        "trit_s": 15.0
                                     }
                                 },
                                 {
@@ -3629,7 +3651,7 @@
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigTrack Continuity 3-5s0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87C Table 3-1",
+                                        "comment": "From EUROCAE ED-87C Table 3-1, a leading gap within the target report initiation time (TRIT) is not counted",
                                         "hold_for_any_target": false,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
@@ -3645,14 +3667,16 @@
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true,
-                                        "target_selection": "all"
+                                        "target_selection": "all",
+                                        "use_trit": true,
+                                        "trit_s": 8.0
                                     }
                                 },
                                 {
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigTrack Continuity 5s0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87C Table 3-1",
+                                        "comment": "From EUROCAE ED-87C Table 3-1, a leading gap within the target report initiation time (TRIT) is not counted",
                                         "hold_for_any_target": false,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
@@ -3668,7 +3692,9 @@
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": false,
-                                        "target_selection": "all"
+                                        "target_selection": "all",
+                                        "use_trit": true,
+                                        "trit_s": 8.0
                                     }
                                 },
                                 {
@@ -3912,7 +3938,7 @@
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigTrack Continuity 3-5s0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87C Table 3-1",
+                                        "comment": "From EUROCAE ED-87C Table 3-1, a leading gap within the target report initiation time (TRIT) is not counted",
                                         "hold_for_any_target": false,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
@@ -3928,14 +3954,16 @@
                                         "use_max_gap_length": true,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": true,
-                                        "target_selection": "all"
+                                        "target_selection": "all",
+                                        "use_trit": true,
+                                        "trit_s": 5.0
                                     }
                                 },
                                 {
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigTrack Continuity 5s0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87C Table 3-1",
+                                        "comment": "From EUROCAE ED-87C Table 3-1, a leading gap within the target report initiation time (TRIT) is not counted",
                                         "hold_for_any_target": false,
                                         "invert_prob": true,
                                         "max_gap_length_s": 5.0,
@@ -3951,7 +3979,9 @@
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
                                         "use_miss_tolerance": false,
-                                        "target_selection": "all"
+                                        "target_selection": "all",
+                                        "use_trit": true,
+                                        "trit_s": 5.0
                                     }
                                 },
                                 {

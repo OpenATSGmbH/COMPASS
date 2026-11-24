@@ -56,6 +56,9 @@ DetectionConfig::DetectionConfig(
 
     registerParameter("use_gap_count", &use_gap_count_, false);
 
+    registerParameter("use_trit", &use_trit_, false);
+    registerParameter("trit_s", &trit_s_, 5.0f);
+
     registerParameter("use_stationary_ui", &use_stationary_ui_, false);
     registerParameter("stationary_ui_s", &stationary_ui_s_, 10.0f);
     registerParameter("stationary_speed_threshold_ms", &stationary_speed_threshold_ms_, 0.5f);
@@ -76,6 +79,7 @@ std::shared_ptr<Base> DetectionConfig::createRequirement()
                 name_, short_name_, group_.name(), prob_, prob_check_type_, calculator_, update_interval_s_,
                 use_min_gap_length_, min_gap_length_s_, use_max_gap_length_, max_gap_length_s_, invert_prob_,
                 use_miss_tolerance_, miss_tolerance_s_, use_time_ratio_, use_gap_count_,
+                use_trit_, trit_s_,
                 use_stationary_ui_, stationary_ui_s_, stationary_speed_threshold_ms_,
                 hold_for_any_target_, pd_calculation_method_);
 
@@ -150,6 +154,26 @@ bool DetectionConfig::useGapCount() const
 void DetectionConfig::useGapCount(bool value)
 {
     use_gap_count_ = value;
+}
+
+bool DetectionConfig::useTRIT() const
+{
+    return use_trit_;
+}
+
+void DetectionConfig::useTRIT(bool value)
+{
+    use_trit_ = value;
+}
+
+float DetectionConfig::trit() const
+{
+    return trit_s_;
+}
+
+void DetectionConfig::trit(float value)
+{
+    trit_s_ = value;
 }
 
 bool DetectionConfig::useStationaryUI() const
@@ -229,12 +253,15 @@ BaseConfigWidget* DetectionConfig::createWidget()
 
 void DetectionConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
+    // adds the table with name, comment, group and target selection
+    BaseConfig::addToReport(report);
+
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
-    auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& table = section.getTable("req_table");
 
-    table.addRow({"Probability [1]", "Probability of detection or miss (inverted probability)",
-                  roundf(prob_ * 10000.0) / 100.0});
+    table.addRow({"Probability [%]", "Probability of detection or miss (inverted probability)",
+                  probabilityPercent(prob_)});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
 
@@ -257,7 +284,7 @@ void DetectionConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
                   max_gap_length_s_});
 
     table.addRow({"Invert Probability", "If calculated probability should be inverted",
-                  comment_.c_str()});
+                  String::boolToString(invert_prob_)});
 
     table.addRow({"Use Miss Tolerance", "If miss tolerance should be used",
                   String::boolToString(use_miss_tolerance_)});
@@ -274,6 +301,13 @@ void DetectionConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
                   " update intervals over expected update intervals. Each gap counts"
                   " once, independent of its length",
                   String::boolToString(use_gap_count_)});
+
+    table.addRow({"Use Track Initiation Time", "A gap from the reference period begin to a first"
+                  " test report that starts a track is not counted if it is at most the track"
+                  " initiation time (ED-87 TRIT)",
+                  String::boolToString(use_trit_)});
+    table.addRow({"Track Initiation Time [s]", "Maximum gap before a track start that is not counted",
+                  trit_s_});
 
     table.addRow({"Use Stationary Update Interval", "Speed-dependent update interval:"
                   " below the speed threshold the stationary update interval applies"

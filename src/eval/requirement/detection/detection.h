@@ -38,7 +38,7 @@ public:
             float update_interval_s, bool use_min_gap_length, float min_gap_length_s,
             bool use_max_gap_length, float max_gap_length_s, bool invert_prob,
             bool use_miss_tolerance, float miss_tolerance_s, bool use_time_ratio,
-            bool use_gap_count,
+            bool use_gap_count, bool use_trit, float trit_s,
             bool use_stationary_ui, float stationary_ui_s, float stationary_speed_threshold_ms,
             bool hold_for_any_target,
             const std::string& pd_calculation_method);
@@ -53,6 +53,8 @@ public:
   float missThreshold() const;
   bool useTimeRatio() const;
   bool useGapCount() const;
+  bool useTRIT() const;
+  float trit() const;
   bool useStationaryUI() const;
   float stationaryUI() const;
   float stationarySpeedThreshold() const;
@@ -106,6 +108,11 @@ protected:
     // gap count mode (ED-117A Section 6.4.8, ED-87E Section 5.3.14): each gap counts
     // once, the expected total is the number of accepted test reports
     bool use_gap_count_ {false};
+
+    // track initiation time exception (ED-87 TRIT): a gap from the period begin to a first
+    // test report that starts a track is no miss if it is at most trit_s_
+    bool  use_trit_ {false};
+    float trit_s_   {5.0f};
 
     // speed-dependent update interval for surface targets (ED-129C ORQ 627)
     bool  use_stationary_ui_ {false};

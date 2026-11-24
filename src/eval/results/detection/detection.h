@@ -33,15 +33,20 @@ class DetectionBase
 public:
     DetectionBase();
     DetectionBase(double sum_expected,
-                  double sum_missed);
+                  double sum_missed,
+                  unsigned int num_initiations);
 
     double sumExpected() const;
     double sumMissed() const;
+    unsigned int numInitiations() const;
 
 protected:
     // number of update intervals (counting mode) or seconds (time-ratio mode)
     double sum_expected_ {0};
     double sum_missed_   {0};
+
+    // leading gaps not counted because of the track initiation time exception (ED-87 TRIT)
+    unsigned int num_initiations_ {0};
 };
 
 /**
@@ -58,6 +63,7 @@ public:
                     const EvaluationDetails& details,
                     double sum_expected,
                     double sum_missed,
+                    unsigned int num_initiations,
                     TimePeriodCollection ref_periods);
 
     virtual std::shared_ptr<Joined> createEmptyJoined(const std::string& result_id) override;

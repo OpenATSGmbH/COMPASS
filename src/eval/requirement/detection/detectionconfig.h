@@ -71,6 +71,12 @@ public:
     bool useGapCount() const;
     void useGapCount(bool value);
 
+    bool useTRIT() const;
+    void useTRIT(bool value);
+
+    float trit() const;
+    void trit(float value);
+
     bool useStationaryUI() const;
     void useStationaryUI(bool value);
 
@@ -111,6 +117,11 @@ public:
     // over the number of test reports, instead of missed UIs over expected UIs. Each
     // gap counts once, independent of its length and of the update interval
     bool use_gap_count_{false};
+
+    // track initiation time exception (ED-87 TRIT): a gap from the period begin to a first
+    // test report that starts a track is not counted if it is at most trit_s_
+    bool use_trit_{false};
+    float trit_s_{5.0f};
 
     // speed-dependent update interval for surface targets (ED-129C ORQ 627):
     // below the speed threshold the stationary update interval applies

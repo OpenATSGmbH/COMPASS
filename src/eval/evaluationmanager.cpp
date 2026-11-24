@@ -621,6 +621,12 @@ void EvaluationManager::addVariables (const std::string& dbcontent_name, dbConte
     if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_))
         read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_num_));
 
+    // track status (TRIT exception of the Detection requirement)
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_begin_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_begin_));
+    if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_confirmed_))
+        read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_confirmed_));
+
     // ground bit
     if (dbcontent_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_bit_))
         read_set.add(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_bit_));

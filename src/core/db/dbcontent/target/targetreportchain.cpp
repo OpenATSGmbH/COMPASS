@@ -658,6 +658,40 @@ boost::optional<unsigned int> Chain::tstTrackNum(const DataID& id) const
     return tn_vec.get(index_ext);
 }
 
+boost::optional<bool> Chain::trackBegin(const DataID& id) const
+{
+    auto index = indexFromDataID(id);
+
+    auto index_ext = index.idx_external;
+
+    if (!accessor_->hasMetaVar<bool>(dbcontent_name_, dbcontent_vars::meta_var_track_begin_))
+        return {};
+
+    NullableVector<bool>& vec = accessor_->getMetaVar<bool>(dbcontent_name_, dbcontent_vars::meta_var_track_begin_);
+
+    if (vec.isNull(index_ext))
+        return {};
+
+    return vec.get(index_ext);
+}
+
+boost::optional<bool> Chain::trackConfirmed(const DataID& id) const
+{
+    auto index = indexFromDataID(id);
+
+    auto index_ext = index.idx_external;
+
+    if (!accessor_->hasMetaVar<bool>(dbcontent_name_, dbcontent_vars::meta_var_track_confirmed_))
+        return {};
+
+    NullableVector<bool>& vec = accessor_->getMetaVar<bool>(dbcontent_name_, dbcontent_vars::meta_var_track_confirmed_);
+
+    if (vec.isNull(index_ext))
+        return {};
+
+    return vec.get(index_ext);
+}
+
 boost::optional<float> Chain::groundSpeed(const DataID& id) const // m/s
 {
     auto index = indexFromDataID(id);

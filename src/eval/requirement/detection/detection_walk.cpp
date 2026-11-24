@@ -96,10 +96,36 @@ double missedAmount(float t_diff, const PDHelpers::MissTestParams& p, const Para
 
 /**
  */
+std::vector<bool> trackStarts(const std::vector<TrackStatus>& status)
+{
+    std::vector<bool>      starts(status.size(), false);
+    std::set<unsigned int> seen_track_nums;
+
+    for (size_t i = 0; i < status.size(); ++i)
+    {
+        const auto& s = status[ i ];
+
+        if (s.begin.has_value())
+            starts[ i ] = *s.begin;
+        else if (s.confirmed.has_value() && !*s.confirmed)
+            starts[ i ] = true;
+        else if (s.track_num.has_value() && !seen_track_nums.count(*s.track_num))
+            starts[ i ] = true;
+
+        if (s.track_num.has_value())
+            seen_track_nums.insert(*s.track_num);
+    }
+
+    return starts;
+}
+
+/**
+ */
 Result walk(const TimePeriodCollection& ref_periods,
             const std::vector<ptime>& tst_times,
             const TstCheck& has_ref_pos,
             const TstCheck& inside_sector,
+            const TstCheck& starts_track,
             const GapUIFunc& gap_ui,
             const Params& params)
 {
@@ -126,7 +152,16 @@ Result walk(const TimePeriodCollection& ref_periods,
         auto p = params.miss_params;
         p.update_interval_s = gap_ui(t0, t1);
 
-        step.miss = PDHelpers::isMiss(step.t_diff, p);
+        bool is_miss = PDHelpers::isMiss(step.t_diff, p);
+
+        // TRIT exception (ED-87): a leading gap up to a track start within the initiation time is no miss
+        step.initiation = is_miss && step.type == Step::Type::FirstInPeriod && params.use_trit
+                          && step.t_diff <= params.trit_s && starts_track(step.tst_index);
+
+        step.miss = is_miss && !step.initiation;
+
+        if (step.initiation)
+            ++result.num_initiations;
 
         if (step.miss)
         {

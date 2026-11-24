@@ -59,6 +59,8 @@ Detection::Detection(const std::string& name,
                      float miss_tolerance_s,
                      bool use_time_ratio,
                      bool use_gap_count,
+                     bool use_trit,
+                     float trit_s,
                      bool use_stationary_ui,
                      float stationary_ui_s,
                      float stationary_speed_threshold_ms,
@@ -74,6 +76,8 @@ Detection::Detection(const std::string& name,
     miss_tolerance_s_   (miss_tolerance_s),
     use_time_ratio_     (use_time_ratio),
     use_gap_count_      (use_gap_count),
+    use_trit_           (use_trit),
+    trit_s_             (trit_s),
     use_stationary_ui_  (use_stationary_ui),
     stationary_ui_s_    (stationary_ui_s),
     stationary_speed_threshold_ms_(stationary_speed_threshold_ms),
@@ -197,7 +201,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluateStatusCy
 
     auto ret = make_shared<EvaluationRequirementResult::SingleDetection>(
         "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
-        calculator_, details, walk.sum_expected, walk.sum_missed, ref_periods);
+        calculator_, details, walk.sum_expected, walk.sum_missed, 0, ref_periods);
 
     return ret;
 }
@@ -214,6 +218,20 @@ bool Detection::useTimeRatio() const
 bool Detection::useGapCount() const
 {
     return use_gap_count_;
+}
+
+/**
+*/
+bool Detection::useTRIT() const
+{
+    return use_trit_;
+}
+
+/**
+*/
+float Detection::trit() const
+{
+    return trit_s_;
 }
 
 /**
@@ -288,6 +306,25 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
     params.miss_params    = missTestParams(update_interval_s_);
     params.use_gap_count  = use_gap_count_;
     params.use_time_ratio = use_time_ratio_;
+    params.use_trit       = use_trit_;
+    params.trit_s         = trit_s_;
+
+    std::vector<bool> starts_track_flags;
+
+    if (use_trit_)
+    {
+        const auto& tst_chain = target_data.tstChain();
+
+        std::vector<DetectionWalk::TrackStatus> track_status;
+        track_status.reserve(tst_ids.size());
+
+        for (const auto& id : tst_ids)
+            track_status.push_back({ tst_chain.trackBegin(id), tst_chain.trackConfirmed(id), tst_chain.tstTrackNum(id) });
+
+        starts_track_flags = DetectionWalk::trackStarts(track_status);
+    }
+
+    auto starts_track = [ & ] (size_t i) { return starts_track_flags.at(i); };
 
     auto has_ref_pos = [ & ] (size_t i)
     {
@@ -305,7 +342,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
         return updateIntervalFor(target_data, t0, t1);
     };
 
-    auto walk = DetectionWalk::walk(ref_periods, tst_times, has_ref_pos, inside_sector, gap_ui, params);
+    auto walk = DetectionWalk::walk(ref_periods, tst_times, has_ref_pos, inside_sector, starts_track, gap_ui, params);
 
     // create the details from the walk steps
     typedef EvaluationRequirementResult::SingleDetection Result;
@@ -465,7 +502,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                 auto last_pos = target_data.refChain().pos(step.t0);
 
                 std::string comment;
-                if (step.miss)
+                if (step.initiation)
+                    comment = "Current period " + to_string(step.period) + " OK, track initiated within TRIT (DToD <= "
+                              + String::doubleToStringPrecision(trit_s_, 2) + " s)\n";
+                else if (step.miss)
                     comment = "Miss detected in current period " + to_string(step.period)
                               + " (DToD > " + thres + "), between [" + Time::toString(step.t0)
                               + ", " + Time::toString(step.t1) + "]\n";
@@ -490,7 +530,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
 
     return make_shared<EvaluationRequirementResult::SingleDetection>(
         "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
-        calculator_, details, walk.sum_expected, walk.sum_missed, ref_periods);
+        calculator_, details, walk.sum_expected, walk.sum_missed, walk.num_initiations, ref_periods);
 }
 
 

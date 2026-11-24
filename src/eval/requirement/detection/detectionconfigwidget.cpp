@@ -133,6 +133,26 @@ DetectionConfigWidget::DetectionConfigWidget(DetectionConfig& cfg)
 
     form_layout_->addRow("Use Gap Count", use_gap_count_check_);
 
+    // track initiation time
+    use_trit_check_ = new QCheckBox ();
+    use_trit_check_->setChecked(config().useTRIT());
+    use_trit_check_->setToolTip("A gap from the reference period begin to a first test report"
+                                " that starts a track is not counted if it is at most the track"
+                                " initiation time (ED-87 TRIT). The track start comes from the"
+                                " track status: Track Begin, Track Confirmed, Track Number");
+    connect(use_trit_check_, &QCheckBox::clicked,
+            this, &DetectionConfigWidget::toggleUseTRITSlot);
+
+    form_layout_->addRow("Use Track Initiation Time", use_trit_check_);
+
+    trit_edit_ = new QLineEdit(QString::number(config().trit()));
+    trit_edit_->setValidator(new QDoubleValidator(0.0, 300.0, 2, this));
+    trit_edit_->setToolTip("Maximum gap before a track start that is not counted");
+    connect(trit_edit_, &QLineEdit::textEdited,
+            this, &DetectionConfigWidget::tritEditSlot);
+
+    form_layout_->addRow("Track Initiation Time [s]", trit_edit_);
+
     // stationary update interval
     use_stationary_ui_check_ = new QCheckBox ();
     use_stationary_ui_check_->setChecked(config().useStationaryUI());
@@ -303,6 +323,29 @@ void DetectionConfigWidget::toggleUseGapCountSlot()
     config().useGapCount(use_gap_count_check_->checkState() == Qt::Checked);
 }
 
+void DetectionConfigWidget::toggleUseTRITSlot()
+{
+    loginf;
+
+    traced_assert(use_trit_check_);
+    config().useTRIT(use_trit_check_->checkState() == Qt::Checked);
+
+    updateActive();
+}
+
+void DetectionConfigWidget::tritEditSlot(QString value)
+{
+    loginf << "value " << value.toStdString();
+
+    bool ok;
+    float val = value.toFloat(&ok);
+
+    if (ok)
+        config().trit(val);
+    else
+        loginf << "invalid value";
+}
+
 void DetectionConfigWidget::toggleUseStationaryUISlot()
 {
     loginf;
@@ -366,6 +409,9 @@ void DetectionConfigWidget::updateActive()
 
     traced_assert(miss_tolerance_edit_);
     miss_tolerance_edit_->setEnabled(config().useMissTolerance());
+
+    traced_assert(trit_edit_);
+    trit_edit_->setEnabled(config().useTRIT());
 
     traced_assert(stationary_ui_edit_);
     stationary_ui_edit_->setEnabled(config().useStationaryUI());

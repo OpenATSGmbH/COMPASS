@@ -79,9 +79,11 @@ DetectionBase::DetectionBase() = default;
 /**
 */
 DetectionBase::DetectionBase(double sum_expected,
-                             double sum_missed)
-:   sum_expected_ (sum_expected)
-,   sum_missed_   (sum_missed)
+                             double sum_missed,
+                             unsigned int num_initiations)
+:   sum_expected_    (sum_expected)
+,   sum_missed_      (sum_missed)
+,   num_initiations_ (num_initiations)
 {
 }
 
@@ -99,6 +101,13 @@ double DetectionBase::sumMissed() const
     return sum_missed_;
 }
 
+/**
+*/
+unsigned int DetectionBase::numInitiations() const
+{
+    return num_initiations_;
+}
+
 /**********************************************************************************************
  * SingleDetection
  **********************************************************************************************/
@@ -114,8 +123,9 @@ SingleDetection::SingleDetection(const std::string& result_id,
                                  const EvaluationDetails& details,
                                  double sum_expected,
                                  double sum_missed,
+                                 unsigned int num_initiations,
                                  TimePeriodCollection ref_periods)
-:   DetectionBase(sum_expected, sum_missed)
+:   DetectionBase(sum_expected, sum_missed, num_initiations)
 ,   SingleProbabilityBase("SingleDetection", result_id, requirement, sector_layer, utn, target, calculator, details)
 ,   ref_periods_(ref_periods)
 {
@@ -308,8 +318,9 @@ bool JoinedDetection::resultUsed(const std::shared_ptr<Single>& result) const
 */
 void JoinedDetection::clearResults_impl()
 {
-    sum_missed_   = 0;
-    sum_expected_ = 0;
+    sum_missed_      = 0;
+    sum_expected_    = 0;
+    num_initiations_ = 0;
 }
 
 /**
@@ -321,8 +332,9 @@ void JoinedDetection::accumulateSingleResult(const std::shared_ptr<Single>& sing
     // in gap count mode a result without an own value can still carry gaps, see resultUsed()
     assert (single->resultUsable() || isGapCount(requirement_));
 
-    sum_missed_   += single->sumMissed();
-    sum_expected_ += single->sumExpected();
+    sum_missed_      += single->sumMissed();
+    sum_expected_    += single->sumExpected();
+    num_initiations_ += single->numInitiations();
 }
 
 /**
@@ -362,8 +374,14 @@ std::vector<Joined::SectorInfo> JoinedDetection::sectorInfos() const
                   { "#MUIs [1]", "Missed Update Intervals"  , expectedMissedValue(sum_missed_  , time_ratio) } };
 
     if (auto req = std::dynamic_pointer_cast<EvaluationRequirement::Detection>(requirement_))
+    {
+        if (req->useTRIT())
+            infos.push_back({ "#Initiations [1]", "Leading gaps within the track initiation time, not counted",
+                              num_initiations_ });
+
         for (const auto& warning : req->statusMethodWarnings())
             infos.push_back({ "Warning", "Status Message Method", warning });
+    }
 
     return infos;
 }

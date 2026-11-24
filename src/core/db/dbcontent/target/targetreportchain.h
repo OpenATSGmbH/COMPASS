@@ -233,6 +233,8 @@ public:
     boost::optional<bool> groundBit(const DataID& id) const; // gbs
 
     boost::optional<unsigned int> tstTrackNum(const DataID& id) const;
+    boost::optional<bool> trackBegin(const DataID& id) const;     // first message of the track
+    boost::optional<bool> trackConfirmed(const DataID& id) const; // false = tentative
 
     boost::optional<float> groundSpeed(const DataID& id) const; // m/s
 

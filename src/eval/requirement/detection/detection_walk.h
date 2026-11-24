@@ -23,6 +23,7 @@
 #include <vector>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
+#include <boost/optional.hpp>
 
 class TimePeriodCollection;
 
@@ -62,6 +63,7 @@ struct Step
     bool                     miss      = false; // gap is a miss
     double                   missed    = 0.0;   // missed amount of the gap
     double                   sum_missed = 0.0;  // running sum of the missed amount after this step
+    bool                     initiation = false; // FirstInPeriod gap that would be a miss, within the track initiation time
 };
 
 struct Params
@@ -69,13 +71,24 @@ struct Params
     PDHelpers::MissTestParams miss_params;       // base miss test parameters (base update interval)
     bool                      use_gap_count  = false;
     bool                      use_time_ratio = false;
+    bool                      use_trit       = false; // track initiation time exception (ED-87 TRIT)
+    float                     trit_s         = 0.0f;
 };
 
 struct Result
 {
-    double            sum_expected = 0.0;
-    double            sum_missed   = 0.0;
+    double            sum_expected    = 0.0;
+    double            sum_missed      = 0.0;
+    unsigned int      num_initiations = 0; // FirstInPeriod gaps not counted because of the TRIT exception
     std::vector<Step> steps;
+};
+
+/// track status of a test report, from the ASTERIX track status flags
+struct TrackStatus
+{
+    boost::optional<bool>         begin;     // Track Begin (first message of the track)
+    boost::optional<bool>         confirmed; // Track Confirmed (false = tentative)
+    boost::optional<unsigned int> track_num; // Track Number
 };
 
 typedef std::function<bool(size_t)> TstCheck; // check of the test report at an index
@@ -89,14 +102,25 @@ TimePeriodCollection referencePeriods(const std::vector<std::pair<boost::posix_t
 double missedAmount(float t_diff, const PDHelpers::MissTestParams& p, const Params& params);
 
 /**
+ * Per test report (sorted by time): whether it starts a system track. Track Begin decides if
+ * known. Without it a tentative report starts a track (initiation phase), else the first report
+ * of a track number.
+ */
+std::vector<bool> trackStarts(const std::vector<TrackStatus>& status);
+
+/**
  * Walks the test reports (sorted by time) through the reference periods.
  * has_ref_pos and inside_sector are only called for test reports inside a reference period,
  * gap_ui gives the update interval of a gap (e.g. stationary update interval).
+ * With params.use_trit, a gap from the period begin to a first test report that starts a track
+ * (starts_track) is not a miss if it is at most params.trit_s (counted in num_initiations).
+ * starts_track may be empty otherwise.
  */
 Result walk(const TimePeriodCollection& ref_periods,
             const std::vector<boost::posix_time::ptime>& tst_times,
             const TstCheck& has_ref_pos,
             const TstCheck& inside_sector,
+            const TstCheck& starts_track,
             const GapUIFunc& gap_ui,
             const Params& params);
 

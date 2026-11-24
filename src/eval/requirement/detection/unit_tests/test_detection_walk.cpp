@@ -48,7 +48,7 @@ enum class TstFlag { Ok, NoRefPos, Outside };
 
 /**
  * One test case: reference times with inside state, test reports with flags, parameters and
- * expected sums. Times are seconds from t0().
+ * expected sums. Times are seconds from t0(). tst_starts marks the test reports that start a track.
  */
 struct WalkCase
 {
@@ -57,8 +57,10 @@ struct WalkCase
     double                                  max_ref_time_diff_s = 5.0;
     std::vector<std::pair<double, bool>>    ref;
     std::vector<std::pair<double, TstFlag>> tst;
+    std::vector<bool>                       tst_starts;
     double                                  expected_sum_expected = 0.0;
     double                                  expected_sum_missed   = 0.0;
+    unsigned int                            expected_num_initiations = 0;
 };
 
 TstFlag flagFromString(const std::string& s)
@@ -103,6 +105,12 @@ WalkCase caseFromJSON(const nlohmann::json& j, const std::string& name)
     c.params.use_time_ratio = p.value("use_time_ratio", false);
     c.max_ref_time_diff_s   = p.value("max_ref_time_diff_s", 5.0);
 
+    if (p.contains("trit_s"))
+    {
+        c.params.use_trit = true;
+        c.params.trit_s   = p.at("trit_s").get<float>();
+    }
+
     // reference: explicit [t, inside] entries and/or series [t_from, t_to, step, inside]
     if (j.contains("ref"))
         for (const auto& r : j.at("ref"))
@@ -124,11 +132,20 @@ WalkCase caseFromJSON(const nlohmann::json& j, const std::string& name)
 
     std::sort(c.ref.begin(), c.ref.end(), [] (const auto& a, const auto& b) { return a.first < b.first; });
 
+    // test reports: [t, flag] or [t, flag, "start"] for a report that starts a track
     for (const auto& t : j.at("tst"))
+    {
         c.tst.emplace_back(t.at(0).get<double>(), flagFromString(t.at(1).get<std::string>()));
 
-    c.expected_sum_expected = j.at("expected").at("sum_expected").get<double>();
-    c.expected_sum_missed   = j.at("expected").at("sum_missed").get<double>();
+        if (t.size() > 2 && t.at(2).get<std::string>() != "start")
+            throw std::runtime_error("unknown test report track flag '" + t.at(2).get<std::string>() + "'");
+
+        c.tst_starts.push_back(t.size() > 2);
+    }
+
+    c.expected_sum_expected    = j.at("expected").at("sum_expected").get<double>();
+    c.expected_sum_missed      = j.at("expected").at("sum_missed").get<double>();
+    c.expected_num_initiations = j.at("expected").value("num_initiations", 0u);
 
     return c;
 }
@@ -150,9 +167,10 @@ Result run(const WalkCase& c)
 
     auto has_ref_pos   = [ & ] (size_t i) { return c.tst.at(i).second != TstFlag::NoRefPos; };
     auto inside_sector = [ & ] (size_t i) { return c.tst.at(i).second != TstFlag::Outside; };
+    auto starts_track  = [ & ] (size_t i) { return i < c.tst_starts.size() && c.tst_starts.at(i); };
     auto gap_ui        = [ & ] (const ptime&, const ptime&) { return c.params.miss_params.update_interval_s; };
 
-    return walk(ref_periods, tst_times, has_ref_pos, inside_sector, gap_ui, c.params);
+    return walk(ref_periods, tst_times, has_ref_pos, inside_sector, starts_track, gap_ui, c.params);
 }
 
 std::string casesDir()
@@ -200,6 +218,49 @@ TEST_CASE("DetectionWalk::referencePeriods", "[eval][detection_walk]")
         REQUIRE(periods.size() == 1);
         CHECK(periods.period(0).begin() == at(2));
         CHECK(periods.period(0).end()   == at(4));
+    }
+}
+
+TEST_CASE("DetectionWalk::trackStarts", "[eval][detection_walk]")
+{
+    typedef boost::optional<bool>         OptBool;
+    typedef boost::optional<unsigned int> OptTN;
+
+    SECTION("Track Begin decides when known")
+    {
+        auto starts = trackStarts({ { OptBool(true), OptBool(true), OptTN(7) },
+                                    { OptBool(false), OptBool(false), OptTN(8) } });
+        CHECK(starts == std::vector<bool>{ true, false });
+    }
+
+    SECTION("without Track Begin a tentative report starts a track")
+    {
+        auto starts = trackStarts({ { {}, OptBool(false), OptTN(7) },
+                                    { {}, OptBool(false), OptTN(7) },
+                                    { {}, OptBool(true), OptTN(7) } });
+        CHECK(starts == std::vector<bool>{ true, true, false });
+    }
+
+    SECTION("without Track Begin and Track Confirmed the first report of a track number starts a track")
+    {
+        auto starts = trackStarts({ { {}, {}, OptTN(7) },
+                                    { {}, {}, OptTN(7) },
+                                    { {}, OptBool(true), OptTN(9) },
+                                    { {}, {}, OptTN(9) } });
+        CHECK(starts == std::vector<bool>{ true, false, true, false });
+    }
+
+    SECTION("a track number seen in a report with Track Begin is not new later")
+    {
+        auto starts = trackStarts({ { OptBool(false), {}, OptTN(7) },
+                                    { {}, {}, OptTN(7) } });
+        CHECK(starts == std::vector<bool>{ false, false });
+    }
+
+    SECTION("nothing known is no track start")
+    {
+        auto starts = trackStarts({ { {}, {}, {} }, { {}, OptBool(true), {} } });
+        CHECK(starts == std::vector<bool>{ false, false });
     }
 }
 
@@ -253,7 +314,8 @@ TEST_CASE("DetectionWalk cases from JSON", "[eval][detection_walk]")
 
         auto result = run(c);
 
-        CHECK(result.sum_expected == Approx(c.expected_sum_expected));
-        CHECK(result.sum_missed   == Approx(c.expected_sum_missed));
+        CHECK(result.sum_expected    == Approx(c.expected_sum_expected));
+        CHECK(result.sum_missed      == Approx(c.expected_sum_missed));
+        CHECK(result.num_initiations == c.expected_num_initiations);
     }
 }
