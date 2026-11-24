@@ -1,0 +1,31 @@
+{
+    "description": "With the check type <=, a difference equal to the threshold passes: 5 m/s at 10 m/s reference speed, and 8 m/s at 80 m/s. Probability 1.",
+    "params": {
+        "threshold_value": 5.0,
+        "threshold_percent": 10.0,
+        "use_percent_if_higher": true,
+        "check_type": "<="
+    },
+    "reports": [
+        {
+            "ref": 10,
+            "tst": 15,
+            "outcome": "passed",
+            "diff": 5,
+            "threshold": 5
+        },
+        {
+            "ref": 80,
+            "tst": 72,
+            "outcome": "passed",
+            "diff": 8,
+            "threshold": 8
+        }
+    ],
+    "expected": {
+        "passed": 2,
+        "failed": 0,
+        "no_tst": 0,
+        "probability": 1.0
+    }
+}

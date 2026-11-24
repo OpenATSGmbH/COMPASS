@@ -5,11 +5,13 @@ target_include_directories(compass_eval PUBLIC
 target_sources(compass_eval
     PUBLIC
         "${CMAKE_CURRENT_LIST_DIR}/trackangle.h"
+        "${CMAKE_CURRENT_LIST_DIR}/trackangle_helpers.h"
         "${CMAKE_CURRENT_LIST_DIR}/trackangleconfig.h"
         "${CMAKE_CURRENT_LIST_DIR}/trackangleconfigwidget.h"
         #"${CMAKE_CURRENT_LIST_DIR}/detail.h"        
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/trackangle.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/trackangle_helpers.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/trackangleconfig.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/trackangleconfigwidget.cpp"
     )

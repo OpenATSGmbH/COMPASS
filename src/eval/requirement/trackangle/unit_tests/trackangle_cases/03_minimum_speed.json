@@ -1,0 +1,50 @@
+{
+    "description": "Minimum reference speed 3 m/s: a report at 2.9 m/s is left out, also without test track angle (the speed is checked first). Exactly 3 m/s is compared. Probability 1 / 2.",
+    "params": {
+        "threshold": 15.0,
+        "use_minimum_speed": true,
+        "minimum_speed": 3.0,
+        "check_type": "<="
+    },
+    "reports": [
+        {
+            "ref_speed": 2.9,
+            "ref": 90,
+            "tst": 95,
+            "outcome": "ref_speed_low"
+        },
+        {
+            "ref_speed": 2.0,
+            "ref": 90,
+            "tst": null,
+            "outcome": "ref_speed_low"
+        },
+        {
+            "ref_speed": 3.0,
+            "ref": 90,
+            "tst": 95,
+            "outcome": "passed",
+            "diff": 5
+        },
+        {
+            "ref_speed": 10,
+            "ref": 90,
+            "tst": null,
+            "outcome": "no_tst"
+        },
+        {
+            "ref_speed": 10,
+            "ref": 90,
+            "tst": 120,
+            "outcome": "failed",
+            "diff": 30
+        }
+    ],
+    "expected": {
+        "passed": 1,
+        "failed": 1,
+        "no_tst": 1,
+        "ref_speed_low": 2,
+        "probability": 0.5
+    }
+}

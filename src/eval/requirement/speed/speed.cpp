@@ -16,6 +16,7 @@
  */
 
 #include "requirement/speed/speed.h"
+#include "requirement/speed/speed_helpers.h"
 #include "results/speed/speed.h"
 #include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
@@ -92,7 +93,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
     unsigned int num_comp_failed {0};
     unsigned int num_comp_passed {0};
 
-    float tmp_threshold_value;
 
     typedef EvaluationRequirementResult::SingleSpeed Result;
     typedef EvaluationDetail                         Detail;
@@ -107,7 +107,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
     boost::optional<dbContent::TargetPosition> ref_pos;
 
     boost::optional<dbContent::TargetVelocity> ref_spd;
-    boost::optional<float> tst_spd_ms;
     float spd_diff;
 
     bool comp_passed;
@@ -137,6 +136,12 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
                                              .addPosition(ref_pos)
                                              .generalComment(comment));
     };
+
+    SpeedHelpers::Params speed_params;
+    speed_params.threshold_value       = threshold_value_;
+    speed_params.use_percent_if_higher = use_percent_if_higher_;
+    speed_params.threshold_percent     = threshold_percent_;
+    speed_params.check_type            = threshold_value_check_type_;
 
     for (const auto& tst_id : tst_data)
     {
@@ -212,9 +217,9 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
         ++num_pos_inside;
 
         // ref_spd ok
-        tst_spd_ms = target_data.tstChain().groundSpeed(tst_id);
+        auto speed_check = SpeedHelpers::check(ref_spd->speed_, target_data.tstChain().groundSpeed(tst_id), speed_params);
 
-        if (!tst_spd_ms.has_value())
+        if (speed_check.outcome == SpeedHelpers::Outcome::NoTstValue)
         {
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
@@ -228,19 +233,11 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
             continue;
         }
 
-        spd_diff = fabs(ref_spd->speed_ - *tst_spd_ms);
-
-        // percent-based threshold on the reference speed, the "actual speed" of the standards
-        float percent_threshold_value = static_cast<float>(ref_spd->speed_) * threshold_percent_ / 100.0f;
-
-        if (use_percent_if_higher_ && percent_threshold_value > threshold_value_) // use percent based threshold
-            tmp_threshold_value = percent_threshold_value;
-        else
-            tmp_threshold_value = threshold_value_;
+        spd_diff = speed_check.diff;
 
         ++num_speeds;
 
-        if (compareValue(spd_diff, tmp_threshold_value, threshold_value_check_type_))
+        if (speed_check.outcome == SpeedHelpers::Outcome::Passed)
         {
             comp_passed = true;
             ++num_comp_passed;

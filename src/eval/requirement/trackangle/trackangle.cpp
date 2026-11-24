@@ -16,6 +16,7 @@
  */
 
 #include "requirement/trackangle/trackangle.h"
+#include "requirement/trackangle/trackangle_helpers.h"
 #include "results/trackangle/trackangle.h"
 #include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
@@ -155,6 +156,12 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
 
 //    std::vector<EvaluationDetail::Line> lines;
 
+    TrackAngleHelpers::Params angle_params;
+    angle_params.threshold         = threshold_;
+    angle_params.use_minimum_speed = use_minimum_speed_;
+    angle_params.minimum_speed     = minimum_speed_;
+    angle_params.check_type        = threshold_value_check_type_;
+
     for (const auto& tst_id : tst_data)
     {
         ++num_pos;
@@ -237,7 +244,12 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
 
         // ref_spd ok
 
-        if (use_minimum_speed_ && ref_spd->speed_ < minimum_speed_)
+        ref_trackangle_deg = ref_spd->track_angle_;
+        tst_trackangle_deg = target_data.tstChain().trackAngle(tst_id);
+
+        auto angle_check = TrackAngleHelpers::check(ref_spd->speed_, ref_trackangle_deg, tst_trackangle_deg, angle_params);
+
+        if (angle_check.outcome == TrackAngleHelpers::Outcome::RefSpeedTooLow)
         {
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
@@ -255,10 +267,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
             continue;
         }
 
-        ref_trackangle_deg = ref_spd->track_angle_;
-        tst_trackangle_deg = target_data.tstChain().trackAngle(tst_id);
-
-        if (!tst_trackangle_deg.has_value())
+        if (angle_check.outcome == TrackAngleHelpers::Outcome::NoTstValue)
         {
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
@@ -273,7 +282,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
             continue;
         }
 
-        trackangle_min_diff = Number::calculateMinAngleDifference(ref_trackangle_deg, *tst_trackangle_deg);
+        trackangle_min_diff = angle_check.diff;
 
         // tst vector
         //lines.emplace_back(tst_pos, getPositionAtAngle(tst_pos, tst_trackangle_deg, ref_spd.speed_), tst_line_color);
@@ -286,7 +295,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
 
         ++num_trackangle_comp;
 
-        if (compareValue(fabs(trackangle_min_diff), threshold_, threshold_value_check_type_))
+        if (angle_check.outcome == TrackAngleHelpers::Outcome::Passed)
         {
             comp_passed = true;
             ++num_comp_passed;
