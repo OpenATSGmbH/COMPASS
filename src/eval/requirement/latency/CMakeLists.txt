@@ -8,6 +8,7 @@ target_sources(compass_eval
         "${CMAKE_CURRENT_LIST_DIR}/latencyconfig.h"
         "${CMAKE_CURRENT_LIST_DIR}/latencyconfigwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/adsblatency.h"
+        "${CMAKE_CURRENT_LIST_DIR}/adsblatency_helpers.h"
         "${CMAKE_CURRENT_LIST_DIR}/adsblatencyconfig.h"
         "${CMAKE_CURRENT_LIST_DIR}/adsblatencyconfigwidget.h"
     PRIVATE
@@ -15,6 +16,7 @@ target_sources(compass_eval
         "${CMAKE_CURRENT_LIST_DIR}/latencyconfig.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/latencyconfigwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/adsblatency.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/adsblatency_helpers.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/adsblatencyconfig.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/adsblatencyconfigwidget.cpp"
     )

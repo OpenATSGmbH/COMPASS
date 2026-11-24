@@ -1,0 +1,24 @@
+{
+    "description": "A latency of exactly 0 s (transmission at the reception time) passes, the minimum is included. Maximum 0 s: only latency 0 passes, 0.25 s is too high. Probability 1 / 2.",
+    "max_value_s": 0.0,
+    "reports": [
+        {
+            "tomr": 3600.0,
+            "tort": 3600.0,
+            "outcome": "passed",
+            "latency": 0.0
+        },
+        {
+            "tomr": 3600.0,
+            "tort": 3600.25,
+            "outcome": "too_high",
+            "latency": 0.25
+        }
+    ],
+    "expected": {
+        "passed": 1,
+        "failed": 1,
+        "no_time_data": 0,
+        "probability": 0.5
+    }
+}

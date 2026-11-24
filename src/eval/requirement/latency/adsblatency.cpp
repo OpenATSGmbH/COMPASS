@@ -16,6 +16,7 @@
  */
 
 #include "requirement/latency/adsblatency.h"
+#include "requirement/latency/adsblatency_helpers.h"
 #include "results/latency/adsblatency.h"
 
 #include "evaluationmanager.h"
@@ -114,10 +115,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> ADSBLatency::evaluate (
         }
         ++num_pos_inside;
 
-        auto tomr = target_data.tstChain().tomrPosition(tst_id);
-        auto tort = target_data.tstChain().tort(tst_id);
+        auto c = ADSBLatencyHelpers::check(target_data.tstChain().tomrPosition(tst_id),
+                                           target_data.tstChain().tort(tst_id), max_value_s_);
 
-        if (!tomr.has_value() || !tort.has_value())
+        if (c.outcome == ADSBLatencyHelpers::Outcome::NoTimeData)
         {
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos, is_inside, {}, {}, "No time stamp data");
@@ -126,19 +127,9 @@ std::shared_ptr<EvaluationRequirementResult::Single> ADSBLatency::evaluate (
             continue;
         }
 
-        // latency per ED-129C Section 3.3.4: report output time minus
-        // message reception time, both in seconds of day
-        double latency = (double)tort.value() - (double)tomr.value();
+        latencies.push_back(c.latency);
 
-        // day wrap around midnight
-        if (latency < -43200.0)
-            latency += 86400.0;
-        else if (latency > 43200.0)
-            latency -= 86400.0;
-
-        latencies.push_back(latency);
-
-        bool value_ok = latency >= 0.0 && latency <= max_value_s_;
+        bool value_ok = c.outcome == ADSBLatencyHelpers::Outcome::Passed;
 
         string comment;
 
@@ -147,10 +138,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> ADSBLatency::evaluate (
         else
         {
             ++num_value_nok;
-            comment = latency < 0.0 ? "Negative latency" : "Latency not OK";
+            comment = c.outcome == ADSBLatencyHelpers::Outcome::Negative ? "Negative latency" : "Latency not OK";
         }
 
-        addDetail(timestamp, tst_pos, is_inside, latency, value_ok, comment);
+        addDetail(timestamp, tst_pos, is_inside, c.latency, value_ok, comment);
     }
 
     traced_assert(num_pos == num_pos_inside + num_pos_outside);
