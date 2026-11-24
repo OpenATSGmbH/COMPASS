@@ -30,16 +30,16 @@ namespace EvaluationRequirement
 {
 
 PositionRadarAzimuthConfigWidget::PositionRadarAzimuthConfigWidget(PositionRadarAzimuthConfig& cfg)
-    : PositionBaseProbConfigWidget(cfg)
+    : PositionBaseValueConfigWidget(cfg)
 {
     // max dist
     threshold_value_edit_ = new QLineEdit(QString::number(config().thresholdValue()));
     threshold_value_edit_->setValidator(new QDoubleValidator(0.0, 100.0, 4, this));
-    threshold_value_edit_->setToolTip("Minimum/Maximum allowed angle distance from test target report to reference");
+    threshold_value_edit_->setToolTip("The standard deviation of the azimuth difference between the test target reports and the reference must be smaller");
     connect(threshold_value_edit_, &QLineEdit::textEdited,
             this, &PositionRadarAzimuthConfigWidget::thresholdValueEditSlot);
 
-    form_layout_->addRow("Threshold Value [deg]", threshold_value_edit_);
+    form_layout_->addRow("Maximum Standard Deviation [deg]", threshold_value_edit_);
 
 }
 

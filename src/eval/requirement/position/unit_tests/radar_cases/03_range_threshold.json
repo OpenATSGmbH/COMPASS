@@ -1,0 +1,36 @@
+{
+    "description": "Radar Range, threshold 70 m, difference is reference minus test ground range. 40 m passes, exactly 70 m and -70 m pass (the threshold is included), 70.5 m fails. Probability 3 / 4.",
+    "type": "range",
+    "threshold": 70.0,
+    "reports": [
+        {
+            "ref_m": 10040.0,
+            "tst_m": 10000.0,
+            "difference": 40.0,
+            "passed": true
+        },
+        {
+            "ref_m": 10070.0,
+            "tst_m": 10000.0,
+            "difference": 70.0,
+            "passed": true
+        },
+        {
+            "ref_m": 9930.0,
+            "tst_m": 10000.0,
+            "difference": -70.0,
+            "passed": true
+        },
+        {
+            "ref_m": 10070.5,
+            "tst_m": 10000.0,
+            "difference": 70.5,
+            "passed": false
+        }
+    ],
+    "expected": {
+        "passed": 3,
+        "failed": 1,
+        "probability": 0.75
+    }
+}

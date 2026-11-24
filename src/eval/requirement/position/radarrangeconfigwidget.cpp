@@ -30,16 +30,16 @@ namespace EvaluationRequirement
 {
 
 PositionRadarRangeConfigWidget::PositionRadarRangeConfigWidget(PositionRadarRangeConfig& cfg)
-    : PositionBaseProbConfigWidget(cfg)
+    : PositionBaseValueConfigWidget(cfg)
 {
     // max dist
     threshold_value_edit_ = new QLineEdit(QString::number(config().thresholdValue()));
     threshold_value_edit_->setValidator(new QDoubleValidator(0.0, 10000.0, 2, this));
-    threshold_value_edit_->setToolTip("Minimum/Maximum allowed distance from test target report to reference");
+    threshold_value_edit_->setToolTip("The standard deviation of the ground range difference between the test target reports and the reference must be smaller");
     connect(threshold_value_edit_, &QLineEdit::textEdited,
             this, &PositionRadarRangeConfigWidget::thresholdValueEditSlot);
 
-    form_layout_->addRow("Threshold Value [m]", threshold_value_edit_);
+    form_layout_->addRow("Maximum Standard Deviation [m]", threshold_value_edit_);
 }
 
 void PositionRadarRangeConfigWidget::thresholdValueEditSlot(QString value)

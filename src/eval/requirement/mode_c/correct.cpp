@@ -16,6 +16,7 @@
  */
 
 #include "requirement/mode_c/correct.h"
+#include "requirement/base/correcthelpers.h"
 #include "results/mode_c/correct.h"
 #include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
@@ -92,8 +93,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCCorrect::evaluate (
 
     ValueComparisonResult cmp_res_mc;
     string cmp_res_mc_comment;
-    bool mc_no_ref;
-    bool mc_correct_failed;
 
     bool result_ok;
 
@@ -179,9 +178,9 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCCorrect::evaluate (
 
         tie(cmp_res_mc, cmp_res_mc_comment) = compareModeC(tst_id, target_data, max_ref_time_diff, max_distance_ft_);
 
-        mc_no_ref = cmp_res_mc == ValueComparisonResult::Unknown_NoRefData;
+        auto report_class = CorrectHelpers::classify({cmp_res_mc}, false);
 
-        if (mc_no_ref) // none has a reference
+        if (report_class == CorrectHelpers::ReportClass::NoRefValue)
         {
             if (!skip_no_data_details)
                 addDetail(timestamp, pos_current, ref_pos,
@@ -194,17 +193,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCCorrect::evaluate (
             continue;
         }
 
-        mc_correct_failed = cmp_res_mc == ValueComparisonResult::Unknown_NoTstData
-                || cmp_res_mc == ValueComparisonResult::Different;
+        result_ok = report_class == CorrectHelpers::ReportClass::Correct;
 
-        if (mc_correct_failed)
+        if (!result_ok)
         {
             if (comment.size())
                 comment += ", ";
             comment += "MC failed (" + cmp_res_mc_comment + ")";
         }
-
-        result_ok = !mc_correct_failed;
 
         if (result_ok)
             ++num_correct;

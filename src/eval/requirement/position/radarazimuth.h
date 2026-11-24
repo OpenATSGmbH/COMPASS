@@ -24,7 +24,7 @@ namespace EvaluationRequirement
 
 /**
 */
-class PositionRadarAzimuth : public PositionBaseProb
+class PositionRadarAzimuth : public PositionBaseValue
 {
 public:
     PositionRadarAzimuth(
@@ -35,8 +35,9 @@ public:
             const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
             const SectorLayer& sector_layer) override;
 
-    virtual std::string probabilityNameShort() const override { return "PosAzmMean"; }
-    virtual std::string probabilityName() const override  { return "Position Azimuth Mean"; }
+    virtual std::string getConditionResultNameShort() const override { return "AzmSD"; }
+    virtual std::string getConditionResultName() const override { return "Standard deviation of the azimuth difference"; }
+    virtual std::string getConditionUnits() const override { return "deg"; }
 };
 
 }

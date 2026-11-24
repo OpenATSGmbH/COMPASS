@@ -1,0 +1,20 @@
+{
+    "description": "Range gain and bias: reference = 1.001 * test + 50 m for all pairs, so the least squares fit gives gain 1.001 and bias 50 m.",
+    "type": "fit",
+    "tst": [
+        10000.0,
+        20000.0,
+        30000.0,
+        40000.0
+    ],
+    "ref": [
+        10060.0,
+        20070.0,
+        30080.0,
+        40090.0
+    ],
+    "expected": {
+        "gain": 1.001,
+        "bias": 50.0
+    }
+}

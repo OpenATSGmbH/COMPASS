@@ -4133,7 +4133,7 @@
                     "class_name": "EvaluationStandard",
                     "instance_name": "EvaluationStandardRadar0",
                     "parameters": {
-                        "name": "Radar",
+                        "name": "Radar En-Route & TMA",
                         "reference_max_time_diff": 5.0,
                         "reference_min_accuracy": 10.0
                     },
@@ -4142,7 +4142,7 @@
                             "class_name": "EvaluationRequirementGroup",
                             "instance_name": "EvaluationRequirementGroupTest0",
                             "parameters": {
-                                "name": "Mandatory",
+                                "name": "Recommended",
                                 "use": true
                             },
                             "sub_configs": [
@@ -4150,7 +4150,7 @@
                                     "class_name": "EvaluationRequirementDetectionConfig",
                                     "instance_name": "EvaluationRequirementDetectionConfigProbability of Detection0",
                                     "parameters": {
-                                        "comment": "",
+                                        "comment": "EUROCONTROL SUR.ET1.ST01.1000-STD-01-01 6.3.2.1: overall probability of detection > 97 %",
                                         "hold_for_any_target": false,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
@@ -4158,7 +4158,7 @@
                                         "miss_tolerance": 0.10000000149011612,
                                         "name": "Probability of Detection",
                                         "prob": 0.97,
-                                        "prob_check_type": 3,
+                                        "prob_check_type": 2,
                                         "short_name": "PD",
                                         "update_interval": 5.0,
                                         "use": true,
@@ -4171,10 +4171,10 @@
                                     "class_name": "EvaluationRequirementIdentificationCorrectConfig",
                                     "instance_name": "EvaluationRequirementIdentificationCorrectConfigMode A Correct0",
                                     "parameters": {
-                                        "comment": "",
-                                        "name": "Mode A Correct",
+                                        "comment": "EUROCONTROL SUR.ET1.ST01.1000-STD-01-01 6.3.2.4: overall Mode A probability of code detection > 98 %",
+                                        "name": "Mode A Code Detection",
                                         "prob": 0.98,
-                                        "prob_check_type": 3,
+                                        "prob_check_type": 2,
                                         "require_correctness_of_all": false,
                                         "short_name": "PMA",
                                         "use": true,
@@ -4187,10 +4187,10 @@
                                     "class_name": "EvaluationRequirementModeAFalseConfig",
                                     "instance_name": "EvaluationRequirementModeAFalseConfigMode A False0",
                                     "parameters": {
-                                        "comment": "",
-                                        "name": "Mode A False",
-                                        "prob": 0.1,
-                                        "prob_check_type": 1,
+                                        "comment": "EUROCONTROL SUR.ET1.ST01.1000-STD-01-01 6.3.3.2: validated false Mode A codes < 0.1 %",
+                                        "name": "Validated False Mode A Codes",
+                                        "prob": 0.001,
+                                        "prob_check_type": 0,
                                         "short_name": "PFMA",
                                         "use": true
                                     }
@@ -4199,11 +4199,11 @@
                                     "class_name": "EvaluationRequirementModeCCorrectConfig",
                                     "instance_name": "EvaluationRequirementModeCCorrectConfigMode C Correct0",
                                     "parameters": {
-                                        "comment": "",
+                                        "comment": "EUROCONTROL SUR.ET1.ST01.1000-STD-01-01 6.3.2.4: overall Mode C probability of code detection > 96 %. A Mode C within 300 ft of the reference is correct",
                                         "max_distance_ft": 300.0,
-                                        "name": "Mode C Correct",
+                                        "name": "Mode C Code Detection",
                                         "prob": 0.96,
-                                        "prob_check_type": 3,
+                                        "prob_check_type": 2,
                                         "short_name": "PMC",
                                         "use": true
                                     }
@@ -4212,12 +4212,12 @@
                                     "class_name": "EvaluationRequirementModeCFalseConfig",
                                     "instance_name": "EvaluationRequirementModeCFalseConfigMode C False0",
                                     "parameters": {
-                                        "comment": "",
+                                        "comment": "EUROCONTROL SUR.ET1.ST01.1000-STD-01-01 6.3.3.2: validated false Mode C codes < 0.1 %",
                                         "max_difference": 300.0,
                                         "maximum_probability_false": 0.009999999776482582,
-                                        "name": "Mode C False",
-                                        "prob": 0.1,
-                                        "prob_check_type": 1,
+                                        "name": "Validated False Mode C Codes",
+                                        "prob": 0.001,
+                                        "prob_check_type": 0,
                                         "short_name": "PFMC",
                                         "use": true
                                     }
@@ -4226,10 +4226,8 @@
                                     "class_name": "EvaluationRequirementPositionRadarAzimuthConfig",
                                     "instance_name": "EvaluationRequirementPositionRadarAzimuthConfigAzimuth0",
                                     "parameters": {
-                                        "comment": "",
-                                        "name": "Azimuth Error",
-                                        "prob": 0.9,
-                                        "prob_check_type": 3,
+                                        "comment": "EUROCONTROL SUR.ET1.ST01.1000-STD-01-01 6.3.3.1: random errors, azimuth standard deviation < 0.08 deg",
+                                        "name": "Azimuth Error Standard Deviation",
                                         "ref_min_accuracy": 10.0,
                                         "short_name": "AZM",
                                         "threshold_value": 0.08,
@@ -4240,10 +4238,8 @@
                                     "class_name": "EvaluationRequirementPositionRadarRangeConfig",
                                     "instance_name": "EvaluationRequirementPositionRadarRangeConfigRange0",
                                     "parameters": {
-                                        "comment": "",
-                                        "name": "Range Error",
-                                        "prob": 0.9,
-                                        "prob_check_type": 3,
+                                        "comment": "EUROCONTROL SUR.ET1.ST01.1000-STD-01-01 6.3.3.1: random errors, slant range standard deviation < 70 m. COMPASS uses the ground range",
+                                        "name": "Range Error Standard Deviation",
                                         "ref_min_accuracy": 10.0,
                                         "short_name": "RNG",
                                         "threshold_value": 70.0,

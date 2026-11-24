@@ -16,11 +16,11 @@
  */
 
 #include "results/position/radarrange.h"
+#include "requirement/position/radar_helpers.h"
 #include "stringconv.h"
 
 #include "logger.h"
 
-#include <Eigen/Dense>
 
 #include "traced_assert.h"
 
@@ -128,29 +128,14 @@ boost::optional<double> SinglePositionRadarRange::computeFinalResultValue() cons
     if (accumulator_.numValues() == 0)
         return {};
 
-    // linear regression
-    size_t num_distances = accumulator_.numValues();
+    traced_assert(accumulator_.numValues() == range_values_ref_.size());
 
-    traced_assert(num_distances == range_values_ref_.size());
+    auto fit = EvaluationRequirement::RadarHelpers::linearFit(range_values_tst_, range_values_ref_);
 
-    Eigen::MatrixXd x_mat = Eigen::MatrixXd::Ones(num_distances, 2);
-    Eigen::MatrixXd y_mat = Eigen::MatrixXd::Ones(num_distances, 1);
+    range_gain_ = fit.gain;
+    range_bias_ = fit.bias;
 
-    for (unsigned int cnt=0; cnt < num_distances; ++cnt)
-    {
-        x_mat(cnt, 0) = range_values_tst_.at(cnt);
-        y_mat(cnt, 0) = range_values_ref_.at(cnt);
-    }
-
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd;
-
-    svd.compute(x_mat, Eigen::ComputeThinV | Eigen::ComputeThinU);
-    Eigen::MatrixXd x = svd.solve(y_mat);
-
-    range_gain_ = x(0, 0);
-    range_bias_ = x(1, 0);
-
-    return accumulator_.mean();
+    return accumulator_.stddev();
 }
 
 /**********************************************************************************************
@@ -223,28 +208,14 @@ boost::optional<double> JoinedPositionRadarRange::computeFinalResultValue() cons
         range_values_tst.insert(range_values_tst.end(), values_tst.begin(), values_tst.end());
     }
 
-    unsigned int num_distances = accumulator_.numValues();
+    traced_assert(accumulator_.numValues() == range_values_ref.size() && range_values_ref.size() == range_values_tst.size());
 
-    traced_assert(num_distances == range_values_ref.size() && range_values_ref.size() == range_values_tst.size());
+    auto fit = EvaluationRequirement::RadarHelpers::linearFit(range_values_tst, range_values_ref);
 
-    Eigen::MatrixXd x_mat = Eigen::MatrixXd::Ones(num_distances, 2);
-    Eigen::MatrixXd y_mat = Eigen::MatrixXd::Ones(num_distances, 1);
+    range_gain_ = fit.gain;
+    range_bias_ = fit.bias;
 
-    for (unsigned int cnt=0; cnt < num_distances; ++cnt)
-    {
-        x_mat(cnt, 0) = range_values_tst.at(cnt);
-        y_mat(cnt, 0) = range_values_ref.at(cnt);
-    }
-
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd;
-
-    svd.compute(x_mat, Eigen::ComputeThinV | Eigen::ComputeThinU);
-    Eigen::MatrixXd x = svd.solve(y_mat);
-
-    range_gain_ = x(0, 0);
-    range_bias_ = x(1, 0);
-
-    return accumulator_.mean();
+    return accumulator_.stddev();
 }
 
 }

@@ -24,7 +24,7 @@ namespace EvaluationRequirement
 
 /**
 */
-class PositionRadarRange : public PositionBaseProb
+class PositionRadarRange : public PositionBaseValue
 {
 public:
     PositionRadarRange(
@@ -35,8 +35,9 @@ public:
             const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
             const SectorLayer& sector_layer) override;
 
-    std::string probabilityNameShort() const override final { return "PosRngMean"; }
-    std::string probabilityName() const override final { return "Position Range Mean"; }
+    std::string getConditionResultNameShort() const override final { return "RngSD"; }
+    std::string getConditionResultName() const override final { return "Standard deviation of the ground range difference"; }
+    std::string getConditionUnits() const override final { return "m"; }
 };
 
 }

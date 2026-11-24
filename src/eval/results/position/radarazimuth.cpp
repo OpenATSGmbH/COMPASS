@@ -88,11 +88,11 @@ std::vector<Single::TargetInfo> SinglePositionRadarAzimuth::targetInfos() const
              { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
              { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   },
              { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
-             { "DMin [m]"       , "Minimum of angle distance"                , formatValue(accumulator_.min())    }, 
-             { "DMax [m]"       , "Maximum of angle distance"                , formatValue(accumulator_.max())    },
-             { "DAvg [m]"       , "Average of angle distance"                , formatValue(accumulator_.mean())   }, 
-             { "DSDev [m]"      , "Standard Deviation of angle distance"     , formatValue(accumulator_.stddev()) }, 
-             { "DVar [m^2]"     , "Variance of angle distance"               , formatValue(accumulator_.var())    }, 
+             { "DMin [deg]"       , "Minimum of angle distance"                , formatValue(accumulator_.min())    }, 
+             { "DMax [deg]"       , "Maximum of angle distance"                , formatValue(accumulator_.max())    },
+             { "DAvg [deg]"       , "Average of angle distance"                , formatValue(accumulator_.mean())   }, 
+             { "DSDev [deg]"      , "Standard Deviation of angle distance"     , formatValue(accumulator_.stddev()) }, 
+             { "DVar [deg^2]"     , "Variance of angle distance"               , formatValue(accumulator_.var())    }, 
              { "#CF [1]"        , "Number of updates with failed comparison" , num_failed_                        }, 
              { "#CP [1]"        , "Number of updates with passed comparison" , num_passed_                        } };
 }
@@ -104,7 +104,7 @@ boost::optional<double> SinglePositionRadarAzimuth::computeFinalResultValue() co
     if (accumulator_.numValues() == 0)
         return {};
 
-    return accumulator_.mean();
+    return accumulator_.stddev();
 }
 
 /**********************************************************************************************
@@ -131,11 +131,11 @@ std::vector<Joined::SectorInfo> JoinedPositionRadarAzimuth::sectorInfos() const
              { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
              { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   },
              { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
-             { "DMin [m]"       , "Minimum of angle distance"                , formatValue(accumulator_.min())    }, 
-             { "DMax [m]"       , "Maximum of angle distance"                , formatValue(accumulator_.max())    },
-             { "DAvg [m]"       , "Average of angle distance"                , formatValue(accumulator_.mean())   }, 
-             { "DSDev [m]"      , "Standard Deviation of angle distance"     , formatValue(accumulator_.stddev()) }, 
-             { "DVar [m^2]"     , "Variance of angle distance"               , formatValue(accumulator_.var())    }, 
+             { "DMin [deg]"       , "Minimum of angle distance"                , formatValue(accumulator_.min())    }, 
+             { "DMax [deg]"       , "Maximum of angle distance"                , formatValue(accumulator_.max())    },
+             { "DAvg [deg]"       , "Average of angle distance"                , formatValue(accumulator_.mean())   }, 
+             { "DSDev [deg]"      , "Standard Deviation of angle distance"     , formatValue(accumulator_.stddev()) }, 
+             { "DVar [deg^2]"     , "Variance of angle distance"               , formatValue(accumulator_.var())    }, 
              { "#CF [1]"        , "Number of updates with failed comparison" , num_failed_                        }, 
              { "#CP [1]"        , "Number of updates with passed comparison" , num_passed_                        } };
 }
@@ -147,7 +147,7 @@ boost::optional<double> JoinedPositionRadarAzimuth::computeFinalResultValue() co
     if (accumulator_.numValues() == 0)
         return {};
 
-    return accumulator_.mean();
+    return accumulator_.stddev();
 }
 
 }

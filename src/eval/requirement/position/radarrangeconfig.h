@@ -30,7 +30,7 @@ namespace ResultReport
 namespace EvaluationRequirement
 {
 
-class PositionRadarRangeConfig : public PositionBaseProbConfig
+class PositionRadarRangeConfig : public PositionBaseValueConfig
 {
 public:
     PositionRadarRangeConfig(nlohmann::json& config,

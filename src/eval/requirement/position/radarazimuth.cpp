@@ -16,6 +16,7 @@
  */
 
 #include "requirement/position/radarazimuth.h"
+#include "requirement/position/radar_helpers.h"
 #include "results/position/radarazimuth.h"
 #include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
@@ -38,7 +39,7 @@ namespace EvaluationRequirement
 PositionRadarAzimuth::PositionRadarAzimuth(
         const std::string& name, const std::string& short_name, const std::string& group_name, float ref_min_accuracy,
         EvaluationCalculator& calculator, double threshold_value)
-    : PositionBaseProb(name, short_name, group_name, threshold_value, COMPARISON_TYPE::LESS_THAN_OR_EQUAL, 
+    : PositionBaseValue(name, short_name, group_name, threshold_value, COMPARISON_TYPE::LESS_THAN, 
         ref_min_accuracy, calculator)
 {
 }
@@ -236,7 +237,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
             continue;
         }
 
-        azm_deg_diff = Number::calculateMinAngleDifference(ref_azm_rad, tst_azm_rad);
+        azm_deg_diff = RadarHelpers::azimuthDifferenceDeg(ref_azm_rad, tst_azm_rad);
 
         if (std::isnan(azm_deg_diff) || std::isinf(azm_deg_diff))
         {
@@ -252,7 +253,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
 
         ++num_distances;
 
-        if (fabs(azm_deg_diff) <= threshold()) // for single value
+        if (RadarHelpers::passed(azm_deg_diff, threshold()))
         {
             comp_passed = true;
             ++num_comp_passed;

@@ -477,18 +477,23 @@ Also, a table is given for all single targets, sorted by PLTOK.
   \caption{Evaluation Position Radar Azimuth requirement}
 \end{figure}
 
-The 'Position Radar Azimuth' requirement is used to calculate the probability of a target report
-having an Radar azimuth error smaller than a defined threshold. The offset of the position
-(test vs. linear interpolated reference position) is used to calculate the azimuth error component
-w.r.t. the respective Radar. If the absolute value of this range
-position error is smaller or equal than the defined threshold, the target report is counted
-for the calculated probability CP. The CP must be greater or equal than the
-defined ’Probability’ for the requirement to pass.
+The 'Position Radar Azimuth' requirement checks the random azimuth error of a radar, as in the EUROCONTROL
+radar surveillance standard (SUR.ET1.ST01.1000-STD-01-01, 6.3.3.1).
+
+\begin{itemize}
+\item For each target report, COMPASS calculates the azimuth of the test position and the azimuth of the
+linear interpolated reference position w.r.t. the respective radar.
+\item The azimuth difference is the test azimuth minus the reference azimuth.
+\item The standard deviation of the azimuth differences must be smaller than the defined maximum for the
+requirement to pass.
+\item \#CP counts the target reports with an absolute azimuth difference smaller or equal than the maximum,
+\#CF the other target reports. These counts give information only.
+\end{itemize}
 \ \\
 
 \begin{itemize}
 \item Minimum Reference Accuracy [m]: Maximum allowed reference position standard deviation, see \nameref{sec:eval_min_ref_acc}
-\item Maximum Absolute Value [m]: Maximum azimuth offset allowed
+\item Maximum Standard Deviation [deg]: Maximum standard deviation of the azimuth differences
 \end{itemize}
 
 \subsubsection{Result Values}
@@ -511,15 +516,15 @@ defined ’Probability’ for the requirement to pass.
   \#NoRef [1] & Number of updates w/o reference positions & 12861  \\ \hline
   \#PosInside [1] & Number of updates inside sector & 15113  \\ \hline
   \#PosOutside [1] & Number of updates outside sector & 731  \\ \hline
-  DMin [m] & Minimum of angle distance & -103.90  \\ \hline
-  DMax [m] & Maximum of angle distance & 28.27  \\ \hline
-  DAvg [m] & Average of angle distance & -0.01  \\ \hline
-  DSDev [m] & Standard Deviation of angle distance & 1.25  \\ \hline
-  DVar [$m^2$] & Variance of angle distance & 1.57  \\ \hline
+  DMin [deg] & Minimum of angle distance & -103.90  \\ \hline
+  DMax [deg] & Maximum of angle distance & 28.27  \\ \hline
+  DAvg [deg] & Average of angle distance & -0.01  \\ \hline
+  DSDev [deg] & Standard Deviation of angle distance & 1.25  \\ \hline
+  DVar [$deg^2$] & Variance of angle distance & 1.57  \\ \hline
   \#CF [1] & Number of updates with failed comparison & 1860  \\ \hline
   \#CP [1] & Number of updates with passed comparison  & 13253  \\ \hline
-  Condition &  & <= 0.080000  \\ \hline
-  Condition Fulfilled &  & Passed  \\ \hline
+  Condition &  & < 0.080000  \\ \hline
+  Condition Fulfilled &  & Failed  \\ \hline
 \end{tabularx}
 \end{table}
 \end{center}
@@ -538,14 +543,14 @@ Also, a table is given for all single targets, sorted by \#CF.
     \#NoRef [1] & Number of updates w/o reference positions & 72 \\ \hline
     \#PosInside [1] & Number of updates inside sector & 285 \\ \hline
     \#PosOutside [1] & Number of updates outside sector & 37 \\ \hline
-    DMin [m] & Minimum of angle distance & -0.02 \\ \hline
-    DMax [m] & Maximum of angle distance & 0.15 \\ \hline
-    DAvg [m] & Average of angle distance & 0.09 \\ \hline
-    DSDev [m] & Standard Deviation of angle distance & 0.03 \\ \hline
-    DVar [$m^2$] & Variance of angle distance & 0.00 \\ \hline
+    DMin [deg] & Minimum of angle distance & -0.02 \\ \hline
+    DMax [deg] & Maximum of angle distance & 0.15 \\ \hline
+    DAvg [deg] & Average of angle distance & 0.09 \\ \hline
+    DSDev [deg] & Standard Deviation of angle distance & 0.03 \\ \hline
+    DVar [$deg^2$] & Variance of angle distance & 0.00 \\ \hline
     \#CF [1] & Number of updates with failed comparison & 191 \\ \hline
     \#CP [1] & Number of updates with passed comparison & 94 \\ \hline
-    Condition &  & <= 0.080000 \\ \hline
+    Condition &  & < 0.080000 \\ \hline
     Condition Fulfilled &  & Passed \\ \hline
 \end{tabularx}
 \end{table}
@@ -564,18 +569,25 @@ Also, a table is given for all single targets, sorted by \#CF.
   \caption{Evaluation Position Radar Range requirement}
 \end{figure}
 
-The 'Position Radar Range' requirement is used to calculate the probability of a target report
-having an Radar range error smaller than a defined threshold. The offset of the position
-(test vs. linear interpolated reference position) is used to calculate the range error component
-w.r.t. the respective Radar. If the absolute value of this range
-position error is smaller or equal than the defined threshold, the target report is counted
-for the calculated probability CP. The CP must be greater or equal than the
-defined ’Probability’ for the requirement to pass.
+The 'Position Radar Range' requirement checks the random range error of a radar, as in the EUROCONTROL
+radar surveillance standard (SUR.ET1.ST01.1000-STD-01-01, 6.3.3.1).
+
+\begin{itemize}
+\item For each target report, COMPASS calculates the ground range of the test position and the ground range
+of the linear interpolated reference position w.r.t. the respective radar. The standard uses the slant range.
+\item The range difference is the reference ground range minus the test ground range.
+\item The standard deviation of the range differences must be smaller than the defined maximum for the
+requirement to pass.
+\item \#CP counts the target reports with an absolute range difference smaller or equal than the maximum,
+\#CF the other target reports. These counts give information only.
+\item Range bias and range gain come from a linear least squares fit of the reference ground range over the
+test ground range. They give information only.
+\end{itemize}
 \ \\
 
 \begin{itemize}
 \item Minimum Reference Accuracy [m]: Maximum allowed reference position standard deviation, see \nameref{sec:eval_min_ref_acc}
-\item Maximum Absolute Value [m]: Maximum range offset allowed
+\item Maximum Standard Deviation [m]: Maximum standard deviation of the range differences
 \end{itemize}
 
 \subsubsection{Result Values}
@@ -607,8 +619,8 @@ defined ’Probability’ for the requirement to pass.
   \#CP [1] & Number of updates with passed comparison  & 13500 \\ \hline
   Range Bias [m] & Range bias (linear estimation) & -1.42 \\ \hline
   Range Gain [1] & Range gain (linear estimation) & 1.00014 \\ \hline
-  Condition &  & <= 70.000000 \\ \hline
-  Condition Fulfilled &  & Passed \\ \hline
+  Condition &  & < 70.000000 \\ \hline
+  Condition Fulfilled &  & Failed \\ \hline
 
 \end{tabularx}
 \end{table}
@@ -637,7 +649,7 @@ Also, a table is given for all single targets, sorted by \#CF.
     Range Gain [1] & Range gain (linear estimation) & 0.80278 \\ \hline
     \#CF [1] & Number of updates with failed comparison & 1 \\ \hline
     \#CP [1] & Number of updates with passed comparison & 17 \\ \hline
-    Condition &  & <= 70.000000 \\ \hline
+    Condition &  & < 70.000000 \\ \hline
     Condition Fulfilled &  & Passed \\ \hline
 \end{tabularx}
 \end{table}

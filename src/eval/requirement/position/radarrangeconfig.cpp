@@ -32,7 +32,7 @@ namespace EvaluationRequirement
 PositionRadarRangeConfig::PositionRadarRangeConfig(
         nlohmann::json& config,
         Group* parent)
-    : PositionBaseProbConfig(config, parent)
+    : PositionBaseValueConfig(config, parent)
 {
     registerParameter("threshold_value", &threshold_value_, 50.0);
 }
@@ -66,14 +66,14 @@ BaseConfigWidget* PositionRadarRangeConfig::createWidget()
 
 void PositionRadarRangeConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
-    PositionBaseProbConfig::addToReport(report);
+    PositionBaseValueConfig::addToReport(report);
 
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
     auto& table = section.getTable("req_table");
 
-    table.addRow({"Threshold Value [m]",
-                  "Maximum allowed RMS from test target report to reference",
+    table.addRow({"Maximum Standard Deviation [m]",
+                  "The standard deviation of the ground range difference between the test target reports and the reference must be smaller",
                   threshold_value_});
 
 }
