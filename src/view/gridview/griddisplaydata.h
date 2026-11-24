@@ -54,6 +54,38 @@ struct GridTextLabel
 };
 
 /**
+ * Points or lines on a geographic grid or map, from a points, lines or line string feature of the view point.
+ */
+struct GridOverlay
+{
+    enum class Type
+    {
+        Points,
+        Lines,     // pairs of positions, each pair is one line
+        LineString // one line through all positions
+    };
+
+    /// the symbols of ViewPointGenFeaturePoints
+    enum class Symbol
+    {
+        Circle = 0,
+        Triangle,
+        Square,
+        Cross,
+        Border,
+        BorderThick
+    };
+
+    Type                 type   = Type::Points;
+    std::vector<QPointF> positions;            // x = longitude, y = latitude
+    std::vector<QColor>  colors;               // one per position (a line goes from color to color), empty: color
+    QColor               color  = Qt::black;
+    double               size   = 6.0;         // symbol size or line width, pixels of the layout
+    Symbol               symbol = Symbol::Square;
+    bool                 dotted = false;
+};
+
+/**
  * Output of GridViewModel, the only data the grid render widget draws from.
  */
 struct GridDisplayData
@@ -78,7 +110,9 @@ struct GridDisplayData
     QRectF                                  database_extent; // empty chart and zoom limits, empty if not used
     std::vector<GridSectorLine>             sectors;         // all sectors of the data context, as lines
     std::vector<GridTextLabel>              labels;          // text labels of a geographic grid
+    std::vector<GridOverlay>                overlays;        // points and lines of a geographic grid, below the labels
     boost::optional<GridBackgroundSettings> background;      // from the view point, wins over the options
+    QRectF                                  map_extent;      // map without grid: the area of its overlays and labels
 
     // Identity of the value domain of the axes. The render widget keeps the zoom of the user
     // while the id stays the same.

@@ -549,7 +549,7 @@ TEST_CASE("report figure export image of a geographic grid", "[view][reportfigur
         CHECK(numPixels(image, QColor("#00ffff")) > 50);
     }
 
-    SECTION("points, lines and circles of the view point are not drawn")
+    SECTION("the points and lines of the view point are drawn, the circles are not")
     {
         auto with_overlays = geoGridViewPoint(boost::none);
 
@@ -578,7 +578,8 @@ TEST_CASE("report figure export image of a geographic grid", "[view][reportfigur
         REQUIRE(report_figure::renderExportImage(entries[ 0 ], image));
         REQUIRE(report_figure::renderExportImage(overlays_entries[ 0 ], image_overlays));
 
-        CHECK(image == image_overlays);
+        CHECK(numPixels(image, QColor("#FF00FF")) == 0);
+        CHECK(numPixels(image_overlays, QColor("#FF00FF")) > 50);
     }
 
     SECTION("the background set of the view point")
@@ -595,6 +596,59 @@ TEST_CASE("report figure export image of a geographic grid", "[view][reportfigur
 
         CHECK(numPixels(image, QColor("#102030")) > 10000);
         CHECK(numPixels(image, QColor(255, 255, 0)) == 0);
+    }
+}
+
+TEST_CASE("report figure export image of a map", "[view][reportfigure]")
+{
+    //lines below the points, a label on top, as the MLAT RU effect maps
+    ViewPointGenVP vp("RU01 - Map", 0, "Geographic");
+
+    vp.annotations().getOrCreateAnnotation("Reference Lines")->addFeature(
+        new ViewPointGenFeatureLines(4.0f, ViewPointGenFeatureStyledLine::LineStyle::Solid,
+                                     { Eigen::Vector2d(48.0, 16.0), Eigen::Vector2d(48.2, 16.4) },
+                                     { QColor("#00FF00"), QColor("#00FF00") }, true));
+
+    auto* points = new ViewPointGenFeaturePoints(ViewPointGenFeaturePoints::Symbol::Circle, 12.0f,
+                                                 { Eigen::Vector2d(48.0, 16.0), Eigen::Vector2d(48.2, 16.4) },
+                                                 {}, false);
+    points->setColor(QColor("#FF00FF"));
+    vp.annotations().getOrCreateAnnotation("Reports")->addFeature(points);
+
+    auto* text = new ViewPointGenFeatureText("RU01", 48.1, 16.2, 30.0f);
+    text->setColor(QColor("#00FFFF"));
+    vp.annotations().getOrCreateAnnotation("Remote Unit")->addFeature(text);
+
+    nlohmann::json j;
+    vp.toJSON(j);
+
+    const auto entries = report_figure::selectRenderEntries(j);
+    REQUIRE(entries.size() == 1);
+    REQUIRE(entries[ 0 ].kind == report_figure::Kind::Map);
+
+    QImage image;
+    REQUIRE(report_figure::renderExportImage(entries[ 0 ], image));
+
+    CHECK(image.size() == QSize(2400, 1600));
+
+    //the report defaults: black background
+    CHECK(numPixels(image, Qt::black) > 10000);
+
+    CHECK(numPixels(image, QColor("#00FF00")) > 50);
+    CHECK(numPixels(image, QColor("#FF00FF")) > 50);
+    CHECK(numPixels(image, QColor("#00FFFF")) > 50);
+
+    SECTION("the GUI widget of the map has content")
+    {
+        auto widget = report_figure::createRenderWidget(entries[ 0 ]);
+        REQUIRE(widget);
+
+        nlohmann::json info;
+        widget->viewInfoJSON(info);
+
+        CHECK(info.value("num_overlays", 0) == 2);
+        CHECK(info.value("num_labels", 0) == 1);
+        CHECK(info.value("background_available", false));
     }
 }
 

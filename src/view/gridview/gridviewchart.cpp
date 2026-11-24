@@ -288,10 +288,12 @@ void GridViewChart::paintCustomItems(QPaintEvent* event, QPainter& painter)
 
     auto t2 = boost::posix_time::microsec_clock::local_time();
 
-    //borders and sectors above the grid (sectors also without the Background Map), the labels on top
+    //borders and sectors above the grid (sectors also without the Background Map), then the points and lines,
+    //the labels on top
     if (render_widget_->background().available())
     {
         render_widget_->background().paintAbove(painter, plot_area, lonlat);
+        render_widget_->paintOverlays(painter, plot_area, lonlat);
         render_widget_->paintLabels(painter, plot_area, lonlat);
     }
 

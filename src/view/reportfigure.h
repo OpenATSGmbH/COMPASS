@@ -51,23 +51,26 @@ enum class Kind
 {
     Histogram,
     Scatterplot,
-    Grid
+    Grid,
+    Map // the overlays of a view point without grid, on the background over longitude / latitude
 };
 
 /**
- * One render widget of a report figure. It shows one annotation of the view point of the figure.
+ * One render widget of a report figure. It shows one annotation of the view point of the figure, a map shows
+ * all overlays of it.
  */
 struct RenderEntry
 {
     Kind                                  kind             = Kind::Histogram;
     unsigned int                          annotation_index = 0; // position in the order of the view of this kind
     std::string                           image_name;           // "<kind>_<annotation index>", unique inside one figure
-    std::shared_ptr<const nlohmann::json> feature;              // annotation feature, never empty
+    std::shared_ptr<const nlohmann::json> feature;              // annotation feature, empty for a map
     PlotMetadata                          metadata;
 
-    // a grid over longitude / latitude draws them, other grids ignore them
-    bool                                    geographic = false; // a grid over longitude / latitude
+    // a grid over longitude / latitude and a map draw them, other grids ignore them
+    bool                                    geographic = false; // a grid over longitude / latitude, or a map
     std::vector<GridTextLabel>              labels;     // the text features of the view point
+    std::vector<GridOverlay>                overlays;   // the points, lines and line strings of the view point
     boost::optional<GridBackgroundSettings> background; // the background set of the view point
 
     QSize export_layout_size = ExportLayoutSize; // of the view point, also gives the height for width in the GUI
@@ -85,8 +88,11 @@ bool hasGeographicGrid(const nlohmann::json& annotations);
  *
  * A figure gets render widgets if its view point loads no data and holds histogram, scatter series and grid
  * annotations only. With a longitude / latitude grid the view point can also hold overlay features (points,
- * lines, error ellipses, text): the texts are the labels of the geographic grids, the other overlays are not
- * drawn. The caller leaves out the locked figures and loads the content of on-demand figures first.
+ * lines, line strings, error ellipses, text): the geographic grids draw the points, lines and line strings,
+ * with the texts as labels on top. The error ellipses are not drawn.
+ * A view point with overlay features only, at least one of them points, lines or a line string, gives one map
+ * entry ("map_0"): the overlays on the background, over the area they cover.
+ * The caller leaves out the locked figures and loads the content of on-demand figures first.
  */
 std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point);
 
@@ -94,7 +100,7 @@ std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point);
 /// margins, no interaction (mouse wheel ignored, no tools, no drag), no OpenGL, and the height follows the width
 /// with the ratio of the export layout size of the entry. A histogram of one series has a log y axis, a histogram of several
 /// (stacked) series a linear one, unless the annotation sets the scale. A geographic grid without a
-/// background set in its view point gets GridBackgroundSettings::reportDefaults().
+/// background set in its view point gets GridBackgroundSettings::reportDefaults(), a map too.
 /// Created without a model object or a view. ctx_man: gives the sector lines of geographic grids, none
 /// without it.
 std::unique_ptr<ViewRenderWidget> createRenderWidget(const RenderEntry& entry,

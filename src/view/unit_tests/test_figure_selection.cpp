@@ -382,7 +382,7 @@ TEST_CASE("report figure selection", "[view][reportfigure]")
         CHECK(entries[ 0 ].labels[ 0 ].text == "text");
     }
 
-    SECTION("a geographic grid plus points and circles gives the render widget without them")
+    SECTION("a geographic grid plus points and circles gives the render widget with the points, without the circles")
     {
         auto vp = viewPoint();
         addGrid(*vp, "PD - Horizontal", "wgs84");
@@ -398,14 +398,81 @@ TEST_CASE("report figure selection", "[view][reportfigure]")
         REQUIRE(entries.size() == 1);
         CHECK(entries[ 0 ].kind == report_figure::Kind::Grid);
         CHECK(entries[ 0 ].labels.empty());
+        REQUIRE(entries[ 0 ].overlays.size() == 1);
+        CHECK(entries[ 0 ].overlays[ 0 ].type == GridOverlay::Type::Points);
     }
 
-    SECTION("points only give no render widget")
+    SECTION("points only give one map")
     {
         auto vp = viewPoint();
         vp->annotations().getOrCreateAnnotation("Unassociated Reports")->addFeature(
             new ViewPointGenFeaturePoints(ViewPointGenFeaturePoints::Symbol::Square, 6.0f,
                                           { Eigen::Vector2d(48.0, 16.0) }));
+
+        const auto entries = report_figure::selectRenderEntries(toJSON(*vp));
+
+        REQUIRE(entries.size() == 1);
+        CHECK(entries[ 0 ].kind == report_figure::Kind::Map);
+        CHECK(entries[ 0 ].image_name == "map_0");
+        CHECK(entries[ 0 ].geographic);
+        CHECK(!entries[ 0 ].feature);
+        CHECK(entries[ 0 ].labels.empty());
+        CHECK(!entries[ 0 ].background.has_value());
+        REQUIRE(entries[ 0 ].overlays.size() == 1);
+        CHECK(entries[ 0 ].overlays[ 0 ].positions.size() == 1);
+    }
+
+    SECTION("lines, points, texts and circles give one map with the lines and points, the texts as labels")
+    {
+        auto vp = viewPoint();
+        vp->annotations().getOrCreateAnnotation("Reference Lines")->addFeature(
+            new ViewPointGenFeatureLines(2.0f, ViewPointGenFeatureStyledLine::LineStyle::Solid,
+                                         { Eigen::Vector2d(48.0, 16.0), Eigen::Vector2d(48.1, 16.1) }));
+        vp->annotations().getOrCreateAnnotation("Remote Unit")->addFeature(
+            new ViewPointGenFeaturePoints(ViewPointGenFeaturePoints::Symbol::Circle, 18.0f,
+                                          { Eigen::Vector2d(48.0, 16.0) }));
+        addText(*vp, "Remote Unit");
+        vp->annotations().getOrCreateAnnotation("Accuracy")->addFeature(
+            new ViewPointGenFeatureErrEllipses(3.0f, 32, { Eigen::Vector2d(48.0, 16.0) }, {},
+                                               { Eigen::Vector3d(1000.0, 1000.0, 0.0) }));
+
+        const auto entries = report_figure::selectRenderEntries(toJSON(*vp));
+
+        REQUIRE(entries.size() == 1);
+        CHECK(entries[ 0 ].kind == report_figure::Kind::Map);
+        REQUIRE(entries[ 0 ].overlays.size() == 2);
+        CHECK(entries[ 0 ].overlays[ 0 ].type == GridOverlay::Type::Lines);
+        CHECK(entries[ 0 ].overlays[ 1 ].type == GridOverlay::Type::Points);
+        CHECK(entries[ 0 ].labels.size() == 1);
+    }
+
+    SECTION("texts only give no render widget")
+    {
+        auto vp = viewPoint();
+        addText(*vp, "Label");
+        addText(*vp, "Other Label");
+
+        CHECK(report_figure::selectRenderEntries(toJSON(*vp)).empty());
+    }
+
+    SECTION("points next to a histogram give no render widget")
+    {
+        auto vp = viewPoint();
+        addHistogram(*vp, "Errors");
+        vp->annotations().getOrCreateAnnotation("Positions")->addFeature(
+            new ViewPointGenFeaturePoints(ViewPointGenFeaturePoints::Symbol::Square, 6.0f,
+                                          { Eigen::Vector2d(48.0, 16.0) }));
+
+        CHECK(report_figure::selectRenderEntries(toJSON(*vp)).empty());
+    }
+
+    SECTION("a map in a view point that loads data gives no render widget")
+    {
+        auto vp = viewPoint();
+        vp->annotations().getOrCreateAnnotation("Positions")->addFeature(
+            new ViewPointGenFeaturePoints(ViewPointGenFeaturePoints::Symbol::Square, 6.0f,
+                                          { Eigen::Vector2d(48.0, 16.0) }));
+        vp->enableDataLoading();
 
         CHECK(report_figure::selectRenderEntries(toJSON(*vp)).empty());
     }

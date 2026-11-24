@@ -84,7 +84,8 @@ public:
     const GridBackgroundRenderer& background() const { return background_; }
     /// the background is available (longitude / latitude grid) and switched on
     bool backgroundActive() const;
-    /// area for zoom to home and the zoom limits: the grid bounds, without a grid the database extent
+    /// area for zoom to home and the zoom limits: the grid bounds, without a grid the map extent, else the
+    /// database extent
     QRectF backgroundExtent() const;
 
     const QImage& gridRendering() const { return grid_rendering_; }
@@ -96,6 +97,8 @@ public:
 
     /// the text labels of the display data, in the plot showing the lon/lat viewport
     void paintLabels(QPainter& painter, const QRectF& plot_rect, const QRectF& lonlat) const;
+    /// the points and lines of the display data, in the plot showing the lon/lat viewport
+    void paintOverlays(QPainter& painter, const QRectF& plot_rect, const QRectF& lonlat) const;
 
     /// zoom / position changed by the user (axis ranges), kept over a new chart of the same domain
     void setUserView(const QRectF& view);

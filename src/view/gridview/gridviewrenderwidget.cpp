@@ -336,7 +336,10 @@ QRectF GridViewRenderWidget::backgroundExtent() const
     if (!grid_roi_.isEmpty())
         return grid_roi_;
 
-    return data_ ? data_->database_extent : QRectF();
+    if (!data_)
+        return QRectF();
+
+    return data_->map_extent.isEmpty() ? data_->database_extent : data_->map_extent;
 }
 
 /**
@@ -394,6 +397,125 @@ void GridViewRenderWidget::paintLabels(QPainter& painter, const QRectF& plot_rec
                           size.height());
 
         painter.drawText(rect, Qt::AlignLeft | Qt::AlignVCenter | Qt::TextDontClip, text);
+    }
+
+    painter.restore();
+}
+
+/**
+ * Sizes are pixels of the layout, as in the Geographic View on the screen. Per-position colors give each point
+ * its color and each line a gradient between the colors of its ends.
+ */
+void GridViewRenderWidget::paintOverlays(QPainter& painter, const QRectF& plot_rect, const QRectF& lonlat) const
+{
+    if (!data_ || data_->overlays.empty() || plot_rect.isEmpty() || lonlat.width() <= 0.0 || lonlat.height() <= 0.0)
+        return;
+
+    auto toPlot = [ & ] (const QPointF& pos)
+    {
+        return QPointF(plot_rect.left() + (pos.x() - lonlat.left()) / lonlat.width() * plot_rect.width(),
+                       plot_rect.top() + (lonlat.bottom() - pos.y()) / lonlat.height() * plot_rect.height());
+    };
+
+    painter.save();
+    painter.setClipRect(plot_rect);
+    painter.setRenderHint(QPainter::Antialiasing);
+
+    for (const auto& overlay : data_->overlays)
+    {
+        const auto& pos    = overlay.positions;
+        const bool  colors = overlay.colors.size() == pos.size();
+
+        auto colorAt = [ & ] (size_t i) { return colors ? overlay.colors[ i ] : overlay.color; };
+
+        if (overlay.type == GridOverlay::Type::Points)
+        {
+            const double  size   = std::max(1.0, overlay.size);
+            const double  r      = size / 2.0;
+            const QRectF  bounds = plot_rect.adjusted(-size, -size, size, size);
+
+            for (size_t i = 0; i < pos.size(); ++i)
+            {
+                const QPointF p = toPlot(pos[ i ]);
+                if (!bounds.contains(p))
+                    continue;
+
+                const QColor color  = colorAt(i);
+                const QRectF symbol(p.x() - r, p.y() - r, size, size);
+
+                switch (overlay.symbol)
+                {
+                    case GridOverlay::Symbol::Circle:
+                        painter.setPen(Qt::NoPen);
+                        painter.setBrush(color);
+                        painter.drawEllipse(symbol);
+                        break;
+                    case GridOverlay::Symbol::Triangle:
+                    {
+                        painter.setPen(Qt::NoPen);
+                        painter.setBrush(color);
+                        const QPointF tri[ 3 ] = { QPointF(p.x(), symbol.top()), symbol.bottomRight(), symbol.bottomLeft() };
+                        painter.drawPolygon(tri, 3);
+                        break;
+                    }
+                    case GridOverlay::Symbol::Square:
+                        painter.setPen(Qt::NoPen);
+                        painter.setBrush(color);
+                        painter.drawRect(symbol);
+                        break;
+                    case GridOverlay::Symbol::Cross:
+                        painter.setPen(QPen(color, std::max(1.0, size / 6.0)));
+                        painter.setBrush(Qt::NoBrush);
+                        painter.drawLine(symbol.topLeft(), symbol.bottomRight());
+                        painter.drawLine(symbol.topRight(), symbol.bottomLeft());
+                        break;
+                    case GridOverlay::Symbol::Border:
+                    case GridOverlay::Symbol::BorderThick:
+                        painter.setPen(QPen(color, overlay.symbol == GridOverlay::Symbol::BorderThick ? 2.0 : 1.0));
+                        painter.setBrush(Qt::NoBrush);
+                        painter.drawRect(symbol);
+                        break;
+                }
+            }
+
+            continue;
+        }
+
+        //lines: pairs of positions, a line string: consecutive positions
+        const size_t step = overlay.type == GridOverlay::Type::Lines ? 2 : 1;
+
+        QPen pen(overlay.color, std::max(0.5, overlay.size));
+        pen.setCapStyle(Qt::FlatCap);
+        pen.setStyle(overlay.dotted ? Qt::DotLine : Qt::SolidLine);
+
+        painter.setBrush(Qt::NoBrush);
+
+        for (size_t i = 0; i + 1 < pos.size(); i += step)
+        {
+            const QPointF p0 = toPlot(pos[ i ]);
+            const QPointF p1 = toPlot(pos[ i + 1 ]);
+
+            if (colors)
+            {
+                const QColor c0 = colorAt(i);
+                const QColor c1 = colorAt(i + 1);
+
+                if (c0 == c1)
+                {
+                    pen.setColor(c0);
+                }
+                else
+                {
+                    QLinearGradient gradient(p0, p1);
+                    gradient.setColorAt(0.0, c0);
+                    gradient.setColorAt(1.0, c1);
+                    pen.setBrush(gradient);
+                }
+            }
+
+            painter.setPen(pen);
+            painter.drawLine(p0, p1);
+        }
     }
 
     painter.restore();
@@ -629,7 +751,10 @@ std::unique_ptr<ChartView> GridViewRenderWidget::createChartView(bool& has_conte
                                      !grid_rendering_.isNull() &&
                                      !grid_roi_.isEmpty();
 
-    const bool has_data = has_valid_grid_data && data_->valid;
+    //a map without grid: its overlays and labels over the area they cover
+    const bool has_map = !has_valid_grid_data && data_ && data_->valid && !data_->map_extent.isEmpty();
+
+    const bool has_data = (has_valid_grid_data && data_->valid) || has_map;
 
     QtCharts::QChart* chart = new QtCharts::QChart();
     chart->layout()->setContentsMargins(0, 0, 0, 0);
@@ -641,7 +766,7 @@ std::unique_ptr<ChartView> GridViewRenderWidget::createChartView(bool& has_conte
 
     if (has_data)
     {
-        chart->addSeries(areaSeries(grid_roi_));
+        chart->addSeries(areaSeries(has_map ? data_->map_extent : grid_roi_));
 
         createAxes(chart, data_.get());
     }
@@ -916,6 +1041,7 @@ void GridViewRenderWidget::viewInfoJSON(nlohmann::json& info) const
     info[ "background_active"    ] = background_.active();
     info[ "background_settings"  ] = background_.settings().toJSON();
     info[ "num_labels"           ] = data_ ? data_->labels.size() : (size_t)0;
+    info[ "num_overlays"         ] = data_ ? data_->overlays.size() : (size_t)0;
 
     const auto axis_ranges = axisRanges();
     const bool has_axes    = axis_ranges.has_value();

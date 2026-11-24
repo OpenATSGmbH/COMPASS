@@ -345,9 +345,14 @@ A figure is one of two kinds:
 \begin{itemize}
     \item \textbf{Simple figure}: Shows its annotations only and loads no target reports
     \begin{itemize}
-        \item The report shows the figure's charts below its name: histograms, scatter plots and grids
+        \item The report shows the figure's charts below its name: histograms, scatter plots, grids and maps
         \item The charts have no mouse interaction (no zoom, no pan, no tools)
         \item A grid over longitude and latitude is drawn with the background of the Report Figures settings of the task (map, national borders, sectors)
+        \item A map shows points, lines and texts over longitude and latitude, with the same background
+        \begin{itemize}
+            \item The points and lines are also drawn on a grid over longitude and latitude
+            \item Error ellipses are only shown in the Geographic View
+        \end{itemize}
         \item The 'View' button below the charts shows the figure in the Views, with all interactions
         \item The report exports the charts as images
     \end{itemize}

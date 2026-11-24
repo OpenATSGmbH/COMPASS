@@ -138,6 +138,10 @@ GridView::GridView(nlohmann::json& config, ViewContainer* parent)
     {
         return hasViewPoint() ? GridViewModel::textLabels(viewPoint().data()) : std::vector<GridTextLabel>();
     });
+    model_->setOverlaysFunc([ this ] ()
+    {
+        return hasViewPoint() ? GridViewModel::overlays(viewPoint().data()) : std::vector<GridOverlay>();
+    });
     model_->setVariables(variable(0), variable(1), variable(2));
 
     setModel(model_.get());

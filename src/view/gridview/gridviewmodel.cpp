@@ -38,6 +38,7 @@
 
 #include <algorithm>
 #include <cmath>
+#include <limits>
 #include <set>
 
 const double GridViewModel::RangeMinDefault = 1e-12;
@@ -181,6 +182,169 @@ std::vector<GridTextLabel> GridViewModel::textLabels(const nlohmann::json& view_
     }
 
     return labels;
+}
+
+namespace
+{
+    QColor readColor(const nlohmann::json& j)
+    {
+        QColor color(QString::fromStdString(j.get<std::string>()));
+        if (!color.isValid())
+            throw std::runtime_error("invalid color " + j.dump());
+
+        return color;
+    }
+
+    GridOverlay::Symbol readSymbol(const std::string& name)
+    {
+        if (name == ViewPointGenFeaturePoints::SymbolNameCircle)
+            return GridOverlay::Symbol::Circle;
+        if (name == ViewPointGenFeaturePoints::SymbolNameTriangle)
+            return GridOverlay::Symbol::Triangle;
+        if (name == ViewPointGenFeaturePoints::SymbolNameCross)
+            return GridOverlay::Symbol::Cross;
+        if (name == ViewPointGenFeaturePoints::SymbolNameBorder)
+            return GridOverlay::Symbol::Border;
+        if (name == ViewPointGenFeaturePoints::SymbolNameBorderThick)
+            return GridOverlay::Symbol::BorderThick;
+
+        return GridOverlay::Symbol::Square;
+    }
+
+    /// throws on a malformed feature
+    GridOverlay readOverlay(const nlohmann::json& feature, const std::string& type)
+    {
+        GridOverlay overlay;
+
+        if (type == ViewPointGenFeaturePoints::FeatureName)
+            overlay.type = GridOverlay::Type::Points;
+        else if (type == ViewPointGenFeatureLines::FeatureName)
+            overlay.type = GridOverlay::Type::Lines;
+        else
+            overlay.type = GridOverlay::Type::LineString;
+
+        const auto& geom   = feature.at(ViewPointGenFeaturePointGeometry::FeatureFieldNameGeom);
+        const auto& coords = geom.at(ViewPointGenFeaturePointGeometry::FeatureFieldNameCoords);
+        if (!coords.is_array())
+            throw std::runtime_error("coordinates are no array");
+
+        //latitude first, as the Geographic View reads it
+        overlay.positions.reserve(coords.size());
+        for (const auto& c : coords)
+        {
+            if (!c.is_array() || c.size() < 2)
+                throw std::runtime_error("coordinate is no position");
+
+            overlay.positions.emplace_back(c.at(1).get<double>(), c.at(0).get<double>());
+        }
+
+        if (overlay.type == GridOverlay::Type::Lines && overlay.positions.size() % 2 != 0)
+            throw std::runtime_error("uneven number of line positions");
+
+        auto colors_it = geom.find(ViewPointGenFeaturePointGeometry::FeatureFieldNameColors);
+        if (colors_it != geom.end())
+        {
+            if (!colors_it->is_array() || colors_it->size() != coords.size())
+                throw std::runtime_error("colors do not match the coordinates");
+
+            overlay.colors.reserve(colors_it->size());
+            for (const auto& c : *colors_it)
+                overlay.colors.push_back(readColor(c));
+        }
+
+        auto props_it = feature.find(ViewPointGenFeature::FeatureFieldNameProps);
+        if (props_it != feature.end() && props_it->is_object())
+        {
+            const auto& props = *props_it;
+
+            if (props.contains(ViewPointGenFeature::FeatureFieldNamePropColor))
+                overlay.color = readColor(props.at(ViewPointGenFeature::FeatureFieldNamePropColor));
+
+            if (overlay.type == GridOverlay::Type::Points)
+            {
+                if (props.contains(ViewPointGenFeaturePoints::FeaturePointsFieldNameSymbol))
+                    overlay.symbol = readSymbol(props.at(ViewPointGenFeaturePoints::FeaturePointsFieldNameSymbol).get<std::string>());
+                if (props.contains(ViewPointGenFeaturePoints::FeaturePointsFieldNameSymbolSize))
+                    overlay.size = props.at(ViewPointGenFeaturePoints::FeaturePointsFieldNameSymbolSize).get<double>();
+            }
+            else
+            {
+                overlay.size = 1.0;
+
+                if (props.contains(ViewPointGenFeatureStyledLine::FeatureLineStringFieldNameLineWidth))
+                    overlay.size = props.at(ViewPointGenFeatureStyledLine::FeatureLineStringFieldNameLineWidth).get<double>();
+                if (props.contains(ViewPointGenFeatureStyledLine::FeatureLineStringFieldNameLineStyle))
+                    overlay.dotted = props.at(ViewPointGenFeatureStyledLine::FeatureLineStringFieldNameLineStyle).get<std::string>() == "dotted";
+            }
+        }
+        else if (overlay.type != GridOverlay::Type::Points)
+        {
+            overlay.size = 1.0;
+        }
+
+        return overlay;
+    }
+
+    /// features first, then the child annotations, as the Geographic View draws them
+    void collectOverlays(const nlohmann::json& annotation, std::vector<GridOverlay>& overlays)
+    {
+        static const std::set<std::string> types =
+        {
+            ViewPointGenFeaturePoints::FeatureName,
+            ViewPointGenFeatureLines::FeatureName,
+            ViewPointGenFeatureLineString::FeatureName,
+            ViewPointGenFeatureLineString::FeatureNameInterp
+        };
+
+        if (!annotation.is_object())
+            return;
+
+        auto features_it = annotation.find(ViewPointGenAnnotation::AnnotationFieldFeatures);
+        if (features_it != annotation.end() && features_it->is_array())
+        {
+            for (const auto& f : *features_it)
+            {
+                auto type_it = f.is_object() ? f.find(ViewPointGenFeature::FeatureTypeFieldType) : f.end();
+                if (!f.is_object() || type_it == f.end() || !type_it->is_string() || !types.count(type_it->get<std::string>()))
+                    continue;
+
+                try
+                {
+                    overlays.push_back(readOverlay(f, type_it->get<std::string>()));
+                }
+                catch (const std::exception& e)
+                {
+                    logwrn << "feature '" << f.value(ViewPointGenFeature::FeatureTypeFieldName, std::string())
+                           << "' skipped: " << e.what();
+                }
+            }
+        }
+
+        auto children_it = annotation.find(ViewPointGenAnnotation::AnnotationFieldAnnotations);
+        if (children_it != annotation.end() && children_it->is_array())
+            for (const auto& c : *children_it)
+                collectOverlays(c, overlays);
+    }
+}
+
+/**
+ * Malformed features are skipped with a warning, the Geographic View reports them.
+ */
+std::vector<GridOverlay> GridViewModel::overlays(const nlohmann::json& view_point)
+{
+    std::vector<GridOverlay> overlays;
+
+    if (!view_point.is_object())
+        return overlays;
+
+    auto annotations_it = view_point.find(ViewPointGenVP::ViewPointFieldAnnotations);
+    if (annotations_it == view_point.end() || !annotations_it->is_array())
+        return overlays;
+
+    for (const auto& a : *annotations_it)
+        collectOverlays(a, overlays);
+
+    return overlays;
 }
 
 /**
@@ -713,6 +877,7 @@ std::shared_ptr<const GridDisplayData> GridViewModel::displayDataFromAnnotation(
     const PlotMetadata& metadata,
     const std::vector<GridSectorLine>& sectors,
     const std::vector<GridTextLabel>& labels,
+    const std::vector<GridOverlay>& overlays,
     const boost::optional<GridBackgroundSettings>& background,
     std::string* error)
 {
@@ -722,8 +887,71 @@ std::shared_ptr<const GridDisplayData> GridViewModel::displayDataFromAnnotation(
     {
         data->sectors    = sectors;
         data->labels     = labels;
+        data->overlays   = overlays;
         data->background = background;
     }
+
+    return data;
+}
+
+/**
+ * The area gets a margin, so the symbols at its border are drawn whole. A single position gets
+ * an area of about 1 km.
+ */
+std::shared_ptr<const GridDisplayData> GridViewModel::mapDisplayData(
+    const std::vector<GridSectorLine>& sectors,
+    const std::vector<GridTextLabel>& labels,
+    const std::vector<GridOverlay>& overlays,
+    const boost::optional<GridBackgroundSettings>& background)
+{
+    auto data = std::make_shared<GridDisplayData>();
+
+    data->is_geographic = true;
+    data->x_axis_label  = "Longitude";
+    data->y_axis_label  = "Latitude";
+    data->sectors       = sectors;
+    data->labels        = labels;
+    data->overlays      = overlays;
+    data->background    = background;
+    data->domain_id     = "map";
+
+    double lon_min = std::numeric_limits<double>::max();
+    double lat_min = std::numeric_limits<double>::max();
+    double lon_max = std::numeric_limits<double>::lowest();
+    double lat_max = std::numeric_limits<double>::lowest();
+
+    auto add = [ & ] (const QPointF& p)
+    {
+        if (!std::isfinite(p.x()) || !std::isfinite(p.y()))
+            return;
+
+        lon_min = std::min(lon_min, p.x());
+        lon_max = std::max(lon_max, p.x());
+        lat_min = std::min(lat_min, p.y());
+        lat_max = std::max(lat_max, p.y());
+    };
+
+    for (const auto& o : overlays)
+        for (const auto& p : o.positions)
+            add(p);
+
+    for (const auto& l : labels)
+        add(l.position);
+
+    if (lon_min > lon_max)
+        return data;
+
+    const double min_size = 0.01;
+    const double margin   = 0.05;
+
+    const double w = std::max(lon_max - lon_min, min_size);
+    const double h = std::max(lat_max - lat_min, min_size);
+
+    const QPointF center((lon_min + lon_max) / 2.0, (lat_min + lat_max) / 2.0);
+
+    data->map_extent = QRectF(center.x() - w * (0.5 + margin), center.y() - h * (0.5 + margin),
+                              w * (1.0 + 2.0 * margin), h * (1.0 + 2.0 * margin));
+    data->valid      = true;
 
     return data;
 }
@@ -741,6 +969,8 @@ bool GridViewModel::setAnnotation(const nlohmann::json& feature, const PlotMetad
     //the text features of the view point are read only for a grid that shows them
     if (valid && data->is_geographic && labels_func_)
         data->labels = labels_func_();
+    if (valid && data->is_geographic && overlays_func_)
+        data->overlays = overlays_func_();
 
     if (!valid)
     {

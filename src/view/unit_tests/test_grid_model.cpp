@@ -144,25 +144,25 @@ TEST_CASE("grid model display data from an annotation", "[view][gridmodel]")
     {
         std::string error;
 
-        CHECK(!GridViewModel::displayDataFromAnnotation(nlohmann::json::array(), Metadata, {}, {}, boost::none, &error));
+        CHECK(!GridViewModel::displayDataFromAnnotation(nlohmann::json::array(), Metadata, {}, {}, {}, boost::none, &error));
         CHECK(error == "missing 'grid' field");
 
         auto no_grid = feature(makeLayer(""), {});
         no_grid.erase(ViewPointGenFeatureGrid::FeatureGridFieldNameGrid);
 
-        CHECK(!GridViewModel::displayDataFromAnnotation(no_grid, Metadata, {}, {}, boost::none, &error));
+        CHECK(!GridViewModel::displayDataFromAnnotation(no_grid, Metadata, {}, {}, {}, boost::none, &error));
         CHECK(error == "missing 'grid' field");
 
         auto bad_grid = feature(makeLayer(""), {});
         bad_grid[ ViewPointGenFeatureGrid::FeatureGridFieldNameGrid ] = nlohmann::json::object();
 
-        CHECK(!GridViewModel::displayDataFromAnnotation(bad_grid, Metadata, {}, {}, boost::none, &error));
+        CHECK(!GridViewModel::displayDataFromAnnotation(bad_grid, Metadata, {}, {}, {}, boost::none, &error));
         CHECK(error == "could not read grid layer");
 
         Grid2DLayer empty_layer = makeLayer("");
         empty_layer.data.resize(0, 0);
 
-        CHECK(!GridViewModel::displayDataFromAnnotation(feature(empty_layer, {}), Metadata, {}, {}, boost::none, &error));
+        CHECK(!GridViewModel::displayDataFromAnnotation(feature(empty_layer, {}), Metadata, {}, {}, {}, boost::none, &error));
         CHECK(error == "grid layer empty");
     }
 
@@ -250,13 +250,13 @@ TEST_CASE("grid model labels and background of the view point", "[view][gridmode
         GridBackgroundSettings background = GridBackgroundSettings::reportDefaults();
         background.borders_show = false;
 
-        auto geo = GridViewModel::displayDataFromAnnotation(feature(makeLayer("wgs84"), {}), Metadata, {}, labels, background);
+        auto geo = GridViewModel::displayDataFromAnnotation(feature(makeLayer("wgs84"), {}), Metadata, {}, labels, {}, background);
         REQUIRE(geo);
         CHECK(geo->labels.size() == 2);
         REQUIRE(geo->background.has_value());
         CHECK(!geo->background->borders_show);
 
-        auto other = GridViewModel::displayDataFromAnnotation(feature(makeLayer(""), {}), Metadata, {}, labels, background);
+        auto other = GridViewModel::displayDataFromAnnotation(feature(makeLayer(""), {}), Metadata, {}, labels, {}, background);
         REQUIRE(other);
         CHECK(other->labels.empty());
         CHECK(!other->background.has_value());
@@ -279,5 +279,147 @@ TEST_CASE("grid model labels and background of the view point", "[view][gridmode
 
         vp[ ViewPointGenFeatureGrid::ViewPointFieldNameBackground ] = "black";
         CHECK(!GridViewModel::backgroundFromViewPoint(vp).has_value());
+    }
+}
+
+namespace
+{
+    nlohmann::json overlayViewPoint()
+    {
+        ViewPointGenVP vp("Map", 0, "Geographic");
+
+        //lines first, the points on top, as the Geographic View draws them
+        vp.annotations().getOrCreateAnnotation("Reference Lines")->addFeature(
+            new ViewPointGenFeatureLines(2.0f, ViewPointGenFeatureStyledLine::LineStyle::Dotted,
+                                         { Eigen::Vector2d(48.0, 16.0), Eigen::Vector2d(48.2, 16.4) },
+                                         { QColor(220, 30, 30, 153), QColor(255, 255, 0, 153) }, true));
+
+        auto* points = new ViewPointGenFeaturePoints(ViewPointGenFeaturePoints::Symbol::Circle, 8.0f,
+                                                     { Eigen::Vector2d(48.0, 16.0) }, {}, false);
+        points->setColor(QColor(255, 220, 0));
+        vp.annotations().getOrCreateAnnotation("Remote Unit")->addFeature(points);
+
+        vp.annotations().getOrCreateAnnotation("Track")->addFeature(
+            new ViewPointGenFeatureLineString(false, 1.5f, ViewPointGenFeatureStyledLine::LineStyle::Solid,
+                                              { Eigen::Vector2d(47.9, 15.9), Eigen::Vector2d(48.1, 16.1),
+                                                Eigen::Vector2d(48.3, 16.2) }));
+
+        nlohmann::json j;
+        vp.toJSON(j);
+
+        return j;
+    }
+}
+
+TEST_CASE("grid model overlays of the view point", "[view][gridmodel]")
+{
+    SECTION("points, lines and line strings in the order of the annotations, longitude as x")
+    {
+        const auto overlays = GridViewModel::overlays(overlayViewPoint());
+
+        REQUIRE(overlays.size() == 3);
+
+        const auto& lines = overlays[ 0 ];
+        CHECK(lines.type == GridOverlay::Type::Lines);
+        REQUIRE(lines.positions.size() == 2);
+        CHECK(lines.positions[ 1 ].x() == Approx(16.4));
+        CHECK(lines.positions[ 1 ].y() == Approx(48.2));
+        REQUIRE(lines.colors.size() == 2);
+        CHECK(lines.colors[ 0 ] == QColor(220, 30, 30, 153));
+        CHECK(lines.colors[ 1 ] == QColor(255, 255, 0, 153));
+        CHECK(lines.size == Approx(2.0));
+        CHECK(lines.dotted);
+
+        const auto& points = overlays[ 1 ];
+        CHECK(points.type == GridOverlay::Type::Points);
+        CHECK(points.symbol == GridOverlay::Symbol::Circle);
+        CHECK(points.size == Approx(8.0));
+        CHECK(points.colors.empty());
+        CHECK(points.color == QColor(255, 220, 0));
+
+        const auto& track = overlays[ 2 ];
+        CHECK(track.type == GridOverlay::Type::LineString);
+        CHECK(track.positions.size() == 3);
+        CHECK(track.size == Approx(1.5));
+        CHECK(!track.dotted);
+    }
+
+    SECTION("a malformed feature is skipped")
+    {
+        auto vp = overlayViewPoint();
+
+        //an odd number of line positions
+        auto& coords = vp[ ViewPointGenVP::ViewPointFieldAnnotations ][ 0 ][ ViewPointGenAnnotation::AnnotationFieldFeatures ][ 0 ]
+                         [ ViewPointGenFeaturePointGeometry::FeatureFieldNameGeom ][ ViewPointGenFeaturePointGeometry::FeatureFieldNameCoords ];
+        coords.push_back({ 48.5, 16.5 });
+
+        const auto overlays = GridViewModel::overlays(vp);
+
+        REQUIRE(overlays.size() == 2);
+        CHECK(overlays[ 0 ].type == GridOverlay::Type::Points);
+    }
+
+    SECTION("the overlays apply to a geographic grid only")
+    {
+        const auto overlays = GridViewModel::overlays(overlayViewPoint());
+
+        auto geo = GridViewModel::displayDataFromAnnotation(feature(makeLayer("wgs84"), {}), Metadata, {}, {}, overlays);
+        REQUIRE(geo);
+        CHECK(geo->overlays.size() == 3);
+
+        auto other = GridViewModel::displayDataFromAnnotation(feature(makeLayer(""), {}), Metadata, {}, {}, overlays);
+        REQUIRE(other);
+        CHECK(other->overlays.empty());
+    }
+}
+
+TEST_CASE("grid model display data of a map", "[view][gridmodel]")
+{
+    SECTION("the map covers its overlays and labels, with a margin")
+    {
+        const auto vp = overlayViewPoint();
+
+        GridTextLabel label;
+        label.position = QPointF(17.0, 48.0);
+        label.text     = "RU01";
+
+        auto data = GridViewModel::mapDisplayData({}, { label }, GridViewModel::overlays(vp));
+
+        REQUIRE(data);
+        CHECK(data->valid);
+        CHECK(data->is_geographic);
+        CHECK(!data->layer.has_value());
+        CHECK(data->overlays.size() == 3);
+        CHECK(data->labels.size() == 1);
+
+        //longitude 15.9 to 17.0, latitude 47.9 to 48.3, 5 % margin on each side
+        CHECK(data->map_extent.left()   == Approx(15.9 - 0.055));
+        CHECK(data->map_extent.right()  == Approx(17.0 + 0.055));
+        CHECK(data->map_extent.top()    == Approx(47.9 - 0.02));
+        CHECK(data->map_extent.bottom() == Approx(48.3 + 0.02));
+    }
+
+    SECTION("a single position gets a minimum area")
+    {
+        GridOverlay point;
+        point.positions = { QPointF(16.0, 48.0) };
+
+        auto data = GridViewModel::mapDisplayData({}, {}, { point });
+
+        REQUIRE(data);
+        CHECK(data->valid);
+        CHECK(data->map_extent.center().x() == Approx(16.0));
+        CHECK(data->map_extent.center().y() == Approx(48.0));
+        CHECK(data->map_extent.width()  == Approx(0.011));
+        CHECK(data->map_extent.height() == Approx(0.011));
+    }
+
+    SECTION("without a position the map is not valid")
+    {
+        auto data = GridViewModel::mapDisplayData({}, {}, {});
+
+        REQUIRE(data);
+        CHECK(!data->valid);
+        CHECK(data->map_extent.isEmpty());
     }
 }

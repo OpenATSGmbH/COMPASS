@@ -49,6 +49,8 @@ public:
     typedef std::function<Settings()> SettingsFunc;
     /// the text labels of the shown view point, see textLabels()
     typedef std::function<std::vector<GridTextLabel>()> LabelsFunc;
+    /// the points and lines of the shown view point, see overlays()
+    typedef std::function<std::vector<GridOverlay>()> OverlaysFunc;
 
     GridViewModel(DBContentManager& dbcont_man, context::DBContextManager& ctx_man, AppState& app_state);
     virtual ~GridViewModel();
@@ -57,6 +59,8 @@ public:
     void setSettingsFunc(const SettingsFunc& func) { settings_func_ = func; }
     /// called when a geographic grid annotation is set
     void setLabelsFunc(const LabelsFunc& func) { labels_func_ = func; }
+    /// called when a geographic grid annotation is set
+    void setOverlaysFunc(const OverlaysFunc& func) { overlays_func_ = func; }
 
     /// the variables of x, y and the distributed value, NOT owned
     void setVariables(ViewVariable& variable_x, ViewVariable& variable_y, ViewVariable& variable_z);
@@ -66,20 +70,31 @@ public:
 
     /// the text features of the view point, the labels of each geographic grid of it
     static std::vector<GridTextLabel> textLabels(const nlohmann::json& view_point);
+    /// the points, lines and line strings of the view point, in the order of its annotations
+    static std::vector<GridOverlay> overlays(const nlohmann::json& view_point);
     /// the background set of the view point (ViewPointGenFeatureGrid::ViewPointFieldNameBackground),
     /// no value if it has none or it is not readable
     static boost::optional<GridBackgroundSettings> backgroundFromViewPoint(const nlohmann::json& view_point);
 
     /// Annotation path, no model object and no manager necessary. sectors: see sectorLines(). The sectors,
-    /// labels and background apply to a geographic grid only.
+    /// labels, overlays and background apply to a geographic grid only.
     /// Empty pointer: malformed annotation, error then holds the reason.
     static std::shared_ptr<const GridDisplayData> displayDataFromAnnotation(
         const nlohmann::json& feature,
         const PlotMetadata& metadata,
         const std::vector<GridSectorLine>& sectors = {},
         const std::vector<GridTextLabel>& labels = {},
+        const std::vector<GridOverlay>& overlays = {},
         const boost::optional<GridBackgroundSettings>& background = boost::none,
         std::string* error = nullptr);
+
+    /// A geographic map without grid: the overlays and labels on the background, over the area they cover.
+    /// Not valid (the empty chart) without a position.
+    static std::shared_ptr<const GridDisplayData> mapDisplayData(
+        const std::vector<GridSectorLine>& sectors,
+        const std::vector<GridTextLabel>& labels,
+        const std::vector<GridOverlay>& overlays,
+        const boost::optional<GridBackgroundSettings>& background = boost::none);
 
     bool setAnnotation(const nlohmann::json& feature, const PlotMetadata& metadata,
                        std::string* error = nullptr) override;
@@ -143,6 +158,7 @@ private:
     SettingsFunc settings_func_;
     Settings     settings_; // read on the main thread, see readSettings()
     LabelsFunc   labels_func_;
+    OverlaysFunc overlays_func_;
 
     std::unique_ptr<Grid2D>       grid_;       // of the stash, for the view info
     boost::optional<Grid2DLayer>  grid_layer_; // of the stash

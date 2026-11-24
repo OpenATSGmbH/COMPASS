@@ -94,12 +94,12 @@ namespace
     }
 
     /// view point without load_data with a points annotation, which no render widget draws
-    nlohmann::json pointsViewPoint()
+    /// a text only: a map needs points or lines
+    nlohmann::json textViewPoint()
     {
-        ViewPointGenVP vp("Points", 0, "Points");
-        vp.annotations().getOrCreateAnnotation("Positions")->addFeature(
-            new ViewPointGenFeaturePoints(ViewPointGenFeaturePoints::Symbol::Circle, 6.0f,
-                                          { Eigen::Vector2d(47.0, 16.0) }));
+        ViewPointGenVP vp("Labels", 0, "Geographic");
+        vp.annotations().getOrCreateAnnotation("Labels")->addFeature(
+            new ViewPointGenFeatureText("RU01", 47.0, 16.0));
 
         nlohmann::json j;
         vp.toJSON(j);
@@ -219,8 +219,8 @@ TEST_CASE("report figure without load_data that no render widget draws cannot be
 {
     ReportWithSection report;
 
-    auto& figure = report.section.addFigure("Positions",
-                                            ResultReport::SectionContentViewable(pointsViewPoint()));
+    auto& figure = report.section.addFigure("Labels",
+                                            ResultReport::SectionContentViewable(textViewPoint()));
 
     const auto classification = figure.classify();
 

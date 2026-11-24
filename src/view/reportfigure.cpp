@@ -84,8 +84,17 @@ namespace
         return Grid2DLayer::isGeographicSRS(ref.srs);
     }
 
-    /// Features a geographic grid can have next to it. Only the texts are drawn (labels), the Geographic View
-    /// shows the others.
+    /// The overlays a map draws: points, lines and line strings.
+    bool isMapGeometry(const std::string& type)
+    {
+        return type == ViewPointGenFeaturePoints::FeatureName ||
+               type == ViewPointGenFeatureLineString::FeatureName ||
+               type == ViewPointGenFeatureLineString::FeatureNameInterp ||
+               type == ViewPointGenFeatureLines::FeatureName;
+    }
+
+    /// Features a geographic grid can have next to it, and a map consists of. The error ellipses are not drawn,
+    /// the Geographic View shows them.
     bool isGeographicOverlay(const std::string& type)
     {
         static const std::set<std::string> types =
@@ -262,10 +271,19 @@ namespace
         const auto sectors = entry.geographic && ctx_man ? GridViewModel::sectorLines(*ctx_man)
                                                          : std::vector<GridSectorLine>();
 
-        auto data = GridViewModel::displayDataFromAnnotation(*entry.feature, entry.metadata, sectors,
-                                                             entry.labels, entry.background, &error);
-        if (!data)
-            logwrn << "malformed grid annotation of figure image '" << entry.image_name << "': " << error;
+        std::shared_ptr<const GridDisplayData> data;
+
+        if (entry.kind == Kind::Map)
+        {
+            data = GridViewModel::mapDisplayData(sectors, entry.labels, entry.overlays, entry.background);
+        }
+        else
+        {
+            data = GridViewModel::displayDataFromAnnotation(*entry.feature, entry.metadata, sectors,
+                                                            entry.labels, entry.overlays, entry.background, &error);
+            if (!data)
+                logwrn << "malformed grid annotation of figure image '" << entry.image_name << "': " << error;
+        }
 
         //the background set of the view point wins over these
         GridRenderOptions options;
@@ -290,7 +308,7 @@ namespace
                                                    QWidget* parent,
                                                    const QPalette* image_palette)
     {
-        traced_assert(entry.feature);
+        traced_assert(entry.feature || entry.kind == Kind::Map);
 
         switch (entry.kind)
         {
@@ -299,6 +317,7 @@ namespace
             case Kind::Scatterplot:
                 return createScatterplotWidget(entry, parent, image_palette);
             case Kind::Grid:
+            case Kind::Map:
                 return createGridWidget(entry, ctx_man, parent, image_palette);
         }
 
@@ -318,35 +337,66 @@ std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point)
 
     const bool geographic = annotations_it != view_point.end() && hasGeographicGrid(*annotations_it);
 
-    //only annotations of the kinds that have a render widget, and the overlays of a geographic grid
+    //only annotations of the kinds that have a render widget, with the overlays of a geographic grid, or the
+    //overlays of a map
     bool has_render_kind = false;
+    bool has_overlay     = false;
+    bool has_geometry    = false;
 
     for (const auto& type : featureTypes(view_point))
     {
         const bool has_render_widget = std::any_of(kindInfos().begin(), kindInfos().end(),
             [ & ] (const KindInfo& info) { return type == info.feature_type; });
 
-        has_render_kind |= has_render_widget;
+        if (has_render_widget)
+        {
+            has_render_kind = true;
+            continue;
+        }
 
-        if (!has_render_widget && !(geographic && isGeographicOverlay(type)))
+        if (!isGeographicOverlay(type))
             return {};
+
+        has_overlay   = true;
+        has_geometry |= isMapGeometry(type);
     }
 
-    if (!has_render_kind)
+    //overlays next to other kinds need a geographic grid, a map needs something to draw besides texts
+    if (has_render_kind ? (has_overlay && !geographic) : !has_geometry)
         return {};
 
+    const bool map = !has_render_kind;
+
     std::vector<GridTextLabel>              labels;
+    std::vector<GridOverlay>                overlays;
     boost::optional<GridBackgroundSettings> background;
 
-    if (geographic)
+    if (geographic || map)
     {
         labels     = GridViewModel::textLabels(view_point);
+        overlays   = GridViewModel::overlays(view_point);
         background = GridViewModel::backgroundFromViewPoint(view_point);
     }
 
     const QSize export_layout_size = ReportFigureOptions::exportLayoutSizeFromViewPoint(view_point);
 
     std::vector<RenderEntry> entries;
+
+    if (map)
+    {
+        RenderEntry entry;
+        entry.kind               = Kind::Map;
+        entry.image_name         = "map_0";
+        entry.export_layout_size = export_layout_size;
+        entry.geographic         = true;
+        entry.labels             = labels;
+        entry.overlays           = overlays;
+        entry.background         = background;
+
+        entries.push_back(entry);
+
+        return entries;
+    }
 
     for (const auto& info : kindInfos())
     {
@@ -371,6 +421,7 @@ std::vector<RenderEntry> selectRenderEntries(const nlohmann::json& view_point)
                 {
                     entry.geographic = true;
                     entry.labels     = labels;
+                    entry.overlays   = overlays;
                     entry.background = background;
                 }
 
