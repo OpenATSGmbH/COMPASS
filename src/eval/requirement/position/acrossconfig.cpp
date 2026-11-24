@@ -68,9 +68,11 @@ BaseConfigWidget* PositionAcrossConfig::createWidget()
 
 void PositionAcrossConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
+    PositionBaseProbConfig::addToReport(report);
+
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
-    auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& table = section.getTable("req_table");
 
     table.addRow({"Probability [%]", "Probability of acceptable across-track position",
                   probabilityPercent(prob_)});
@@ -79,8 +81,6 @@ void PositionAcrossConfig::addToReport (std::shared_ptr<ResultReport::Report> re
     table.addRow({"Maximum Absolute Value [m]",
                   "Maximum absolute across-track position difference between the test and the reference",
                   max_abs_value_});
-
-    PositionBaseProbConfig::addToReport(report);
 }
 
 }

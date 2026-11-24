@@ -75,9 +75,9 @@ BaseConfigWidget* IntervalBaseConfig::createWidget()
 */
 void IntervalBaseConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
-    auto& section = report->getSection("Appendix:Requirements:" + group_.name() + ":" + name_);
+    BaseConfig::addToReport(report);
 
-    section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& section = report->getSection("Appendix:Requirements:" + group_.name() + ":" + name_);
 
     auto& table = section.getTable("req_table");
 

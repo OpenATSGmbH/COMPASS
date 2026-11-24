@@ -66,9 +66,11 @@ BaseConfigWidget* PositionRadarRangeConfig::createWidget()
 
 void PositionRadarRangeConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
+    PositionBaseProbConfig::addToReport(report);
+
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
-    auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& table = section.getTable("req_table");
 
     table.addRow({"Threshold Value [m]",
                   "Maximum allowed RMS from test target report to reference",
