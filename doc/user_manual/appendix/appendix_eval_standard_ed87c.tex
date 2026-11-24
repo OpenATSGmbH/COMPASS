@@ -18,7 +18,7 @@ The performance figures are taken from Table 3.1 of the source document, which i
     \textbf{Group} & \textbf{Req.} & \textbf{COMPASS Requirement, Configuration and Source Section} \\ \hline
     Manoeuvring Area & PTR & \nameref{sec:eval_req_detection}, 95\%, update interval 1 s, cooperative targets (3.2.3.1) \\ \hline
     Apron Taxiways & PTR & \nameref{sec:eval_req_detection}, 90\%, update interval 1 s, cooperative targets (3.2.3.1) \\ \hline
-    Active Stands & PTR & \nameref{sec:eval_req_detection}, 95\%, update interval 5 s, cooperative targets (3.2.3.1) \\ \hline
+    Active Stands & PTR & \nameref{sec:eval_req_detection}, above 95\%, update interval 5 s, cooperative targets (3.2.3.1) \\ \hline
     Manoeuvring Area & PRI PTR & \nameref{sec:eval_req_detection}, 90\%, update interval 1 s, non-cooperative targets (Table 3.1 NOTE [1], ED-116 3.4.2) \\ \hline
     Apron Taxiways & PRI PTR & \nameref{sec:eval_req_detection}, 90\%, update interval 1 s, non-cooperative targets (Table 3.1 NOTE [1], ED-116 3.4.2) \\ \hline
     Active Stands & PRI PTR & \nameref{sec:eval_req_detection}, 90\%, update interval 1 s, non-cooperative targets (Table 3.1 NOTE [1], ED-116 3.4.2) \\ \hline
@@ -29,7 +29,7 @@ The performance figures are taken from Table 3.1 of the source document, which i
     Active Stands & TC/GAPS5 & \nameref{sec:eval_req_detection} inverted, 'Use Gap Count', gaps above 5 s, at most 1e-3 (3.2.11, 5.8.12) \\ \hline
     Manoeuvring Area & RPA & \nameref{sec:eval_req_pos_distance}, 12 m at 95\% (3.2.6) \\ \hline
     Apron Taxiways & RPA & \nameref{sec:eval_req_pos_distance}, 20 m at 95\% (3.2.6) \\ \hline
-    Active Stands & RPA & \nameref{sec:eval_req_pos_distance}, 25 m at 95\% (3.2.6) \\ \hline
+    Active Stands & RPA & \nameref{sec:eval_req_pos_distance}, below 25 m at 95\% (3.2.6) \\ \hline
     Manoeuvring Area & PFTR & \nameref{sec:eval_req_pos_distance}, position error above 60 m, at most 1e-4, cooperative targets (3.2.3.2) \\ \hline
     Apron Taxiways & PFTR & \nameref{sec:eval_req_pos_distance}, position error above 100 m, at most 1e-4, cooperative targets (3.2.3.2) \\ \hline
     Active Stands & PFTR & \nameref{sec:eval_req_pos_distance}, position error above 125 m, at most 1e-4, cooperative targets (3.2.3.2) \\ \hline
@@ -38,9 +38,9 @@ The performance figures are taken from Table 3.1 of the source document, which i
     Active Stands & PRI PFTR & \nameref{sec:eval_req_pos_distance}, position error above 125 m, at most 1e-4, non-cooperative targets (Table 3.1 NOTE [1]) \\ \hline
     Manoeuvring Area & RVA & \nameref{sec:eval_req_speed}, 5 m/s or 10\% of the reference speed, the higher, at 90\% (3.2.8) \\ \hline
     Apron Taxiways & RVA & \nameref{sec:eval_req_speed}, 5 m/s or 10\% of the reference speed, the higher, at 90\% (3.2.8) \\ \hline
-    Common & PID TA & \nameref{sec:eval_req_id_correct}, per area 99.9\% or 98\%, Mode S address, cooperative targets (3.2.4.1) \\ \hline
-    Common & PID MA & \nameref{sec:eval_req_id_correct}, per area 99.9\% or 98\%, Mode 3/A code, cooperative targets (3.2.4.1) \\ \hline
-    Common & PID ID & \nameref{sec:eval_req_id_correct}, per area 99.9\% or 98\%, aircraft identification, cooperative targets (3.2.4.1) \\ \hline
+    Each area & PID TA & \nameref{sec:eval_req_id_correct}, per area 99.9\% or 98\%, Mode S address, cooperative targets (3.2.4.1) \\ \hline
+    Each area & PID MA & \nameref{sec:eval_req_id_correct}, per area 99.9\% or 98\%, Mode 3/A code, cooperative targets (3.2.4.1) \\ \hline
+    Each area & PID ID & \nameref{sec:eval_req_id_correct}, per area 99.9\% or 98\%, aircraft identification, cooperative targets (3.2.4.1) \\ \hline
     Common & PFID TA & \nameref{sec:eval_req_id_false}, at most 1e-4, Mode S address, cooperative targets (3.2.4.2) \\ \hline
     Common & PFID MA & \nameref{sec:eval_req_id_false}, at most 1e-4, Mode 3/A code, cooperative targets (3.2.4.2) \\ \hline
     Common & PFID ID & \nameref{sec:eval_req_id_false}, at most 1e-4, aircraft identification, cooperative targets (3.2.4.2) \\ \hline
@@ -56,6 +56,7 @@ As in the later editions, the identification instances are held in the area grou
 \begin{itemize}
 \item \textbf{No target course accuracy.} This edition states no requirement on the direction of movement. The requirement was introduced with ED-87D. The standard therefore holds no course instance.
 \item \textbf{Detection on the manoeuvring area.} This edition asks for 95\%, the later editions ask for 99\%.
+\item \textbf{Strict figures on the stands.} This edition states the detection on the stands as '> 95\%' and the position accuracy as '< 25 m', the later editions as '$\geq$ 95\%' and '$\leq$ 25 m'. The comparisons are configured as this edition states them.
 \item \textbf{Reported velocity accuracy.} This edition words the requirement on the velocity, the later editions on the speed. The stated figures and the assessment procedure are the same, and the direction is not separately assessed in either reading, so the Speed requirement is configured identically for all three editions.
 \item \textbf{Wording and structure.} This edition speaks of a Surveillance element of a Level 1 or Level 2 system, the later editions of a Surveillance Service. The performance figures of the two levels are identical, so the level does not enter the configuration.
 \end{itemize}
@@ -75,4 +76,4 @@ The notes of \nameref{sec:appendix_eval_std_ed87e} apply to this edition as well
 
 \subsubsection{Not Assessed}
 
-The same requirements as in \nameref{sec:appendix_eval_std_ed87e} are not part of the supplied definition, that is the target display latency, the position and identification renewal time-out periods, the target report initiation time, the report resolutions, the spurious part of the false target report, the per-polygon assessment and the system capacity. This edition additionally states no assessment procedure for the three report resolutions.
+The same requirements as in \nameref{sec:appendix_eval_std_ed87e} are not part of the supplied definition, that is the target display latency, the position and identification renewal time-out periods, the target report initiation time, the report resolutions, the spurious part of the false target report and the system capacity. This edition additionally states no assessment procedure for the three report resolutions.

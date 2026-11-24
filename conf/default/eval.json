@@ -578,7 +578,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87E Table 3-1",
+                                        "comment": "From EUROCAE ED-87E Table 3-1, outlier distance 5 x RPA from the reference position as in Section 5.3.5, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report",
                                         "prob": 0.0001,
@@ -653,7 +653,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87E Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "comment": "From EUROCAE ED-87E Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2, outlier distance 5 x RPA from the reference position as in Section 5.3.5, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report PRI",
                                         "prob": 0.0001,
@@ -736,12 +736,12 @@
                                         "prob": 1e-05,
                                         "prob_check_type": 1,
                                         "short_name": "TC/GAPS5",
-                                        "update_interval": 1.0,
+                                        "update_interval": 5.0,
                                         "use": true,
                                         "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true,
+                                        "use_miss_tolerance": false,
                                         "target_selection": "all"
                                     }
                                 },
@@ -800,7 +800,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87E Table 3-1",
+                                        "comment": "From EUROCAE ED-87E Table 3-1, outlier distance 5 x RPA from the reference position as in Section 5.3.5, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report",
                                         "prob": 0.0001,
@@ -892,7 +892,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87E Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "comment": "From EUROCAE ED-87E Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2, outlier distance 5 x RPA from the reference position as in Section 5.3.5, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report PRI",
                                         "prob": 0.0001,
@@ -1036,12 +1036,12 @@
                                         "prob": 1e-06,
                                         "prob_check_type": 1,
                                         "short_name": "TC/GAPS5",
-                                        "update_interval": 1.0,
+                                        "update_interval": 5.0,
                                         "use": true,
                                         "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true,
+                                        "use_miss_tolerance": false,
                                         "target_selection": "all"
                                     }
                                 },
@@ -1100,7 +1100,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87E Table 3-1",
+                                        "comment": "From EUROCAE ED-87E Table 3-1, outlier distance 5 x RPA from the reference position as in Section 5.3.5, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report",
                                         "prob": 0.0001,
@@ -1192,7 +1192,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87E Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "comment": "From EUROCAE ED-87E Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2, outlier distance 5 x RPA from the reference position as in Section 5.3.5, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report PRI",
                                         "prob": 0.0001,
@@ -1326,7 +1326,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87D Table 3-1",
+                                        "comment": "From EUROCAE ED-87D Table 3-1, outlier distance 5 x RPA from the reference position as in Section 5.3.6, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report",
                                         "prob": 0.0001,
@@ -1401,7 +1401,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87D Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "comment": "From EUROCAE ED-87D Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2, outlier distance 5 x RPA from the reference position as in Section 5.3.6, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report PRI",
                                         "prob": 0.0001,
@@ -1484,12 +1484,12 @@
                                         "prob": 1e-05,
                                         "prob_check_type": 1,
                                         "short_name": "TC/GAPS5",
-                                        "update_interval": 1.0,
+                                        "update_interval": 5.0,
                                         "use": true,
                                         "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true,
+                                        "use_miss_tolerance": false,
                                         "target_selection": "all"
                                     }
                                 },
@@ -1548,7 +1548,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87D Table 3-1",
+                                        "comment": "From EUROCAE ED-87D Table 3-1, outlier distance 5 x RPA from the reference position as in Section 5.3.6, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report",
                                         "prob": 0.0001,
@@ -1640,7 +1640,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87D Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "comment": "From EUROCAE ED-87D Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2, outlier distance 5 x RPA from the reference position as in Section 5.3.6, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report PRI",
                                         "prob": 0.0001,
@@ -1784,12 +1784,12 @@
                                         "prob": 1e-06,
                                         "prob_check_type": 1,
                                         "short_name": "TC/GAPS5",
-                                        "update_interval": 1.0,
+                                        "update_interval": 5.0,
                                         "use": true,
                                         "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true,
+                                        "use_miss_tolerance": false,
                                         "target_selection": "all"
                                     }
                                 },
@@ -1848,7 +1848,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87D Table 3-1",
+                                        "comment": "From EUROCAE ED-87D Table 3-1, outlier distance 5 x RPA from the reference position as in Section 5.3.6, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report",
                                         "prob": 0.0001,
@@ -1940,7 +1940,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87D Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2",
+                                        "comment": "From EUROCAE ED-87D Table 3-1 NOTE 19 and EUROCAE ED-116 Section 3.4.2, outlier distance 5 x RPA from the reference position as in Section 5.3.6, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report PRI",
                                         "prob": 0.0001,
@@ -3432,7 +3432,7 @@
                                         "miss_tolerance": 0.5,
                                         "name": "Probability of Target Report",
                                         "prob": 0.95,
-                                        "prob_check_type": 3,
+                                        "prob_check_type": 2,
                                         "short_name": "PTR",
                                         "update_interval": 5.0,
                                         "use": true,
@@ -3521,7 +3521,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87C Table 3-1",
+                                        "comment": "From EUROCAE ED-87C Table 3-1, outlier distance 5 x RPA from the reference position as in Section 5.8.3, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report",
                                         "prob": 0.0001,
@@ -3546,7 +3546,7 @@
                                         "ref_min_accuracy": 2.5,
                                         "short_name": "RPA",
                                         "threshold_value": 25.0,
-                                        "threshold_value_check_type": 1,
+                                        "threshold_value_check_type": 0,
                                         "use": true
                                     }
                                 },
@@ -3579,7 +3579,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87C Table 3-1 NOTE [1] and EUROCAE ED-116 Section 3.4.2",
+                                        "comment": "From EUROCAE ED-87C Table 3-1 NOTE [1] and EUROCAE ED-116 Section 3.4.2, outlier distance 5 x RPA from the reference position as in Section 5.8.3, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report PRI",
                                         "prob": 0.0001,
@@ -3662,12 +3662,12 @@
                                         "prob": 1e-05,
                                         "prob_check_type": 1,
                                         "short_name": "TC/GAPS5",
-                                        "update_interval": 1.0,
+                                        "update_interval": 5.0,
                                         "use": true,
                                         "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true,
+                                        "use_miss_tolerance": false,
                                         "target_selection": "all"
                                     }
                                 },
@@ -3726,7 +3726,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87C Table 3-1",
+                                        "comment": "From EUROCAE ED-87C Table 3-1, outlier distance 5 x RPA from the reference position as in Section 5.8.3, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report",
                                         "prob": 0.0001,
@@ -3801,7 +3801,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87C Table 3-1 NOTE [1] and EUROCAE ED-116 Section 3.4.2",
+                                        "comment": "From EUROCAE ED-87C Table 3-1 NOTE [1] and EUROCAE ED-116 Section 3.4.2, outlier distance 5 x RPA from the reference position as in Section 5.8.3, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report PRI",
                                         "prob": 0.0001,
@@ -3945,12 +3945,12 @@
                                         "prob": 1e-06,
                                         "prob_check_type": 1,
                                         "short_name": "TC/GAPS5",
-                                        "update_interval": 1.0,
+                                        "update_interval": 5.0,
                                         "use": true,
                                         "use_gap_count": true,
                                         "use_max_gap_length": false,
                                         "use_min_gap_length": true,
-                                        "use_miss_tolerance": true,
+                                        "use_miss_tolerance": false,
                                         "target_selection": "all"
                                     }
                                 },
@@ -4009,7 +4009,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87C Table 3-1",
+                                        "comment": "From EUROCAE ED-87C Table 3-1, outlier distance 5 x RPA from the reference position as in Section 5.8.3, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report",
                                         "prob": 0.0001,
@@ -4084,7 +4084,7 @@
                                     "class_name": "EvaluationRequirementPositionDistanceConfig",
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigProbability of False Target Report PRI0",
                                     "parameters": {
-                                        "comment": "From EUROCAE ED-87C Table 3-1 NOTE [1] and EUROCAE ED-116 Section 3.4.2",
+                                        "comment": "From EUROCAE ED-87C Table 3-1 NOTE [1] and EUROCAE ED-116 Section 3.4.2, outlier distance 5 x RPA from the reference position as in Section 5.8.3, not from the TPCR, since the reference and test positions are antenna positions",
                                         "failed_values_of_interest": false,
                                         "name": "Probability of False Target Report PRI",
                                         "prob": 0.0001,

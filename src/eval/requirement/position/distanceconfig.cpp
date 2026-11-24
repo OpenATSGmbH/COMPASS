@@ -117,9 +117,12 @@ BaseConfigWidget* PositionDistanceConfig::createWidget()
 
 void PositionDistanceConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
+    // adds the table with name, comment, group, target selection and reference accuracy
+    PositionBaseProbConfig::addToReport(report);
+
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
-    auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& table = section.getTable("req_table");
 
     table.addRow({"Probability [1]", "Probability of correct/false position",
                   roundf(prob_ * 10000.0) / 100.0});
