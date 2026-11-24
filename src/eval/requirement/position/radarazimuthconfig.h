@@ -18,6 +18,7 @@
 #pragma once
 
 #include "requirement/base/positionbaseconfig.h"
+#include "requirement/position/radar_helpers.h"
 
 class Group;
 class EvaluationStandard;
@@ -42,10 +43,15 @@ public:
     double thresholdValue() const;
     void thresholdValue(double value);
 
+    RadarHelpers::Statistic statistic() const;
+    void statistic(RadarHelpers::Statistic value);
+    const RadarHelpers::StatisticInfo& statisticInfo() const;
+
     virtual void addToReport (std::shared_ptr<ResultReport::Report> report) override;
 
 protected:
     double threshold_value_ {0};
+    unsigned int statistic_ {0}; // RadarHelpers::Statistic
 
     virtual BaseConfigWidget* createWidget() override;
 };

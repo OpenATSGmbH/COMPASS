@@ -38,9 +38,11 @@ namespace EvaluationRequirement
 
 PositionRadarAzimuth::PositionRadarAzimuth(
         const std::string& name, const std::string& short_name, const std::string& group_name, float ref_min_accuracy,
-        EvaluationCalculator& calculator, double threshold_value)
+        EvaluationCalculator& calculator, double threshold_value,
+        RadarHelpers::Statistic statistic)
     : PositionBaseValue(name, short_name, group_name, threshold_value, COMPARISON_TYPE::LESS_THAN, 
         ref_min_accuracy, calculator)
+    , statistic_(statistic)
 {
 }
 
@@ -121,6 +123,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
     {
         ++num_pos;
 
+        timestamp = tst_id.first;
+        tst_pos = target_data.tstChain().pos(tst_id);
+        comp_passed = false;
+
         tst_ds_id = target_data.tstChain().dsID(tst_id);
 
         if (!projection.hasCoordinateSystem(tst_ds_id))
@@ -136,11 +142,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
             ++num_no_ref;
             continue;
         }
-
-        timestamp = tst_id.first;
-        tst_pos = target_data.tstChain().pos(tst_id);
-
-        comp_passed = false;
 
         if (!target_data.hasMappedRefData(tst_id, max_ref_time_diff))
         {
@@ -253,7 +254,13 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
 
         ++num_distances;
 
-        if (RadarHelpers::passed(azm_deg_diff, threshold()))
+        if (statistic_ != RadarHelpers::Statistic::StdDev) // a bias or gain is not checked per update
+        {
+            comp_passed = true;
+            ++num_comp_passed;
+            comment = "";
+        }
+        else if (RadarHelpers::passed(azm_deg_diff, threshold()))
         {
             comp_passed = true;
             ++num_comp_passed;

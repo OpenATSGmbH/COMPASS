@@ -16,9 +16,11 @@
  */
 
 #include "results/position/radarazimuth.h"
+#include "requirement/position/radarazimuth.h"
 #include "stringconv.h"
 
 #include "logger.h"
+#include "traced_assert.h"
 
 using namespace Utils;
 
@@ -104,7 +106,12 @@ boost::optional<double> SinglePositionRadarAzimuth::computeFinalResultValue() co
     if (accumulator_.numValues() == 0)
         return {};
 
-    return accumulator_.stddev();
+    // the bias is the mean of the test minus reference azimuth differences
+    auto req = std::dynamic_pointer_cast<EvaluationRequirement::PositionRadarAzimuth>(requirement_);
+    traced_assert(req);
+
+    return EvaluationRequirement::RadarHelpers::statisticValue(req->statistic(), accumulator_.stddev(),
+                                                               accumulator_.mean(), 0.0);
 }
 
 /**********************************************************************************************
@@ -147,7 +154,12 @@ boost::optional<double> JoinedPositionRadarAzimuth::computeFinalResultValue() co
     if (accumulator_.numValues() == 0)
         return {};
 
-    return accumulator_.stddev();
+    // the bias is the mean of the test minus reference azimuth differences
+    auto req = std::dynamic_pointer_cast<EvaluationRequirement::PositionRadarAzimuth>(requirement_);
+    traced_assert(req);
+
+    return EvaluationRequirement::RadarHelpers::statisticValue(req->statistic(), accumulator_.stddev(),
+                                                               accumulator_.mean(), 0.0);
 }
 
 }

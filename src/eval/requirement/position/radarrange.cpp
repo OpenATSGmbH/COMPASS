@@ -20,11 +20,13 @@
 #include "results/position/radarrange.h"
 #include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
+#include "global.h"
 #include "logger.h"
 #include "timeconv.h"
 #include "sectorlayer.h"
 
 #include "projection.h"
+#include "projectioncoordinatesystembase.h"
 #include "projectionmanager.h"
 
 #include <algorithm>
@@ -38,9 +40,11 @@ namespace EvaluationRequirement
 
 PositionRadarRange::PositionRadarRange(const std::string& name, const std::string& short_name,
                                        const std::string& group_name, float ref_min_accuracy,
-                                       EvaluationCalculator& calculator, double threshold_value)
+                                       EvaluationCalculator& calculator, double threshold_value,
+        RadarHelpers::Statistic statistic)
     : PositionBaseValue(name, short_name, group_name, threshold_value,
                         COMPARISON_TYPE::LESS_THAN, ref_min_accuracy, calculator)
+    , statistic_(statistic)
 {
 }
 
@@ -114,6 +118,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
 
     double ref_slant_range_m, ref_ground_range_m, ref_alt_m, ref_azm_rad,
         tst_slant_range_m, tst_ground_range_m, tst_alt_m, tst_azm_rad;
+    double ref_alt_wgs_m, tst_alt_wgs_m;
     double range_m_diff;
 
     std::vector<double> range_values_ref;
@@ -122,6 +127,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
     for (const auto& tst_id : tst_data)
     {
         ++num_pos;
+
+        timestamp = tst_id.first;
+        tst_pos = target_data.tstChain().pos(tst_id);
+        comp_passed = false;
 
         tst_ds_id = target_data.tstChain().dsID(tst_id);
 
@@ -138,11 +147,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
             ++num_no_ref;
             continue;
         }
-
-        timestamp = tst_id.first;
-        tst_pos = target_data.tstChain().pos(tst_id);
-
-        comp_passed = false;
 
         if (!target_data.hasMappedRefData(tst_id, max_ref_time_diff))
         {
@@ -207,8 +211,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
             continue;            
         }
 
+        // altitudes as in the projection of the radar plots (Mode C, else the radar height), so that the
+        // test slant range is the measured one, the reference uses its own altitude if it has one
+        tst_alt_wgs_m = tst_pos.has_altitude_ ? tst_pos.altitude_ * FT2M
+                                              : projection.coordinateSystem(tst_ds_id).altitudeM();
+        ref_alt_wgs_m = ref_pos->has_altitude_ ? ref_pos->altitude_ * FT2M : tst_alt_wgs_m;
+
         ok = projection.wgs842PolarHorizontal(tst_ds_id,
-                                              ref_pos->latitude_, ref_pos->longitude_, 0,
+                                              ref_pos->latitude_, ref_pos->longitude_, ref_alt_wgs_m,
                                               ref_azm_rad, ref_slant_range_m, ref_ground_range_m,
                                               ref_alt_m);
         if (!ok)
@@ -224,7 +234,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
         }
 
         ok = projection.wgs842PolarHorizontal(tst_ds_id,
-                                              tst_pos.latitude_, tst_pos.longitude_, 0,
+                                              tst_pos.latitude_, tst_pos.longitude_, tst_alt_wgs_m,
                                               tst_azm_rad, tst_slant_range_m, tst_ground_range_m,
                                               tst_alt_m);
         if (!ok)
@@ -239,7 +249,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
             continue;
         }
 
-        range_m_diff = ref_ground_range_m - tst_ground_range_m;
+        range_m_diff = ref_slant_range_m - tst_slant_range_m;
 
         if (std::isnan(range_m_diff) || std::isinf(range_m_diff))
         {
@@ -255,7 +265,13 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
 
         ++num_distances;
 
-        if (RadarHelpers::passed(range_m_diff, threshold()))
+        if (statistic_ != RadarHelpers::Statistic::StdDev) // a bias or gain is not checked per update
+        {
+            comp_passed = true;
+            ++num_comp_passed;
+            comment = "";
+        }
+        else if (RadarHelpers::passed(range_m_diff, threshold()))
         {
             comp_passed = true;
             ++num_comp_passed;
@@ -267,8 +283,8 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
             comment = "Failed";
         }
 
-        range_values_ref.push_back(ref_ground_range_m);
-        range_values_tst.push_back(tst_ground_range_m);
+        range_values_ref.push_back(ref_slant_range_m);
+        range_values_tst.push_back(tst_slant_range_m);
 
         addDetail(timestamp, tst_pos,
                     ref_pos,

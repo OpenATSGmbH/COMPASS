@@ -36,6 +36,7 @@ PositionRadarAzimuthConfig::PositionRadarAzimuthConfig(
     : PositionBaseValueConfig(config, parent)
 {
     registerParameter("threshold_value", &threshold_value_, 0.1);
+    registerParameter("statistic", &statistic_, (unsigned int)RadarHelpers::Statistic::StdDev);
 }
 
 PositionRadarAzimuthConfig::~PositionRadarAzimuthConfig()
@@ -45,7 +46,8 @@ PositionRadarAzimuthConfig::~PositionRadarAzimuthConfig()
 std::shared_ptr<Base> PositionRadarAzimuthConfig::createRequirement()
 {
     shared_ptr<PositionRadarAzimuth> req = make_shared<PositionRadarAzimuth>(
-                name_, short_name_, group_.name(), ref_min_accuracy_, calculator_, threshold_value_);
+                name_, short_name_, group_.name(), ref_min_accuracy_, calculator_, threshold_value_,
+                statistic());
 
     return req;
 }
@@ -58,6 +60,21 @@ double PositionRadarAzimuthConfig::thresholdValue() const
 void PositionRadarAzimuthConfig::thresholdValue(double value)
 {
     threshold_value_ = value;
+}
+
+RadarHelpers::Statistic PositionRadarAzimuthConfig::statistic() const
+{
+    return statisticInfo().statistic;
+}
+
+void PositionRadarAzimuthConfig::statistic(RadarHelpers::Statistic value)
+{
+    statistic_ = (unsigned int)value;
+}
+
+const RadarHelpers::StatisticInfo& PositionRadarAzimuthConfig::statisticInfo() const
+{
+    return RadarHelpers::statisticInfo(RadarHelpers::azimuthStatistics(), (RadarHelpers::Statistic)statistic_);
 }
 
 BaseConfigWidget* PositionRadarAzimuthConfig::createWidget()
@@ -73,9 +90,8 @@ void PositionRadarAzimuthConfig::addToReport (std::shared_ptr<ResultReport::Repo
 
     auto& table = section.getTable("req_table");
 
-    table.addRow({"Maximum Standard Deviation [deg]",
-                  "The standard deviation of the azimuth difference between the test target reports and the reference must be smaller",
-                  threshold_value_});
+    table.addRow({"Statistic", "Checked statistic of the differences", statisticInfo().label});
+    table.addRow({statisticInfo().threshold_label, statisticInfo().threshold_description, threshold_value_});
 
 }
 }

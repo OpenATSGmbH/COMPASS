@@ -477,23 +477,30 @@ Also, a table is given for all single targets, sorted by PLTOK.
   \caption{Evaluation Position Radar Azimuth requirement}
 \end{figure}
 
-The 'Position Radar Azimuth' requirement checks the random azimuth error of a radar, as in the EUROCONTROL
-radar surveillance standard (SUR.ET1.ST01.1000-STD-01-01, 6.3.3.1).
+The 'Position Radar Azimuth' requirement checks the azimuth error of a radar, as in the EUROCONTROL
+radar surveillance standard (SUR.ET1.ST01.1000-STD-01-01, 6.3.3.1). It checks one of these statistics:
+
+\begin{itemize}
+\item Standard Deviation: the random error, the standard deviation of the azimuth differences.
+\item Bias: the systematic error, the absolute mean of the azimuth differences.
+\end{itemize}
+\ \\
 
 \begin{itemize}
 \item For each target report, COMPASS calculates the azimuth of the test position and the azimuth of the
 linear interpolated reference position w.r.t. the respective radar.
 \item The azimuth difference is the test azimuth minus the reference azimuth.
-\item The standard deviation of the azimuth differences must be smaller than the defined maximum for the
-requirement to pass.
-\item \#CP counts the target reports with an absolute azimuth difference smaller or equal than the maximum,
-\#CF the other target reports. These counts give information only.
+\item The selected statistic must be smaller than the defined maximum for the requirement to pass.
+\item For the standard deviation, \#CP counts the target reports with an absolute azimuth difference smaller
+or equal than the maximum, \#CF the other target reports. These counts give information only. For the bias,
+COMPASS does not check single target reports, all count as \#CP.
 \end{itemize}
 \ \\
 
 \begin{itemize}
 \item Minimum Reference Accuracy [m]: Maximum allowed reference position standard deviation, see \nameref{sec:eval_min_ref_acc}
-\item Maximum Standard Deviation [deg]: Maximum standard deviation of the azimuth differences
+\item Statistic: Checked statistic of the azimuth differences, 'Standard Deviation' or 'Bias'
+\item Maximum Standard Deviation [deg] or Maximum Absolute Bias [deg]: Maximum value of the selected statistic
 \end{itemize}
 
 \subsubsection{Result Values}
@@ -569,25 +576,40 @@ Also, a table is given for all single targets, sorted by \#CF.
   \caption{Evaluation Position Radar Range requirement}
 \end{figure}
 
-The 'Position Radar Range' requirement checks the random range error of a radar, as in the EUROCONTROL
-radar surveillance standard (SUR.ET1.ST01.1000-STD-01-01, 6.3.3.1).
+The 'Position Radar Range' requirement checks the slant range error of a radar, as in the EUROCONTROL
+radar surveillance standard (SUR.ET1.ST01.1000-STD-01-01, 6.3.3.1). It checks one of these statistics:
 
 \begin{itemize}
-\item For each target report, COMPASS calculates the ground range of the test position and the ground range
-of the linear interpolated reference position w.r.t. the respective radar. The standard uses the slant range.
-\item The range difference is the reference ground range minus the test ground range.
-\item The standard deviation of the range differences must be smaller than the defined maximum for the
-requirement to pass.
-\item \#CP counts the target reports with an absolute range difference smaller or equal than the maximum,
-\#CF the other target reports. These counts give information only.
-\item Range bias and range gain come from a linear least squares fit of the reference ground range over the
-test ground range. They give information only.
+\item Standard Deviation: the random error, the standard deviation of the slant range differences.
+\item Bias: the systematic error, the absolute bias $b$ of the range error model.
+\item Gain: the systematic error, the absolute gain error $g$ of the range error model, in m/NM.
+\end{itemize}
+\ \\
+
+The range error model of the standard is: test slant range $= (1 + g) \cdot$ reference slant range $+ b$.
+COMPASS estimates $g$ and $b$ with a linear least squares fit over all target reports. \\
+
+\begin{itemize}
+\item For each target report, COMPASS calculates the slant range of the test position and the slant range
+of the linear interpolated reference position w.r.t. the respective radar.
+\item The test position uses its Mode C altitude, or the radar height if it has no Mode C. This is the
+altitude that COMPASS uses for the calculation of the radar plot positions, so the test slant range is the
+measured slant range. The reference position uses its own altitude, or the altitude of the test position if
+it has none.
+\item The range difference is the reference slant range minus the test slant range.
+\item The selected statistic must be smaller than the defined maximum for the requirement to pass.
+\item For the standard deviation, \#CP counts the target reports with an absolute range difference smaller
+or equal than the maximum, \#CF the other target reports. These counts give information only. For the bias
+and the gain, COMPASS does not check single target reports, all count as \#CP.
+\item Range bias and range gain are shown for all statistics.
 \end{itemize}
 \ \\
 
 \begin{itemize}
 \item Minimum Reference Accuracy [m]: Maximum allowed reference position standard deviation, see \nameref{sec:eval_min_ref_acc}
-\item Maximum Standard Deviation [m]: Maximum standard deviation of the range differences
+\item Statistic: Checked statistic, 'Standard Deviation', 'Bias' or 'Gain'
+\item Maximum Standard Deviation [m], Maximum Absolute Bias [m] or Maximum Absolute Gain [m/NM]: Maximum
+value of the selected statistic
 \end{itemize}
 
 \subsubsection{Result Values}
@@ -617,8 +639,8 @@ test ground range. They give information only.
   DVar [$m^2$] & Variance of distance & 47034.17 \\ \hline
   \#CF [1] & Number of updates with failed comparison & 1613 \\ \hline
   \#CP [1] & Number of updates with passed comparison  & 13500 \\ \hline
-  Range Bias [m] & Range bias (linear estimation) & -1.42 \\ \hline
-  Range Gain [1] & Range gain (linear estimation) & 1.00014 \\ \hline
+  Range Bias [m] & Bias of the range error model & 8.12 \\ \hline
+  Range Gain [m/NM] & Gain of the range error model & -0.33 \\ \hline
   Condition &  & < 70.000000 \\ \hline
   Condition Fulfilled &  & Failed \\ \hline
 
@@ -645,8 +667,8 @@ Also, a table is given for all single targets, sorted by \#CF.
     DAvg [m] & Average of distance & -19.56 \\ \hline
     DSDev [m] & Standard Deviation of distance & 55.05 \\ \hline
     DVar [$m^2$] & Variance of distance & 0.00 \\ \hline
-    Range Bias [m] & Range bias (linear estimation) & 43520.69 \\ \hline
-    Range Gain [1] & Range gain (linear estimation) & 0.80278 \\ \hline
+    Range Bias [m] & Bias of the range error model & -6.63 \\ \hline
+    Range Gain [m/NM] & Gain of the range error model & -0.28 \\ \hline
     \#CF [1] & Number of updates with failed comparison & 1 \\ \hline
     \#CP [1] & Number of updates with passed comparison & 17 \\ \hline
     Condition &  & < 70.000000 \\ \hline

@@ -4235,14 +4235,53 @@
                                     }
                                 },
                                 {
+                                    "class_name": "EvaluationRequirementPositionRadarAzimuthConfig",
+                                    "instance_name": "EvaluationRequirementPositionRadarAzimuthConfigAzimuthBias0",
+                                    "parameters": {
+                                        "comment": "EUROCONTROL SUR.ET1.ST01.1000-STD-01-01 6.3.3.1: systematic errors, azimuth bias < 0.1 deg",
+                                        "name": "Azimuth Bias",
+                                        "ref_min_accuracy": 10.0,
+                                        "short_name": "AZMB",
+                                        "statistic": 1,
+                                        "threshold_value": 0.1,
+                                        "use": true
+                                    }
+                                },
+                                {
                                     "class_name": "EvaluationRequirementPositionRadarRangeConfig",
                                     "instance_name": "EvaluationRequirementPositionRadarRangeConfigRange0",
                                     "parameters": {
-                                        "comment": "EUROCONTROL SUR.ET1.ST01.1000-STD-01-01 6.3.3.1: random errors, slant range standard deviation < 70 m. COMPASS uses the ground range",
+                                        "comment": "EUROCONTROL SUR.ET1.ST01.1000-STD-01-01 6.3.3.1: random errors, slant range standard deviation < 70 m",
                                         "name": "Range Error Standard Deviation",
                                         "ref_min_accuracy": 10.0,
                                         "short_name": "RNG",
                                         "threshold_value": 70.0,
+                                        "use": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementPositionRadarRangeConfig",
+                                    "instance_name": "EvaluationRequirementPositionRadarRangeConfigRangeBias0",
+                                    "parameters": {
+                                        "comment": "EUROCONTROL SUR.ET1.ST01.1000-STD-01-01 6.3.3.1: systematic errors, slant range bias < 100 m",
+                                        "name": "Range Bias",
+                                        "ref_min_accuracy": 10.0,
+                                        "short_name": "RNGB",
+                                        "statistic": 1,
+                                        "threshold_value": 100.0,
+                                        "use": true
+                                    }
+                                },
+                                {
+                                    "class_name": "EvaluationRequirementPositionRadarRangeConfig",
+                                    "instance_name": "EvaluationRequirementPositionRadarRangeConfigRangeGain0",
+                                    "parameters": {
+                                        "comment": "EUROCONTROL SUR.ET1.ST01.1000-STD-01-01 6.3.3.1: systematic errors, slant range gain error < 1 m/NM",
+                                        "name": "Range Gain Error",
+                                        "ref_min_accuracy": 10.0,
+                                        "short_name": "RNGG",
+                                        "statistic": 2,
+                                        "threshold_value": 1.0,
                                         "use": true
                                     }
                                 }

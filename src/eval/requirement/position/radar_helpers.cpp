@@ -17,6 +17,7 @@
 
 #include "requirement/position/radar_helpers.h"
 
+#include "global.h"
 #include "number.h"
 #include "traced_assert.h"
 
@@ -46,20 +47,81 @@ bool passed(double difference, double threshold)
 
 /**
  */
-LinearFit linearFit(const std::vector<double>& tst_values, const std::vector<double>& ref_values)
+const std::vector<StatisticInfo>& azimuthStatistics()
 {
-    traced_assert(!tst_values.empty());
-    traced_assert(tst_values.size() == ref_values.size());
+    static const std::vector<StatisticInfo> infos {
+        { Statistic::StdDev, "Standard Deviation", "AzmSD", "Standard deviation of the azimuth difference", "deg",
+          "Maximum Standard Deviation [deg]",
+          "The standard deviation of the azimuth difference between the test target reports and the reference must be smaller" },
+        { Statistic::Bias, "Bias", "AzmBias", "Absolute mean of the azimuth difference", "deg",
+          "Maximum Absolute Bias [deg]",
+          "The absolute mean of the azimuth difference between the test target reports and the reference must be smaller" } };
 
-    const size_t n = tst_values.size();
+    return infos;
+}
+
+/**
+ */
+const std::vector<StatisticInfo>& rangeStatistics()
+{
+    static const std::vector<StatisticInfo> infos {
+        { Statistic::StdDev, "Standard Deviation", "RngSD", "Standard deviation of the slant range difference", "m",
+          "Maximum Standard Deviation [m]",
+          "The standard deviation of the slant range difference between the test target reports and the reference must be smaller" },
+        { Statistic::Bias, "Bias", "RngBias", "Absolute slant range bias", "m",
+          "Maximum Absolute Bias [m]",
+          "The absolute bias of the slant range error model (test = (1 + gain) * reference + bias) must be smaller" },
+        { Statistic::Gain, "Gain", "RngGain", "Absolute slant range gain", "m/NM",
+          "Maximum Absolute Gain [m/NM]",
+          "The absolute gain of the slant range error model (test = (1 + gain) * reference + bias) must be smaller" } };
+
+    return infos;
+}
+
+/**
+ */
+const StatisticInfo& statisticInfo(const std::vector<StatisticInfo>& infos, Statistic statistic)
+{
+    traced_assert(!infos.empty());
+
+    for (const auto& info : infos)
+        if (info.statistic == statistic)
+            return info;
+
+    return infos.front();
+}
+
+/**
+ */
+double statisticValue(Statistic statistic, double stddev, double bias, double gain)
+{
+    switch (statistic)
+    {
+        case Statistic::Bias:
+            return std::fabs(bias);
+        case Statistic::Gain:
+            return std::fabs(gain);
+        default:
+            return stddev;
+    }
+}
+
+/**
+ */
+RangeErrorModel rangeErrorModel(const std::vector<double>& ref_values_m, const std::vector<double>& tst_values_m)
+{
+    traced_assert(!ref_values_m.empty());
+    traced_assert(ref_values_m.size() == tst_values_m.size());
+
+    const size_t n = ref_values_m.size();
 
     Eigen::MatrixXd x_mat = Eigen::MatrixXd::Ones(n, 2);
     Eigen::MatrixXd y_mat = Eigen::MatrixXd::Ones(n, 1);
 
     for (size_t cnt = 0; cnt < n; ++cnt)
     {
-        x_mat(cnt, 0) = tst_values[cnt];
-        y_mat(cnt, 0) = ref_values[cnt];
+        x_mat(cnt, 0) = ref_values_m[cnt];
+        y_mat(cnt, 0) = tst_values_m[cnt];
     }
 
     Eigen::JacobiSVD<Eigen::MatrixXd> svd;
@@ -67,11 +129,11 @@ LinearFit linearFit(const std::vector<double>& tst_values, const std::vector<dou
     svd.compute(x_mat, Eigen::ComputeThinV | Eigen::ComputeThinU);
     Eigen::MatrixXd x = svd.solve(y_mat);
 
-    LinearFit fit;
-    fit.gain = x(0, 0);
-    fit.bias = x(1, 0);
+    RangeErrorModel model;
+    model.gain_m_per_nm = (x(0, 0) - 1.0) * NM2M;
+    model.bias_m        = x(1, 0);
 
-    return fit;
+    return model;
 }
 
 } // namespace RadarHelpers

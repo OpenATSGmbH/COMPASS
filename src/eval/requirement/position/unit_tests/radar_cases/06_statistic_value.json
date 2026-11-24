@@ -1,0 +1,34 @@
+{
+    "description": "Value checked against the threshold: statistic 0 (standard deviation) gives the standard deviation, 1 (bias) the absolute bias, 2 (gain) the absolute gain, so a negative bias or gain is checked by its magnitude.",
+    "type": "statistic",
+    "checks": [
+        {
+            "statistic": 0,
+            "stddev": 0.05,
+            "bias": -0.2,
+            "gain": 0.0,
+            "expected": 0.05
+        },
+        {
+            "statistic": 1,
+            "stddev": 0.05,
+            "bias": -0.2,
+            "gain": 0.0,
+            "expected": 0.2
+        },
+        {
+            "statistic": 1,
+            "stddev": 30.0,
+            "bias": 80.0,
+            "gain": -1.5,
+            "expected": 80.0
+        },
+        {
+            "statistic": 2,
+            "stddev": 30.0,
+            "bias": 80.0,
+            "gain": -1.5,
+            "expected": 1.5
+        }
+    ]
+}

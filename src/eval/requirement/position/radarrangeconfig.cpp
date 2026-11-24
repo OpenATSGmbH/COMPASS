@@ -35,6 +35,7 @@ PositionRadarRangeConfig::PositionRadarRangeConfig(
     : PositionBaseValueConfig(config, parent)
 {
     registerParameter("threshold_value", &threshold_value_, 50.0);
+    registerParameter("statistic", &statistic_, (unsigned int)RadarHelpers::Statistic::StdDev);
 }
 
 PositionRadarRangeConfig::~PositionRadarRangeConfig()
@@ -44,7 +45,8 @@ PositionRadarRangeConfig::~PositionRadarRangeConfig()
 std::shared_ptr<Base> PositionRadarRangeConfig::createRequirement()
 {
     shared_ptr<PositionRadarRange> req = make_shared<PositionRadarRange>(
-                name_, short_name_, group_.name(), ref_min_accuracy_, calculator_, threshold_value_);
+                name_, short_name_, group_.name(), ref_min_accuracy_, calculator_, threshold_value_,
+                statistic());
 
     return req;
 }
@@ -57,6 +59,21 @@ double PositionRadarRangeConfig::thresholdValue() const
 void PositionRadarRangeConfig::thresholdValue(double value)
 {
     threshold_value_ = value;
+}
+
+RadarHelpers::Statistic PositionRadarRangeConfig::statistic() const
+{
+    return statisticInfo().statistic;
+}
+
+void PositionRadarRangeConfig::statistic(RadarHelpers::Statistic value)
+{
+    statistic_ = (unsigned int)value;
+}
+
+const RadarHelpers::StatisticInfo& PositionRadarRangeConfig::statisticInfo() const
+{
+    return RadarHelpers::statisticInfo(RadarHelpers::rangeStatistics(), (RadarHelpers::Statistic)statistic_);
 }
 
 BaseConfigWidget* PositionRadarRangeConfig::createWidget()
@@ -72,9 +89,8 @@ void PositionRadarRangeConfig::addToReport (std::shared_ptr<ResultReport::Report
 
     auto& table = section.getTable("req_table");
 
-    table.addRow({"Maximum Standard Deviation [m]",
-                  "The standard deviation of the ground range difference between the test target reports and the reference must be smaller",
-                  threshold_value_});
+    table.addRow({"Statistic", "Checked statistic of the differences", statisticInfo().label});
+    table.addRow({statisticInfo().threshold_label, statisticInfo().threshold_description, threshold_value_});
 
 }
 }

@@ -22,6 +22,8 @@
 class ComparisonTypeComboBox;
 
 class QLineEdit;
+class QComboBox;
+class QLabel;
 class QCheckBox;
 
 class QFormLayout;
@@ -36,12 +38,17 @@ class PositionRadarRangeConfigWidget : public PositionBaseValueConfigWidget
 
 public slots:
     void thresholdValueEditSlot(QString value);
+    void statisticChangedSlot(int index);
 
 public:
     PositionRadarRangeConfigWidget(PositionRadarRangeConfig& cfg);
 
 protected:
     QLineEdit* threshold_value_edit_{nullptr};
+    QComboBox* statistic_box_{nullptr};
+    QLabel* threshold_label_{nullptr};
+
+    void updateThresholdTexts();
 
     PositionRadarRangeConfig& config();
 };

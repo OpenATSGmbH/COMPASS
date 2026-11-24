@@ -85,12 +85,25 @@ void checkReports(const nlohmann::json& j)
 
 void checkFit(const nlohmann::json& j)
 {
-    auto fit = linearFit(j.at("tst").get<std::vector<double>>(), j.at("ref").get<std::vector<double>>());
+    auto model = rangeErrorModel(j.at("ref").get<std::vector<double>>(), j.at("tst").get<std::vector<double>>());
 
     const auto& e = j.at("expected");
 
-    CHECK(fit.gain == Approx(e.at("gain").get<double>()).margin(1e-9));
-    CHECK(fit.bias == Approx(e.at("bias").get<double>()).margin(1e-6));
+    CHECK(model.gain_m_per_nm == Approx(e.at("gain_m_per_nm").get<double>()).margin(1e-6));
+    CHECK(model.bias_m == Approx(e.at("bias_m").get<double>()).margin(1e-6));
+}
+
+void checkStatistic(const nlohmann::json& j)
+{
+    for (const auto& c : j.at("checks"))
+    {
+        INFO("check " << c.dump());
+
+        Statistic statistic = static_cast<Statistic>(c.at("statistic").get<unsigned int>());
+
+        CHECK(statisticValue(statistic, c.at("stddev").get<double>(), c.at("bias").get<double>(),
+                             c.at("gain").get<double>()) == Approx(c.at("expected").get<double>()));
+    }
 }
 
 } // namespace
@@ -113,8 +126,12 @@ TEST_CASE("RadarHelpers cases from JSON", "[eval][radar_helpers]")
 
         INFO("case " << file.filename().string() << ": " << j.value("description", ""));
 
-        if (j.at("type").get<std::string>() == "fit")
+        const std::string type = j.at("type").get<std::string>();
+
+        if (type == "fit")
             checkFit(j);
+        else if (type == "statistic")
+            checkStatistic(j);
         else
             checkReports(j);
     }
