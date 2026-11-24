@@ -146,7 +146,7 @@ std::string LatexDocument::toString()
           \fancyhead[L]{}
           \fancyhead[C]{}
           \fancyhead[R]{}
-          \fancyfoot[L]{)" << footer_left_ << R"(}
+          \fancyfoot[L]{)" << String::latexString(footer_left_) << R"(}
           \fancyfoot[C]{\thepage}
           \fancyfoot[R]{)" << footer_right_ << R"(}
 
@@ -219,10 +219,10 @@ std::string LatexDocument::toString()
           \DeclareRobustCommand\cs[1]{\texttt{\char`\\#1}})" << "\n";
 
     if (title_.size())
-        ss << R"(\title{)" << title_ << "}"  << "\n";
+        ss << R"(\title{)" << String::latexString(title_) << "}"  << "\n";
 
     if (author_.size())
-        ss << R"(\author{)" << author_ << "}"  << "\n";
+        ss << R"(\author{)" << String::latexString(author_) << "}"  << "\n";
 
     ss << R"(\date{)" << QDateTime::currentDateTime().toString("dd.MM.yyyy hh:mm:ss").toStdString() << "}\n";
 
@@ -242,12 +242,12 @@ std::string LatexDocument::toString()
             \centering
             \vspace*{6cm})" << "\n";
             
-        ss << "{\\Huge \\textbf{" << title_ << "} \\par}\n";
+        ss << "{\\Huge \\textbf{" << String::latexString(title_) << "} \\par}\n";
 
         ss << "\\vspace{1cm}\n";
           
         if (author_.size())
-            ss << "{\\Large " << author_ << " \\par}\n";
+            ss << "{\\Large " << String::latexString(author_) << " \\par}\n";
 
         ss << "\\vspace{0.5cm}\n";
         ss << "{\\large " << QDateTime::currentDateTime().toString("dd.MM.yyyy hh:mm:ss").toStdString() << " \\par}\n";
