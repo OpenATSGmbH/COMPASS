@@ -41,9 +41,9 @@ enum class ReportClass
 
 /**
  * Class of a test report from the compare results of the used values (e.g. ACID, ACAD,
- * Mode A). A value fails if the test value is missing or different. The report is correct
- * if one value (or all of them, if require_all_correct) does not fail. Without any reference
- * value the report is NoRefValue.
+ * Mode A). Only the values with a reference value are judged, a missing test value is not
+ * correct. The report is correct if one judged value (or all of them, if
+ * require_all_correct) is the same as the reference value.
  */
 ReportClass classify(const std::vector<ValueComparisonResult>& cmp_results, bool require_all_correct);
 

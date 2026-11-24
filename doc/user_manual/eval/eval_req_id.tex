@@ -13,7 +13,9 @@
 The 'Identification Correct' requirement is used to calculate the probability of a target report having a correct (secondary) identification. Correct in this context means there is identification data available, 
 and it is the same as in the reference. \\
 
-\begin{itemize}  
+Only the used attributes with a reference value are checked. A test target report without such an attribute is not correct. A test target report is not counted if no used attribute has a reference value ('\#NoRef'). \\
+
+\begin{itemize}
 \item Probability [1]: Probability of correct identification
 \item Probability Check Type: $\geq$
 \item Require correctness of All: If checked, all available secondary attributes must match the reference. If not checked, a single matching secondary attribute is enough.
