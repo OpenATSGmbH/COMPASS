@@ -109,7 +109,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTarget::evaluate (co
     unsigned int num_pos_inside_dubious {0};
 
     typedef EvaluationRequirementResult::SingleDubiousTarget Result;
-    typedef EvaluationDetail                                 Detail;
     
     std::vector<Result::DetailData> detail_data(1);
     auto& detail = detail_data[ 0 ];
@@ -143,10 +142,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTarget::evaluate (co
 
         detail.left_sector = false;
         ++num_pos_inside;
-
-        if (!detail.first_inside && timestamp - detail.tod_end > seconds(300)) // not first time and time gap too large, skip
-            continue;
-
         ++detail.num_pos_inside;
 
         detail.details.emplace_back(timestamp, tst_pos);
