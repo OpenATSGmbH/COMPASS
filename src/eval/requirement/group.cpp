@@ -23,6 +23,7 @@
 #include "requirement/position/distancermsconfig.h"
 #include "requirement/position/radarrangeconfig.h"
 #include "requirement/position/radarazimuthconfig.h"
+#include "requirement/position/radartimestampconfig.h"
 #include "requirement/position/alongconfig.h"
 #include "requirement/position/acrossconfig.h"
 #include "requirement/latency/latencyconfig.h"
@@ -74,6 +75,7 @@ const std::map<std::string, std::string> Group::requirement_type_mapping_
     {"EvaluationRequirementPositionDistanceRMSConfig", "Position Distance RMS"},
     {"EvaluationRequirementPositionRadarRangeConfig", "Position Radar Range"},
     {"EvaluationRequirementPositionRadarAzimuthConfig", "Position Radar Azimuth"},
+    {"EvaluationRequirementPositionRadarTimeStampConfig", "Position Radar Time Stamp"},
     {"EvaluationRequirementPositionAlongConfig", "Position Along"},
     {"EvaluationRequirementPositionAcrossConfig", "Position Across"},
     {"EvaluationRequirementPositionLatencyConfig", "Position Latency"},
@@ -215,6 +217,16 @@ GenerateResult Group::generateSubConfigurable_impl(nlohmann::json& child_json)
     {
         EvaluationRequirement::PositionRadarAzimuthConfig* config =
                 new EvaluationRequirement::PositionRadarAzimuthConfig(
+                    child_json, this);
+        logdbg << "adding config " << config->name();
+
+        traced_assert(!hasRequirementConfig(config->name()));
+        configs_.push_back(std::unique_ptr<EvaluationRequirement::BaseConfig>(config));
+    }
+    else if (class_name == "EvaluationRequirementPositionRadarTimeStampConfig")
+    {
+        EvaluationRequirement::PositionRadarTimeStampConfig* config =
+                new EvaluationRequirement::PositionRadarTimeStampConfig(
                     child_json, this);
         logdbg << "adding config " << config->name();
 

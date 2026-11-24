@@ -1,0 +1,17 @@
+{
+    "description": "Time stamp error of 0.1 s late: every test position is 0.1 s of flight behind the reference (along = -0.1 s * speed), at 100, 200 and 250 m/s, so the fit gives +0.1 s.",
+    "type": "time_stamp",
+    "along_m": [
+        -10.0,
+        -20.0,
+        -25.0
+    ],
+    "speed_ms": [
+        100.0,
+        200.0,
+        250.0
+    ],
+    "expected": {
+        "error_s": 0.1
+    }
+}

@@ -93,6 +93,13 @@ void checkFit(const nlohmann::json& j)
     CHECK(model.bias_m == Approx(e.at("bias_m").get<double>()).margin(1e-6));
 }
 
+void checkTimeStamp(const nlohmann::json& j)
+{
+    double error = timeStampError(j.at("along_m").get<std::vector<double>>(), j.at("speed_ms").get<std::vector<double>>());
+
+    CHECK(error == Approx(j.at("expected").at("error_s").get<double>()).margin(1e-9));
+}
+
 void checkStatistic(const nlohmann::json& j)
 {
     for (const auto& c : j.at("checks"))
@@ -130,6 +137,8 @@ TEST_CASE("RadarHelpers cases from JSON", "[eval][radar_helpers]")
 
         if (type == "fit")
             checkFit(j);
+        else if (type == "time_stamp")
+            checkTimeStamp(j);
         else if (type == "statistic")
             checkStatistic(j);
         else

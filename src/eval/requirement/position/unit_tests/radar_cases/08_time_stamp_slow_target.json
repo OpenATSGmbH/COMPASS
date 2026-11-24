@@ -1,0 +1,15 @@
+{
+    "description": "Slow target weight: a fast target 0.05 s early (along +10 m at 200 m/s) and a slow target with 20 m along noise at 2 m/s (10 s as single value). The fit weights by speed squared: -(10*200 + 20*2) / (200^2 + 2^2) = -2040 / 40004 = -0.050995 s, close to the fast target. A plain mean of the single values would give -5.025 s.",
+    "type": "time_stamp",
+    "along_m": [
+        10.0,
+        20.0
+    ],
+    "speed_ms": [
+        200.0,
+        2.0
+    ],
+    "expected": {
+        "error_s": -0.050994900509949
+    }
+}

@@ -6399,6 +6399,35 @@
                     "volatile": "none"
                 },
                 {
+                    "file": "eval/figures/eval_req_pos_radar_tse.png",
+                    "dirty": false,
+                    "used": true,
+                    "used_in": [
+                        "eval/eval_req_pos.tex"
+                    ],
+                    "shows": "Requirement config widget \"Position Radar Time Stamp\" (Time Stamp Error) from the Standard tab of the Evaluation dialog",
+                    "category": "dialog",
+                    "automation": "medium",
+                    "database": "at_20230422",
+                    "requires": "any open DB (standard \"Radar En-Route & TMA\" from conf/default/eval.json)",
+                    "filters": null,
+                    "flight_deck": true,
+                    "frame": true,
+                    "steps": [
+                        "uiset mainwindow.mainmenu \"Process|Evaluate\" --async",
+                        "wait dialog",
+                        "uiset dialog.tab_widget \"Standard\"",
+                        "uiset dialog.standard_tab.standard_combo \"Radar En-Route & TMA\"",
+                        "sleep 500",
+                        "uiset dialog.standard_tab.standard_tree \"Radar En-Route & TMA|Recommended|Time Stamp Error\"",
+                        "sleep 500",
+                        "grab dialog.standard_tab.requirement_stack"
+                    ],
+                    "recipe_hint": null,
+                    "gaps": "none",
+                    "volatile": "none"
+                },
+                {
                     "file": "eval/figures/eval_req_rocd_correct.png",
                     "dirty": false,
                     "used": true,

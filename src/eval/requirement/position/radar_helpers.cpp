@@ -108,6 +108,26 @@ double statisticValue(Statistic statistic, double stddev, double bias, double ga
 
 /**
  */
+double timeStampError(const std::vector<double>& along_m, const std::vector<double>& speed_ms)
+{
+    traced_assert(!along_m.empty());
+    traced_assert(along_m.size() == speed_ms.size());
+
+    double sum_along_speed {0}, sum_speed_sq {0};
+
+    for (size_t cnt = 0; cnt < along_m.size(); ++cnt)
+    {
+        sum_along_speed += along_m[cnt] * speed_ms[cnt];
+        sum_speed_sq    += speed_ms[cnt] * speed_ms[cnt];
+    }
+
+    traced_assert(sum_speed_sq > 0);
+
+    return -sum_along_speed / sum_speed_sq;
+}
+
+/**
+ */
 RangeErrorModel rangeErrorModel(const std::vector<double>& ref_values_m, const std::vector<double>& tst_values_m)
 {
     traced_assert(!ref_values_m.empty());

@@ -73,6 +73,11 @@ bool passed(double difference, double threshold);
 /// value checked against the threshold: the standard deviation, or the absolute bias or gain
 double statisticValue(Statistic statistic, double stddev, double bias, double gain);
 
+/// time stamp error [s] as least squares fit of along = -error * speed over all updates, so slow targets
+/// get a small weight; along [m] positive = test ahead of the reference, speed [m/s] of the reference;
+/// positive = test time stamps late; needs a speed > 0
+double timeStampError(const std::vector<double>& along_m, const std::vector<double>& speed_ms);
+
 /// least squares fit of the range error model, needs at least two different reference values
 RangeErrorModel rangeErrorModel(const std::vector<double>& ref_values_m, const std::vector<double>& tst_values_m);
 

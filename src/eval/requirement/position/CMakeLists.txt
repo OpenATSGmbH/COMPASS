@@ -22,8 +22,11 @@ target_sources(compass_eval
         "${CMAKE_CURRENT_LIST_DIR}/radarrangeconfig.h"
         "${CMAKE_CURRENT_LIST_DIR}/radarrangeconfigwidget.h"        
         "${CMAKE_CURRENT_LIST_DIR}/radarazimuth.h"
+        "${CMAKE_CURRENT_LIST_DIR}/radartimestamp.h"
         "${CMAKE_CURRENT_LIST_DIR}/radarazimuthconfig.h"
+        "${CMAKE_CURRENT_LIST_DIR}/radartimestampconfig.h"
         "${CMAKE_CURRENT_LIST_DIR}/radarazimuthconfigwidget.h"        
+        "${CMAKE_CURRENT_LIST_DIR}/radartimestampconfigwidget.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/distanceconfig.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/distanceconfigwidget.cpp"
@@ -43,8 +46,11 @@ target_sources(compass_eval
         "${CMAKE_CURRENT_LIST_DIR}/radarrangeconfig.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/radarrangeconfigwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/radarazimuth.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/radartimestamp.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/radarazimuthconfig.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/radartimestampconfig.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/radarazimuthconfigwidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/radartimestampconfigwidget.cpp"
         
     )
 

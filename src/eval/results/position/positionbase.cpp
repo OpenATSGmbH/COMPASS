@@ -203,6 +203,9 @@ ReportTableColumn SinglePositionBaseCommon::common_reportTableValueColumn(const 
     if (result_type.find("RadarAzimuth") != std::string::npos)
         return ReportTableColumn("azimuth_offset_deg", PropertyDataType::DOUBLE, "Azimuth Offset",
                                  "Radar azimuth offset to the reference", "Angle", "Degree");
+    if (result_type.find("RadarTimeStamp") != std::string::npos)
+        return ReportTableColumn("time_offset_s", PropertyDataType::DOUBLE, "Time Offset",
+                                 "Radar time offset to the reference (along-track offset / speed)", "Time", "Second");
     if (result_type.find("Latency") != std::string::npos)
         return ReportTableColumn("latency_s", PropertyDataType::DOUBLE, "Position Latency",
                                  "Position latency against the reference", "Time", "Second");

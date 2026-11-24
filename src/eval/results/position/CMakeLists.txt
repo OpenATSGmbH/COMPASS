@@ -10,6 +10,7 @@ target_sources(compass_eval
         "${CMAKE_CURRENT_LIST_DIR}/distancerms.h"
         "${CMAKE_CURRENT_LIST_DIR}/radarrange.h"
         "${CMAKE_CURRENT_LIST_DIR}/radarazimuth.h"
+        "${CMAKE_CURRENT_LIST_DIR}/radartimestamp.h"
         "${CMAKE_CURRENT_LIST_DIR}/along.h"
         "${CMAKE_CURRENT_LIST_DIR}/across.h"
     PRIVATE
@@ -18,6 +19,7 @@ target_sources(compass_eval
         "${CMAKE_CURRENT_LIST_DIR}/distancerms.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/radarrange.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/radarazimuth.cpp"    
+        "${CMAKE_CURRENT_LIST_DIR}/radartimestamp.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/along.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/across.cpp"
     )

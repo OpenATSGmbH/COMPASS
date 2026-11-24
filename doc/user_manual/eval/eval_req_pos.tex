@@ -676,3 +676,59 @@ Also, a table is given for all single targets, sorted by \#CF.
 \end{tabularx}
 \end{table}
 \end{center}
+
+\subsection{Position Radar Time Stamp}
+\label{sec:eval_req_pos_radar_tse}
+
+\subsubsection{Configuration}
+
+\begin{figure}[H]
+    \centering
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_pos_radar_tse.png}
+  \caption{Evaluation Position Radar Time Stamp requirement}
+\end{figure}
+
+The 'Position Radar Time Stamp' requirement checks the systematic time stamp error of a radar, as in the
+EUROCONTROL radar surveillance standard (SUR.ET1.ST01.1000-STD-01-01, 6.3.3.1).
+
+\begin{itemize}
+\item For each target report, COMPASS calculates the along-track offset of the test position to the linear
+interpolated reference position, on the track angle of the reference. A positive along-track offset means
+that the test position is ahead of the reference position.
+\item The time offset of a target report is the negative along-track offset divided by the reference speed.
+A positive time offset means that the time stamp is late. Target reports without reference speed or with a
+reference speed of 0 are not used.
+\item The time stamp error $\Delta t$ is the least squares fit of along-track offset $= -\Delta t \cdot$ speed
+over all used target reports. Fast targets get a large weight, slow targets a small weight, because a small
+position error of a slow target gives a large time offset.
+\item The absolute time stamp error must be smaller than the defined maximum for the requirement to pass.
+\item COMPASS does not check single target reports.
+\end{itemize}
+\ \\
+
+\begin{itemize}
+\item Minimum Reference Accuracy [m]: Maximum allowed reference position standard deviation, see \nameref{sec:eval_min_ref_acc}
+\item Maximum Absolute Error [s]: Maximum absolute time stamp error
+\end{itemize}
+
+\subsubsection{Result Values}
+
+The sector and the single target results give the number of updates and the minimum, maximum, average and
+standard deviation of the time offsets of the target reports, plus:
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | X |  l | }
+    \hline
+    \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
+    \#Upd [1] & Number of updates used for the time stamp error & 37434 \\ \hline
+    Time Stamp Error [s] & Time stamp error (least squares estimation, positive = late) & 0.085 \\ \hline
+    TSE [s] & Absolute time stamp error & 0.09 \\ \hline
+    Condition &  & < 0.10 \\ \hline
+    Condition Fulfilled &  & Passed \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}
+
+The single target table is sorted by the absolute time stamp error (TSE).
