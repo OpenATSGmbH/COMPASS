@@ -16,6 +16,7 @@
  */
 
 #include "requirement/position/distance.h"
+#include "requirement/position/positionhelpers.h"
 #include "results/position/distance.h"
 #include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
@@ -296,35 +297,20 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionDistance::evaluate 
     // first sample not yet consumed, so a data gap does not create empty windows.
     if (use_averaging_)
     {
-        const time_duration averaging_window = Time::partialSeconds(averaging_window_s_);
+        std::vector<PositionHelpers::ErrorSample> error_samples;
+        error_samples.reserve(samples.size());
 
-        size_t sample_idx = 0;
+        for (const auto& sample : samples)
+            error_samples.push_back({ sample.timestamp, sample.dx, sample.dy });
 
-        while (sample_idx < samples.size())
+        for (const auto& window : PositionHelpers::averagingWindows(error_samples, averaging_window_s_))
         {
-            const ptime window_begin = samples[sample_idx].timestamp;
-            const ptime window_end   = window_begin + averaging_window;
-
-            double sum_dx {0}, sum_dy {0};
-            size_t next_idx = sample_idx;
-
-            while (next_idx < samples.size() && samples[next_idx].timestamp < window_end)
-            {
-                sum_dx += samples[next_idx].dx;
-                sum_dy += samples[next_idx].dy;
-                ++next_idx;
-            }
-
-            const size_t num_in_window = next_idx - sample_idx;
+            const size_t num_in_window = window.end - window.first;
             traced_assert(num_in_window > 0);
-
-            const double mean_dx = sum_dx / (double) num_in_window;
-            const double mean_dy = sum_dy / (double) num_in_window;
-            const double mean_distance = std::sqrt(mean_dx * mean_dx + mean_dy * mean_dy);
 
             ++num_distances;
 
-            const bool window_passed = compareValue(mean_distance, threshold_value_, threshold_value_check_type_);
+            const bool window_passed = compareValue(window.mean_distance, threshold_value_, threshold_value_check_type_);
 
             if (window_passed)
             {
@@ -338,17 +324,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionDistance::evaluate 
             }
 
             comment += " (mean position error of " + to_string(num_in_window) + " reports over "
-                    + String::doubleToStringPrecision(
-                           Time::partialSeconds(samples[next_idx - 1].timestamp - window_begin), 1) + " s)";
+                    + String::doubleToStringPrecision(window.span_s, 1) + " s)";
 
-            addDetail(window_begin, samples[sample_idx].tst_pos,
-                        samples[sample_idx].ref_pos,
-                        true, mean_distance, window_passed, // pos_inside, value, check_passed
+            addDetail(samples[ window.first ].timestamp, samples[ window.first ].tst_pos,
+                        samples[ window.first ].ref_pos,
+                        true, window.mean_distance, window_passed, // pos_inside, value, check_passed
                         num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                         num_comp_passed, num_comp_failed,
                         comment);
-
-            sample_idx = next_idx;
         }
     }
 

@@ -384,16 +384,7 @@ bool Base::matchesResultID(const Evaluation::RequirementResultID& id) const
 */
 bool Base::compareValue(double val, double threshold, COMPARISON_TYPE check_type) const
 {
-    if (check_type == COMPARISON_TYPE::LESS_THAN)
-        return val < threshold;
-    else if (check_type == COMPARISON_TYPE::LESS_THAN_OR_EQUAL)
-        return val <= threshold;
-    else if (check_type == COMPARISON_TYPE::GREATER_THAN)
-        return val > threshold;
-    else if (check_type == COMPARISON_TYPE::GREATER_THAN_OR_EQUAL)
-        return val >= threshold;
-    else
-        throw std::runtime_error("Base: compareValue: unknown type '" + to_string(check_type) + "'");
+    return EvaluationRequirement::compareValue(val, threshold, check_type);
 }
 
 /**

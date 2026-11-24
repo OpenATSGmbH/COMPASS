@@ -125,6 +125,7 @@ bool ValueAccumulator::updateStats()
     value_var_    = value_sum_sqr_ / (double)value_cnt_;
     value_rms_    = value_var_;
     value_var_   -= value_avg_ * value_avg_;
+    value_var_    = std::max(value_var_, 0.0); // rounding can make it slightly negative
     value_rms_    = std::sqrt(value_rms_);
     value_stddev_ = std::sqrt(value_var_);
 
@@ -135,12 +136,13 @@ bool ValueAccumulator::updateStats()
 */
 void ValueAccumulator::join(const ValueAccumulator& other, bool update_stats)
 {
+    // min and max before the count is increased, an empty accumulator takes the other's values
+    if (other.value_cnt_ > 0 && (value_cnt_ == 0 || other.value_min_ < value_min_)) value_min_ = other.value_min_;
+    if (other.value_cnt_ > 0 && (value_cnt_ == 0 || other.value_max_ > value_max_)) value_max_ = other.value_max_;
+
     value_sum_     += other.value_sum_;
     value_sum_sqr_ += other.value_sum_sqr_;
     value_cnt_     += other.value_cnt_;
-
-    if (other.value_cnt_ > 0 && (value_cnt_ == 0 || other.value_min_ < value_min_)) value_min_ = other.value_min_;
-    if (other.value_cnt_ > 0 && (value_cnt_ == 0 || other.value_max_ > value_max_)) value_max_ = other.value_max_;
 
     if (update_stats)
         updateStats();

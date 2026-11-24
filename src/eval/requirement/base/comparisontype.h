@@ -33,4 +33,18 @@ enum COMPARISON_TYPE {
 extern std::string comparisonTypeString(COMPARISON_TYPE type);
 extern std::string comparisonTypeLongString(COMPARISON_TYPE type);
 
+/// true if val compared with the threshold fulfills the comparison type, e.g. val <= threshold
+inline bool compareValue(double val, double threshold, COMPARISON_TYPE check_type)
+{
+    switch (check_type)
+    {
+        case COMPARISON_TYPE::LESS_THAN:             return val <  threshold;
+        case COMPARISON_TYPE::LESS_THAN_OR_EQUAL:    return val <= threshold;
+        case COMPARISON_TYPE::GREATER_THAN:          return val >  threshold;
+        case COMPARISON_TYPE::GREATER_THAN_OR_EQUAL: return val >= threshold;
+    }
+
+    throw std::runtime_error("compareValue: unknown type '" + std::to_string((int)check_type) + "'");
+}
+
 }

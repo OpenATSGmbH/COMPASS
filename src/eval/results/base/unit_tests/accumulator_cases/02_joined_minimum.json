@@ -1,0 +1,26 @@
+{
+    "description": "Positive distances of 3 targets joined into an empty accumulator: the minimum is the smallest distance (was 0 before the fix).",
+    "groups": [
+        [
+            12.5,
+            30.2
+        ],
+        [
+            0.4,
+            8.0,
+            15.1
+        ],
+        [
+            100.0
+        ]
+    ],
+    "expected": {
+        "num": 6,
+        "min": 0.4,
+        "max": 100.0,
+        "mean": 27.7,
+        "rms": 43.5133312905367,
+        "var": 1126.12,
+        "stddev": 33.557711483353565
+    }
+}

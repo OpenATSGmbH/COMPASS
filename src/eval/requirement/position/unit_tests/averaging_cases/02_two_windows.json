@@ -1,0 +1,68 @@
+{
+    "description": "Samples every 1 s for 10 s: the second window starts at the first sample not used (5 s).",
+    "window_s": 5.0,
+    "samples": [
+        [
+            0,
+            1.0,
+            0.0
+        ],
+        [
+            1,
+            1.0,
+            0.0
+        ],
+        [
+            2,
+            1.0,
+            0.0
+        ],
+        [
+            3,
+            1.0,
+            0.0
+        ],
+        [
+            4,
+            1.0,
+            0.0
+        ],
+        [
+            5,
+            1.0,
+            0.0
+        ],
+        [
+            6,
+            1.0,
+            0.0
+        ],
+        [
+            7,
+            1.0,
+            0.0
+        ],
+        [
+            8,
+            1.0,
+            0.0
+        ],
+        [
+            9,
+            1.0,
+            0.0
+        ]
+    ],
+    "expected_windows": [
+        {
+            "num": 5,
+            "mean_distance": 1.0,
+            "span_s": 4.0
+        },
+        {
+            "num": 5,
+            "mean_distance": 1.0,
+            "span_s": 4.0
+        }
+    ]
+}

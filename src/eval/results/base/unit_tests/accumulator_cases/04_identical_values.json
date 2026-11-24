@@ -1,0 +1,28 @@
+{
+    "description": "Identical values: variance 0, standard deviation not NaN.",
+    "groups": [
+        [
+            0.1,
+            0.1,
+            0.1,
+            0.1,
+            0.1,
+            0.1,
+            0.1
+        ],
+        [
+            0.1,
+            0.1,
+            0.1
+        ]
+    ],
+    "expected": {
+        "num": 10,
+        "min": 0.1,
+        "max": 0.1,
+        "mean": 0.1,
+        "rms": 0.1,
+        "var": 0.0,
+        "stddev": 0.0
+    }
+}
