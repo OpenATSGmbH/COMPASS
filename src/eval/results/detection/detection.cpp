@@ -349,16 +349,23 @@ std::vector<Joined::SectorInfo> JoinedDetection::sectorInfos() const
 {
     bool time_ratio = isTimeRatio(requirement_);
 
+    std::vector<Joined::SectorInfo> infos;
+
     if (time_ratio)
-        return { { "DT [s]", "Reference Duration", expectedMissedValue(sum_expected_, time_ratio) },
-                 { "MT [s]", "Missed Time"       , expectedMissedValue(sum_missed_  , time_ratio) } };
+        infos = { { "DT [s]", "Reference Duration", expectedMissedValue(sum_expected_, time_ratio) },
+                  { "MT [s]", "Missed Time"       , expectedMissedValue(sum_missed_  , time_ratio) } };
+    else if (isGapCount(requirement_))
+        infos = { { "#Reports [1]", "Test Reports inside Sector", expectedMissedValue(sum_expected_, time_ratio) },
+                  { "#Gaps [1]"   , "Gaps"                     , expectedMissedValue(sum_missed_  , time_ratio) } };
+    else
+        infos = { { "#EUIs [1]", "Expected Update Intervals", expectedMissedValue(sum_expected_, time_ratio) },
+                  { "#MUIs [1]", "Missed Update Intervals"  , expectedMissedValue(sum_missed_  , time_ratio) } };
 
-    if (isGapCount(requirement_))
-        return { { "#Reports [1]", "Test Reports inside Sector", expectedMissedValue(sum_expected_, time_ratio) },
-                 { "#Gaps [1]"   , "Gaps"                     , expectedMissedValue(sum_missed_  , time_ratio) } };
+    if (auto req = std::dynamic_pointer_cast<EvaluationRequirement::Detection>(requirement_))
+        for (const auto& warning : req->statusMethodWarnings())
+            infos.push_back({ "Warning", "Status Message Method", warning });
 
-    return { { "#EUIs [1]", "Expected Update Intervals", expectedMissedValue(sum_expected_, time_ratio) },
-             { "#MUIs [1]", "Missed Update Intervals"  , expectedMissedValue(sum_missed_  , time_ratio) } };
+    return infos;
 }
 
 /**

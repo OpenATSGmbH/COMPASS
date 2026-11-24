@@ -101,6 +101,43 @@ TEST_CASE("DetectionWalk::cyclesPerPeriod", "[eval][status_cycle_walk]")
     CHECK(cyclesPerPeriod(with_gap, 2.0f) == 2);
 }
 
+TEST_CASE("DetectionWalk::cycleStats", "[eval][status_cycle_walk]")
+{
+    std::vector<ptime> regular;
+    for (unsigned int i = 0; i <= 10; ++i)
+        regular.push_back(at(i));
+
+    auto s = cycleStats(regular, 1.0f);
+    CHECK(s.median_cycle_s == Approx(1.0));
+    CHECK(s.cycles_per_period == 1);
+    CHECK(s.period_s == Approx(1.0));
+    CHECK(s.num_outages == 0);
+
+    // update interval 2 s on 1 s cycles: periods of 2 cycles
+    s = cycleStats(regular, 2.0f);
+    CHECK(s.cycles_per_period == 2);
+    CHECK(s.period_s == Approx(2.0));
+
+    // cycles every 10 s and update interval 1 s: periods of 10 s
+    std::vector<ptime> slow { at(0), at(10), at(20), at(30) };
+    s = cycleStats(slow, 1.0f);
+    CHECK(s.cycles_per_period == 1);
+    CHECK(s.period_s == Approx(10.0));
+
+    // the cycles of 07_cycle_outage: 0.9 s and 1.1 s are no outage (below 1.5 median cycles), 12 s is one
+    std::vector<ptime> outage { at(0), at(1), at(2), at(3), at(3.9), at(5), at(6), at(7), at(8), at(20), at(21) };
+    s = cycleStats(outage, 2.0f);
+    CHECK(s.median_cycle_s == Approx(1.0));
+    CHECK(s.num_outages == 1);
+    CHECK(s.longest_outage_s == Approx(12.0));
+
+    // the threshold: 1.5 median cycles is no outage, above it is
+    std::vector<ptime> at_threshold { at(0), at(1), at(2), at(3.5), at(4.5), at(6.1), at(7.1) };
+    s = cycleStats(at_threshold, 1.0f);
+    CHECK(s.num_outages == 1);
+    CHECK(s.longest_outage_s == Approx(1.6));
+}
+
 TEST_CASE("DetectionWalk::statusCycleWalk cases from JSON", "[eval][status_cycle_walk]")
 {
     std::vector<std::filesystem::path> files;

@@ -271,26 +271,47 @@ Result walk(const TimePeriodCollection& ref_periods,
 
 /**
  */
-unsigned int cyclesPerPeriod(const std::vector<boost::posix_time::ptime>& cycles, float update_interval_s)
+CycleStats cycleStats(const std::vector<boost::posix_time::ptime>& cycles, float update_interval_s)
 {
     traced_assert(cycles.size() >= 2);
 
-    // median reported cycle length, to map the configured update interval onto a
-    // whole number of reported cycles
     std::vector<double> cycle_lengths;
     cycle_lengths.reserve(cycles.size());
 
     for (size_t i = 1; i < cycles.size(); ++i)
         cycle_lengths.push_back(Utils::Time::partialSeconds(cycles[i] - cycles[i - 1]));
 
-    std::sort(cycle_lengths.begin(), cycle_lengths.end());
+    CycleStats stats;
 
-    const double median_cycle_s = cycle_lengths.at(cycle_lengths.size() / 2);
+    // median reported cycle length, to map the configured update interval onto a
+    // whole number of reported cycles
+    std::vector<double> sorted_lengths = cycle_lengths;
+    std::sort(sorted_lengths.begin(), sorted_lengths.end());
 
-    if (median_cycle_s <= 0)
-        return 1;
+    stats.median_cycle_s = sorted_lengths.at(sorted_lengths.size() / 2);
 
-    return (unsigned int) std::max(1L, std::lround(update_interval_s / median_cycle_s));
+    if (stats.median_cycle_s > 0)
+        stats.cycles_per_period = (unsigned int) std::max(1L, std::lround(update_interval_s / stats.median_cycle_s));
+
+    stats.period_s = stats.cycles_per_period * stats.median_cycle_s;
+
+    for (double length : cycle_lengths)
+    {
+        if (length > OutageFactor * stats.median_cycle_s)
+        {
+            ++stats.num_outages;
+            stats.longest_outage_s = std::max(stats.longest_outage_s, length);
+        }
+    }
+
+    return stats;
+}
+
+/**
+ */
+unsigned int cyclesPerPeriod(const std::vector<boost::posix_time::ptime>& cycles, float update_interval_s)
+{
+    return cycleStats(cycles, update_interval_s).cycles_per_period;
 }
 
 /**

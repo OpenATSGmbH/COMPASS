@@ -31,6 +31,8 @@
 
 #include "boost/date_time/posix_time/ptime.hpp"
 
+#include <cmath>
+
 using namespace std;
 using namespace Utils;
 using namespace boost::posix_time;
@@ -491,6 +493,50 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
         calculator_, details, walk.sum_expected, walk.sum_missed, ref_periods);
 }
 
+
+/**
+ * The status message method silently falls back to the time difference method, and the
+ * reported cycles define the length of the expected periods. The warnings name these cases
+ * in the report.
+ */
+std::vector<std::string> Detection::statusMethodWarnings() const
+{
+    if (pd_calculation_method_ != "status_message" || use_gap_count_)
+        return {};
+
+    const std::string fallback = " The time difference method was used.";
+
+    auto num_sources = calculator_.usedDataSourcesTst().size();
+
+    if (num_sources != 1)
+        return { "Status message method not used: " + to_string(num_sources)
+                 + " test data sources are active, the update cycles are only used with exactly 1." + fallback };
+
+    const auto& cycles = calculator_.testStatusCycles();
+
+    if (cycles.size() < 2)
+        return { "Status message method not used: the test data source reports no update cycles"
+                 " (CAT019, CAT010)." + fallback };
+
+    auto stats = DetectionWalk::cycleStats(cycles, update_interval_s_);
+
+    std::vector<std::string> warnings;
+
+    if (std::fabs(stats.period_s - update_interval_s_) > 0.2 * update_interval_s_)
+        warnings.push_back("Expected periods of " + String::doubleToStringPrecision(stats.period_s, 2)
+                           + " s (" + to_string(stats.cycles_per_period) + " reported update cycles of "
+                           + String::doubleToStringPrecision(stats.median_cycle_s, 2)
+                           + " s), not of the update interval of "
+                           + String::doubleToStringPrecision(update_interval_s_, 2) + " s.");
+
+    if (stats.num_outages)
+        warnings.push_back(to_string(stats.num_outages) + " gaps in the reported update cycles, the longest "
+                           + String::doubleToStringPrecision(stats.longest_outage_s, 2)
+                           + " s. An expected period across such a gap is longer,"
+                           " a reporting gap inside it is not detected.");
+
+    return warnings;
+}
 
 /**
 */

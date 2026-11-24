@@ -53,6 +53,14 @@ With the 'PD Calculation Method' set to 'status\_message', the expected periods 
 
 The time difference method is used instead if the test data source reports no cycles, if more than one test data source is selected, or if fewer than 2 cycles are found. The same configuration therefore also works on a recording without status messages, at the cost of falling back to the nominal cadence. \\
 
+The 'Sector Overview' table of the requirement shows a 'Warning' row in these cases:
+\begin{itemize}
+\item The status message method was not used: more than one test data source is selected, or the test data source reports no update cycles.
+\item The expected periods differ from the 'Update Interval [s]' by more than 20\%. A period has at least 1 reported cycle, so a source that reports a cycle every 10 s gives periods of 10 s, also for an update interval of 1 s.
+\item The reported cycles have gaps longer than 1.5 times the median cycle length, e.g. a loss of the status messages. An expected period across such a gap is longer than the update interval, so a gap of the target reports inside it is not detected.
+\end{itemize}
+\ \\
+
 \paragraph{Gap Count}
 
 With 'Use Gap Count' active, the probability is calculated as a number of gaps over a number of test target reports, as EUROCAE ED-117A Section 6.4.8 and EUROCAE ED-87E Section 5.3.14 state their gap requirements:

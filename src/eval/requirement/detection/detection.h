@@ -59,6 +59,9 @@ public:
 
   const std::string& pdCalculationMethod() const;
 
+  /// warnings about the expected periods of the status message method, empty if the method is not set
+  std::vector<std::string> statusMethodWarnings() const;
+
   virtual std::shared_ptr<EvaluationRequirementResult::Single> evaluate(
       const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
       const SectorLayer& sector_layer) override;

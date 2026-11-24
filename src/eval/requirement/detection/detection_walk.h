@@ -100,10 +100,26 @@ Result walk(const TimePeriodCollection& ref_periods,
             const GapUIFunc& gap_ui,
             const Params& params);
 
+/// update cycle figures of the status message method
+struct CycleStats
+{
+    double       median_cycle_s    = 0.0;
+    unsigned int cycles_per_period = 1;
+    double       period_s          = 0.0; // length of an expected period: cycles_per_period * median_cycle_s
+    unsigned int num_outages       = 0;   // cycle gaps longer than OutageFactor median cycles
+    double       longest_outage_s  = 0.0;
+};
+
+/// a cycle gap longer than this factor times the median cycle length is an outage of the status messages
+const double OutageFactor = 1.5;
+
 /**
- * Number of reported update cycles per expected period of the status message method: the
- * update interval over the median cycle length, rounded, at least 1. Needs at least 2 cycles.
+ * Update cycle figures. The cycles per period are the update interval over the median cycle
+ * length, rounded, at least 1. Needs at least 2 cycles.
  */
+CycleStats cycleStats(const std::vector<boost::posix_time::ptime>& cycles, float update_interval_s);
+
+/// number of reported update cycles per expected period of the status message method, see cycleStats()
 unsigned int cyclesPerPeriod(const std::vector<boost::posix_time::ptime>& cycles, float update_interval_s);
 
 /// expected period of the status message walk without a detecting test report
