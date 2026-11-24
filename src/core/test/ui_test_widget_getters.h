@@ -316,7 +316,8 @@ namespace ui_test
     {
         //list the tree contents as nested {name, value, children} objects,
         //name = column 0 display text, value = column 1 display text (if present),
-        //item_name = name for tree paths (if the model has one, see ItemNameRole)
+        //item_name = name for tree paths (if the model has one, see ItemNameRole),
+        //checked = column 0 check state (if the item has one)
         if (what == "entries" && widget->model())
         {
             QAbstractItemModel* model = widget->model();
@@ -339,6 +340,10 @@ namespace ui_test
                     QVariant item_name = idx.data(ItemNameRole);
                     if (item_name.isValid())
                         item[ "item_name" ] = item_name.toString().toStdString();
+
+                    QVariant check_state = idx.data(Qt::CheckStateRole);
+                    if (check_state.isValid())
+                        item[ "checked" ] = check_state.toInt() == Qt::Checked;
 
                     if (model->columnCount(parent) > 1)
                     {
