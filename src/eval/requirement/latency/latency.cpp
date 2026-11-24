@@ -210,7 +210,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
         std::tie(transform_ok, distance, angle) = ogr_geo2cart.distanceAngleCart(ref_pos->latitude_, ref_pos->longitude_, tst_pos.latitude_, tst_pos.longitude_);
         traced_assert(transform_ok);
 
-        if (distance == 0 || std::isnan(distance) || std::isinf(distance))
+        if (!std::isfinite(distance))
         {
             addDetail(timestamp, tst_pos,
                         ref_pos, // ref_pos
