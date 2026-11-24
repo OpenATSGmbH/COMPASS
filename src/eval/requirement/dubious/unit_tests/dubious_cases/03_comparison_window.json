@@ -1,0 +1,66 @@
+{
+    "description": "Acceleration (max 29.43 m/s^2), turnrate (max 30 deg/s) and ROCD (max 100 ft/s) only for 1 s <= time difference <= 30 s. Update 1: 0.5 s, not checked. Update 2: 2 s, acceleration 50, turnrate 10 -> 80 deg is 35 deg/s, ROCD 400 ft in 2 s is 200 ft/s, all too high. Update 3: 37.5 s, not checked. Update 4: turnrate -30 deg/s is not greater than 30. Update 5: 20 -> 345 deg across north is -35 deg/s, too high.",
+    "params": {
+        "use_max_groundspeed": false,
+        "max_groundspeed_kts": 1333.0,
+        "check_calculated_speed": true,
+        "use_max_acceleration": true,
+        "max_acceleration": 29.43,
+        "use_max_turnrate": true,
+        "max_turnrate": 30.0,
+        "use_max_rocd": true,
+        "max_rocd": 100.0,
+        "min_comparison_time": 1.0,
+        "max_comparison_time": 30.0
+    },
+    "updates": [
+        {
+            "time": 0.0,
+            "speed": 100.0,
+            "track": 350.0,
+            "mode_c": 10000.0,
+            "expected": {}
+        },
+        {
+            "time": 0.5,
+            "speed": 150.0,
+            "track": 10.0,
+            "mode_c": 10000.0,
+            "expected": {}
+        },
+        {
+            "time": 2.5,
+            "speed": 250.0,
+            "track": 80.0,
+            "mode_c": 10400.0,
+            "expected": {
+                "acceleration": 50.0,
+                "turnrate": 35.0,
+                "rocd": 200.0
+            }
+        },
+        {
+            "time": 40.0,
+            "speed": 400.0,
+            "track": 80.0,
+            "mode_c": 20000.0,
+            "expected": {}
+        },
+        {
+            "time": 42.0,
+            "speed": 420.0,
+            "track": 20.0,
+            "mode_c": 20000.0,
+            "expected": {}
+        },
+        {
+            "time": 43.0,
+            "speed": 420.0,
+            "track": 345.0,
+            "mode_c": 20000.0,
+            "expected": {
+                "turnrate": -35.0
+            }
+        }
+    ]
+}

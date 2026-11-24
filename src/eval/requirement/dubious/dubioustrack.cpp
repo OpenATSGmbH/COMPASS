@@ -17,6 +17,7 @@
 
 
 #include "requirement/dubious/dubioustrack.h"
+#include "requirement/dubious/dubious_helpers.h"
 
 #include "results/dubious/dubioustrack.h"
 
@@ -239,12 +240,19 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTrack::evaluate (con
     bool all_updates_dubious; // for short or primary track
     std::map<std::string, std::string> all_updates_dubious_reasons;
 
-    bool has_last_tod;
-    ptime last_tod;
-    float time_diff;
-    float acceleration;
-    float turnrate;
-    float rocd;
+
+    DubiousHelpers::Params params;
+    params.use_max_groundspeed    = use_max_groundspeed_;
+    params.max_groundspeed_kts    = max_groundspeed_kts_;
+    params.check_calculated_speed = false;
+    params.use_max_acceleration   = use_max_acceleration_;
+    params.max_acceleration       = max_acceleration_;
+    params.use_max_turnrate       = use_max_turnrate_;
+    params.max_turnrate           = max_turnrate_;
+    params.use_max_rocd           = use_rocd_;
+    params.max_rocd               = max_rocd_;
+    params.min_comparison_time    = minimum_comparison_time_;
+    params.max_comparison_time    = maximum_comparison_time_;
 
     for (auto& track_detail : finished_tracks)
     {
@@ -282,98 +290,57 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTrack::evaluate (con
             all_updates_dubious_reasons["Dur."] = Time::toString(track_detail.duration, 1);
         }
 
-        has_last_tod = false;
+        std::vector<DubiousHelpers::Update> updates(track_detail.details.size());
 
-        double max_groundspeed_ms = max_groundspeed_kts_ * KNOTS2M_S;
-
-        for (auto& update : track_detail.details)
+        for (size_t cnt = 0; cnt < track_detail.details.size(); ++cnt)
         {
-            if (!do_not_evaluate_target && all_updates_dubious) // mark was primarty/short track if required
-                Result::logComments(update, all_updates_dubious_reasons);
-
+            const auto& update = track_detail.details[cnt];
             auto id = target_data.tstChain().dataID(update.timestamp());
 
-            auto tst_spd = target_data.tstChain().groundSpeed(id); // m/s
+            auto& u = updates[cnt];
+            u.time_s = Time::partialSeconds(update.timestamp() - track_detail.details.front().timestamp());
 
-            if (!do_not_evaluate_target && use_max_groundspeed_ && tst_spd.has_value()
-                    && *tst_spd > max_groundspeed_ms)
+            if (auto spd = target_data.tstChain().groundSpeed(id))
+                u.speed_ms = *spd;
+            if (auto trk = target_data.tstChain().trackAngle(id))
+                u.track_angle_deg = *trk;
+            if (auto mc = target_data.tstChain().modeC(id))
+                u.mode_c_ft = *mc;
+        }
+
+        auto flags = DubiousHelpers::checkUpdates(updates, params);
+
+        for (size_t cnt = 0; cnt < track_detail.details.size(); ++cnt)
+        {
+            auto& update = track_detail.details[cnt];
+            const auto& f = flags[cnt];
+
+            if (all_updates_dubious) // mark was primary/short track if required
+                Result::logComments(update, all_updates_dubious_reasons);
+
+            if (f.reported_speed_ms)
             {
-                Result::logComment(update, "Spd",
-                                   String::doubleToStringPrecision(*tst_spd, 1));
-
+                Result::logComment(update, "Spd", String::doubleToStringPrecision(*f.reported_speed_ms, 1));
                 ++dubious_groundspeed_found;
             }
 
-            if (has_last_tod)
+            if (f.acceleration)
             {
-                traced_assert(update.timestamp() >= last_tod);
-                time_diff = Time::partialSeconds(update.timestamp() - last_tod);
-
-                if (!do_not_evaluate_target && time_diff >= minimum_comparison_time_
-                        && time_diff <= maximum_comparison_time_)
-                {
-                    auto id_last = target_data.tstChain().dataID(last_tod);
-
-                    auto tst_spd_last = target_data.tstChain().groundSpeed(id_last); // m/s
-
-                    if (use_max_acceleration_ && tst_spd.has_value() && tst_spd_last.has_value())
-                    {
-                        acceleration = fabs(*tst_spd - *tst_spd_last) / time_diff;
-
-                        if (acceleration > max_acceleration_)
-                        {
-                            Result::logComment(update, "Acc",
-                                               String::doubleToStringPrecision(acceleration, 1));
-
-                            ++dubious_acceleration_found;
-                        }
-                    }
-
-                    if (!do_not_evaluate_target && use_max_turnrate_)
-                    {
-                        auto tst_track_angle = target_data.tstChain().trackAngle(id);
-                        auto tst_track_angle_last = target_data.tstChain().trackAngle(id_last);
-
-                        if (tst_track_angle.has_value() && tst_track_angle_last.has_value())
-                        {
-
-                            turnrate = Number::calculateMinAngleDifference(*tst_track_angle_last, *tst_track_angle) / time_diff;
-
-                            if (fabs(turnrate) > max_turnrate_)
-                            {
-                                Result::logComment(update, "TR",
-                                                   String::doubleToStringPrecision(turnrate, 1));
-
-                                ++dubious_turnrate_found;
-                            }
-                        }
-                    }
-
-                    if (!do_not_evaluate_target && use_rocd_)
-                    {
-
-                        auto tst_mc = target_data.tstChain().modeC(id);
-                        auto tst_mc_last = target_data.tstChain().modeC(id_last);
-
-                        if (tst_mc.has_value() && tst_mc_last.has_value())
-                        {
-                            rocd = fabs(*tst_mc - *tst_mc_last) / time_diff;
-
-                            if (rocd > max_rocd_)
-                            {
-                                Result::logComment(update, "ROCD",
-                                                   String::doubleToStringPrecision(rocd, 1));
-
-                                ++dubious_rocd_found;
-                            }
-                        }
-                    }
-                }
+                Result::logComment(update, "Acc", String::doubleToStringPrecision(*f.acceleration, 1));
+                ++dubious_acceleration_found;
             }
 
-            // done
-            last_tod = update.timestamp();
-            has_last_tod = true;
+            if (f.turnrate)
+            {
+                Result::logComment(update, "TR", String::doubleToStringPrecision(*f.turnrate, 1));
+                ++dubious_turnrate_found;
+            }
+
+            if (f.rocd)
+            {
+                Result::logComment(update, "ROCD", String::doubleToStringPrecision(*f.rocd, 1));
+                ++dubious_rocd_found;
+            }
         }
 
         if (!do_not_evaluate_target && use_max_groundspeed_ && dubious_groundspeed_found > 0)
@@ -398,16 +365,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTrack::evaluate (con
 
         track_detail.num_pos_inside_dubious = track_detail.numDubious(); // num of tods with issues
 
-        if (track_detail.num_pos_inside
-                && ((float) track_detail.num_pos_inside_dubious / (float)(track_detail.num_pos_inside) > dubious_prob_))
-        {
-            track_detail.is_dubious = true;
+        track_detail.is_dubious = DubiousHelpers::isDubious(track_detail.num_pos_inside_dubious,
+                                                            track_detail.num_pos_inside, dubious_prob_);
+        if (track_detail.is_dubious)
             ++num_tracks_dubious;
-        }
-        else
-        {
-            track_detail.is_dubious = false;
-        }
 
         //        loginf << "EvaluationRequirementDubiousTrack '" << name_ << "': evaluate: utn " << target_data.utn_
         //               << " is_dubious_ " << track_detail.is_dubious_

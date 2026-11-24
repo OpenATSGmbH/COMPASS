@@ -1,0 +1,26 @@
+{
+    "description": "Reference track 0 deg (north). Test 100 m north of the reference: 100 m ahead, 0 across (the old code computed cos(0 - pi/2) = 0 along). Test 50 m east: 0 along, 50 m right. Test 40 m south: 40 m behind.",
+    "offsets": [
+        {
+            "distance": 100.0,
+            "offset_angle_deg": 90.0,
+            "track_angle_deg": 0.0,
+            "along": 100.0,
+            "across": 0.0
+        },
+        {
+            "distance": 50.0,
+            "offset_angle_deg": 0.0,
+            "track_angle_deg": 0.0,
+            "along": 0.0,
+            "across": 50.0
+        },
+        {
+            "distance": 40.0,
+            "offset_angle_deg": -90.0,
+            "track_angle_deg": 0.0,
+            "along": -40.0,
+            "across": 0.0
+        }
+    ]
+}

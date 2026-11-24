@@ -16,6 +16,7 @@
  */
 
 #include "requirement/position/along.h"
+#include "requirement/base/trackoffsethelpers.h"
 #include "results/position/along.h"
 #include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
@@ -204,8 +205,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAlong::evaluate (
         std::tie(transform_ok, distance, angle) = ogr_geo2cart.distanceAngleCart(ref_pos->latitude_, ref_pos->longitude_, tst_pos.latitude_, tst_pos.longitude_);
         traced_assert(transform_ok);
 
-        angle = ref_spd->track_angle_ - angle;
-
         if (std::isnan(distance) || std::isinf(distance))
         {
             addDetail(timestamp, tst_pos,
@@ -218,7 +217,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAlong::evaluate (
             continue;
         }
 
-        if (std::isnan(angle) || std::isinf(angle))
+        if (!std::isfinite(angle) || !std::isfinite(ref_spd->track_angle_))
         {
             addDetail(timestamp, tst_pos,
                         ref_pos, // ref_pos
@@ -230,7 +229,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionAlong::evaluate (
             continue;
         }
 
-        d_along = distance * cos(angle);
+        d_along = TrackOffsetHelpers::trackOffset(distance, angle, ref_spd->track_angle_).along;
         traced_assert(!std::isnan(d_along) && !std::isinf(d_along));
 
         ++num_distances;

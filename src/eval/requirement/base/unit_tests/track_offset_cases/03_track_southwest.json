@@ -1,0 +1,19 @@
+{
+    "description": "Reference track 225 deg (southwest, mathematical angle 225 deg). Test 10 m to the southwest: 10 m ahead, 0 across. Test 10 m to the northwest (mathematical angle 135 deg): 0 along, 10 m right of a southwest track.",
+    "offsets": [
+        {
+            "distance": 10.0,
+            "offset_angle_deg": 225.0,
+            "track_angle_deg": 225.0,
+            "along": 10.0,
+            "across": 0.0
+        },
+        {
+            "distance": 10.0,
+            "offset_angle_deg": 135.0,
+            "track_angle_deg": 225.0,
+            "along": 0.0,
+            "across": 10.0
+        }
+    ]
+}

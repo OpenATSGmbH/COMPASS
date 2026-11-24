@@ -23,6 +23,7 @@ include("${CMAKE_SOURCE_DIR}/src/core/db/dbcontent/label/unit_tests/CMakeLists.t
 include("${CMAKE_SOURCE_DIR}/src/eval/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/eval/requirement/base/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/eval/requirement/detection/unit_tests/CMakeLists.txt")
+include("${CMAKE_SOURCE_DIR}/src/eval/requirement/dubious/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/eval/requirement/identification/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/eval/requirement/latency/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/eval/requirement/position/unit_tests/CMakeLists.txt")
