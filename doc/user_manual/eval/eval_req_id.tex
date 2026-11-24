@@ -278,6 +278,17 @@ The 'Identification False' requirement is used to calculate the probability of a
 \end{itemize}
 \ \\
 
+Each test target report inside the sector is counted as follows:
+\begin{itemize}
+\item Only the checked attributes with a value in the test and in the reference are compared.
+\item False: one compared attribute is different, or all compared attributes with 'Require All False'.
+\item Correct: the compared attributes are not false.
+\item Unknown (\#Unknown): no attribute can be compared, and a checked attribute has no test value.
+\item No reference identification (\#NoRef): no attribute can be compared, and the test values exist.
+\item The probability of false identification is \#False / (\#Correct + \#False). Target reports counted as unknown or without reference identification are not used.
+\end{itemize}
+\ \\
+
 \subsubsection{Result Values}
 
 \paragraph{Sector}

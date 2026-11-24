@@ -1,0 +1,37 @@
+{
+    "description": "ACAD and Mode A with Require All False: false only if all compared values are different.",
+    "require_all_false": true,
+    "reports": [
+        {
+            "cmp": [
+                "same",
+                "different"
+            ]
+        },
+        {
+            "cmp": [
+                "different",
+                "different"
+            ]
+        },
+        {
+            "cmp": [
+                "no_tst",
+                "different"
+            ]
+        },
+        {
+            "cmp": [
+                "no_ref",
+                "same"
+            ]
+        }
+    ],
+    "expected": {
+        "no_ref_val": 0,
+        "unknown": 0,
+        "correct": 2,
+        "false": 2,
+        "probability_false": 0.5
+    }
+}

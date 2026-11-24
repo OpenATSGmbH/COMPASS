@@ -16,6 +16,7 @@
  */
 
 #include "requirement/identification/false.h"
+#include "requirement/base/falsehelpers.h"
 #include "standard/evaluationstandard.h"
 #include "results/identification/false.h"
 
@@ -76,20 +77,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
     boost::optional<dbContent::TargetPosition> ref_pos;
     //bool ok;
 
-    ValueComparisonResult cmp_res_ti;
-    string cmp_res_ti_comment;
-    bool ti_false;
-
-    ValueComparisonResult cmp_res_ta;
-    string cmp_res_ta_comment;
-    bool ta_false;
-
-    ValueComparisonResult cmp_res_ma;
-    string cmp_res_ma_comment;
-    bool ma_false;
-
-    bool any_false;
-    bool all_false;
     bool result_false;
 
     string comment;
@@ -178,71 +165,59 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
         }
         ++num_pos_inside;
 
-        tie(cmp_res_ti, cmp_res_ti_comment) = compareTi(tst_id, target_data, max_ref_time_diff);
-        tie(cmp_res_ta, cmp_res_ta_comment) = compareTa(tst_id, target_data, max_ref_time_diff);
-        tie(cmp_res_ma, cmp_res_ma_comment) = compareModeA(tst_id, target_data, max_ref_time_diff);
+        // compare the used identification values
+        std::vector<ValueComparisonResult> cmp_results;
 
-        any_false = false;
-        all_false = true;
+        auto useCompare = [ & ] (const std::pair<ValueComparisonResult, std::string>& cmp, const std::string& value_name)
+        {
+            cmp_results.push_back(cmp.first);
+
+            if (cmp.first == ValueComparisonResult::Different)
+            {
+                if (comment.size())
+                    comment += ", ";
+
+                comment += value_name + " false (" + cmp.second + ")";
+            }
+        };
 
         if (use_ms_ti_)
-        {
-            ti_false = cmp_res_ti == ValueComparisonResult::Different;
-
-            if (ti_false)
-                comment += "ACID false (" + cmp_res_ti_comment + ")";
-
-            any_false |= ti_false;
-            all_false &= ti_false;
-        }
-
+            useCompare(compareTi(tst_id, target_data, max_ref_time_diff), "ACID");
         if (use_ms_ta_)
-        {
-            ta_false = cmp_res_ta == ValueComparisonResult::Different;
-
-            if (ta_false)
-            {
-                if (comment.size())
-                    comment += ", ";
-
-                comment += "ACAD false (" + cmp_res_ta_comment + ")";
-            }
-
-            any_false |= ta_false;
-            all_false &= ta_false;
-        }
-
+            useCompare(compareTa(tst_id, target_data, max_ref_time_diff), "ACAD");
         if (use_mode_a_)
+            useCompare(compareModeA(tst_id, target_data, max_ref_time_diff), "M3A");
+
+        auto report_class = FalseHelpers::classify(cmp_results, require_all_false_);
+
+        result_false = report_class == FalseHelpers::ReportClass::False;
+
+        switch (report_class)
         {
-            ma_false = cmp_res_ma == ValueComparisonResult::Different;
+            case FalseHelpers::ReportClass::NoRefValue:
+                if (skip_no_data_details)
+                    skip_detail = true;
 
-            if (ma_false)
-            {
-                if (comment.size())
-                    comment += ", ";
-                comment += "M3A false (" + cmp_res_ma_comment + ")";
-            }
+                comment = "No reference value";
+                ++num_no_ref_val;
+                break;
 
-            any_false |= ma_false;
-            all_false &= ma_false;
+            case FalseHelpers::ReportClass::Unknown:
+                if (skip_no_data_details)
+                    skip_detail = true;
+
+                comment = "No test value";
+                ++num_unknown;
+                break;
+
+            case FalseHelpers::ReportClass::Correct:
+                ++num_correct;
+                break;
+
+            case FalseHelpers::ReportClass::False:
+                ++num_false;
+                break;
         }
-
-        if (!use_ms_ti_ && !use_ms_ta_ && !use_mode_a_)
-            all_false = false; // if none is used, set to false
-
-        if (require_all_false_)
-        {
-            result_false = all_false;
-        }
-        else // one correct ok
-        {
-            result_false = any_false;
-        }
-
-        if (result_false)
-            ++num_false;
-        else
-            ++num_correct;
 
         if (!skip_detail)
             addDetail(timestamp, pos_current, ref_pos,

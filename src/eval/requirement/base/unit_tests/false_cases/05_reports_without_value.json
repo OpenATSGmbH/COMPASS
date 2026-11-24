@@ -1,0 +1,29 @@
+{
+    "description": "ACAD: 100 target reports without a test value are not counted, 1 false of 99 (before the fix they counted as correct: 1 of 199).",
+    "reports": [
+        {
+            "cmp": [
+                "same"
+            ],
+            "repeat": 98
+        },
+        {
+            "cmp": [
+                "different"
+            ]
+        },
+        {
+            "cmp": [
+                "no_tst"
+            ],
+            "repeat": 100
+        }
+    ],
+    "expected": {
+        "no_ref_val": 0,
+        "unknown": 100,
+        "correct": 98,
+        "false": 1,
+        "probability_false": 0.010101010101010102
+    }
+}

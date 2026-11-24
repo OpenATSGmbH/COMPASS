@@ -21,6 +21,7 @@
 #include "evaluationdata.h"
 #include "timeconv.h"
 #include "requirement/base/comparisontype.h"
+#include "requirement/base/valuecomparison.h"
 #include "requirement/base/targetselection.h"
 #include "evaluationdefs.h"
 
@@ -48,14 +49,6 @@ namespace Evaluation
 
 namespace EvaluationRequirement
 {
-
-enum ValueComparisonResult
-{
-    Unknown_NoRefData=0,
-    Unknown_NoTstData,
-    Same,
-    Different
-};
 
 class Base
 {

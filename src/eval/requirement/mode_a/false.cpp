@@ -16,6 +16,7 @@
  */
 
 #include "requirement/mode_a/false.h"
+#include "requirement/base/falsehelpers.h"
 #include "standard/evaluationstandard.h"
 #include "results/mode_a/false.h"
 
@@ -162,33 +163,34 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeAFalse::evaluate (
 
         tie(cmp_res, comment) = compareModeA(tst_id, target_data, max_ref_time_diff);
 
-        code_ok = true;
-        if (cmp_res == ValueComparisonResult::Unknown_NoRefData)
-        {
-            if (skip_no_data_details)
-                skip_detail = true;
+        auto report_class = FalseHelpers::classify(cmp_res);
 
-            ++num_no_ref_val;
-        }
-        else if (cmp_res == ValueComparisonResult::Unknown_NoTstData)
-        {
-            if (skip_no_data_details)
-                skip_detail = true;
+        code_ok = report_class != FalseHelpers::ReportClass::False;
 
-            ++num_unknown;
-        }
-        else if (cmp_res == ValueComparisonResult::Same)
+        switch (report_class)
         {
-            ++num_correct;
+            case FalseHelpers::ReportClass::NoRefValue:
+                if (skip_no_data_details)
+                    skip_detail = true;
+
+                ++num_no_ref_val;
+                break;
+
+            case FalseHelpers::ReportClass::Unknown:
+                if (skip_no_data_details)
+                    skip_detail = true;
+
+                ++num_unknown;
+                break;
+
+            case FalseHelpers::ReportClass::Correct:
+                ++num_correct;
+                break;
+
+            case FalseHelpers::ReportClass::False:
+                ++num_false;
+                break;
         }
-        else if (cmp_res == ValueComparisonResult::Different)
-        {
-            code_ok = false;
-            ++num_false;
-        }
-        else
-            throw runtime_error("EvaluationRequirementModeAFalse: evaluate: unknown compare result "
-                                +to_string(cmp_res));
 
         if (!skip_detail)
             addDetail(timestamp, pos_current, ref_pos,

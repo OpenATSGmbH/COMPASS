@@ -1,0 +1,54 @@
+{
+    "description": "ACAD and Mode A, one different value is enough: only compared values count, without any compared value the report is unknown if a test value is missing.",
+    "reports": [
+        {
+            "cmp": [
+                "same",
+                "different"
+            ]
+        },
+        {
+            "cmp": [
+                "same",
+                "same"
+            ]
+        },
+        {
+            "cmp": [
+                "no_tst",
+                "same"
+            ]
+        },
+        {
+            "cmp": [
+                "no_tst",
+                "different"
+            ]
+        },
+        {
+            "cmp": [
+                "no_tst",
+                "no_tst"
+            ]
+        },
+        {
+            "cmp": [
+                "no_ref",
+                "no_ref"
+            ]
+        },
+        {
+            "cmp": [
+                "no_ref",
+                "no_tst"
+            ]
+        }
+    ],
+    "expected": {
+        "no_ref_val": 1,
+        "unknown": 2,
+        "correct": 2,
+        "false": 2,
+        "probability_false": 0.5
+    }
+}
