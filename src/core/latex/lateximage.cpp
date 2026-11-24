@@ -18,6 +18,7 @@
 #include "lateximage.h"
 
 #include "traced_assert.h"
+#include "stringconv.h"
 #include <sstream>
 
 using namespace std;
@@ -36,7 +37,7 @@ std::string LatexImage::toString()
     ss << R"(\begin{figure}[H])" << "\n";
     //    \hspace*{-1cm}
     ss << R"(\includegraphics[width=18cm]{)" << filename_ << "}\n";
-    ss << R"(\caption{)" << caption_ << "}\n";
+    ss << R"(\caption{)" << Utils::String::latexString(caption_) << "}\n";
     ss << R"(\end{figure})" << "\n";
 
     return ss.str();
