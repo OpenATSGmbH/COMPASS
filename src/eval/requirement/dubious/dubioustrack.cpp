@@ -39,8 +39,6 @@ namespace EvaluationRequirement
 DubiousTrack::DubiousTrack(const std::string& name, 
                            const std::string& short_name, 
                            const std::string& group_name,
-                           bool eval_only_single_ds_id, 
-                           unsigned int single_ds_id,
                            float minimum_comparison_time, 
                            float maximum_comparison_time,
                            bool mark_primary_only, 
@@ -61,8 +59,6 @@ DubiousTrack::DubiousTrack(const std::string& name,
                            COMPARISON_TYPE prob_check_type, 
                            EvaluationCalculator& calculator)
     : ProbabilityBase(name, short_name, group_name, prob, prob_check_type, false, calculator),
-      eval_only_single_ds_id_(eval_only_single_ds_id), 
-      single_ds_id_(single_ds_id),
       minimum_comparison_time_(minimum_comparison_time), 
       maximum_comparison_time_(maximum_comparison_time),
       mark_primary_only_(mark_primary_only), 
@@ -123,49 +119,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTrack::evaluate (con
     };
 
     bool do_not_evaluate_target = false;
-
-    // check for single source only
-    if (eval_only_single_ds_id_)
-    {
-        traced_assert(false); // TODO
-
-        //bool can_check = true;
-
-        //        if (!target_data.canCheckTstMultipleSources())
-        //        {
-        //            //loginf << "UGA utn " << target_data.utn_ << " cannot check multiple sources";
-        //            can_check = false;
-        //        }
-
-        //        if (can_check && target_data.hasTstMultipleSources())
-        //        {
-        //            //loginf << "UGA utn " << target_data.utn_ << " failed multiple sources";
-        //            can_check = false;
-        //        }
-
-        //        if (can_check && !target_data.canCheckTrackLUDSID())
-        //        {
-        //            //loginf << "UGA utn " << target_data.utn_ << " cannot check lu_ds_id";
-        //            can_check = false;
-        //        }
-
-        //        if (can_check && !target_data.hasSingleLUDSID())
-        //        {
-        //            //loginf << "UGA utn " << target_data.utn_ << " has no single lu_ds_id";
-        //            can_check = false;
-        //        }
-
-        //        if (!can_check) // can not check
-        //        {
-        //            //loginf << "UGA utn " << target_data.utn_ << " can not check";
-        //            do_not_evaluate_target = true;
-        //        }
-        //        else if (target_data.singleTrackLUDSID() != single_ds_id_) // is not correct
-        //        {
-        //            //loginf << "UGA utn " << target_data.utn_ << " lu_ds_id not same";
-        //            do_not_evaluate_target = true;
-        //        }
-    }
 
     for (const auto& tst_id : tst_data)
     {

@@ -25,7 +25,11 @@
 #include "report/section.h"
 #include "report/sectioncontenttable.h"
 
+#include "stringconv.h"
+#include "number.h"
+
 using namespace std;
+using namespace Utils;
 
 namespace EvaluationRequirement
 {
@@ -251,6 +255,44 @@ BaseConfigWidget* DubiousTargetConfig::createWidget()
 void DubiousTargetConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
     BaseConfig::addToReport(report);
+
+    auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
+
+    auto& table = section.getTable("req_table");
+
+    table.addRow({"Probability [%]", "Probability of dubious updates",
+                  probabilityPercent(prob_)});
+    table.addRow({"Probability Check Type", "",
+                  comparisonTypeString(prob_check_type_)});
+    table.addRow({"Minimum Comparison Time [s]",
+                  "Minimum time between two updates for the acceleration, turnrate and ROCD checks",
+                  Number::floatToDouble(minimum_comparison_time_)});
+    table.addRow({"Maximum Comparison Time [s]",
+                  "Maximum time between two updates for the acceleration, turnrate and ROCD checks",
+                  Number::floatToDouble(maximum_comparison_time_)});
+    table.addRow({"Mark Primary-Only", "If all updates of a primary-only target are dubious",
+                  String::boolToString(mark_primary_only_)});
+    table.addRow({"Use Minimum Updates", "If all updates of a target with fewer updates are dubious",
+                  String::boolToString(use_min_updates_)});
+    table.addRow({"Minimum Updates [1]", "", min_updates_});
+    table.addRow({"Use Minimum Duration", "If all updates of a shorter target are dubious",
+                  String::boolToString(use_min_duration_)});
+    table.addRow({"Minimum Duration [s]", "", Number::floatToDouble(min_duration_)});
+    table.addRow({"Use Maximum Groundspeed", "If updates with a higher groundspeed are dubious",
+                  String::boolToString(use_max_groundspeed_)});
+    table.addRow({"Maximum Groundspeed [kts]", "", Number::floatToDouble(max_groundspeed_kts_)});
+    table.addRow({"Use Maximum Acceleration", "If updates with a higher acceleration are dubious",
+                  String::boolToString(use_max_acceleration_)});
+    table.addRow({"Maximum Acceleration [m/s^2]", "", Number::floatToDouble(max_acceleration_)});
+    table.addRow({"Use Maximum Turnrate", "If updates with a higher turnrate are dubious",
+                  String::boolToString(use_max_turnrate_)});
+    table.addRow({"Maximum Turnrate [deg/s]", "", Number::floatToDouble(max_turnrate_)});
+    table.addRow({"Use Maximum ROCD", "If updates with a higher rate of climb or descent are dubious",
+                  String::boolToString(use_max_rocd_)});
+    table.addRow({"Maximum ROCD [ft/s]", "", Number::floatToDouble(max_rocd_)});
+    table.addRow({"Dubious Probability [%]",
+                  "A target is dubious if the ratio of its dubious updates is higher",
+                  probabilityPercent(Number::floatToDouble(dubious_prob_))});
 }
 
 }

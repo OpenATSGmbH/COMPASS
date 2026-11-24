@@ -5703,12 +5703,12 @@
                 },
                 {
                     "file": "eval/figures/eval_req_dubious_tracks.png",
-                    "dirty": false,
+                    "dirty": true,
                     "used": true,
                     "used_in": [
                         "eval/eval_req_dub.tex:138"
                     ],
-                    "shows": "Requirement config widget 'Dubious Track' named 'Dubious' (DT), incl. L.U. sensor fields",
+                    "shows": "Requirement config widget 'Dubious Track' named 'Dubious' (DT)",
                     "category": "dialog",
                     "automation": "medium",
                     "database": "at_20230422",

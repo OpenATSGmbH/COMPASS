@@ -25,7 +25,11 @@
 #include "report/section.h"
 #include "report/sectioncontenttable.h"
 
+#include "stringconv.h"
+#include "number.h"
+
 using namespace std;
+using namespace Utils;
 
 
 namespace EvaluationRequirement
@@ -118,5 +122,28 @@ BaseConfigWidget* SpeedConfig::createWidget()
 void SpeedConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
     BaseConfig::addToReport(report);
+
+    auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
+
+    auto& table = section.getTable("req_table");
+
+    table.addRow({"Probability [%]", "Probability of acceptable speed",
+                  probabilityPercent(prob_)});
+    table.addRow({"Probability Check Type", "",
+                  comparisonTypeString(prob_check_type_)});
+    table.addRow({"Speed Offset Value [m/s]",
+                  "Maximum allowed absolute speed difference between the test and the reference",
+                  Number::floatToDouble(threshold_value_)});
+    table.addRow({"Use Percent Threshold if Higher",
+                  "If the percentage of the reference speed is used when it is higher than the offset value",
+                  String::boolToString(use_percent_if_higher_)});
+    table.addRow({"Threshold Percent [%]", "Percentage of the reference speed",
+                  Number::floatToDouble(threshold_percent_)});
+    table.addRow({"Threshold Value Check Type",
+                  "Speed difference comparison operator with the given threshold",
+                  comparisonTypeString(threshold_value_check_type_)});
+    table.addRow({"Failed Values are of Interest",
+                  "If the speed differences of interest are the ones not passing the check",
+                  String::boolToString(failed_values_of_interest_)});
 }
 }

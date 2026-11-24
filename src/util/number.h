@@ -48,6 +48,9 @@ void addWithWeightedAverage(double value1, double std_dev1, unsigned int value1_
 
 extern unsigned int numDecimals(double v, unsigned int dec_max = 9);
 
+/// @brief Returns the double of the shortest decimal form of a float, e.g. 29.43f gives 29.43, not 29.43000030517578
+extern double floatToDouble(float v);
+
 /// @brief Returns angle (degrees) calculated from given values
 extern double calculateAngle(double degrees, double minutes, double seconds);
 

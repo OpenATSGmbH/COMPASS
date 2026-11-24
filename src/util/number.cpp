@@ -27,6 +27,7 @@
 #include <Eigen/Dense>
 
 #include <cmath>
+#include <limits>
 #include <stdlib.h>
 #include <algorithm>
 #include <mutex>
@@ -161,6 +162,11 @@ void addWithWeightedAverage(double value1, double std_dev1, unsigned int value1_
     }
 
     weighted_cnt = value1_cnt + value2_cnt;
+}
+
+double floatToDouble(float v)
+{
+    return QString::number(static_cast<double>(v), 'g', std::numeric_limits<float>::digits10).toDouble();
 }
 
 unsigned int numDecimals(double v, unsigned int dec_max)

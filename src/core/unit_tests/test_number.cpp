@@ -75,6 +75,18 @@ TEST_CASE("round", "[number]")
     REQUIRE(round(0.0, 5) == Approx(0.0));
 }
 
+TEST_CASE("floatToDouble", "[number]")
+{
+    REQUIRE(numDecimals(static_cast<double>(29.43f)) > 2);
+
+    REQUIRE(floatToDouble(29.43f) == 29.43);
+    REQUIRE(numDecimals(floatToDouble(29.43f)) == 2);
+    REQUIRE(numDecimals(100.0 * floatToDouble(0.05f)) == 0);
+    REQUIRE(floatToDouble(1333.0f) == 1333.0);
+    REQUIRE(floatToDouble(-0.1f) == -0.1);
+    REQUIRE(floatToDouble(0.0f) == 0.0);
+}
+
 TEST_CASE("calculateAngle", "[number]")
 {
     // 47 degrees, 26 minutes, 58.9526 seconds

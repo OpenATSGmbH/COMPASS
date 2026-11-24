@@ -36,9 +36,6 @@ class DubiousTrackConfigWidget : public ProbabilityBaseConfigWidget
     Q_OBJECT
 
 public slots:
-    void toggleEvalOnlySingleDsId();
-    void evalOnlySingleDsIdEditSlot(QString value);
-
     void minCompTimeEditSlot(QString value);
     void maxCompTimeEditSlot(QString value);
 
@@ -68,8 +65,6 @@ public:
     DubiousTrackConfigWidget(DubiousTrackConfig& cfg);
 
 protected:
-    QCheckBox* eval_only_single_ds_id_check_{nullptr};
-    QLineEdit* single_ds_id_edit_{nullptr};
 
 
     QLineEdit* min_comp_time_edit_{nullptr};

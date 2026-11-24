@@ -25,7 +25,11 @@
 #include "report/section.h"
 #include "report/sectioncontenttable.h"
 
+#include "stringconv.h"
+#include "number.h"
+
 using namespace std;
+using namespace Utils;
 
 namespace EvaluationRequirement
 {
@@ -98,6 +102,28 @@ BaseConfigWidget* TrackAngleConfig::createWidget()
 void TrackAngleConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
     BaseConfig::addToReport(report);
+
+    auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
+
+    auto& table = section.getTable("req_table");
+
+    table.addRow({"Probability [%]", "Probability of acceptable track angle",
+                  probabilityPercent(prob_)});
+    table.addRow({"Probability Check Type", "",
+                  comparisonTypeString(prob_check_type_)});
+    table.addRow({"Track Angle Offset Value [deg]",
+                  "Maximum allowed track angle difference between the test and the reference",
+                  Number::floatToDouble(threshold_)});
+    table.addRow({"Use Minimum Speed",
+                  "If test target reports with a reference speed below the minimum speed are not counted",
+                  String::boolToString(use_minimum_speed_)});
+    table.addRow({"Minimum Speed [m/s]", "Minimum reference speed", Number::floatToDouble(minimum_speed_)});
+    table.addRow({"Threshold Value Check Type",
+                  "Track angle difference comparison operator with the given threshold",
+                  comparisonTypeString(threshold_value_check_type_)});
+    table.addRow({"Failed Values are of Interest",
+                  "If the track angle differences of interest are the ones not passing the check",
+                  String::boolToString(failed_values_of_interest_)});
 }
 
 bool TrackAngleConfig::useMinimumSpeed() const
