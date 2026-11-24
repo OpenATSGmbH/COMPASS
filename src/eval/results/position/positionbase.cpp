@@ -256,10 +256,14 @@ FeatureDefinitions SinglePositionBaseCommon::common_getCustomAnnotationDefinitio
 {
     FeatureDefinitions defs;
 
+    const auto labels = overviewLabels();
+
     //histograms
-    defs.addDefinition<FeatureDefinitionStringCategoryHistogram>("Position Error", calculator, "Error Count", "Error Count")
-        .addDataSeries("", { "#CF", "#CP" }, { numFailed(), numPassed() });
-    defs.addDefinition<FeatureDefinitionHistogram<double>>("Position Error", calculator, "Full distribution", "Full distribution [m]")
+    if (labels.update_check)
+        defs.addDefinition<FeatureDefinitionStringCategoryHistogram>(labels.value_name, calculator, "Error Count", "Error Count")
+            .addDataSeries("", { "#CF", "#CP" }, { numFailed(), numPassed() });
+    defs.addDefinition<FeatureDefinitionHistogram<double>>(labels.value_name, calculator, "Full distribution",
+                                                           "Full distribution [" + labels.unit + "]")
         .addDataSeries("", SinglePositionBaseCommon::DetailKey::Value);
 
     return defs;
@@ -550,11 +554,14 @@ FeatureDefinitions JoinedPositionBase::common_getCustomAnnotationDefinitions(con
             invert = true;
     }
 
+    const auto labels = overviewLabels();
+
     //grids (as geoimages)
-    defs.addDefinition<FeatureDefinitionBinaryGrid>("Position Error", calculator, "Comparison Passed")
-        .addDataSeries(SinglePositionBaseCommon::DetailKey::CheckPassed, 
-                       GridAddDetailMode::AddEvtRefPosition, 
-                       invert);
+    if (labels.update_check)
+        defs.addDefinition<FeatureDefinitionBinaryGrid>(labels.value_name, calculator, "Comparison Passed")
+            .addDataSeries(SinglePositionBaseCommon::DetailKey::CheckPassed, 
+                           GridAddDetailMode::AddEvtRefPosition, 
+                           invert);
     
     // defs.addDefinition<FeatureDefinitionGrid<double>>("Position Error", calculator, "Error Mean", true)
     //     .addDataSeries(SinglePositionBaseCommon::DetailKey::Value, 
@@ -570,9 +577,11 @@ FeatureDefinitions JoinedPositionBase::common_getCustomAnnotationDefinitions(con
     //                    GridAddDetailMode::AddEvtRefPosition);
 
     //histograms
-    defs.addDefinition<FeatureDefinitionStringCategoryHistogram>("Position Error", calculator, "Error Count", "Error Count")
-        .addDataSeries("", { "#CF", "#CP" }, { numFailed(), numPassed() });
-    defs.addDefinition<FeatureDefinitionHistogram<double>>("Position Error", calculator, "Full distribution", "Full distribution [m]")
+    if (labels.update_check)
+        defs.addDefinition<FeatureDefinitionStringCategoryHistogram>(labels.value_name, calculator, "Error Count", "Error Count")
+            .addDataSeries("", { "#CF", "#CP" }, { numFailed(), numPassed() });
+    defs.addDefinition<FeatureDefinitionHistogram<double>>(labels.value_name, calculator, "Full distribution",
+                                                           "Full distribution [" + labels.unit + "]")
         .addDataSeries("", SinglePositionBaseCommon::DetailKey::Value);
 
     //scatterplot

@@ -45,6 +45,8 @@ public:
     virtual std::shared_ptr<Joined> createEmptyJoined(const std::string& result_id) override;
 
 protected:
+    virtual OverviewLabels overviewLabels() const override { return { "Azimuth Error", "deg", true }; }
+
     virtual boost::optional<double> computeFinalResultValue() const override;
 
     virtual std::vector<std::string> targetTableHeadersCustom() const override;
@@ -64,6 +66,8 @@ public:
                            const SectorLayer& sector_layer,
                            EvaluationCalculator& calculator);
 protected:
+    virtual OverviewLabels overviewLabels() const override { return { "Azimuth Error", "deg", true }; }
+
     virtual boost::optional<double> computeFinalResultValue() const override;
 
     virtual std::vector<SectorInfo> sectorInfos() const override;

@@ -17,6 +17,7 @@
 
 #include "results/latency/adsblatency.h"
 #include "results/evaluationdetail.h"
+#include "results/base/featuredefinitions.h"
 
 #include "requirement/base/base.h"
 #include "requirement/latency/adsblatency.h"
@@ -266,6 +267,26 @@ std::vector<Joined::SectorInfo> JoinedADSBLatency::sectorInfos() const
              { "LTSDev [s]"     , "Standard Deviation of latency"              , formatValue(accumulator_.stddev()) },
              { "#LTOK [1]"      , "Number of updates with acceptable latency"  , num_value_ok_    },
              { "#LTNOK [1]"     , "Number of updates with unacceptable latency", num_value_nok_   } };
+}
+
+/**
+ * Overview: where the latency passed or failed, the counts and the distribution of the latencies.
+ */
+FeatureDefinitions JoinedADSBLatency::getCustomAnnotationDefinitions() const
+{
+    FeatureDefinitions defs;
+
+    defs.addDefinition<FeatureDefinitionBinaryGrid>(requirement()->name(), calculator_, "Passed")
+        .addDataSeries(SingleADSBLatency::DetailKey::CheckPassed,
+                       GridAddDetailMode::AddEvtPosition,
+                       false);
+
+    defs.addDefinition<FeatureDefinitionStringCategoryHistogram>(requirement()->name(), calculator_, "Latency Count", "Latency Count")
+        .addDataSeries("", { "#LTNOK", "#LTOK" }, { num_value_nok_, num_value_ok_ });
+    defs.addDefinition<FeatureDefinitionHistogram<double>>(requirement()->name(), calculator_, "Full distribution", "Full distribution [s]")
+        .addDataSeries("", SingleADSBLatency::DetailKey::Value);
+
+    return defs;
 }
 
 /**

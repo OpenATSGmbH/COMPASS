@@ -44,6 +44,15 @@ public:
                  unsigned int num_ref_inaccurate,
                  unsigned int num_passed,
                  unsigned int num_failed);
+    virtual ~PositionBase() = default;
+
+    /// The names of the overview figures (common_getCustomAnnotationDefinitions()).
+    struct OverviewLabels
+    {
+        std::string value_name = "Position Error";
+        std::string unit       = "m";
+        bool        update_check = true; // false: a statistic of all updates is checked, no single update
+    };
 
     unsigned int numPos() const;
     unsigned int numNoRef() const;
@@ -56,6 +65,8 @@ public:
     const ValueAccumulator& accumulator() const;
 
 protected:
+    virtual OverviewLabels overviewLabels() const { return OverviewLabels(); }
+
     unsigned int num_pos_         {0};
     unsigned int num_no_ref_      {0};
     unsigned int num_pos_outside_ {0};

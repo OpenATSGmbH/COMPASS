@@ -51,6 +51,8 @@ public:
     const std::vector<double>& speedValues() const { return speed_values_; }
 
 protected:
+    virtual OverviewLabels overviewLabels() const override { return { "Time Stamp Error", "s", false }; }
+
     virtual boost::optional<double> computeFinalResultValue() const override;
 
     virtual std::vector<std::string> targetTableHeadersCustom() const override;
@@ -76,6 +78,8 @@ public:
                                  const SectorLayer& sector_layer,
                                  EvaluationCalculator& calculator);
 protected:
+    virtual OverviewLabels overviewLabels() const override { return { "Time Stamp Error", "s", false }; }
+
     virtual boost::optional<double> computeFinalResultValue() const override;
 
     virtual std::vector<SectorInfo> sectorInfos() const override;

@@ -17,6 +17,7 @@
 
 #include "results/identification/change_delay.h"
 #include "results/evaluationdetail.h"
+#include "results/base/featuredefinitions.h"
 
 #include "requirement/base/base.h"
 #include "requirement/identification/change_delay.h"
@@ -255,6 +256,27 @@ std::vector<Joined::SectorInfo> JoinedIdentificationChangeDelay::sectorInfos() c
              { "CDSDev [s]"   , "Standard Deviation of change delay"         , formatValue(accumulator_.stddev()) },
              { "#CDOK [1]"    , "Number of events with acceptable delay"     , num_passed_         },
              { "#CDNOK [1]"   , "Number of events with unacceptable delay"   , num_failed_         } };
+}
+
+/**
+ * Overview: where the change delay passed or failed (at the change events), the counts and the distribution
+ * of the delays.
+ */
+FeatureDefinitions JoinedIdentificationChangeDelay::getCustomAnnotationDefinitions() const
+{
+    FeatureDefinitions defs;
+
+    defs.addDefinition<FeatureDefinitionBinaryGrid>(requirement()->name(), calculator_, "Passed")
+        .addDataSeries(SingleIdentificationChangeDelay::DetailKey::CheckPassed,
+                       GridAddDetailMode::AddEvtPosition,
+                       false);
+
+    defs.addDefinition<FeatureDefinitionStringCategoryHistogram>(requirement()->name(), calculator_, "Change Delay Count", "Change Delay Count")
+        .addDataSeries("", { "#CDNOK", "#CDOK" }, { num_failed_, num_passed_ });
+    defs.addDefinition<FeatureDefinitionHistogram<double>>(requirement()->name(), calculator_, "Full distribution", "Full distribution [s]")
+        .addDataSeries("", SingleIdentificationChangeDelay::DetailKey::Value);
+
+    return defs;
 }
 
 /**

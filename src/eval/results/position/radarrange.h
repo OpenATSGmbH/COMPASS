@@ -50,6 +50,8 @@ public:
     const std::vector<double>& rangeValuesTst() const { return range_values_tst_; }
 
 protected:
+    virtual OverviewLabels overviewLabels() const override { return { "Range Error", "m", true }; }
+
     virtual boost::optional<double> computeFinalResultValue() const override;
 
     virtual std::vector<std::string> targetTableHeadersCustom() const override;
@@ -76,6 +78,8 @@ public:
                              const SectorLayer& sector_layer,
                              EvaluationCalculator& calculator);
 protected:
+    virtual OverviewLabels overviewLabels() const override { return { "Range Error", "m", true }; }
+
     virtual boost::optional<double> computeFinalResultValue() const override;
 
     virtual std::vector<SectorInfo> sectorInfos() const override;

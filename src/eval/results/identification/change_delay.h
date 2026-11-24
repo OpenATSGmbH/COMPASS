@@ -120,6 +120,8 @@ protected:
     virtual boost::optional<double> computeResult_impl() const override;
 
     virtual std::vector<SectorInfo> sectorInfos() const override;
+
+    virtual FeatureDefinitions getCustomAnnotationDefinitions() const override;
 };
 
 }
