@@ -1,0 +1,33 @@
+{
+    "description": "Mode A over 105 reports: 97 correct, 3 without Mode A (e.g. after the identification renewal time-out of ED-117A 5.4.15, or an invalid or garbled code, which the chain reads as no value), 5 without reference Mode A. The missing codes count against PID, the reports without reference are left out. PID = 97 / 100, exactly the ED-117A figure.",
+    "require_all_correct": false,
+    "reports": [
+        {
+            "cmp": [
+                "same"
+            ],
+            "class": "correct",
+            "repeat": 97
+        },
+        {
+            "cmp": [
+                "no_tst"
+            ],
+            "class": "not_correct",
+            "repeat": 3
+        },
+        {
+            "cmp": [
+                "no_ref"
+            ],
+            "class": "no_ref_val",
+            "repeat": 5
+        }
+    ],
+    "expected": {
+        "no_ref_val": 5,
+        "correct": 97,
+        "not_correct": 3,
+        "probability": 0.97
+    }
+}

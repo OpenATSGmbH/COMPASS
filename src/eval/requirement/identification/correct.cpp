@@ -16,6 +16,7 @@
  */
 
 #include "requirement/identification/correct.h"
+#include "requirement/base/correcthelpers.h"
 #include "results/identification/correct.h"
 #include "standard/evaluationstandard.h"
 
@@ -90,27 +91,21 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
     string comment;
 
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
-    bool skip_detail;
 
-    ValueComparisonResult cmp_res_ti;
-    string cmp_res_ti_comment;
-    bool ti_no_ref;
-    bool ti_correct_failed;
-
-    ValueComparisonResult cmp_res_ta;
-    string cmp_res_ta_comment;
-    bool ta_no_ref;
-    bool ta_correct_failed;
-
-    ValueComparisonResult cmp_res_ma;
-    string cmp_res_ma_comment;
-    bool ma_no_ref;
-    bool ma_correct_failed;
-
-    bool all_no_ref;
-    bool any_correct;
-    bool all_correct;
+    std::vector<ValueComparisonResult> cmp_results;
     bool result_ok;
+
+    auto addCompare = [ & ] (const std::pair<ValueComparisonResult, std::string>& cmp, const std::string& value_name)
+    {
+        cmp_results.push_back(cmp.first);
+
+        if (cmp.first == ValueComparisonResult::Unknown_NoTstData || cmp.first == ValueComparisonResult::Different)
+        {
+            if (comment.size())
+                comment += ", ";
+            comment += value_name + " failed (" + cmp.second + ")";
+        }
+    };
 
     auto addDetail = [ & ] (const ptime& ts,
                             const dbContent::TargetPosition& tst_pos,
@@ -138,8 +133,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
         ref_exists = false;
         is_inside = false;
         comment = "";
-
-        skip_detail = false;
 
         ++num_updates;
 
@@ -192,70 +185,20 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
         }
         ++num_pos_inside;
 
-        any_correct = false;
-        all_correct = true;
-        all_no_ref = true;
+        cmp_results.clear();
 
         if (use_ms_ti_)
-        {
-            tie(cmp_res_ti, cmp_res_ti_comment) = compareTi(tst_id, target_data, max_ref_time_diff); //aircraft id
-
-            ti_no_ref = cmp_res_ti == ValueComparisonResult::Unknown_NoRefData;
-            all_no_ref &= ti_no_ref;
-
-            ti_correct_failed = cmp_res_ti == ValueComparisonResult::Unknown_NoTstData
-                    || cmp_res_ti == ValueComparisonResult::Different;
-
-            if (ti_correct_failed)
-                comment += "ACID failed (" + cmp_res_ti_comment + ")";
-
-            any_correct |= !ti_correct_failed;
-            all_correct &= !ti_correct_failed;
-        }
+            addCompare(compareTi(tst_id, target_data, max_ref_time_diff), "ACID"); // aircraft id
 
         if (use_ms_ta_)
-        {
-            tie(cmp_res_ta, cmp_res_ta_comment) = compareTa(tst_id, target_data, max_ref_time_diff); //mode s
-
-            ta_no_ref = cmp_res_ta == ValueComparisonResult::Unknown_NoRefData;
-            all_no_ref &= ta_no_ref;
-
-            ta_correct_failed = cmp_res_ta == ValueComparisonResult::Unknown_NoTstData
-                    || cmp_res_ta == ValueComparisonResult::Different;
-
-            if (ta_correct_failed)
-            {
-                if (comment.size())
-                    comment += ", ";
-                comment += "ACAD failed (" + cmp_res_ta_comment + ")";
-            }
-
-            any_correct |= !ta_correct_failed;
-            all_correct &= !ta_correct_failed;
-        }
+            addCompare(compareTa(tst_id, target_data, max_ref_time_diff), "ACAD"); // mode s
 
         if (use_mode_a_)
-        {
-            tie(cmp_res_ma, cmp_res_ma_comment) = compareModeA(tst_id, target_data, max_ref_time_diff);
+            addCompare(compareModeA(tst_id, target_data, max_ref_time_diff), "M3A");
 
-            ma_no_ref = cmp_res_ma == ValueComparisonResult::Unknown_NoRefData;
-            all_no_ref &= ma_no_ref;
+        auto report_class = CorrectHelpers::classify(cmp_results, require_correctness_of_all_);
 
-            ma_correct_failed = cmp_res_ma == ValueComparisonResult::Unknown_NoTstData
-                    || cmp_res_ma == ValueComparisonResult::Different;
-
-            if (ma_correct_failed)
-            {
-                if (comment.size())
-                    comment += ", ";
-                comment += "M3A failed (" + cmp_res_ma_comment + ")";
-            }
-
-            any_correct |= !ma_correct_failed;
-            all_correct &= !ma_correct_failed;
-        }
-
-        if (all_no_ref) // none has a reference
+        if (report_class == CorrectHelpers::ReportClass::NoRefValue)
         {
             if (!skip_no_data_details)
                 addDetail(timestamp, pos_current, ref_pos,
@@ -268,28 +211,17 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
             continue;
         }
 
-        if (!use_ms_ti_ && !use_ms_ta_ && !use_mode_a_)
-            all_correct = false; // if none is used, set to false
-
-        if (require_correctness_of_all_)
-        {
-            result_ok = all_correct;
-        }
-        else // one correct ok
-        {
-            result_ok = any_correct;
-        }
+        result_ok = report_class == CorrectHelpers::ReportClass::Correct;
 
         if (result_ok)
             ++num_correct;
         else
             ++num_not_correct;
 
-        if (!skip_detail)
-            addDetail(timestamp, pos_current, ref_pos,
-                        ref_exists, is_inside, !result_ok,
-                        num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                        num_correct, num_not_correct, comment);
+        addDetail(timestamp, pos_current, ref_pos,
+                    ref_exists, is_inside, !result_ok,
+                    num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
+                    num_correct, num_not_correct, comment);
     }
 
     logdbg << "'" << name_ << "': utn " << target_data.utn_
