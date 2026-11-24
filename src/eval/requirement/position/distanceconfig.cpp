@@ -124,8 +124,8 @@ void PositionDistanceConfig::addToReport (std::shared_ptr<ResultReport::Report> 
 
     auto& table = section.getTable("req_table");
 
-    table.addRow({"Probability [1]", "Probability of correct/false position",
-                  roundf(prob_ * 10000.0) / 100.0});
+    table.addRow({"Probability [%]", "Probability of correct/false position",
+                  probabilityPercent(prob_)});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
 

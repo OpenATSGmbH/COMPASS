@@ -72,13 +72,13 @@ void PositionAcrossConfig::addToReport (std::shared_ptr<ResultReport::Report> re
 
     auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
 
-    table.addRow({"Probability [1]", "Probability of acceptable across-track position",
-                  roundf(prob_ * 10000.0) / 100.0});
+    table.addRow({"Probability [%]", "Probability of acceptable across-track position",
+                  probabilityPercent(prob_)});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
     table.addRow({"Maximum Absolute Value [m]",
                   "Maximum absolute across-track position difference between the test and the reference",
-                  roundf(prob_ * 10000.0) / 100.0});
+                  max_abs_value_});
 
     PositionBaseProbConfig::addToReport(report);
 }

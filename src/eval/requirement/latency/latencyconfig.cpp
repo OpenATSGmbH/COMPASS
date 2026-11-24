@@ -72,13 +72,13 @@ void PositionLatencyConfig::addToReport (std::shared_ptr<ResultReport::Report> r
 
     auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
 
-    table.addRow({"Probability [1]", "Probability of acceptable position latency",
-                  roundf(prob_ * 10000.0) / 100.0});
+    table.addRow({"Probability [%]", "Probability of acceptable position latency",
+                  probabilityPercent(prob_)});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
 
-    table.addRow({"Maximum Absolute Value [HH:MM:SS.SSS]",
+    table.addRow({"Maximum Absolute Value [s]",
                   "Maximum absolute latency",
-                  roundf(prob_ * 10000.0) / 100.0});
+                  max_abs_value_});
 }
 }

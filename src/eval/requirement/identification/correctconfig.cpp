@@ -106,8 +106,8 @@ void IdentificationCorrectConfig::addToReport (std::shared_ptr<ResultReport::Rep
 
     auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
 
-    table.addRow({"Probability [1]", "Probability of correct identification",
-                  roundf(prob_ * 10000.0) / 100.0});
+    table.addRow({"Probability [%]", "Probability of correct identification",
+                  probabilityPercent(prob_)});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
 

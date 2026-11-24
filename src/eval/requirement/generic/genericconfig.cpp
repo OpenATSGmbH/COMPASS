@@ -70,8 +70,8 @@ void GenericIntegerConfig::addToReport (std::shared_ptr<ResultReport::Report> re
 
     auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
 
-    table.addRow({"Probability [1]", "Probability",
-                  roundf(prob_ * 10000.0) / 100.0});
+    table.addRow({"Probability [%]", "Probability",
+                  probabilityPercent(prob_)});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
 
@@ -115,8 +115,8 @@ void GenericDoubleConfig::addToReport (std::shared_ptr<ResultReport::Report> rep
     auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
 
     table.addRow({"Threshold [1]", "Threshold", threshold_});
-    table.addRow({"Probability [1]", "Probability",
-                  roundf(prob_ * 10000.0) / 100.0});
+    table.addRow({"Probability [%]", "Probability",
+                  probabilityPercent(prob_)});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
 

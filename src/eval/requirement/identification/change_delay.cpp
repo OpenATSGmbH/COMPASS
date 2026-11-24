@@ -340,9 +340,9 @@ void IdentificationChangeDelayConfig::addToReport (std::shared_ptr<ResultReport:
 
     auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
 
-    table.addRow({"Probability [1]",
+    table.addRow({"Probability [%]",
                   IdentificationChangeDelay::probabilityName(identification_type_),
-                  roundf(prob_ * 10000.0) / 100.0});
+                  probabilityPercent(prob_)});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
 

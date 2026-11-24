@@ -82,7 +82,7 @@ void IntervalBaseConfig::addToReport (std::shared_ptr<ResultReport::Report> repo
     auto& table = section.getTable("req_table");
 
     table.addRow({"Probability [%]", probabilityDescription(),
-                  roundf(prob_ * 10000.0) / 100.0});
+                  probabilityPercent(prob_)});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
 

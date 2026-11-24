@@ -16,6 +16,7 @@
  */
 
 #include "requirement/base/baseconfig.h"
+#include "number.h"
 #include "requirement/base/base.h"
 #include "requirement/group.h"
 #include "requirement/base/comparisontype.h"
@@ -209,6 +210,15 @@ std::string BaseConfig::shortName() const
     return short_name_;
 }
 
+double BaseConfig::probabilityPercent(double prob)
+{
+    const double percent = 100.0 * prob;
+
+    return Utils::Number::round(percent, Utils::Number::numDecimals(percent));
+}
+
+/**
+*/
 void BaseConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);

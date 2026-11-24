@@ -86,6 +86,9 @@ public:
     virtual void addToReport (std::shared_ptr<ResultReport::Report> report);
 
 protected:
+    /// probability in percent for the report, rounded to the decimals the value needs (1e-6 gives 0.0001)
+    static double probabilityPercent(double prob);
+
     Group& group_;
     EvaluationStandard& standard_;
     EvaluationCalculator& calculator_;
