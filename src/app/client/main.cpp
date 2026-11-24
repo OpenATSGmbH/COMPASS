@@ -114,14 +114,7 @@ void terminateHandler()
 
     ss << "\n=== std::terminate called ===" << std::endl;
 
-    // print the throw-site stacktrace (captured by __cxa_throw hook)
-    if (!last_throw_trace.empty())
-    {
-        ss << "\nStacktrace at throw site:\n"
-           << stacktrace_format::toString(last_throw_trace) << std::endl;
-    }
-
-    // try to print the exception message
+    // the exception message and the throw site (captured by the throw hook, if it is this exception)
     if (auto eptr = std::current_exception())
     {
         try
@@ -131,6 +124,10 @@ void terminateHandler()
         catch (const std::exception& e)
         {
             ss << "Exception: " << e.what() << std::endl;
+
+            const std::string site = throwSiteOf(dynamic_cast<const void*>(&e));
+            if (!site.empty())
+                ss << "\nStacktrace at throw site:\n" << site << std::endl;
         }
         catch (...)
         {
@@ -225,11 +222,35 @@ static BOOL WINAPI consoleCtrlHandler(DWORD ctrl_type)
 
 // copy /proc/self/maps to fd, capped so a degenerate mapping list cannot
 // bloat the crash log indefinitely
-static void writeMemoryMaps(int fd)
+// parses a hex number at p (up to the first non-hex character), returns the position after it
+static const char* parseHex(const char* p, const char* end, unsigned long long& value)
 {
+    value = 0;
+    for (; p < end; ++p)
+    {
+        char c = *p;
+        int digit = (c >= '0' && c <= '9') ? c - '0' :
+                    (c >= 'a' && c <= 'f') ? c - 'a' + 10 :
+                    (c >= 'A' && c <= 'F') ? c - 'A' + 10 : -1;
+        if (digit < 0)
+            break;
+        value = value * 16 + static_cast<unsigned long long>(digit);
+    }
+    return p;
+}
+
+// Writes the mappings of /proc/self/maps which contain one of the addresses (fault address, registers,
+// backtrace frames), at most MaxMappingLines: the complete map has about 2000 lines, the report needs
+// only the classification of its addresses (heap, mapped file, unmapped). An address in no listed
+// mapping is unmapped. Async-signal-safe: read/write only, no allocation.
+static void writeMemoryMaps(int fd, const unsigned long long* addresses, int num_addresses)
+{
+    using crash_breadcrumbs::writeDec;
     using crash_breadcrumbs::writeStr;
 
-    writeStr(fd, "\nMemory mappings (/proc/self/maps):\n");
+    constexpr int MaxMappingLines = 200;
+
+    writeStr(fd, "\nMemory mappings containing a reported address (/proc/self/maps):\n");
 
     int maps_fd = open("/proc/self/maps", O_RDONLY);
     if (maps_fd < 0)
@@ -238,22 +259,59 @@ static void writeMemoryMaps(int fd)
         return;
     }
 
-    constexpr size_t max_bytes = 1024 * 1024;
-    size_t total = 0;
+    char line[1024];
+    size_t line_len = 0;
+    int written = 0;
+    unsigned long long total = 0;
+
+    auto processLine = [ & ] ()
+    {
+        ++total;
+
+        unsigned long long start = 0, end = 0;
+        const char* p = parseHex(line, line + line_len, start);
+        if (p < line + line_len && *p == '-')
+            parseHex(p + 1, line + line_len, end);
+
+        bool match = false;
+        for (int i = 0; i < num_addresses && !match; ++i)
+            match = addresses[ i ] >= start && addresses[ i ] < end;
+
+        if (match && written < MaxMappingLines)
+        {
+            ssize_t unused = write(fd, line, line_len);
+            (void)unused;
+            writeStr(fd, "\n");
+            ++written;
+        }
+    };
 
     char buf[4096];
     ssize_t n;
-    while (total < max_bytes && (n = read(maps_fd, buf, sizeof(buf))) > 0)
+    while ((n = read(maps_fd, buf, sizeof(buf))) > 0)
     {
-        ssize_t unused = write(fd, buf, static_cast<size_t>(n));
-        (void)unused;
-        total += static_cast<size_t>(n);
+        for (ssize_t i = 0; i < n; ++i)
+        {
+            if (buf[ i ] == '\n')
+            {
+                processLine();
+                line_len = 0;
+            }
+            else if (line_len < sizeof(line))
+            {
+                line[ line_len++ ] = buf[ i ];
+            }
+        }
     }
-
-    if (total >= max_bytes)
-        writeStr(fd, "\n<truncated>\n");
+    if (line_len > 0)
+        processLine();
 
     close(maps_fd);
+
+    writeDec(fd, static_cast<unsigned long long>(written));
+    writeStr(fd, " of ");
+    writeDec(fd, total);
+    writeStr(fd, " mappings\n");
 }
 
 static void writeCrashInfo(int fd, int signum, const siginfo_t* info, const ucontext_t* uc,
@@ -319,7 +377,23 @@ static void writeCrashInfo(int fd, int signum, const siginfo_t* info, const ucon
 
     crash_breadcrumbs::dumpTo(fd);
 
-    writeMemoryMaps(fd);
+    // the addresses of the report, whose mappings are listed
+    unsigned long long addresses[ 160 ];
+    int num_addresses = 0;
+
+    if (info && (signum == SIGSEGV || signum == SIGBUS || signum == SIGFPE))
+        addresses[ num_addresses++ ] = reinterpret_cast<unsigned long long>(info->si_addr);
+
+#if defined(__x86_64__)
+    if (uc)
+        for (int r = 0; r < NGREG && num_addresses < 40; ++r)
+            addresses[ num_addresses++ ] = static_cast<unsigned long long>(uc->uc_mcontext.gregs[ r ]);
+#endif
+
+    for (int i = 0; i < frame_count && num_addresses < 160; ++i)
+        addresses[ num_addresses++ ] = reinterpret_cast<unsigned long long>(frames[ i ]);
+
+    writeMemoryMaps(fd, addresses, num_addresses);
 }
 
 void safeSignalHandler(int signum, siginfo_t* info, void* context)
@@ -615,6 +689,9 @@ int main(int argc, char** argv)
 
         std::set_terminate(terminateHandler);
 
+        // throw-site stack traces for the crash reports and Client::notify
+        installThrowHook();
+
         //resolve crash-log path before installing handlers so a very early
         //signal can still be written to disk
         initCrashLogPath();
@@ -715,8 +792,9 @@ int main(int argc, char** argv)
         std::ostringstream ss;
         ss << "main: caught exception '" << ex.what() << "'" << endl;
 
-        if (!last_throw_trace.empty())
-            ss << "\nStacktrace at throw site:\n" << stacktrace_format::toString(last_throw_trace) << endl;
+        const std::string site = throwSiteOf(dynamic_cast<const void*>(&ex));
+        if (!site.empty())
+            ss << "\nStacktrace at throw site:\n" << site << endl;
 
         writeCrashText(ss.str());
 
@@ -725,10 +803,7 @@ int main(int argc, char** argv)
     catch (...)
     {
         std::ostringstream ss;
-        ss << "main: caught exception" << endl;
-
-        if (!last_throw_trace.empty())
-            ss << "\nStacktrace at throw site:\n" << stacktrace_format::toString(last_throw_trace) << endl;
+        ss << "main: caught exception of unknown type (no throw site: the thrown object is unknown)" << endl;
 
         writeCrashText(ss.str());
 

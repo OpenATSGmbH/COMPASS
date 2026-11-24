@@ -25,6 +25,7 @@
 #include "config.h"
 #include "configurationmanager.h"
 #include "files.h"
+#include "stacktrace_format.h"
 #include "global.h"
 #include "logger.h"
 #include "rtcommand_manager.h"
@@ -862,6 +863,12 @@ bool Client::notify(QObject* receiver, QEvent* event)
     {
         std::string msg = "Unhandled exception '" + std::string(e.what()) + "' | "
                           + describeNotifyContext(receiver, event);
+
+        // the stack trace of the assertion is taken here, after the unwinding: add the one of the throw
+        const std::string site = stacktrace_format::throwSite(dynamic_cast<const void*>(&e));
+        if (!site.empty())
+            msg += "\n\nStacktrace at throw site:\n" + site;
+
         traced_assert_msg(false, msg.c_str());
     }
     catch (...)

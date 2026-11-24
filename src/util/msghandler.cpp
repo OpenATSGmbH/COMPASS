@@ -16,6 +16,7 @@
  */
 
 #include "msghandler.h"
+#include "stacktrace_format.h"
 #include "logmodel.h"
 
 #include <QMessageBox>
@@ -32,6 +33,13 @@ Message      MessageHandler::critical_error_msg_;
 bool         MessageHandler::critical_error_msg_set_{false};
 LogStore*    MessageHandler::log_store_{nullptr};
 
+std::string currentStackTrace()
+{
+    return stacktrace_format::current();
+}
+
+/**
+ */
 void MessageHandler::init(LogStore& log_store)
 {
     log_store_ = &log_store;

@@ -287,6 +287,30 @@ std::string toString(const boost::stacktrace::stacktrace& trace)
     return formatFrames(trace, 0, trace.size());
 }
 
+namespace
+{
+    ThrowSiteProvider& throwSiteProvider()
+    {
+        static ThrowSiteProvider provider;
+        return provider;
+    }
+}
+
+/**
+ */
+void setThrowSiteProvider(const ThrowSiteProvider& provider)
+{
+    throwSiteProvider() = provider;
+}
+
+/**
+ */
+std::string throwSite(const void* exception_object)
+{
+    const auto& provider = throwSiteProvider();
+    return provider && exception_object ? provider(exception_object) : std::string();
+}
+
 /**
  */
 std::string current(std::size_t max_depth)

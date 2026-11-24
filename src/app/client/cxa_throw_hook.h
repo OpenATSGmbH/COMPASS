@@ -19,7 +19,17 @@
 
 #include <boost/stacktrace.hpp>
 
-// Populated by the __cxa_throw hook (cxa_throw_hook.cpp) at every throw site.
-// Signal/terminate handlers in main.cpp read this to report where the
-// exception originated, even after the stack has been unwound.
+// Populated at every throw site (cxa_throw_hook.cpp): on Linux by the __cxa_throw hook, on Windows
+// by a vectored exception handler on GCC's throw exception. The terminate handler and the catch blocks
+// in main.cpp read it to report where the exception originated, even after the stack has been unwound.
 extern thread_local boost::stacktrace::stacktrace last_throw_trace;
+
+// the thrown object of last_throw_trace (most-derived address)
+extern thread_local const void* last_throw_object;
+
+// installs the throw hook where it needs installing (Windows: the vectored exception handler) and
+// registers throwSiteOf as stacktrace_format::ThrowSiteProvider
+void installThrowHook();
+
+// the formatted last_throw_trace if exception_object is last_throw_object, else empty
+std::string throwSiteOf(const void* exception_object);

@@ -21,6 +21,7 @@
 
 #include <cstddef>
 #include <cstdint>
+#include <functional>
 #include <string>
 #include <vector>
 
@@ -70,4 +71,13 @@ namespace stacktrace_format
 
     /// the current call stack, the caller of this function is frame 0
     std::string current(std::size_t max_depth = 64);
+
+    /// the stack trace of the throw of the exception object (its most-derived address, e.g.
+    /// dynamic_cast<const void*>(&e)), empty if unknown. The executable provides it with a throw hook
+    /// (cxa_throw_hook.cpp), the libraries reach it here (e.g. Client::notify)
+    std::string throwSite(const void* exception_object);
+
+    /// the throw site of the last exception object thrown in this thread, if it is exception_object
+    using ThrowSiteProvider = std::function<std::string(const void* exception_object)>;
+    void setThrowSiteProvider(const ThrowSiteProvider& provider);
 }
