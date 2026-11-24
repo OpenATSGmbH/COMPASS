@@ -62,7 +62,8 @@ void EvaluationSectorWidget::update()
     traced_assert(grid_layout_);
 
     QLayoutItem* child;
-    while (!grid_layout_->isEmpty() && (child = grid_layout_->takeAt(0)) != nullptr)
+    // isEmpty() is true for a layout of only hidden widgets and spacers, so take items until none is left
+    while ((child = grid_layout_->takeAt(0)) != nullptr)
     {
         if (child->widget())
             delete child->widget();

@@ -167,7 +167,7 @@ void JSONObjectParserWidget::updateMappingsGrid()
     traced_assert(mappings_grid_);
 
     QLayoutItem* child;
-    while (!mappings_grid_->isEmpty() && (child = mappings_grid_->takeAt(0)) != nullptr)
+    while ((child = mappings_grid_->takeAt(0)) != nullptr)
     {
         if (child->widget())
             delete child->widget();

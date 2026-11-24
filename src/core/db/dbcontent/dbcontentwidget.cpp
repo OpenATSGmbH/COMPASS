@@ -256,7 +256,7 @@ void DBContentWidget::updateDataSourcesGridSlot()
     traced_assert(ds_grid_);
 
     QLayoutItem* child;
-    while (!ds_grid_->isEmpty() && (child = ds_grid_->takeAt(0)) != nullptr)
+    while ((child = ds_grid_->takeAt(0)) != nullptr)
     {
         if (child->widget())
             delete child->widget();
@@ -288,7 +288,7 @@ void DBContentWidget::updateDBContVarsGridSlot()
     traced_assert(dbcontvars_grid_);
 
     QLayoutItem* child;
-    while (!dbcontvars_grid_->isEmpty() && (child = dbcontvars_grid_->takeAt(0)) != nullptr)
+    while ((child = dbcontvars_grid_->takeAt(0)) != nullptr)
     {
         if (child->widget())
             delete child->widget();

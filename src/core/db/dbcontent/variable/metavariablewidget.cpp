@@ -148,7 +148,7 @@ void MetaVariableWidget::updateSlot()
     traced_assert(grid_layout_);
 
     QLayoutItem* child;
-    while (!grid_layout_->isEmpty() && (child = grid_layout_->takeAt(0)) != nullptr)
+    while ((child = grid_layout_->takeAt(0)) != nullptr)
     {
         if (child->widget())
             delete child->widget();

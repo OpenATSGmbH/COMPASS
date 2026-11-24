@@ -96,7 +96,7 @@ void LabelDSWidget::updateListSlot()
     traced_assert(ds_grid_);
 
     QLayoutItem* child;
-    while (!ds_grid_->isEmpty() && (child = ds_grid_->takeAt(0)) != nullptr)
+    while ((child = ds_grid_->takeAt(0)) != nullptr)
     {
         if (child->widget())
             delete child->widget();

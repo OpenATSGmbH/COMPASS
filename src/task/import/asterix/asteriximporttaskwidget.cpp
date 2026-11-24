@@ -468,7 +468,7 @@ void ASTERIXImportTaskWidget::debugChangedSlot()
 void ASTERIXImportTaskWidget::updateSourcesGrid()
 {
     QLayoutItem* child;
-    while (!sources_grid_->isEmpty() && (child = sources_grid_->takeAt(0)) != nullptr)
+    while ((child = sources_grid_->takeAt(0)) != nullptr)
     {
         if (child->widget())
             delete child->widget();

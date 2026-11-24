@@ -217,7 +217,7 @@ void DBContentManagerWidget::updateDBContentsSlot()
     traced_assert(dbconts_grid_);
 
     QLayoutItem* child;
-    while (!dbconts_grid_->isEmpty() && (child = dbconts_grid_->takeAt(0)) != nullptr)
+    while ((child = dbconts_grid_->takeAt(0)) != nullptr)
     {
         if (child->widget())
             delete child->widget();
@@ -383,7 +383,7 @@ void DBContentManagerWidget::updateMetaVariablesSlot()
     traced_assert(meta_variables_grid_);
 
     QLayoutItem* child;
-    while (!meta_variables_grid_->isEmpty() && (child = meta_variables_grid_->takeAt(0)) != nullptr)
+    while ((child = meta_variables_grid_->takeAt(0)) != nullptr)
     {
         if (child->widget())
             delete child->widget();

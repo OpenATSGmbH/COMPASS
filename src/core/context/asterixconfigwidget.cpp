@@ -114,7 +114,7 @@ void ASTERIXConfigWidget::updateCategories()
     traced_assert(categories_grid_);
 
     QLayoutItem* child;
-    while (!categories_grid_->isEmpty() && (child = categories_grid_->takeAt(0)) != nullptr)
+    while ((child = categories_grid_->takeAt(0)) != nullptr)
     {
         if (child->widget())
             delete child->widget();

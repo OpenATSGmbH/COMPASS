@@ -371,7 +371,8 @@ void VariableSelectionDialog::updateContentStrip()
 
     auto make_button = [ & ] (const std::string& content_name, QGridLayout* layout, unsigned int cnt)
     {
-        QRadioButton* button = new QRadioButton(QString::fromStdString(content_name));
+        // '&' in a report name is a mnemonic marker for Qt, '&&' shows it as text
+        QRadioButton* button = new QRadioButton(QString::fromStdString(content_name).replace("&", "&&"));
         button->setObjectName(QString::fromStdString("content_" + content_name));
         button->setProperty("content_name", QString::fromStdString(content_name));
         button->setChecked(content_name == selected_content_);
