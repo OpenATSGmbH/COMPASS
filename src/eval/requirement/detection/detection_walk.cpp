@@ -21,6 +21,8 @@
 #include "timeconv.h"
 #include "traced_assert.h"
 
+#include <algorithm>
+#include <cmath>
 #include <map>
 #include <set>
 
@@ -263,6 +265,89 @@ Result walk(const TimePeriodCollection& ref_periods,
     for (unsigned int period_cnt = 0; period_cnt < ref_periods.size(); ++period_cnt)
         if (!finished_periods.count(period_cnt))
             finishPeriod(period_cnt, -1);
+
+    return result;
+}
+
+/**
+ */
+unsigned int cyclesPerPeriod(const std::vector<boost::posix_time::ptime>& cycles, float update_interval_s)
+{
+    traced_assert(cycles.size() >= 2);
+
+    // median reported cycle length, to map the configured update interval onto a
+    // whole number of reported cycles
+    std::vector<double> cycle_lengths;
+    cycle_lengths.reserve(cycles.size());
+
+    for (size_t i = 1; i < cycles.size(); ++i)
+        cycle_lengths.push_back(Utils::Time::partialSeconds(cycles[i] - cycles[i - 1]));
+
+    std::sort(cycle_lengths.begin(), cycle_lengths.end());
+
+    const double median_cycle_s = cycle_lengths.at(cycle_lengths.size() / 2);
+
+    if (median_cycle_s <= 0)
+        return 1;
+
+    return (unsigned int) std::max(1L, std::lround(update_interval_s / median_cycle_s));
+}
+
+/**
+ */
+CycleResult statusCycleWalk(const TimePeriodCollection& ref_periods,
+                            const std::vector<boost::posix_time::ptime>& cycles,
+                            const std::vector<boost::posix_time::ptime>& tst_times,
+                            const TstCheck& detects,
+                            unsigned int cycles_per_period)
+{
+    CycleResult result;
+
+    for (unsigned int period_cnt = 0; period_cnt < ref_periods.size(); ++period_cnt)
+    {
+        const TimePeriod& period_it = ref_periods.period(period_cnt);
+
+        auto cycle_it = std::lower_bound(cycles.begin(), cycles.end(), period_it.begin());
+
+        while (cycle_it != cycles.end())
+        {
+            auto next_it = cycle_it;
+
+            for (unsigned int cnt = 0; cnt < cycles_per_period && next_it != cycles.end(); ++cnt)
+                ++next_it;
+
+            if (next_it == cycles.end())
+                break; // incomplete period at the end of the cycle stream
+
+            const boost::posix_time::ptime period_begin = *cycle_it;
+            const boost::posix_time::ptime period_end   = *next_it;
+
+            if (period_end > period_it.end())
+                break; // period not fully inside the reference period
+
+            result.sum_expected += 1.0;
+
+            bool detected = false;
+
+            for (auto tst_it = std::lower_bound(tst_times.begin(), tst_times.end(), period_begin);
+                 tst_it != tst_times.end() && *tst_it < period_end; ++tst_it)
+            {
+                if (detects(tst_it - tst_times.begin()))
+                {
+                    detected = true;
+                    break;
+                }
+            }
+
+            if (!detected)
+            {
+                result.sum_missed += 1.0;
+                result.misses.push_back({ period_begin, period_end, result.sum_missed });
+            }
+
+            cycle_it = next_it;
+        }
+    }
 
     return result;
 }

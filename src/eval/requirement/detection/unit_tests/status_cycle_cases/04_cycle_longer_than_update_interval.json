@@ -1,0 +1,50 @@
+{
+    "description": "Cycles every 10 s, update interval 1 s: 1 / 10 rounds to 0, at least 1 cycle per period, so the periods are 10 s long. One test report per 10 s period is enough, only [30, 40] without a report is missed. A 1 s requirement is checked on the reported 10 s cycles.",
+    "update_interval_s": 1.0,
+    "cycle_series": [
+        [
+            0,
+            60,
+            10
+        ]
+    ],
+    "ref_periods": [
+        [
+            0,
+            60
+        ]
+    ],
+    "tst": [
+        [
+            5,
+            "ok"
+        ],
+        [
+            15,
+            "ok"
+        ],
+        [
+            25,
+            "ok"
+        ],
+        [
+            45,
+            "ok"
+        ],
+        [
+            55,
+            "ok"
+        ]
+    ],
+    "expected": {
+        "cycles_per_period": 1,
+        "sum_expected": 6,
+        "sum_missed": 1,
+        "misses": [
+            [
+                30,
+                40
+            ]
+        ]
+    }
+}

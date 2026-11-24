@@ -1,0 +1,30 @@
+{
+    "description": "Cycles every 1 s, update interval 1 s: 1 cycle per period. Reference period [0, 20], one test report in each 1 s period: 20 expected periods, no miss.",
+    "update_interval_s": 1.0,
+    "cycle_series": [
+        [
+            0,
+            20,
+            1
+        ]
+    ],
+    "ref_periods": [
+        [
+            0,
+            20
+        ]
+    ],
+    "tst_series": [
+        [
+            0.5,
+            19.5,
+            1
+        ]
+    ],
+    "expected": {
+        "cycles_per_period": 1,
+        "sum_expected": 20,
+        "sum_missed": 0,
+        "misses": []
+    }
+}

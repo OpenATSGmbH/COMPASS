@@ -100,6 +100,39 @@ Result walk(const TimePeriodCollection& ref_periods,
             const GapUIFunc& gap_ui,
             const Params& params);
 
+/**
+ * Number of reported update cycles per expected period of the status message method: the
+ * update interval over the median cycle length, rounded, at least 1. Needs at least 2 cycles.
+ */
+unsigned int cyclesPerPeriod(const std::vector<boost::posix_time::ptime>& cycles, float update_interval_s);
+
+/// expected period of the status message walk without a detecting test report
+struct CycleMiss
+{
+    boost::posix_time::ptime begin;
+    boost::posix_time::ptime end;
+    double                   sum_missed = 0.0; // running sum of the missed periods after this one
+};
+
+struct CycleResult
+{
+    double                 sum_expected = 0.0;
+    double                 sum_missed   = 0.0;
+    std::vector<CycleMiss> misses;
+};
+
+/**
+ * Status message walk: in each reference period, expected periods of cycles_per_period reported
+ * cycles, starting at the first cycle at or after the period begin. A period that ends after the
+ * reference period or after the last cycle is not counted. An expected period is missed if no
+ * test report (sorted by time) with detects(index) lies in [begin, end).
+ */
+CycleResult statusCycleWalk(const TimePeriodCollection& ref_periods,
+                            const std::vector<boost::posix_time::ptime>& cycles,
+                            const std::vector<boost::posix_time::ptime>& tst_times,
+                            const TstCheck& detects,
+                            unsigned int cycles_per_period);
+
 } // namespace DetectionWalk
 
 } // namespace EvaluationRequirement

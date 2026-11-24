@@ -1,0 +1,46 @@
+{
+    "description": "A test report exactly at a cycle time belongs to the period that starts there, the period end is excluded: the reports at 1, 2, 3 and 4 s detect [1, 2] to [4, 5], [0, 1] is missed.",
+    "update_interval_s": 1.0,
+    "cycle_series": [
+        [
+            0,
+            5,
+            1
+        ]
+    ],
+    "ref_periods": [
+        [
+            0,
+            5
+        ]
+    ],
+    "tst": [
+        [
+            1,
+            "ok"
+        ],
+        [
+            2,
+            "ok"
+        ],
+        [
+            3,
+            "ok"
+        ],
+        [
+            4,
+            "ok"
+        ]
+    ],
+    "expected": {
+        "cycles_per_period": 1,
+        "sum_expected": 5,
+        "sum_missed": 1,
+        "misses": [
+            [
+                0,
+                1
+            ]
+        ]
+    }
+}

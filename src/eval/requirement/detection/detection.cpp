@@ -162,90 +162,40 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluateStatusCy
     typedef Result::EvaluationDetails                    Details;
     Details details;
 
-    // median reported cycle length, to map the configured update interval onto a
-    // whole number of reported cycles
-    std::vector<double> cycle_lengths;
-    cycle_lengths.reserve(cycles.size());
-
-    for (size_t i = 1; i < cycles.size(); ++i)
-        cycle_lengths.push_back(Time::partialSeconds(cycles[i] - cycles[i - 1]));
-
-    std::sort(cycle_lengths.begin(), cycle_lengths.end());
-
-    const double median_cycle_s = cycle_lengths.at(cycle_lengths.size() / 2);
-
-    unsigned int cycles_per_period = 1;
-
-    if (median_cycle_s > 0)
-        cycles_per_period = (unsigned int) std::max(1L, std::lround(update_interval_s_ / median_cycle_s));
-
     const auto& tst_data = target_data.tstChain().timestampIndexes();
 
-    double sum_expected {0};
-    double sum_missed   {0};
+    std::vector<ptime> tst_times;
+    tst_times.reserve(tst_data.size());
 
-    for (auto& period_it : ref_periods)
+    for (const auto& tst_it : tst_data)
+        tst_times.push_back(tst_it.first);
+
+    auto detects = [ & ] (size_t i) { return target_data.isTimeStampNotExcluded(tst_times[ i ]); };
+
+    auto walk = DetectionWalk::statusCycleWalk(ref_periods, cycles, tst_times, detects,
+                                               DetectionWalk::cyclesPerPeriod(cycles, update_interval_s_));
+
+    for (const auto& miss : walk.misses)
     {
-        auto cycle_it = std::lower_bound(cycles.begin(), cycles.end(), period_it.begin());
+        // the period boundaries are cycle timestamps, not reference report
+        // timestamps, so the reference reports inside the period carry the
+        // position of the miss
+        auto ref_updates = target_data.refChain().positionsBetween(miss.begin, miss.end, false, false);
 
-        while (cycle_it != cycles.end())
-        {
-            auto next_it = cycle_it;
-
-            for (unsigned int cnt = 0; cnt < cycles_per_period && next_it != cycles.end(); ++cnt)
-                ++next_it;
-
-            if (next_it == cycles.end())
-                break; // incomplete period at the end of the cycle stream
-
-            const ptime period_begin = *cycle_it;
-            const ptime period_end   = *next_it;
-
-            if (period_end > period_it.end())
-                break; // period not fully inside the reference period
-
-            sum_expected += 1.0;
-
-            bool detected = false;
-
-            for (auto tst_it = tst_data.lower_bound(period_begin);
-                 tst_it != tst_data.end() && tst_it->first < period_end; ++tst_it)
-            {
-                if (target_data.isTimeStampNotExcluded(tst_it->first))
-                {
-                    detected = true;
-                    break;
-                }
-            }
-
-            if (!detected)
-            {
-                sum_missed += 1.0;
-
-                // the period boundaries are cycle timestamps, not reference report
-                // timestamps, so the reference reports inside the period carry the
-                // position of the miss
-                auto ref_updates = target_data.refChain().positionsBetween(
-                            period_begin, period_end, false, false);
-
-                if (!ref_updates.empty())
-                    details.push_back(Detail(period_end, ref_updates)
-                                          .setValue(Result::DetailKey::DiffTOD,
-                                                    Time::partialSeconds(period_end - period_begin))
-                                          .setValue(Result::DetailKey::MissOccurred, true)
-                                          .setValue(Result::DetailKey::MissedUIs, sum_missed)
-                                          .generalComment("Miss detected, no target report in reported"
-                                                          " update cycle [" + Time::toString(period_begin)
-                                                          + ", " + Time::toString(period_end) + "]"));
-            }
-
-            cycle_it = next_it;
-        }
+        if (!ref_updates.empty())
+            details.push_back(Detail(miss.end, ref_updates)
+                                  .setValue(Result::DetailKey::DiffTOD,
+                                            Time::partialSeconds(miss.end - miss.begin))
+                                  .setValue(Result::DetailKey::MissOccurred, true)
+                                  .setValue(Result::DetailKey::MissedUIs, miss.sum_missed)
+                                  .generalComment("Miss detected, no target report in reported"
+                                                  " update cycle [" + Time::toString(miss.begin)
+                                                  + ", " + Time::toString(miss.end) + "]"));
     }
 
     auto ret = make_shared<EvaluationRequirementResult::SingleDetection>(
         "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
-        calculator_, details, sum_expected, sum_missed, ref_periods);
+        calculator_, details, walk.sum_expected, walk.sum_missed, ref_periods);
 
     return ret;
 }
