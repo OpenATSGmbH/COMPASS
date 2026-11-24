@@ -51,15 +51,16 @@ static QString logFileOfClient(qint64 pid)
 }
 
 /**
- * Crash message with buttons to open the log file and the log folder.
+ * Crash or error message with buttons to open the log file and the log folder.
+ * report: name of the report in the log file, e.g. "crash report"
  */
-static void showCrashDialog(const QString& err, const QString& log_file)
+static void showCrashDialog(const QString& title, const QString& err, const QString& report, const QString& log_file)
 {
-    QMessageBox msg(QMessageBox::Critical, "Application Crash", err);
+    QMessageBox msg(QMessageBox::Critical, title, err);
 
     QString text = err;
     if (!log_file.isEmpty())
-        text += "\n\nThe log file contains a crash report:\n" + QDir::toNativeSeparators(log_file);
+        text += "\n\nThe log file contains " + report + ":\n" + QDir::toNativeSeparators(log_file);
     else
         text += "\n\nThe log files are in the folder:\n" + QDir::toNativeSeparators(logDirectory());
     msg.setText(text);
@@ -108,6 +109,7 @@ int main(int argc, char** argv)
 
     //collect command line args for COMPASS client
     bool has_rt_cmd_port = false;
+    bool has_quit        = false; // batch use: no message for an exit code other than 0
     QStringList client_args;
     // QCoreApplication::arguments: correct encoding on all platforms (wide arguments on Windows)
     const QStringList app_args = QCoreApplication::arguments();
@@ -116,6 +118,8 @@ int main(int argc, char** argv)
         const QString& arg = app_args.at(i);
         if (arg == "--open_rt_cmd_port")
             has_rt_cmd_port = true;
+        if (arg == "--quit")
+            has_quit = true;
         client_args << arg;
     }
 
@@ -151,7 +155,7 @@ int main(int argc, char** argv)
 
     // monitor exit status
     QObject::connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-                     [process, &has_rt_cmd_port, &client_pid](int exitCode, QProcess::ExitStatus status) {
+                     [process, &has_rt_cmd_port, &has_quit, &client_pid](int exitCode, QProcess::ExitStatus status) {
         int relay_code = exitCode;
         if (status == QProcess::CrashExit)
         {
@@ -174,7 +178,19 @@ int main(int argc, char** argv)
             QTextStream(stderr) << err << "\n"
                                 << "Log file: " << QDir::toNativeSeparators(log_file.isEmpty() ? logDirectory() : log_file) << "\n";
             if (!has_rt_cmd_port)
-                showCrashDialog(err, log_file);
+                showCrashDialog("Application Crash", err, "a crash report", log_file);
+        }
+        else if (exitCode != 0)
+        {
+            // e.g. a failed internal check on Windows (abort: code 3) or an error caught in main (-1):
+            // the client wrote a report into its log file as for a crash
+            const QString err      = "COMPASS client ended with error code " + QString::number(exitCode);
+            const QString log_file = logFileOfClient(client_pid);
+
+            QTextStream(stderr) << err << "\n"
+                                << "Log file: " << QDir::toNativeSeparators(log_file.isEmpty() ? logDirectory() : log_file) << "\n";
+            if (!has_rt_cmd_port && !has_quit)
+                showCrashDialog("Application Error", err, "an error report", log_file);
         }
         else
         {

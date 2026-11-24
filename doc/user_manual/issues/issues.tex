@@ -205,8 +205,62 @@ To report an issue:
 \includegraphics[width=0.5cm]{../../data/icons/hint.png} The console log (see \nameref{sec:appendix_logging}) is not changed by the log file, it still shows all messages. \\
 
 \subsubsection{For Application Crashes}
+\label{sec:issues_crashes}
 
-If the application crashed, the log file of the session contains a crash report with a stack trace at its end (see \nameref{sec:issues_log_files}). Please attach this log file to the report. \\
+If the application crashes, its crash handler writes a crash report:
+
+\begin{itemize}
+\item Contents:
+\begin{itemize}
+\item The type of the error, e.g. an access violation, a signal, a failed internal check or an unhandled error (exception)
+\item The stack trace: the function, source file and line of each step that led to the error
+\item For an unhandled error: also the stack trace of the place where the error occurred
+\end{itemize}
+\item Location: at the end of the log file of the session (see \nameref{sec:issues_log_files}) and in the console
+\item The console shows the path of the log file after the crash report, in a line \texttt{Log file: <path>}
+\end{itemize}
+\ \\
+
+The Linux AppImage and \texttt{compass\_handler.exe} on Windows start the application through a watchdog (\texttt{compass\_handler}). The watchdog shows a message:
+
+\begin{itemize}
+\item If the application crashes (title \textbf{Application Crash})
+\item If the application ends with an error code other than 0, e.g. after a failed internal check (title \textbf{Application Error}). Not with the command line options \texttt{--quit} or \texttt{--open\_rt\_cmd\_port}, so that scripts are not stopped by the message.
+\end{itemize}
+\ \\
+
+The message shows:
+
+\begin{itemize}
+\item The crash or error code of the application
+\item The path of the log file with the report
+\item \textbf{Open Log File}: Opens the log file with the default text editor
+\item \textbf{Open Log Folder}: Opens the folder of the log files
+\item \textbf{Close}: Closes the message
+\end{itemize}
+\ \\
+
+\begin{figure}[H]
+    \center
+    \includegraphics[width=10cm,frame]{figures/crash_message_windows.png}
+    \caption{Crash message on Windows}
+\end{figure}
+
+\begin{figure}[H]
+    \center
+    \includegraphics[width=10cm,frame]{figures/crash_message_linux.png}
+    \caption{Crash message on Linux}
+\end{figure}
+
+To report the crash:
+
+\begin{itemize}
+\item Click \textbf{Open Log Folder} and attach the log file shown in the message to the report, and its \texttt{.log.1} file if it exists
+\item Describe the steps taken until the crash
+\end{itemize}
+\ \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} If \texttt{compass\_client.exe} (Windows) or a self-built \texttt{compass\_client} is started directly, no watchdog runs and no message is shown. The log file and the console still contain the crash report. \\
 
 In some cases a stack trace created manually might be requested. This can be achieved by running the application using gdb (\url{https://www.gnu.org/software/gdb/}), which might have to be installed.
 
