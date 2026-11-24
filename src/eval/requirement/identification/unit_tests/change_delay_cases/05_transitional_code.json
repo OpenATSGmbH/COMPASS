@@ -1,0 +1,57 @@
+{
+    "description": "Code 7777 only for 5 s (less than 10 s) is transitional: one change 1000 -> 4567 at 55 s, test 4567 at 57 s.",
+    "params": {
+        "max_delay_s": 15.0,
+        "min_stable_time_s": 10.0
+    },
+    "ref_series": [
+        [
+            0,
+            49,
+            1,
+            "1000"
+        ],
+        [
+            50,
+            54,
+            1,
+            "7777"
+        ],
+        [
+            55,
+            100,
+            1,
+            "4567"
+        ]
+    ],
+    "tst_series": [
+        [
+            0,
+            49,
+            1,
+            "1000"
+        ],
+        [
+            50,
+            56,
+            1,
+            "7777"
+        ],
+        [
+            57,
+            100,
+            1,
+            "4567"
+        ]
+    ],
+    "expected": {
+        "events": 1,
+        "passed": 1,
+        "failed": 0,
+        "never_reported": 0,
+        "not_assessable": 0,
+        "delays": [
+            2.0
+        ]
+    }
+}

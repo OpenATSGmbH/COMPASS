@@ -23,6 +23,7 @@ include("${CMAKE_SOURCE_DIR}/src/core/db/dbcontent/label/unit_tests/CMakeLists.t
 include("${CMAKE_SOURCE_DIR}/src/eval/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/eval/requirement/base/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/eval/requirement/detection/unit_tests/CMakeLists.txt")
+include("${CMAKE_SOURCE_DIR}/src/eval/requirement/identification/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/task/analyze/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/task/analyze/mlat/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/task/reconstructor/unit_tests/CMakeLists.txt")

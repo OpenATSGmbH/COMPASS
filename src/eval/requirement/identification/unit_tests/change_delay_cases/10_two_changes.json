@@ -1,0 +1,58 @@
+{
+    "description": "Changes 1000 -> 2000 at 30 s and 2000 -> 3000 at 70 s, test switches at 33 s and 90 s: 1 passed, 1 failed.",
+    "params": {
+        "max_delay_s": 15.0,
+        "min_stable_time_s": 10.0
+    },
+    "ref_series": [
+        [
+            0,
+            29,
+            1,
+            "1000"
+        ],
+        [
+            30,
+            69,
+            1,
+            "2000"
+        ],
+        [
+            70,
+            120,
+            1,
+            "3000"
+        ]
+    ],
+    "tst_series": [
+        [
+            0,
+            32,
+            1,
+            "1000"
+        ],
+        [
+            33,
+            89,
+            1,
+            "2000"
+        ],
+        [
+            90,
+            120,
+            1,
+            "3000"
+        ]
+    ],
+    "expected": {
+        "events": 2,
+        "passed": 1,
+        "failed": 1,
+        "never_reported": 0,
+        "not_assessable": 0,
+        "delays": [
+            3.0,
+            20.0
+        ]
+    }
+}

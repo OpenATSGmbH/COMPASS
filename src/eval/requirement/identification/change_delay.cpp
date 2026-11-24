@@ -16,6 +16,7 @@
  */
 
 #include "requirement/identification/change_delay.h"
+#include "requirement/identification/change_delay_helpers.h"
 #include "requirement/group.h"
 
 #include "results/identification/change_delay.h"
@@ -103,13 +104,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationChangeDelay::
                 return {};
 
             // remove trailing spaces for comparison
-            string value = acid.value();
-            value.erase(value.find_last_not_of(' ') + 1);
-
-            if (value.empty())
-                return {};
-
-            return value;
+            return ChangeDelayHelpers::normalizedACID(acid.value());
         }
 
         auto mode_a = chain.modeA(id);
@@ -130,117 +125,83 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationChangeDelay::
                                          .generalComment(comment));
     };
 
-    // assess one detected change event: search the first test report at or
-    // after the event time carrying the new value
-    auto assessEvent = [ & ] (const ptime& event_ts,
-                              const dbContent::TargetReport::Chain::DataID& event_id,
-                              const string& new_value,
-                              const string& old_value)
+    // changes of the stable reference value (transitional Mode A codes are ignored,
+    // ED-129C REC 495 NOTE 1)
+    std::vector<ChangeDelayHelpers::TimedValue>         ref_values;
+    std::vector<dbContent::TargetReport::Chain::DataID> ref_ids;
+    ref_values.reserve(ref_data.size());
+    ref_ids.reserve(ref_data.size());
+
+    for (const auto& ref_id : ref_data)
     {
+        ref_values.emplace_back(ref_id.first, getValue(target_data.refChain(), ref_id));
+        ref_ids.emplace_back(ref_id);
+    }
+
+    auto changes = ChangeDelayHelpers::changeEvents(ref_values, min_stable_time_s_);
+
+    std::vector<ChangeDelayHelpers::TimedValue> tst_values;
+
+    if (!changes.empty())
+    {
+        tst_values.reserve(tst_data.size());
+
+        for (const auto& tst_id : tst_data)
+            tst_values.emplace_back(tst_id.first, getValue(target_data.tstChain(), tst_id));
+    }
+
+    // assess the changes: search the first test report at or after the event time
+    // carrying the new value
+    for (const auto& change : changes)
+    {
+        const ptime& event_ts = ref_values[ change.ref_index ].first;
+        const auto&  event_id = ref_ids[ change.ref_index ];
+
         // only events inside the sector and not excluded
         if (!target_data.isTimeStampNotExcluded(event_ts)
             || !target_data.refPosInside(sector_layer, event_id))
-            return;
+            continue;
 
         ++num_events;
 
         auto event_pos = target_data.refChain().pos(event_id);
 
-        boost::optional<double> delay;
-
-        for (auto it = tst_data.lower_bound(event_ts); it != tst_data.end(); ++it)
-        {
-            auto tst_value = getValue(target_data.tstChain(), *it);
-
-            if (tst_value.has_value() && tst_value.value() == new_value)
-            {
-                delay = Time::partialSeconds(it->first - event_ts);
-                break;
-            }
-        }
+        auto assessment = ChangeDelayHelpers::assessEvent(event_ts, change.new_value, tst_values, max_delay_s_);
 
         string change_str = identificationName(identification_type_)
-                            + " change '" + old_value + "' -> '" + new_value + "'";
+                            + " change '" + change.old_value + "' -> '" + change.new_value + "'";
 
-        if (!delay.has_value())
+        switch (assessment.result)
         {
-            // no test report with the new value: only a failure if enough
-            // test data time remained after the event to expect one
-            ptime last_tst_ts = tst_data.empty() ? ptime() : tst_data.rbegin()->first;
-
-            if (tst_data.empty() || Time::partialSeconds(last_tst_ts - event_ts) < max_delay_s_)
-            {
+            case ChangeDelayHelpers::Assessment::Result::NotAssessable:
                 ++num_not_assessable;
                 addDetail(event_ts, event_pos, {}, {},
                           change_str + ": not assessable (insufficient test data after event)");
-            }
-            else
-            {
+                break;
+
+            case ChangeDelayHelpers::Assessment::Result::NeverReported:
                 ++num_failed;
                 addDetail(event_ts, event_pos, {}, false,
                           change_str + ": new value never reported");
-            }
+                break;
 
-            return;
-        }
-
-        delays.push_back(delay.value());
-
-        bool passed = delay.value() <= max_delay_s_;
-
-        if (passed)
-            ++num_passed;
-        else
-            ++num_failed;
-
-        addDetail(event_ts, event_pos, delay.value(), passed,
-                  change_str + (passed ? "" : ": delay not OK"));
-    };
-
-    // walk the reference identity values: a new value becomes stable when it
-    // holds for min_stable_time_s (transitional Mode A codes are ignored,
-    // ED-129C REC 495 NOTE 1); each stable value after the first is a change
-    // event with the event time of the first report carrying it
-    boost::optional<string> stable_value;
-
-    boost::optional<string> candidate_value;
-    ptime candidate_start_ts;
-    dbContent::TargetReport::Chain::DataID candidate_start_id;
-
-    for (const auto& ref_id : ref_data)
-    {
-        auto value = getValue(target_data.refChain(), ref_id);
-
-        if (!value.has_value())
-            continue;
-
-        if (stable_value.has_value() && value.value() == stable_value.value())
-        {
-            // back at the stable value: candidate was transitional
-            candidate_value.reset();
-            continue;
-        }
-
-        if (candidate_value.has_value() && value.value() == candidate_value.value())
-        {
-            if (Time::partialSeconds(ref_id.first - candidate_start_ts) >= min_stable_time_s_)
+            case ChangeDelayHelpers::Assessment::Result::Passed:
+            case ChangeDelayHelpers::Assessment::Result::Failed:
             {
-                // candidate held long enough: new stable value
-                if (stable_value.has_value())
-                    assessEvent(candidate_start_ts, candidate_start_id,
-                                candidate_value.value(), stable_value.value());
+                bool passed = assessment.result == ChangeDelayHelpers::Assessment::Result::Passed;
 
-                stable_value = candidate_value;
-                candidate_value.reset();
+                delays.push_back(assessment.delay_s.value());
+
+                if (passed)
+                    ++num_passed;
+                else
+                    ++num_failed;
+
+                addDetail(event_ts, event_pos, assessment.delay_s.value(), passed,
+                          change_str + (passed ? "" : ": delay not OK"));
+                break;
             }
-
-            continue;
         }
-
-        // new candidate value
-        candidate_value    = value;
-        candidate_start_ts = ref_id.first;
-        candidate_start_id = ref_id;
     }
 
     logdbg << "'" << name_ << "': utn " << target_data.utn_
