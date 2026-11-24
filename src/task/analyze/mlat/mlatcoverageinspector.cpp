@@ -35,6 +35,7 @@
 
 #include "requirement/detection/detection_pd_helpers.h"
 #include "coveragepdwalk.h"
+#include "coverage_summary_helpers.h"
 
 #include "grid2dlayer.h"
 #include "grid2drendersettings.h"
@@ -69,6 +70,7 @@ using boost::posix_time::time_duration;
 using Utils::Number::mean;
 using Utils::Number::percentile;
 using analysis::MovementUI;
+namespace CoverageSummaryHelpers = analysis::CoverageSummaryHelpers;
 using analysis::SpeedSamples;
 using analysis::gatherTestSpeeds;
 using analysis::gatherRefSpeeds;
@@ -129,7 +131,6 @@ time_duration durationFromSeconds(double s)
 
 // Inter-report intervals above this are treated as coverage gaps (target not
 // continuously tracked) and excluded from the measured-cadence statistics.
-constexpr double kMaxUpdateIntervalS = 300.0;
 
 std::string formatNumber(double v, int prec = 4)
 {
@@ -439,12 +440,7 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
         if (tst_ts_sorted.empty())
             ++targets_no_tst;
 
-        for (std::size_t i = 1; i < tst_ts_sorted.size(); ++i)
-        {
-            double dt = partialSeconds(tst_ts_sorted[i] - tst_ts_sorted[i - 1]);
-            if (dt > 0.0 && dt <= kMaxUpdateIntervalS)
-                intervals.push_back(dt);
-        }
+        CoverageSummaryHelpers::appendUpdateIntervals(tst_ts_sorted, intervals);
 
         ++targets_walked;
 
@@ -482,81 +478,41 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
     gap_rows.flush();
 
     auto horizontal = grid.projectHorizontal();
-    double total_eui = 0.0, total_mui = 0.0;
-    double worst_pd = 1.0;
-    bool   worst_set = false;
-    std::vector<double> per_cell_pd;
-    per_cell_pd.reserve(horizontal.size());
+
+    std::vector<CoverageSummaryHelpers::CellCounts> cell_counts;
+    cell_counts.reserve(horizontal.size());
     for (const auto& kv : horizontal)
-    {
-        total_eui += kv.second.num_eui;
-        total_mui += kv.second.num_mui;
-        if (kv.second.num_eui <= 0.0) continue;
-        double pd = (kv.second.num_eui - kv.second.num_mui) / kv.second.num_eui;
-        if (pd < -1e-9)
-            logerr << "cell with more missed than expected slots, #EUI "
-                   << kv.second.num_eui << " #MUI " << kv.second.num_mui;
-        pd = std::max(0.0, pd);  // rounding only, see the check above
-        per_cell_pd.push_back(pd);
-        if (kv.second.num_eui >= 5 && (!worst_set || pd < worst_pd))
-        {
-            worst_pd  = pd;
-            worst_set = true;
-        }
-    }
-    double overall_pd = total_eui > 0.0 ? (total_eui - total_mui) / total_eui : 0.0;
+        cell_counts.push_back({ kv.second.num_eui, kv.second.num_mui });
+
+    const auto pd_summary = CoverageSummaryHelpers::summarizePD(cell_counts);
 
     result_.valid              = true;
     result_.targets_walked     = targets_walked;
     result_.targets_no_ref     = targets_no_ref;
     result_.targets_no_tst     = targets_no_tst;
-    result_.total_eui          = total_eui;
-    result_.total_mui          = total_mui;
-    result_.overall_pd         = overall_pd;
-    result_.cells_with_eui     = per_cell_pd.size();
-    result_.median_per_cell_pd = percentile(per_cell_pd, 0.5);
-    result_.p5_per_cell_pd     = percentile(per_cell_pd, 0.05);
-    result_.has_worst_cell     = worst_set;
-    result_.worst_cell_pd      = worst_pd;
+    result_.total_eui          = pd_summary.total_eui;
+    result_.total_mui          = pd_summary.total_mui;
+    result_.overall_pd         = pd_summary.overall_pd;
+    result_.cells_with_eui     = pd_summary.cells_with_eui;
+    result_.median_per_cell_pd = pd_summary.median_cell_pd;
+    result_.p5_per_cell_pd     = pd_summary.p5_cell_pd;
+    result_.has_worst_cell     = pd_summary.has_worst_cell;
+    result_.worst_cell_pd      = pd_summary.worst_cell_pd;
 
-    result_.ui_num_intervals   = intervals.size();
-    if (!intervals.empty())
+    const auto ui_stats = CoverageSummaryHelpers::intervalStats(
+        intervals, settings.ui_hist_max_s_, settings.ui_hist_num_bins_, 15.0);
+
+    result_.ui_num_intervals = ui_stats.num;
+    if (ui_stats.num)
     {
-        result_.ui_median_s = percentile(intervals, 0.5);
-        result_.ui_p10_s    = percentile(intervals, 0.1);
-        result_.ui_p90_s    = percentile(intervals, 0.9);
-        result_.ui_mean_s   = mean(intervals);
-
-        // Histogram: bins over [0, max], plus one overflow bin for >= max so
-        // long detection breaks do not stretch the axis. max = configured value
-        // or, when <= 0, a rounded-up value derived from the data (P99).
-        double hist_max = settings.ui_hist_max_s_ > 0.0f
-                              ? static_cast<double>(settings.ui_hist_max_s_)
-                              : std::ceil(percentile(intervals, 0.99));
-        if (hist_max <= 0.0)
-            hist_max = 15.0;
-        const unsigned int nbins =
-            static_cast<unsigned int>(std::max(1, settings.ui_hist_num_bins_));
-        const double w = hist_max / static_cast<double>(nbins);
-
-        std::vector<std::uint32_t> bins(nbins, 0);
-        std::uint32_t overflow = 0;
-        for (double dt : intervals)
-        {
-            if (dt >= hist_max)
-            {
-                ++overflow;
-                continue;
-            }
-            unsigned int b = static_cast<unsigned int>(std::floor(dt / w));
-            if (b >= nbins)
-                b = nbins - 1;
-            ++bins[b];
-        }
-        result_.ui_hist_max_s     = hist_max;
-        result_.ui_hist_bin_width = w;
-        result_.ui_hist_bins      = std::move(bins);
-        result_.ui_hist_overflow  = overflow;
+        result_.ui_median_s       = ui_stats.median_s;
+        result_.ui_p10_s          = ui_stats.p10_s;
+        result_.ui_p90_s          = ui_stats.p90_s;
+        result_.ui_mean_s         = ui_stats.mean_s;
+        result_.ui_hist_max_s     = ui_stats.hist_max_s;
+        result_.ui_hist_bin_width = ui_stats.hist_bin_width_s;
+        result_.ui_hist_bins      = ui_stats.hist_bins;
+        result_.ui_hist_overflow  = ui_stats.hist_overflow;
     }
 
     // Per-sector rows (over the selected sector layers).
@@ -569,7 +525,7 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
         r.num_targets = sector_target_count[si];
         r.eui         = sec.eui[si];
         r.mui         = sec.mui[si];
-        r.pd          = sec.eui[si] > 0.0 ? (sec.eui[si] - sec.mui[si]) / sec.eui[si] : 0.0;
+        r.pd          = CoverageSummaryHelpers::pd(sec.eui[si], sec.mui[si]);
         result_.sectors.push_back(std::move(r));
     }
 }
@@ -579,9 +535,7 @@ namespace
 // Per-cell PD scalar: only cells with #EUI > 0 contribute.
 std::optional<double> pdScalar(const TargetReport3DGrid::Cell& c)
 {
-    if (c.num_eui <= 0.0)
-        return std::nullopt;
-    return std::max(0.0, (c.num_eui - c.num_mui) / c.num_eui);
+    return CoverageSummaryHelpers::cellPD(c.num_eui, c.num_mui);
 }
 
 std::uint64_t pdSampleCount(const TargetReport3DGrid::Cell& c)

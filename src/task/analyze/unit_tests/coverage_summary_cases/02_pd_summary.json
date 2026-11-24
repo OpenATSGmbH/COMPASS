@@ -1,0 +1,40 @@
+{
+    "description": "PD summary over 6 cells. Totals 47 expected, 9 missed, overall 38/47. The empty cell has no PD, so 5 cell PDs: sorted 0, 0.75, 0.9, 0.9, 1.0, median 0.9, P5 at index 0.2 = 0.2 * 0.75 = 0.15. The cell with PD 0 has only 4 expected slots (< 5), so the worst cell is the 0.75 one.",
+    "type": "summary",
+    "cells": [
+        [
+            10,
+            1
+        ],
+        [
+            20,
+            2
+        ],
+        [
+            4,
+            4
+        ],
+        [
+            0,
+            0
+        ],
+        [
+            8,
+            2
+        ],
+        [
+            5,
+            0
+        ]
+    ],
+    "expected": {
+        "total_eui": 47.0,
+        "total_mui": 9.0,
+        "overall_pd": 0.8085106382978723,
+        "cells_with_eui": 5,
+        "median_cell_pd": 0.9,
+        "p5_cell_pd": 0.15,
+        "has_worst_cell": true,
+        "worst_cell_pd": 0.75
+    }
+}

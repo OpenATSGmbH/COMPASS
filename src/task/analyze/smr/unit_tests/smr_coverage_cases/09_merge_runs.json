@@ -1,0 +1,97 @@
+{
+    "description": "Run A (bins 0-1, 100-200) and run B (bins 1-2, 205-300) share bin 1 with a gap of 5 m. With a tolerance of 10 m they merge into one run over bins 0-2: 100-200, 100-300, 205-300, reports 10 + 20. With a tolerance of 0 they stay apart.",
+    "type": "merge",
+    "runs": [
+        {
+            "cut": 0,
+            "begin_j": 0,
+            "reports": 10,
+            "band": [
+                [
+                    100,
+                    200
+                ],
+                [
+                    100,
+                    200
+                ]
+            ]
+        },
+        {
+            "cut": 0,
+            "begin_j": 1,
+            "reports": 20,
+            "band": [
+                [
+                    205,
+                    300
+                ],
+                [
+                    205,
+                    300
+                ]
+            ]
+        }
+    ],
+    "checks": [
+        {
+            "tol_m": 10,
+            "runs": [
+                {
+                    "cut": 0,
+                    "begin_j": 0,
+                    "reports": 30,
+                    "band": [
+                        [
+                            100,
+                            200
+                        ],
+                        [
+                            100,
+                            300
+                        ],
+                        [
+                            205,
+                            300
+                        ]
+                    ]
+                }
+            ]
+        },
+        {
+            "tol_m": 0,
+            "runs": [
+                {
+                    "cut": 0,
+                    "begin_j": 0,
+                    "reports": 10,
+                    "band": [
+                        [
+                            100,
+                            200
+                        ],
+                        [
+                            100,
+                            200
+                        ]
+                    ]
+                },
+                {
+                    "cut": 0,
+                    "begin_j": 1,
+                    "reports": 20,
+                    "band": [
+                        [
+                            205,
+                            300
+                        ],
+                        [
+                            205,
+                            300
+                        ]
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -1,0 +1,31 @@
+{
+    "description": "Reported accuracy: 3 m / 4 m give 5 m. Both 0 or negative give none (no reported accuracy). One of them 0 is fine: 0 / 2 m give 2 m. A NaN (null here) gives none.",
+    "type": "reported",
+    "checks": [
+        [
+            3,
+            4,
+            5
+        ],
+        [
+            0,
+            0,
+            null
+        ],
+        [
+            -1,
+            -1,
+            null
+        ],
+        [
+            0,
+            2,
+            2
+        ],
+        [
+            null,
+            1,
+            null
+        ]
+    ]
+}

@@ -1,0 +1,26 @@
+{
+    "description": "Offset statistics of 1, 2, 3, 4, 100 m: median 3, mean 110 / 5 = 22, P95 at index 3.8 = 0.2 * 4 + 0.8 * 100 = 80.8. No values give all 0.",
+    "type": "stats",
+    "checks": [
+        {
+            "values": [
+                100,
+                1,
+                2,
+                3,
+                4
+            ],
+            "num": 5,
+            "median": 3,
+            "mean": 22,
+            "p95": 80.8
+        },
+        {
+            "values": [],
+            "num": 0,
+            "median": 0,
+            "mean": 0,
+            "p95": 0
+        }
+    ]
+}

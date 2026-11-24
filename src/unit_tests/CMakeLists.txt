@@ -32,6 +32,7 @@ include("${CMAKE_SOURCE_DIR}/src/eval/requirement/trackangle/unit_tests/CMakeLis
 include("${CMAKE_SOURCE_DIR}/src/eval/results/base/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/task/analyze/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/task/analyze/mlat/unit_tests/CMakeLists.txt")
+include("${CMAKE_SOURCE_DIR}/src/task/analyze/smr/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/task/reconstructor/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/result/unit_tests/CMakeLists.txt")
 include("${CMAKE_SOURCE_DIR}/src/filter/unit_tests/CMakeLists.txt")

@@ -1,0 +1,47 @@
+{
+    "description": "Ranges of one bin, unsorted, split where neighbors are more than 150 m apart: 100-120 (3 reports), 400-420 (5 reports), 900 alone (1 report, below the minimum of 3, dropped), 2000 three times (length 0, dropped). Without a gap (gap_m 0) all 12 ranges are one segment 100-2000.",
+    "type": "split",
+    "ranges": [
+        410,
+        100,
+        2000,
+        120,
+        400,
+        415,
+        110,
+        405,
+        900,
+        2000,
+        420,
+        2000
+    ],
+    "checks": [
+        {
+            "gap_m": 150,
+            "min_segment_reports": 3,
+            "segments": [
+                [
+                    100,
+                    120,
+                    3
+                ],
+                [
+                    400,
+                    420,
+                    5
+                ]
+            ]
+        },
+        {
+            "gap_m": 0,
+            "min_segment_reports": 3,
+            "segments": [
+                [
+                    100,
+                    2000,
+                    12
+                ]
+            ]
+        }
+    ]
+}

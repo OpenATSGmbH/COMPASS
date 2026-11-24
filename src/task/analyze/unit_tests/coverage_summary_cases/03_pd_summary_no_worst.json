@@ -1,0 +1,24 @@
+{
+    "description": "No cell has 5 or more expected slots, so there is no worst cell. Fractional slots from the time difference walk: 2.5 expected, 0.5 missed in one cell, PD 0.8.",
+    "type": "summary",
+    "cells": [
+        [
+            2.5,
+            0.5
+        ],
+        [
+            1.0,
+            0.0
+        ]
+    ],
+    "expected": {
+        "total_eui": 3.5,
+        "total_mui": 0.5,
+        "overall_pd": 0.8571428571428571,
+        "cells_with_eui": 2,
+        "median_cell_pd": 0.9,
+        "p5_cell_pd": 0.81,
+        "has_worst_cell": false,
+        "worst_cell_pd": 1.0
+    }
+}

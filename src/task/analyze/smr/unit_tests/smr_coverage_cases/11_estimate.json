@@ -1,0 +1,197 @@
+{
+    "description": "End to end with 8 bins of 45 deg. Bins 1-3 each have 20 reports at 100-290 m (one segment each, run of 60 reports over 190 m, density 31.6 per 100 m, kept). Bins 4 and 5 are empty and stay open, a single gap closes only between two covered bins. Bin 6 has 20 reports at 100-2000 m 100 m apart (one segment, density 20 * 100 / 1900 = 1.05 per 100 m, below 25, cut, its segment removed). Bin 7 has 3 reports, below the minimum of 20, not covered. One sector run over bins 1-3 remains, area 3 * 45 / 360 * pi * (290^2 - 100^2) m2, far above the 5000 m2 minimum.",
+    "type": "estimate",
+    "params": {
+        "bin_deg": 45,
+        "min_reports": 20,
+        "gap_m": 150,
+        "min_segment_reports": 5,
+        "smooth_bins": 1,
+        "min_run_reports_per_100m": 25,
+        "sector_link_m": 200,
+        "sector_bridge_bins": 8,
+        "sector_smooth_bins": 2,
+        "sector_simplify_m": 10,
+        "sector_min_area_m2": 5000
+    },
+    "ranges_per_bin": [
+        [],
+        [
+            100,
+            110,
+            120,
+            130,
+            140,
+            150,
+            160,
+            170,
+            180,
+            190,
+            200,
+            210,
+            220,
+            230,
+            240,
+            250,
+            260,
+            270,
+            280,
+            290
+        ],
+        [
+            100,
+            110,
+            120,
+            130,
+            140,
+            150,
+            160,
+            170,
+            180,
+            190,
+            200,
+            210,
+            220,
+            230,
+            240,
+            250,
+            260,
+            270,
+            280,
+            290
+        ],
+        [
+            100,
+            110,
+            120,
+            130,
+            140,
+            150,
+            160,
+            170,
+            180,
+            190,
+            200,
+            210,
+            220,
+            230,
+            240,
+            250,
+            260,
+            270,
+            280,
+            290
+        ],
+        [],
+        [],
+        [
+            100,
+            200,
+            300,
+            400,
+            500,
+            600,
+            700,
+            800,
+            900,
+            1000,
+            1100,
+            1200,
+            1300,
+            1400,
+            1500,
+            1600,
+            1700,
+            1800,
+            1900,
+            2000
+        ],
+        [
+            500,
+            510,
+            520
+        ]
+    ],
+    "expected": {
+        "bins": [
+            [],
+            [
+                [
+                    100,
+                    290,
+                    20
+                ]
+            ],
+            [
+                [
+                    100,
+                    290,
+                    20
+                ]
+            ],
+            [
+                [
+                    100,
+                    290,
+                    20
+                ]
+            ],
+            [],
+            [],
+            [],
+            []
+        ],
+        "bin_counts": [
+            0,
+            20,
+            20,
+            20,
+            0,
+            0,
+            20,
+            3
+        ],
+        "run_checks": [
+            {
+                "azimuth_from_deg": 45,
+                "azimuth_to_deg": 180,
+                "num_bins": 3,
+                "reports": 60,
+                "band_m": 190,
+                "density": 31.57894736842105,
+                "cut": false
+            },
+            {
+                "azimuth_from_deg": 270,
+                "azimuth_to_deg": 315,
+                "num_bins": 1,
+                "reports": 20,
+                "band_m": 1900,
+                "density": 1.0526315789473684,
+                "cut": true
+            }
+        ],
+        "sector_runs": [
+            {
+                "cut": 0,
+                "begin_j": 1,
+                "reports": 60,
+                "band": [
+                    [
+                        100,
+                        290
+                    ],
+                    [
+                        100,
+                        290
+                    ],
+                    [
+                        100,
+                        290
+                    ]
+                ]
+            }
+        ],
+        "slivers": []
+    }
+}

@@ -1,0 +1,27 @@
+{
+    "description": "No histogram maximum set: the P99 of 0.5, 1, 1.5, 2 s is at index 2.97 = 0.03 * 1.5 + 0.97 * 2 = 1.985, rounded up 2 s. 2 bins of 1 s: 0.5 s in the first, 1 and 1.5 s in the second, 2 s is not below the maximum and goes to the overflow bin.",
+    "type": "stats",
+    "intervals": [
+        0.5,
+        1.0,
+        1.5,
+        2.0
+    ],
+    "hist_max_s": 0.0,
+    "num_bins": 2,
+    "fallback_max_s": 15.0,
+    "expected": {
+        "num": 4,
+        "median_s": 1.25,
+        "p10_s": 0.65,
+        "p90_s": 1.85,
+        "mean_s": 1.25,
+        "hist_max_s": 2.0,
+        "hist_bin_width_s": 1.0,
+        "hist_bins": [
+            1,
+            2
+        ],
+        "hist_overflow": 1
+    }
+}

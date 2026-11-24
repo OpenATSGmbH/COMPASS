@@ -28,14 +28,17 @@ namespace TrackOffsetHelpers
  */
 TrackOffset trackOffset(double distance_m, double offset_angle_rad, double track_angle_deg)
 {
-    const double east  = distance_m * std::cos(offset_angle_rad);
-    const double north = distance_m * std::sin(offset_angle_rad);
+    return offsetOnDirection(distance_m * std::cos(offset_angle_rad), distance_m * std::sin(offset_angle_rad),
+                             track_angle_deg * M_PI / 180.0);
+}
 
-    const double track_rad = track_angle_deg * M_PI / 180.0;
-
+/**
+ */
+TrackOffset offsetOnDirection(double east_m, double north_m, double direction_rad)
+{
     TrackOffset offset;
-    offset.along  = east * std::sin(track_rad) + north * std::cos(track_rad);
-    offset.across = east * std::cos(track_rad) - north * std::sin(track_rad);
+    offset.along  = east_m * std::sin(direction_rad) + north_m * std::cos(direction_rad);
+    offset.across = east_m * std::cos(direction_rad) - north_m * std::sin(direction_rad);
 
     return offset;
 }

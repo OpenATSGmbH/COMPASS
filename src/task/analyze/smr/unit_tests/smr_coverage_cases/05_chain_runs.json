@@ -1,0 +1,157 @@
+{
+    "description": "6 bins, the walk starts at the first uncovered bin 0. Bins 1 and 2 overlap (100-200, 150-250) and form run A. Bin 3 (600-700) does not overlap A and starts run B. Bin 4 is empty. Without a bridge, bin 5 (620-680) starts run C. With a bridge of 1 bin, B stays open over bin 4 and takes bin 5: the bridged bin 4 gets the union of both ends (600-700).",
+    "type": "chain",
+    "bins": [
+        [],
+        [
+            [
+                100,
+                200,
+                10
+            ]
+        ],
+        [
+            [
+                150,
+                250,
+                20
+            ]
+        ],
+        [
+            [
+                600,
+                700,
+                30
+            ]
+        ],
+        [],
+        [
+            [
+                620,
+                680,
+                5
+            ]
+        ]
+    ],
+    "checks": [
+        {
+            "link_m": 0,
+            "bridge_bins": 0,
+            "runs": [
+                {
+                    "cut": 0,
+                    "begin_j": 1,
+                    "reports": 30,
+                    "band": [
+                        [
+                            100,
+                            200
+                        ],
+                        [
+                            150,
+                            250
+                        ]
+                    ]
+                },
+                {
+                    "cut": 0,
+                    "begin_j": 3,
+                    "reports": 30,
+                    "band": [
+                        [
+                            600,
+                            700
+                        ]
+                    ]
+                },
+                {
+                    "cut": 0,
+                    "begin_j": 5,
+                    "reports": 5,
+                    "band": [
+                        [
+                            620,
+                            680
+                        ]
+                    ]
+                }
+            ]
+        },
+        {
+            "link_m": 0,
+            "bridge_bins": 1,
+            "runs": [
+                {
+                    "cut": 0,
+                    "begin_j": 1,
+                    "reports": 30,
+                    "band": [
+                        [
+                            100,
+                            200
+                        ],
+                        [
+                            150,
+                            250
+                        ]
+                    ]
+                },
+                {
+                    "cut": 0,
+                    "begin_j": 3,
+                    "reports": 35,
+                    "band": [
+                        [
+                            600,
+                            700
+                        ],
+                        [
+                            600,
+                            700
+                        ],
+                        [
+                            620,
+                            680
+                        ]
+                    ]
+                }
+            ]
+        },
+        {
+            "link_m": 400,
+            "bridge_bins": 0,
+            "runs": [
+                {
+                    "cut": 0,
+                    "begin_j": 1,
+                    "reports": 60,
+                    "band": [
+                        [
+                            100,
+                            200
+                        ],
+                        [
+                            150,
+                            250
+                        ],
+                        [
+                            600,
+                            700
+                        ]
+                    ]
+                },
+                {
+                    "cut": 0,
+                    "begin_j": 5,
+                    "reports": 5,
+                    "band": [
+                        [
+                            620,
+                            680
+                        ]
+                    ]
+                }
+            ]
+        }
+    ]
+}

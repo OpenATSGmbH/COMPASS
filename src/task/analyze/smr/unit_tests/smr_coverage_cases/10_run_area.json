@@ -1,0 +1,39 @@
+{
+    "description": "Area of a ring segment: one 0.25 deg bin from 100 to 200 m is 0.25 / 360 * pi * (200^2 - 100^2) = 65.45 m2, two such bins twice that.",
+    "type": "area",
+    "bin_deg": 0.25,
+    "checks": [
+        {
+            "run": {
+                "cut": 0,
+                "begin_j": 0,
+                "reports": 1,
+                "band": [
+                    [
+                        100,
+                        200
+                    ]
+                ]
+            },
+            "area": 65.44984694978736
+        },
+        {
+            "run": {
+                "cut": 0,
+                "begin_j": 0,
+                "reports": 1,
+                "band": [
+                    [
+                        100,
+                        200
+                    ],
+                    [
+                        100,
+                        200
+                    ]
+                ]
+            },
+            "area": 130.89969389957471
+        }
+    ]
+}

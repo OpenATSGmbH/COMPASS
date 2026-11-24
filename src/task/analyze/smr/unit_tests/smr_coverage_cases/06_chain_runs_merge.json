@@ -1,0 +1,66 @@
+{
+    "description": "A segment that joins two runs, followed by a second segment in the same bin. Bin 1 has 100-200 (run A) and 400-500 (run B). Bin 2 has 150-450, which overlaps both: A takes it and B merges into A (bin 1 entry 100-500). The second segment of bin 2 (900-1000) matches no run and starts run C. Before the fix, the merged (empty) run B was still checked against this segment, which read an empty band (undefined behavior).",
+    "type": "chain",
+    "bins": [
+        [],
+        [
+            [
+                100,
+                200,
+                1
+            ],
+            [
+                400,
+                500,
+                2
+            ]
+        ],
+        [
+            [
+                150,
+                450,
+                3
+            ],
+            [
+                900,
+                1000,
+                4
+            ]
+        ],
+        []
+    ],
+    "checks": [
+        {
+            "link_m": 0,
+            "bridge_bins": 0,
+            "runs": [
+                {
+                    "cut": 0,
+                    "begin_j": 1,
+                    "reports": 6,
+                    "band": [
+                        [
+                            100,
+                            500
+                        ],
+                        [
+                            150,
+                            450
+                        ]
+                    ]
+                },
+                {
+                    "cut": 0,
+                    "begin_j": 2,
+                    "reports": 4,
+                    "band": [
+                        [
+                            900,
+                            1000
+                        ]
+                    ]
+                }
+            ]
+        }
+    ]
+}

@@ -61,7 +61,18 @@ TEST_CASE("TrackOffsetHelpers cases from JSON", "[eval][track_offset_helpers]")
 
         INFO("case " << file.filename().string() << ": " << j.value("description", ""));
 
-        for (const auto& o : j.at("offsets"))
+        for (const auto& o : j.value("directions", nlohmann::json::array()))
+        {
+            INFO("direction " << o.dump());
+
+            auto offset = offsetOnDirection(o.at("east").get<double>(), o.at("north").get<double>(),
+                                            o.at("direction_deg").get<double>() * M_PI / 180.0);
+
+            CHECK(offset.along  == Approx(o.at("along").get<double>()).margin(1e-9));
+            CHECK(offset.across == Approx(o.at("across").get<double>()).margin(1e-9));
+        }
+
+        for (const auto& o : j.value("offsets", nlohmann::json::array()))
         {
             INFO("offset " << o.dump());
 

@@ -41,6 +41,10 @@ struct TrackOffset
  */
 TrackOffset trackOffset(double distance_m, double offset_angle_rad, double track_angle_deg);
 
+/// components of an east / north offset along a direction (radians from true north, clockwise)
+/// and to its right
+TrackOffset offsetOnDirection(double east_m, double north_m, double direction_rad);
+
 } // namespace TrackOffsetHelpers
 
 } // namespace EvaluationRequirement
