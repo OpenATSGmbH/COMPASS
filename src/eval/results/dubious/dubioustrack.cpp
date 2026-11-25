@@ -96,12 +96,12 @@ SingleDubiousTrack::SingleDubiousTrack(const std::string& result_id,
 {
     for (const auto& detail_it : details)
     {
-        if (dubious_reasons_.size())
-            dubious_reasons_ += "\n";
+        if (reasons_.size())
+            reasons_ += "\n";
 
         auto dub_reasons_str = dubiousReasonsString(detail_it.comments());
 
-        dubious_reasons_ += to_string(detail_it.getValue(DetailKey::UTNOrTrackNum).toUInt()) + ":" + dub_reasons_str;
+        reasons_ += to_string(detail_it.getValue(DetailKey::UTNOrTrackNum).toUInt()) + ":" + dub_reasons_str;
     }
 
     updateResult();
@@ -216,7 +216,7 @@ nlohmann::json::array_t SingleDubiousTrack::targetTableValuesCustom() const
              resultValueOptional(p_dubious_update_), // "PDU"
              num_tracks_,                            // "#T"
              num_tracks_dubious_,                    // "#DT"
-             dubious_reasons_ };                     // "Reasons"
+             reasons_ };                     // "Reasons"
 }
 
 /**
@@ -256,10 +256,8 @@ std::vector<Single::TargetInfo> SingleDubiousTrack::targetInfos() const
 */
 bool SingleDubiousTrack::detailIsOkStatic(const EvaluationDetail& detail)
 {
-    auto comments = detail.comments().group(DetailCommentGroupDubious);
-    bool is_dub   = (comments.has_value() && !comments->empty());
-
-    return !is_dub;
+    //a test report is dubious by its reason bits, a period (parent detail) by its reasons
+    return !isDubiousUpdate(detail) && !detail.comments().hasComments(DetailCommentGroupDubious);
 }
 
 /**

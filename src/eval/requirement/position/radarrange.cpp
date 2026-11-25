@@ -18,6 +18,7 @@
 #include "requirement/position/radarrange.h"
 #include "requirement/position/radar_helpers.h"
 #include "results/position/radarrange.h"
+#include "results/base/detailcode.h"
 #include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "global.h"
@@ -37,6 +38,8 @@ using namespace boost::posix_time;
 
 namespace EvaluationRequirement
 {
+
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
 
 PositionRadarRange::PositionRadarRange(const std::string& name, const std::string& short_name,
                                        const std::string& group_name, float ref_min_accuracy,
@@ -98,12 +101,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
                             const QVariant& num_pos_inside,
                             const QVariant& num_pos_outside,
                             const QVariant& num_comp_passed,
-                            const QVariant& num_comp_failed)
+                            const QVariant& num_comp_failed,
+                            std::uint32_t code)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::Value, offset)
                                              .setValue(Result::DetailKey::CheckPassed, check_passed)
-                                             .addPosition(ref_pos));
+                                             .addPosition(ref_pos)
+                                             .addCode(code));
     };
 
     ProjectionManager& proj_man = calculator_.manager().projectionManager();
@@ -138,7 +143,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
                             {}, // ref_pos
                             {}, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed);
+                            num_comp_passed, num_comp_failed, Result::NoDataSourceInfo);
 
             ++num_no_ref;
             continue;
@@ -151,7 +156,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
                             {}, // ref_pos
                             {}, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed);
+                            num_comp_passed, num_comp_failed, DetailCode::NoRefData);
 
             ++num_no_ref;
             continue;
@@ -166,7 +171,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
                             {}, // ref_pos
                             {}, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed);
+                            num_comp_passed, num_comp_failed, DetailCode::NoRefPosition);
 
             ++num_no_ref;
             continue;
@@ -182,7 +187,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
                             ref_pos, // ref_pos
                             is_inside, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed);
+                            num_comp_passed, num_comp_failed, 0);
             ++num_pos_outside;
             continue;
         }
@@ -197,7 +202,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
                             ref_pos, // ref_pos
                             is_inside, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed);
+                            num_comp_passed, num_comp_failed, DetailCode::RefInaccurate);
 
             ++num_ref_inaccurate;
             continue;            
@@ -219,7 +224,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
                       ref_pos, // ref_pos
                       is_inside, {}, comp_passed, // pos_inside, value, rcheck_passed
                       num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                      num_comp_passed, num_comp_failed);
+                      num_comp_passed, num_comp_failed, Result::RefTransformationError);
             ++num_pos_calc_errors;
             continue;
         }
@@ -234,7 +239,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
                       ref_pos, // ref_pos
                       is_inside, {}, comp_passed, // pos_inside, value, check_passed
                       num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                      num_comp_passed, num_comp_failed);
+                      num_comp_passed, num_comp_failed, Result::TstTransformationError);
             ++num_pos_calc_errors;
             continue;
         }
@@ -247,7 +252,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
                         ref_pos, // ref_pos
                         is_inside, {}, comp_passed, // pos_inside, value, check_passed
                         num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                        num_comp_passed, num_comp_failed);
+                        num_comp_passed, num_comp_failed, DetailCode::ValueInvalid);
             ++num_pos_calc_errors;
             continue;
         }
@@ -276,7 +281,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
                     ref_pos,
                     is_inside, range_m_diff, comp_passed, // pos_inside, value, check_passed
                     num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                    num_comp_passed, num_comp_failed);
+                    num_comp_passed, num_comp_failed, 0);
     }
 
     //        logdbg << "'" << name_ << "': utn " << target_data.utn_

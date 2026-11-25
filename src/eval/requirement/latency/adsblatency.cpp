@@ -18,6 +18,7 @@
 #include "requirement/latency/adsblatency.h"
 #include "requirement/latency/adsblatency_helpers.h"
 #include "results/latency/adsblatency.h"
+#include "results/base/detailcode.h"
 
 #include "evaluationmanager.h"
 #include "logger.h"
@@ -29,6 +30,8 @@ using namespace boost::posix_time;
 
 namespace EvaluationRequirement
 {
+
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
 
 /**
 */
@@ -86,11 +89,13 @@ std::shared_ptr<EvaluationRequirementResult::Single> ADSBLatency::evaluate (
                             const dbContent::TargetPosition& tst_pos,
                             const QVariant& pos_inside,
                             const QVariant& value,
-                            const QVariant& check_passed)
+                            const QVariant& check_passed,
+                            std::uint32_t code)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::Value, value)
-                                             .setValue(Result::DetailKey::CheckPassed, check_passed));
+                                             .setValue(Result::DetailKey::CheckPassed, check_passed)
+                                             .addCode(code));
     };
 
     for (const auto& tst_id : tst_data)
@@ -106,7 +111,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ADSBLatency::evaluate (
         if (!is_inside)
         {
             if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos, is_inside, {}, {});
+                addDetail(timestamp, tst_pos, is_inside, {}, {}, 0);
 
             ++num_pos_outside;
             continue;
@@ -119,7 +124,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ADSBLatency::evaluate (
         if (c.outcome == ADSBLatencyHelpers::Outcome::NoTimeData)
         {
             if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos, is_inside, {}, {});
+                addDetail(timestamp, tst_pos, is_inside, {}, {}, c.code);
 
             ++num_no_data;
             continue;
@@ -136,7 +141,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ADSBLatency::evaluate (
             ++num_value_nok;
         }
 
-        addDetail(timestamp, tst_pos, is_inside, c.latency, value_ok);
+        addDetail(timestamp, tst_pos, is_inside, c.latency, value_ok, c.code);
     }
 
     traced_assert(num_pos == num_pos_inside + num_pos_outside);

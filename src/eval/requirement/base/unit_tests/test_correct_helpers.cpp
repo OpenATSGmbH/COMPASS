@@ -18,6 +18,7 @@
 #include "catch.hpp"
 
 #include "requirement/base/correcthelpers.h"
+#include "results/base/detailcode.h"
 
 #include "json.hpp"
 
@@ -140,4 +141,20 @@ TEST_CASE("CorrectHelpers cases from JSON", "[eval][correct_helpers]")
             CHECK((double)num_correct / (double)num_total == Approx(e.at("probability").get<double>()));
         }
     }
+}
+
+TEST_CASE("comparisonCode names the failed value", "[eval][correct_helpers]")
+{
+    namespace Value = EvaluationRequirementResult::DetailCode::Value;
+
+    CHECK(comparisonCode(ValueComparisonResult::Different, Value::AcidDiffers, Value::AcidMissing) == Value::AcidDiffers);
+    CHECK(comparisonCode(ValueComparisonResult::Unknown_NoTstData, Value::AcidDiffers, Value::AcidMissing) == Value::AcidMissing);
+    CHECK(comparisonCode(ValueComparisonResult::Same, Value::AcidDiffers, Value::AcidMissing) == 0);
+    CHECK(comparisonCode(ValueComparisonResult::Unknown_NoRefData, Value::AcidDiffers, Value::AcidMissing) == 0);
+
+    // a correct report can name a failed value, if one judged value suffices
+    std::vector<ValueComparisonResult> cmp { ValueComparisonResult::Same, ValueComparisonResult::Unknown_NoTstData };
+    CHECK(classify(cmp, false) == ReportClass::Correct);
+    CHECK((comparisonCode(cmp[ 0 ], Value::AcidDiffers, Value::AcidMissing) |
+           comparisonCode(cmp[ 1 ], Value::M3ADiffers, Value::M3AMissing)) == Value::M3AMissing);
 }

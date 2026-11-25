@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include "results/base/detailcode.h"
+
+#include <cstdint>
+
 #include <boost/optional.hpp>
 
 namespace EvaluationRequirement
@@ -37,10 +41,18 @@ enum class Outcome
     TooHigh     // latency above the maximum
 };
 
+/// type bits of the detail code of SingleADSBLatency
+enum CodeBit : std::uint32_t
+{
+    NoTimeStampData = EvaluationRequirementResult::DetailCode::typeBit(0),
+    NegativeLatency = EvaluationRequirementResult::DetailCode::typeBit(1)
+};
+
 struct Check
 {
-    Outcome outcome = Outcome::NoTimeData;
-    double  latency = 0.0; // [s]
+    Outcome       outcome = Outcome::NoTimeData;
+    double        latency = 0.0; // [s]
+    std::uint32_t code    = NoTimeStampData; // reason bits of the outcome, 0 if passed or too high
 };
 
 /// report transmission time minus message reception time [s], corrected for the day wrap at midnight

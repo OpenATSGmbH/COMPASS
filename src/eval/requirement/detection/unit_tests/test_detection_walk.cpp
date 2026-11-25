@@ -18,6 +18,7 @@
 #include "catch.hpp"
 
 #include "requirement/detection/detection_walk.h"
+#include "results/base/detailcode.h"
 #include "timeperiod.h"
 
 #include "json.hpp"
@@ -290,6 +291,59 @@ TEST_CASE("DetectionWalk::walk steps", "[eval][detection_walk]")
 
     CHECK(result.sum_expected == Approx(10.0));
     CHECK(result.sum_missed   == Approx(7.0));
+
+    // the reason bit of the misses, none for the other steps
+    namespace Gap = EvaluationRequirementResult::DetailCode::Gap;
+
+    CHECK(result.steps[ 0 ].code == 0);
+    CHECK(result.steps[ 1 ].code == 0);
+    CHECK(result.steps[ 3 ].code == Gap::MissInPeriod);
+    CHECK(result.steps[ 5 ].code == Gap::MissAtPeriodEnd);
+}
+
+TEST_CASE("DetectionWalk::walk reason bits of the misses", "[eval][detection_walk]")
+{
+    namespace Gap = EvaluationRequirementResult::DetailCode::Gap;
+
+    WalkCase c;
+    c.params.miss_params.update_interval_s = 8.0f;
+
+    for (int t = 0; t <= 80; ++t)
+        c.ref.emplace_back(t, true);
+
+    auto codeOf = [] (const Result& result, Step::Type type)
+    {
+        auto it = std::find_if(result.steps.begin(), result.steps.end(),
+                               [ & ] (const Step& s) { return s.type == type; });
+        REQUIRE(it != result.steps.end());
+        return it->code;
+    };
+
+    SECTION("miss at the period begin")
+    {
+        c.tst = { { 24, TstFlag::Ok }, { 30, TstFlag::Ok } };
+        auto result = run(c);
+
+        CHECK(codeOf(result, Step::Type::FirstInPeriod) == Gap::MissAtPeriodBegin);
+        CHECK(codeOf(result, Step::Type::Gap) == 0);
+        CHECK(codeOf(result, Step::Type::PeriodEnd) == Gap::MissAtPeriodEnd);
+    }
+
+    SECTION("no test data")
+    {
+        auto result = run(c);
+
+        CHECK(codeOf(result, Step::Type::PeriodWithoutTestData) == Gap::PeriodWithoutValidUpdate);
+    }
+
+    SECTION("test reports only outside the sector")
+    {
+        c.tst = { { 20, TstFlag::Outside } };
+        auto result = run(c);
+
+        CHECK(codeOf(result, Step::Type::OutsideSector) == 0);
+        CHECK(codeOf(result, Step::Type::PeriodEnd) == Gap::PeriodWithoutValidUpdate);
+    }
 }
 
 TEST_CASE("DetectionWalk cases from JSON", "[eval][detection_walk]")

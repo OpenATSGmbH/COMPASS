@@ -19,6 +19,7 @@
 #include "requirement/base/falsehelpers.h"
 #include "standard/evaluationstandard.h"
 #include "results/identification/false.h"
+#include "results/base/detailcode.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
@@ -32,6 +33,8 @@ using namespace boost::posix_time;
 
 namespace EvaluationRequirement
 {
+
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
 
 IdentificationFalse::IdentificationFalse(
         const std::string& name, const std::string& short_name, const std::string& group_name,
@@ -94,12 +97,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
                             const QVariant& num_pos_outside,
                             const QVariant& num_unknown_id,
                             const QVariant& num_correct_id,
-                            const QVariant& num_false_id)
+                            const QVariant& num_false_id,
+                            std::uint32_t code)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::RefExists, ref_exists)
                                              .setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::IsNotOk, is_not_ok)
-                                             .addPosition(ref_pos));
+                                             .addPosition(ref_pos)
+                                             .addCode(code));
     };
 
     for (const auto& tst_id : tst_data)
@@ -120,7 +125,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
                 addDetail(timestamp, pos_current, {},
                             false, {}, false, // ref_exists, pos_inside,
                             num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                            num_unknown, num_correct, num_false);
+                            num_unknown, num_correct, num_false, 0);
 
             ++num_no_ref_pos;
             continue;
@@ -137,7 +142,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
                 addDetail(timestamp, pos_current, {},
                             false, {}, false, // ref_exists, pos_inside,
                             num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                            num_unknown, num_correct, num_false);
+                            num_unknown, num_correct, num_false, DetailCode::NoRefPosition);
 
             ++num_no_ref_pos;
             continue;
@@ -153,7 +158,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
                 addDetail(timestamp, pos_current, ref_pos,
                             ref_exists, is_inside, false, // ref_exists, pos_inside,
                             num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                            num_unknown, num_correct, num_false);
+                            num_unknown, num_correct, num_false, 0);
 
             ++num_pos_outside;
             continue;
@@ -162,13 +167,20 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
 
         // compare the used identification values
         std::vector<ValueComparisonResult> cmp_results;
+        std::uint32_t                      false_code = 0; // the values that differ
+
+        auto addCompare = [ & ] (ValueComparisonResult cmp_res, std::uint32_t differs_bit)
+        {
+            cmp_results.push_back(cmp_res);
+            false_code |= comparisonCode(cmp_res, differs_bit, 0);
+        };
 
         if (use_ms_ti_)
-            cmp_results.push_back(compareTi(tst_id, target_data, max_ref_time_diff));
+            addCompare(compareTi(tst_id, target_data, max_ref_time_diff), DetailCode::Value::AcidDiffers);
         if (use_ms_ta_)
-            cmp_results.push_back(compareTa(tst_id, target_data, max_ref_time_diff));
+            addCompare(compareTa(tst_id, target_data, max_ref_time_diff), DetailCode::Value::AcadDiffers);
         if (use_mode_a_)
-            cmp_results.push_back(compareModeA(tst_id, target_data, max_ref_time_diff));
+            addCompare(compareModeA(tst_id, target_data, max_ref_time_diff), DetailCode::Value::M3ADiffers);
 
         auto report_class = FalseHelpers::classify(cmp_results, require_all_false_);
 
@@ -203,7 +215,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
             addDetail(timestamp, pos_current, ref_pos,
                         ref_exists, is_inside, result_false,
                         num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                        num_unknown, num_correct, num_false);
+                        num_unknown, num_correct, num_false, FalseHelpers::code(report_class) | false_code);
     }
 
     logdbg << "'" << name_ << "': utn " << target_data.utn_

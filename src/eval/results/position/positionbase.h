@@ -20,6 +20,7 @@
 #include "results/base/single.h"
 #include "results/base/joined.h"
 #include "results/base/probabilitybase.h"
+#include "results/base/detailcode.h"
 
 #include "valueaccumulator.h"
 
@@ -97,7 +98,6 @@ public:
         Value,          //float
         CheckPassed,    //bool
         PosInside,      //bool
-        RefExists,      //bool, set by the requirements of PositionHelpers::evaluatePositions()
         PositionBaseMax
     };
 
@@ -107,11 +107,12 @@ protected:
     bool common_detailIsOk(const EvaluationDetail& detail,
                            const std::shared_ptr<EvaluationRequirement::Base>& requirement) const;
 
-    static bool common_hasRefExists(const std::string& result_type);
     /// the value column of the report table, named by the result type
     ReportTableColumn common_reportTableValueColumn(const std::string& result_type) const;
     void common_addReportTableColumns(ReportTableDefinition& def,
                                       const std::string& result_type) const;
+    /// texts of the detail code bits of the result type (DetailCode::addTypeText())
+    virtual void addDetailCodeTexts(ReportTableDefinition& def) const {}
     void common_fillReportTableRow(ReportTableRows& rows,
                                    const EvaluationDetail& detail,
                                    const std::string& result_type) const;

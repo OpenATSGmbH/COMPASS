@@ -73,7 +73,7 @@ protected:
 
     bool                             is_dubious_ = false;
     boost::posix_time::time_duration duration_;
-    std::string                      dubious_reasons_;
+    std::string                      reasons_;
 };
 
 /**

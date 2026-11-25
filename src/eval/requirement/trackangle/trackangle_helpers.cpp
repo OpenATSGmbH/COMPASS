@@ -35,12 +35,14 @@ Check check(double ref_speed_ms, double ref_angle_deg, const boost::optional<dou
     if (p.use_minimum_speed && ref_speed_ms < p.minimum_speed)
     {
         c.outcome = Outcome::RefSpeedTooLow;
+        c.code    = RefSpeedTooLow;
         return c;
     }
 
     if (!tst_angle_deg.has_value())
         return c;
 
+    c.code    = 0;
     c.diff    = Utils::Number::calculateMinAngleDifference(ref_angle_deg, *tst_angle_deg);
     c.outcome = compareValue(std::fabs(c.diff), p.threshold, p.check_type) ? Outcome::Passed : Outcome::Failed;
 

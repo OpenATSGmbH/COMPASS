@@ -286,6 +286,8 @@ void SingleExtraTrack::addReportTableColumns(ReportTableDefinition& def) const
                   "Track counted as extra");
     def.addColumn("track_num", PropertyDataType::UINT, "Track Number",
                   "Track number of the test report");
+
+    DetailCode::addTypeText(def, NoTrackNumber, "No track number");
 }
 
 /**

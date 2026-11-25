@@ -19,6 +19,7 @@
 
 #include "dbcontent/target/targetreportchain.h"
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>
@@ -62,6 +63,9 @@ struct Event
     boost::posix_time::ptime        interval_time1; // end time of the event interval (note: =/= period end!)
 
     uint32_t                        misses = 0;     // misses caused by the event
+
+    uint32_t                        invalid_updates = 0; // gap events: invalid updates since the last valid update (or period begin)
+    uint32_t                        code = 0;            // miss events: reason bits (DetailCode::Gap, failed values of the invalid updates)
 };
 
 /**
@@ -76,7 +80,8 @@ struct IntervalValidity
         RefDataMissing // reference data is missing => could not check validity
     };
 
-    Value        value = Value::Invalid; // validity value
+    Value         value = Value::Invalid; // validity value
+    std::uint32_t code  = 0;              // invalid update: bits of the failed values (DetailCode::Value)
 };
 
 /**

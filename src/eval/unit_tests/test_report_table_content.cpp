@@ -78,7 +78,7 @@ TEST_CASE("ReportTableContent rowComment with detail codes", "[report_table_cont
     {
         CHECK(comment({ false, {}, {}, {} }) == "Check failed");
         CHECK(comment({ {}, false, {}, {} }) == "Outside sector");
-        CHECK(comment({ {}, {}, false, {} }) == "No reference");
+        CHECK(comment({ {}, {}, false, {} }) == "No reference data");
         CHECK(comment({ true, true, true, {} }) == "");
     }
 
@@ -90,9 +90,16 @@ TEST_CASE("ReportTableContent rowComment with detail codes", "[report_table_cont
 
     SECTION("a flag text the code already says is left out")
     {
-        CHECK(comment({ {}, false, true, DetailCode::OutsideSector }) == "Outside sector");
         CHECK(comment({ {}, {}, false, DetailCode::NoRefData }) == "No reference data");
+        CHECK(comment({ {}, {}, false, DetailCode::NoRefPosition }) == "No reference position");
         CHECK(comment({ {}, {}, false, DetailCode::NoRefSpeed }) == "No reference speed");
+    }
+
+    SECTION("without a reference the outside flag is left out, the position was not checked")
+    {
+        CHECK(comment({ {}, false, false, DetailCode::NoRefData }) == "No reference data");
+        CHECK(comment({ {}, false, {}, DetailCode::NoRefPosition }) == "No reference position");
+        CHECK(comment({ {}, false, false, {} }) == "No reference data"); // ref_exists column, no bit
     }
 
     SECTION("a code of 0 gives no text")

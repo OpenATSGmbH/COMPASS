@@ -17,8 +17,11 @@
 
 #pragma once
 
+#include "results/base/detailcode.h"
+
 #include <boost/optional.hpp>
 
+#include <cstdint>
 #include <vector>
 
 namespace EvaluationRequirement
@@ -55,6 +58,17 @@ struct Update
     double                  distance_to_previous_m = 0.0;
 };
 
+/// type bits of the detail code of the Dubious Target and Dubious Track results, one per reason without
+/// a value. A reason with a value (speed, acceleration, turn rate, ROCD) is the filled value column.
+enum CodeBit : std::uint32_t
+{
+    PrimaryOnly     = EvaluationRequirementResult::DetailCode::typeBit(0), // period: no Mode A/C and no Mode S data
+    FewUpdates      = EvaluationRequirementResult::DetailCode::typeBit(1), // period: fewer updates than the minimum
+    ShortDuration   = EvaluationRequirementResult::DetailCode::typeBit(2), // period: shorter than the minimum duration
+
+    AllReasons      = PrimaryOnly | FewUpdates | ShortDuration
+};
+
 /// the values that make an update dubious, unset if the check passed or did not apply
 struct UpdateFlags
 {
@@ -63,6 +77,9 @@ struct UpdateFlags
     boost::optional<double> acceleration;
     boost::optional<double> turnrate;
     boost::optional<double> rocd;
+
+    /// a value made the update dubious
+    bool dubious() const;
 };
 
 /**

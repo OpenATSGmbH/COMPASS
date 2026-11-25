@@ -18,6 +18,7 @@
 #include "intervalhelpers.h"
 #include "timeperiod.h"
 
+#include "results/base/detailcode.h"
 #include "timeconv.h"
 #include "traced_assert.h"
 
@@ -99,7 +100,27 @@ std::vector<Event> periodEvents(const TimePeriod& period,
                                 const MissParams& p,
                                 bool skip_no_data_details)
 {
+    namespace Gap = EvaluationRequirementResult::DetailCode::Gap;
+
     std::vector<Event> events;
+
+    //invalid updates since the last valid update (or period begin), they go to the next gap event
+    uint32_t invalid_updates = 0;
+    uint32_t invalid_code    = 0;
+
+    //sets the invalid updates of a gap and, if it is a miss, its reason bits
+    auto setGapInfo = [ & ] (Event& e, uint32_t type_bit, bool no_ref_value)
+    {
+        e.invalid_updates = invalid_updates;
+
+        if (e.misses == 0)
+            return;
+
+        e.code = type_bit | invalid_code;
+
+        if (no_ref_value)
+            e.code |= Gap::NoRefValue;
+    };
 
     auto logEvent = [ & ] (std::vector<Event>& events,
                            Event::Type type, 
@@ -162,6 +183,7 @@ std::vector<Event> periodEvents(const TimePeriod& period,
 
         const TimePeriodUpdate* valid_last     = nullptr;
         int                     valid_last_idx = -1;
+        bool                    valid_last_no_ref_value = false;
 
         for (size_t i = 0; i < n; ++i)
         {
@@ -174,8 +196,14 @@ std::vector<Event> periodEvents(const TimePeriod& period,
             if (update_validity.value == IntervalValidity::Value::Invalid)
             {
                 logEvent(events, Event::TypeInvalid, &update, update.data_id.timestamp(), update.data_id.timestamp(), false);
+
+                ++invalid_updates;
+                invalid_code |= update_validity.code;
                 continue;
             }
+
+            //reference data missing => valid update (in dubio pro reo)
+            bool no_ref_value = update_validity.value == IntervalValidity::Value::RefDataMissing;
 
             //first valid update? => log
             if (!valid_last && !skip_no_data_details)
@@ -189,8 +217,14 @@ std::vector<Event> periodEvents(const TimePeriod& period,
                      update.data_id.timestamp(),                                         // time1 always update time
                      true);                                                              // check misses in both cases
 
-            valid_last     = &updates[ i ];
-            valid_last_idx = (int)events.size();
+            setGapInfo(events.back(), valid_last ? Gap::MissInPeriod : Gap::MissAtPeriodBegin, no_ref_value);
+
+            invalid_updates = 0;
+            invalid_code    = 0;
+
+            valid_last              = &updates[ i ];
+            valid_last_idx          = (int)events.size();
+            valid_last_no_ref_value = no_ref_value;
         }
 
         //add event for last valid update
@@ -202,13 +236,19 @@ std::vector<Event> periodEvents(const TimePeriod& period,
                 logEvent(last_events, Event::TypeLastValidUpdateInPeriod, valid_last, valid_last->data_id.timestamp(), valid_last->data_id.timestamp(), false);
             logEvent(last_events, Event::TypeValidLast, valid_last, valid_last->data_id.timestamp(), period.end(), true);
 
+            setGapInfo(last_events.back(), Gap::MissAtPeriodEnd, valid_last_no_ref_value);
+
             events.insert(events.begin() + valid_last_idx, last_events.begin(), last_events.end());
         }
 
         //no valid updates in period => add single event for this case, the whole period is missed
         //(test target reports without a correct code, as between valid updates)
         if (!valid_last)
+        {
             logEvent(events, Event::TypeEmptyPeriod, nullptr, period.begin(), period.end(), true);
+
+            setGapInfo(events.back(), Gap::PeriodWithoutValidUpdate, false);
+        }
     }
 
     //log period left

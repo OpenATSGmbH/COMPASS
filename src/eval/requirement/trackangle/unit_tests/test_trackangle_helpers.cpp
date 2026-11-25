@@ -128,3 +128,17 @@ TEST_CASE("TrackAngleHelpers cases from JSON", "[eval][trackangle_helpers]")
         CHECK((double)num_passed / (double)(num_passed + num_failed) == Approx(e.at("probability").get<double>()));
     }
 }
+
+TEST_CASE("TrackAngleHelpers detail code of the outcomes", "[eval][trackangle_helpers]")
+{
+    Params p;
+    p.threshold         = 10.0f;
+    p.use_minimum_speed = true;
+    p.minimum_speed     = 5.0f;
+
+    CHECK(check(2.0, 90.0, 90.0, p).code == RefSpeedTooLow);
+    CHECK(check(2.0, 90.0, {}, p).code == RefSpeedTooLow); // the speed is checked first
+    CHECK(check(50.0, 90.0, {}, p).code == NoTstTrackAngle);
+    CHECK(check(50.0, 90.0, 95.0, p).code == 0);
+    CHECK(check(50.0, 90.0, 130.0, p).code == 0); // failed: the failed check says it
+}

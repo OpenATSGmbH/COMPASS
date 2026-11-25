@@ -38,7 +38,6 @@ enum : std::uint32_t
     NoRefData       = 1u << 0,
     NoRefPosition   = 1u << 1,
     NoRefSpeed      = 1u << 2,
-    OutsideSector   = 1u << 3,
     RefInaccurate   = 1u << 4,
     ValueInvalid    = 1u << 5,
 
@@ -56,6 +55,59 @@ void addCommonTexts(ReportTableDefinition& def);
 
 /// adds the text of a bit of a result type to the table definition
 void addTypeText(ReportTableDefinition& def, std::uint32_t bit, const std::string& text);
+
+/**
+ * Type bits of the result types that compare a test value with the reference value
+ * (Identification, Mode A and Mode C Correct, False and Present, Generic, Correct Periods). "Missing"
+ * means the test report has no value, "differs" that the values differ.
+ */
+namespace Value
+{
+
+enum : std::uint32_t
+{
+    NoRefValue   = typeBit(0),
+    NoTstValue   = typeBit(1),
+    Differs      = typeBit(2), // value of a Generic requirement
+
+    AcidDiffers  = typeBit(8),
+    AcidMissing  = typeBit(9),
+    AcadDiffers  = typeBit(10),
+    AcadMissing  = typeBit(11),
+    M3ADiffers   = typeBit(12),
+    M3AMissing   = typeBit(13),
+    ModeCDiffers = typeBit(14),
+    ModeCMissing = typeBit(15)
+};
+
+/// adds the texts of all bits above
+void addTexts(ReportTableDefinition& def);
+/// adds the texts of the bits of the single values (ACID to Mode C)
+void addValueTexts(ReportTableDefinition& def);
+
+} // namespace Value
+
+/**
+ * Type bits of the gap rows (Detection, Correct Periods). The value bits of the invalid test
+ * reports inside a gap (Value::AcidDiffers to Value::ModeCMissing) follow from type bit 8.
+ */
+namespace Gap
+{
+
+enum : std::uint32_t
+{
+    MissAtPeriodBegin        = typeBit(0), // from the period begin to the first valid test report
+    MissInPeriod             = typeBit(1), // between two valid test reports
+    MissAtPeriodEnd          = typeBit(2), // from the last valid test report to the period end
+    PeriodWithoutValidUpdate = typeBit(3), // the whole period
+    MissInStatusCycle        = typeBit(4), // expected period of the status message method
+    NoRefValue               = typeBit(5)  // the valid test report at the gap had no reference value
+};
+
+/// adds the texts of the bits above
+void addTexts(ReportTableDefinition& def);
+
+} // namespace Gap
 
 } // namespace DetailCode
 

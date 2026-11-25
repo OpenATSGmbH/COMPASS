@@ -18,6 +18,7 @@
 #include "catch.hpp"
 
 #include "requirement/base/intervalhelpers.h"
+#include "results/base/detailcode.h"
 #include "timeperiod.h"
 
 #include "json.hpp"
@@ -39,6 +40,9 @@ using boost::posix_time::time_from_string;
 
 typedef dbContent::TargetReport::DataID DataID;
 
+namespace Gap   = EvaluationRequirementResult::DetailCode::Gap;
+namespace Value = EvaluationRequirementResult::DetailCode::Value;
+
 namespace
 {
 
@@ -57,6 +61,7 @@ struct IntervalCase
     bool                                                exclude_detection_misses = false;
     std::vector<std::pair<double, double>>              periods;
     std::vector<std::pair<double, IntervalValidity::Value>> updates;
+    std::map<unsigned int, uint32_t>                    codes; // validity code by update index
     Counts                                              expected;
 };
 
@@ -125,6 +130,11 @@ Counts run(const IntervalCase& c, std::vector<Event>* events_out = nullptr)
     {
         IntervalValidity v;
         v.value = validities.at(data_id.index().idx_external);
+
+        auto it = c.codes.find(data_id.index().idx_external);
+        if (it != c.codes.end())
+            v.code = it->second;
+
         return v;
     };
 
@@ -197,6 +207,65 @@ TEST_CASE("IntervalHelpers::periodEvents marks a period without valid update", "
 
     CHECK(std::count_if(events.begin(), events.end(),
                         [] (const Event& e) { return e.type == Event::TypeInvalid; }) == 11);
+
+    CHECK(it->invalid_updates == 11);
+    CHECK(it->code == Gap::PeriodWithoutValidUpdate);
+}
+
+TEST_CASE("IntervalHelpers::periodEvents gives the gaps their invalid updates and reasons", "[eval][interval_helpers]")
+{
+    IntervalCase c;
+    c.params.update_interval_s = 8.0f;
+    c.periods = { { 0.0, 80.0 } };
+    c.updates = { {  5.0, IntervalValidity::Value::Invalid },        // 0
+                  { 12.0, IntervalValidity::Value::Invalid },        // 1
+                  { 20.0, IntervalValidity::Value::Valid },          // 2: miss at the period begin
+                  { 23.0, IntervalValidity::Value::Invalid },        // 3
+                  { 26.0, IntervalValidity::Value::Valid },          // 4: no miss
+                  { 50.0, IntervalValidity::Value::RefDataMissing }, // 5: miss, valid without reference value
+                  { 60.0, IntervalValidity::Value::Invalid } };      // 6: miss at the period end
+    c.codes = { { 0, Value::AcidMissing }, { 1, Value::AcidDiffers }, { 3, Value::AcidDiffers },
+                { 6, Value::M3ADiffers } };
+
+    std::vector<Event> events;
+    auto result = run(c, &events);
+
+    CHECK(result.misses == 2 + 3 + 3);
+
+    auto gapEvent = [ & ] (Event::Type type, double t) -> const Event&
+    {
+        auto it = std::find_if(events.begin(), events.end(),
+                               [ & ] (const Event& e) { return e.type == type && e.data_id.timestamp() == at(t); });
+        REQUIRE(it != events.end());
+        return *it;
+    };
+
+    const auto& begin = gapEvent(Event::TypeValidFirst, 20.0);
+    CHECK(begin.misses == 2);
+    CHECK(begin.invalid_updates == 2);
+    CHECK(begin.code == (Gap::MissAtPeriodBegin | Value::AcidMissing | Value::AcidDiffers));
+
+    // no miss: the invalid update is counted, but the gap has no reason
+    const auto& short_gap = gapEvent(Event::TypeValid, 26.0);
+    CHECK(short_gap.misses == 0);
+    CHECK(short_gap.invalid_updates == 1);
+    CHECK(short_gap.code == 0);
+
+    const auto& inside = gapEvent(Event::TypeValid, 50.0);
+    CHECK(inside.misses == 3);
+    CHECK(inside.invalid_updates == 0);
+    CHECK(inside.code == (Gap::MissInPeriod | Gap::NoRefValue));
+
+    // the gap to the period end begins at the last valid update
+    const auto& end = gapEvent(Event::TypeValidLast, 50.0);
+    CHECK(end.misses == 3);
+    CHECK(end.invalid_updates == 1);
+    CHECK(end.code == (Gap::MissAtPeriodEnd | Gap::NoRefValue | Value::M3ADiffers));
+
+    // the invalid updates themselves carry no reason
+    for (const auto& e : events)
+        if (e.type == Event::TypeInvalid)
+            CHECK(e.code == 0);
 }
 
 TEST_CASE("IntervalHelpers::periodEvents gives inside periods their index", "[eval][interval_helpers]")

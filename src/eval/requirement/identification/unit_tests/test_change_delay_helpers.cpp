@@ -145,6 +145,14 @@ TEST_CASE("ChangeDelayHelpers cases from JSON", "[eval][change_delay_helpers]")
         {
             auto a = assessEvent(ref[ change.ref_index ].first, change.new_value, tst, max_delay_s);
 
+            // the reason bit names the outcomes without a delay
+            if (a.result == Assessment::Result::NotAssessable)
+                CHECK(a.code == NotAssessable);
+            else if (a.result == Assessment::Result::NeverReported)
+                CHECK(a.code == NeverReported);
+            else
+                CHECK(a.code == 0);
+
             switch (a.result)
             {
                 case Assessment::Result::Passed:        ++passed;         break;

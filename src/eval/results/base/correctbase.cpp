@@ -16,6 +16,7 @@
  */
 
 #include "results/base/correctbase.h"
+#include "results/base/detailcode.h"
 #include "results/base/featuredefinitions.h"
 
 #include "requirement/base/base.h"
@@ -369,6 +370,8 @@ void SingleCorrectBase::addReportTableColumns(ReportTableDefinition& def) const
                   "Test report value equals the reference value");
     def.addColumn("pos_inside", PropertyDataType::BOOL, "Position Inside",
                   "Test position inside the sector layer");
+
+    DetailCode::Value::addTexts(def);
 }
 
 /**

@@ -55,6 +55,15 @@ SinglePositionRadarAzimuth::SinglePositionRadarAzimuth(const std::string& result
 }
 
 /**
+ */
+void SinglePositionRadarAzimuth::addDetailCodeTexts(ReportTableDefinition& def) const
+{
+    DetailCode::addTypeText(def, NoDataSourceInfo, "No data source position");
+    DetailCode::addTypeText(def, RefTransformationError, "Reference position transformation error");
+    DetailCode::addTypeText(def, TstTransformationError, "Test position transformation error");
+}
+
+/**
 */
 std::shared_ptr<Joined> SinglePositionRadarAzimuth::createEmptyJoined(const std::string& result_id)
 {

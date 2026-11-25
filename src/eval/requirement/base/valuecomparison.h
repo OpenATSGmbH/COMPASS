@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include <cstdint>
+
 namespace EvaluationRequirement
 {
 
@@ -28,5 +30,15 @@ enum ValueComparisonResult
     Same,
     Different
 };
+
+/// detail code bit of a compare result: differs_bit if the values differ, missing_bit if the test value is missing, else 0
+inline std::uint32_t comparisonCode(ValueComparisonResult cmp_res, std::uint32_t differs_bit, std::uint32_t missing_bit)
+{
+    if (cmp_res == ValueComparisonResult::Different)
+        return differs_bit;
+    if (cmp_res == ValueComparisonResult::Unknown_NoTstData)
+        return missing_bit;
+    return 0;
+}
 
 } // namespace EvaluationRequirement

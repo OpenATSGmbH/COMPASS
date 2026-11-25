@@ -114,3 +114,12 @@ TEST_CASE("ADSBLatencyHelpers cases from JSON", "[eval][adsblatency_helpers]")
         CHECK((double)num_passed / (double)(num_passed + num_failed) == Approx(e.at("probability").get<double>()));
     }
 }
+
+TEST_CASE("ADSBLatencyHelpers detail code of the outcomes", "[eval][adsblatency_helpers]")
+{
+    CHECK(check({}, 10.0f, 1.0f).code == NoTimeStampData);
+    CHECK(check(10.0f, {}, 1.0f).code == NoTimeStampData);
+    CHECK(check(10.0f, 9.5f, 1.0f).code == NegativeLatency);
+    CHECK(check(10.0f, 10.5f, 1.0f).code == 0);
+    CHECK(check(10.0f, 12.0f, 1.0f).code == 0); // too high: the failed check says it
+}

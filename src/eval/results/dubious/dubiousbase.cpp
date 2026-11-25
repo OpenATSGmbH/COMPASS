@@ -16,6 +16,8 @@
  */
 
 #include "results/dubious/dubiousbase.h"
+#include "results/base/detailcode.h"
+#include "requirement/dubious/dubious_helpers.h"
 #include "evaluationmanager.h"
 
 namespace EvaluationRequirementResult
@@ -101,7 +103,7 @@ void SingleDubiousBase::DetailData::assignTo(EvaluationDetail& d) const
      .addPosition(pos_last)
      .setDetails(details);
 
-    SingleDubiousBase::logComments(d, dubious_reasons);
+    SingleDubiousBase::logComments(d, reasons);
 }
 
 /**
@@ -111,7 +113,7 @@ unsigned int SingleDubiousBase::DetailData::numDubious() const
     unsigned int cnt = 0;
 
     for (auto& dd : details)
-        if (dd.comments().hasComments(DetailCommentGroupDubious))
+        if (isDubiousUpdate(dd))
             ++cnt;
 
     return cnt;
@@ -172,9 +174,17 @@ std::string SingleDubiousBase::dubiousReasonsString(const EvaluationDetailCommen
 
 /**
 */
-void SingleDubiousBase::logComment(EvaluationDetail& d, const std::string& id, const std::string& comment)
+bool SingleDubiousBase::isDubiousUpdate(const EvaluationDetail& detail)
 {
-    d.comments().comment(DetailCommentGroupDubious, id, comment);
+    if (detail.code() & EvaluationRequirement::DubiousHelpers::AllReasons)
+        return true;
+
+    for (auto key : { DetailKey::ReportedSpeed, DetailKey::CalculatedSpeed, DetailKey::Acceleration,
+                      DetailKey::TurnRate, DetailKey::ROCD })
+        if (detail.getValue(key).isValid())
+            return true;
+
+    return false;
 }
 
 /**
@@ -227,8 +237,17 @@ void SingleDubiousBase::addReportTableColumns(ReportTableDefinition& def) const
                   "End of the period the test report belongs to");
     def.addColumn("is_dubious", PropertyDataType::BOOL, "Dubious",
                   "Test report assessed as dubious");
-    def.addColumn("dubious_reasons", PropertyDataType::STRING, "Dubious Reasons",
-                  "Reasons the test report is dubious");
+    def.addColumn("reported_speed_mps", PropertyDataType::DOUBLE, "Reported Speed",
+                  "Reported ground speed of a test report dubious by its speed", "Speed", "Meter/Second");
+    def.addColumn("calculated_speed_kts", PropertyDataType::DOUBLE, "Calculated Speed",
+                  "Speed from the distance to the previous test report, of a test report dubious by it",
+                  "Speed", "Knots");
+    def.addColumn("acceleration_mps2", PropertyDataType::DOUBLE, "Acceleration",
+                  "Acceleration to the previous test report [m/s^2], of a test report dubious by it");
+    def.addColumn("turn_rate_degps", PropertyDataType::DOUBLE, "Turn Rate",
+                  "Turn rate to the previous test report [deg/s], of a test report dubious by it");
+    def.addColumn("rocd_ftps", PropertyDataType::DOUBLE, "ROCD",
+                  "Rate of climb or descent to the previous test report [ft/s], of a test report dubious by it");
     def.addColumn("period_dubious", PropertyDataType::BOOL, "Period Dubious",
                   "Period of the test report assessed as dubious");
     def.addColumn("first_inside", PropertyDataType::BOOL, "First Inside",
@@ -239,6 +258,12 @@ void SingleDubiousBase::addReportTableColumns(ReportTableDefinition& def) const
                   "Period has Mode A or Mode C data");
     def.addColumn("has_mode_s", PropertyDataType::BOOL, "Has Mode S",
                   "Period has Mode S data");
+
+    namespace Dubious = EvaluationRequirement::DubiousHelpers;
+
+    DetailCode::addTypeText(def, Dubious::PrimaryOnly, "Primary only (no Mode A/C and no Mode S data)");
+    DetailCode::addTypeText(def, Dubious::FewUpdates, "Too few updates in the period");
+    DetailCode::addTypeText(def, Dubious::ShortDuration, "Period too short");
 }
 
 /**
@@ -265,12 +290,14 @@ void SingleDubiousBase::fillReportTableRow(ReportTableRows& rows,
 
     // the dubious state of the row is the one of its test report, the period reasons are
     // copied onto every test report of a dubious period during the evaluation
-    const bool row_dubious = detail.comments().hasComments(DetailCommentGroupDubious);
+    rows.set<bool>("is_dubious", isDubiousUpdate(detail));
 
-    rows.set<bool>("is_dubious", row_dubious);
-
-    if (row_dubious)
-        rows.set<std::string>("dubious_reasons", dubiousReasonsString(detail.comments()));
+    // the values of the reasons, set only where the reason applies
+    setReportTableValue<double>(rows, "reported_speed_mps"  , detail, DetailKey::ReportedSpeed);
+    setReportTableValue<double>(rows, "calculated_speed_kts", detail, DetailKey::CalculatedSpeed);
+    setReportTableValue<double>(rows, "acceleration_mps2"   , detail, DetailKey::Acceleration);
+    setReportTableValue<double>(rows, "turn_rate_degps"     , detail, DetailKey::TurnRate);
+    setReportTableValue<double>(rows, "rocd_ftps"           , detail, DetailKey::ROCD);
 
     setReportTableValue<bool>(rows, "period_dubious", period, DetailKey::IsDubious);
     setReportTableValue<bool>(rows, "first_inside"  , period, DetailKey::FirstInside);
@@ -286,14 +313,12 @@ void SingleDubiousBase::fillDetailFromReportTableRow(EvaluationDetail& detail,
                                   unsigned int row,
                                   const EvaluationDetail* prev_detail) const
 {
-    //the comment group is what detailIsOk() reads, so the reasons go back into it
-    if (buffer.has<std::string>("dubious_reasons") && !buffer.get<std::string>("dubious_reasons").isNull(row))
-    {
-        auto reasons = buffer.get<std::string>("dubious_reasons").get(row);
-
-        if (!reasons.empty())
-            logComment(detail, reasons, "");
-    }
+    //the reasons are the detail code of the row (read by Single), detailIsOk() reads it
+    setDetailValue<double>(detail, DetailKey::ReportedSpeed  , buffer, "reported_speed_mps"  , row);
+    setDetailValue<double>(detail, DetailKey::CalculatedSpeed, buffer, "calculated_speed_kts", row);
+    setDetailValue<double>(detail, DetailKey::Acceleration   , buffer, "acceleration_mps2"   , row);
+    setDetailValue<double>(detail, DetailKey::TurnRate       , buffer, "turn_rate_degps"     , row);
+    setDetailValue<double>(detail, DetailKey::ROCD           , buffer, "rocd_ftps"           , row);
 }
 
 /**

@@ -18,6 +18,7 @@
 #include "requirement/generic/generic.h"
 #include "standard/evaluationstandard.h"
 #include "results/generic/generic.h"
+#include "results/base/detailcode.h"
 #include "standard/evaluationstandard.h"
 
 #include "evaluationmanager.h"
@@ -32,6 +33,22 @@ using namespace boost::posix_time;
 
 namespace EvaluationRequirement
 {
+
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
+
+namespace
+{
+
+/// detail code of a compared value
+std::uint32_t valueCode(ValueComparisonResult cmp_res)
+{
+    if (cmp_res == ValueComparisonResult::Unknown_NoRefData)
+        return DetailCode::Value::NoRefValue;
+
+    return comparisonCode(cmp_res, DetailCode::Value::Differs, DetailCode::Value::NoTstValue);
+}
+
+} // namespace
 
 GenericBase::GenericBase(const std::string& name, const std::string& short_name, const std::string& group_name,
                                double prob, COMPARISON_TYPE prob_check_type, EvaluationCalculator& calculator)
@@ -113,12 +130,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> GenericInteger::evaluate (
             const QVariant& num_pos_outside,
             const QVariant& num_unknown_id,
             const QVariant& num_correct_id,
-            const QVariant& num_false_id)
+            const QVariant& num_false_id,
+            std::uint32_t code)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::RefExists, ref_exists)
                           .setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                           .setValue(Result::DetailKey::IsNotOk, is_not_ok)
-                          .addPosition(ref_pos));
+                          .addPosition(ref_pos)
+                          .addCode(code));
     };
 
     for (const auto& tst_id : tst_data)
@@ -139,7 +158,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> GenericInteger::evaluate (
                 addDetail(timestamp, pos_current, {},
                           false, {}, false, // ref_exists, pos_inside,
                           num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                          num_unknown, num_correct, num_false);
+                          num_unknown, num_correct, num_false, 0);
 
             ++num_no_ref_pos;
             continue;
@@ -156,7 +175,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> GenericInteger::evaluate (
                 addDetail(timestamp, pos_current, {},
                           false, {}, false, // ref_exists, pos_inside,
                           num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                          num_unknown, num_correct, num_false);
+                          num_unknown, num_correct, num_false, DetailCode::NoRefPosition);
 
             ++num_no_ref_pos;
             continue;
@@ -172,7 +191,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> GenericInteger::evaluate (
                 addDetail(timestamp, pos_current, ref_pos,
                           ref_exists, is_inside, false, // ref_exists, pos_inside,
                           num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                          num_unknown, num_correct, num_false);
+                          num_unknown, num_correct, num_false, 0);
 
             ++num_pos_outside;
             continue;
@@ -213,7 +232,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> GenericInteger::evaluate (
             addDetail(timestamp, pos_current, ref_pos,
                       ref_exists, is_inside, !value_ok,
                       num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                      num_unknown, num_correct, num_false);
+                      num_unknown, num_correct, num_false, valueCode(cmp_res));
     }
 
     logdbg << "'" << name_ << "': utn " << target_data.utn_
@@ -292,12 +311,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> GenericDouble::evaluate (
                          const QVariant& num_pos_outside,
                          const QVariant& num_unknown_id,
                          const QVariant& num_correct_id,
-                         const QVariant& num_false_id)
+                         const QVariant& num_false_id,
+                         std::uint32_t code)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::RefExists, ref_exists)
                               .setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                               .setValue(Result::DetailKey::IsNotOk, is_not_ok)
-                              .addPosition(ref_pos));
+                              .addPosition(ref_pos)
+                              .addCode(code));
     };
 
     for (const auto& tst_id : tst_data)
@@ -318,7 +339,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> GenericDouble::evaluate (
                 addDetail(timestamp, pos_current, {},
                           false, {}, false, // ref_exists, pos_inside,
                           num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                          num_unknown, num_correct, num_false);
+                          num_unknown, num_correct, num_false, 0);
 
             ++num_no_ref_pos;
             continue;
@@ -335,7 +356,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> GenericDouble::evaluate (
                 addDetail(timestamp, pos_current, {},
                           false, {}, false, // ref_exists, pos_inside,
                           num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                          num_unknown, num_correct, num_false);
+                          num_unknown, num_correct, num_false, DetailCode::NoRefPosition);
 
             ++num_no_ref_pos;
             continue;
@@ -351,7 +372,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> GenericDouble::evaluate (
                 addDetail(timestamp, pos_current, ref_pos,
                           ref_exists, is_inside, false, // ref_exists, pos_inside,
                           num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                          num_unknown, num_correct, num_false);
+                          num_unknown, num_correct, num_false, 0);
 
             ++num_pos_outside;
             continue;
@@ -392,7 +413,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> GenericDouble::evaluate (
             addDetail(timestamp, pos_current, ref_pos,
                       ref_exists, is_inside, !value_ok,
                       num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                      num_unknown, num_correct, num_false);
+                      num_unknown, num_correct, num_false, valueCode(cmp_res));
     }
 
     logdbg << "'" << name_ << "': utn " << target_data.utn_

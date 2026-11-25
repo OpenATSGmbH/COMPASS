@@ -18,6 +18,7 @@
 #pragma once
 
 #include "requirement/base/valuecomparison.h"
+#include "results/base/detailcode.h"
 
 #include <vector>
 
@@ -52,6 +53,9 @@ ReportClass classify(ValueComparisonResult cmp_res);
  * compared value the report is Unknown if a used value has no test value, else NoRefValue.
  */
 ReportClass classify(const std::vector<ValueComparisonResult>& cmp_results, bool require_all_false);
+
+/// detail code bit of a class without a comparison (DetailCode::Value::NoRefValue, NoTstValue), else 0
+std::uint32_t code(ReportClass c);
 
 /// counts of the classified test reports
 struct Counts

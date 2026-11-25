@@ -30,6 +30,13 @@ namespace DubiousHelpers
 
 /**
  */
+bool UpdateFlags::dubious() const
+{
+    return reported_speed_ms || calculated_speed_kts || acceleration || turnrate || rocd;
+}
+
+/**
+ */
 std::vector<UpdateFlags> checkUpdates(const std::vector<Update>& updates, const Params& p)
 {
     std::vector<UpdateFlags> flags(updates.size());

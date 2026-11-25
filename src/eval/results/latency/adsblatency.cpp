@@ -21,6 +21,7 @@
 
 #include "requirement/base/base.h"
 #include "requirement/latency/adsblatency.h"
+#include "requirement/latency/adsblatency_helpers.h"
 
 #include "evaluationtargetdata.h"
 #include "evaluationmanager.h"
@@ -299,6 +300,10 @@ void SingleADSBLatency::addReportTableColumns(ReportTableDefinition& def) const
                   "Value within the requirement threshold");
     def.addColumn("pos_inside", PropertyDataType::BOOL, "Position Inside",
                   "Test position inside the sector layer");
+
+    DetailCode::addTypeText(def, EvaluationRequirement::ADSBLatencyHelpers::NoTimeStampData,
+                            "No time of message reception or time of report transmission");
+    DetailCode::addTypeText(def, EvaluationRequirement::ADSBLatencyHelpers::NegativeLatency, "Negative latency");
 }
 
 /**

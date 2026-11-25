@@ -18,6 +18,7 @@
 #include "requirement/extra/data.h"
 #include "standard/evaluationstandard.h"
 #include "results/extra/data.h"
+#include "results/base/detailcode.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
@@ -31,6 +32,8 @@ using namespace boost::posix_time;
 
 namespace EvaluationRequirement
 {
+
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
 
 /**
 */
@@ -110,11 +113,13 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraData::evaluate (
                             const dbContent::TargetPosition& tst_pos,
                             const QVariant& inside,
                             const QVariant& extra,
-                            const QVariant& ref_exists)
+                            const QVariant& ref_exists,
+                            std::uint32_t code)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::Inside, inside)
                                              .setValue(Result::DetailKey::Extra, extra)
-                                             .setValue(Result::DetailKey::RefExists, ref_exists));
+                                             .setValue(Result::DetailKey::RefExists, ref_exists)
+                                             .addCode(code));
     };
 
     {
@@ -131,7 +136,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraData::evaluate (
             if (is_inside_ref_time_period)
             {
                 ++num_ok;
-                addDetail(timestamp, tst_pos, true, false, true); // inside, extra, ref
+                addDetail(timestamp, tst_pos, true, false, true, 0); // inside, extra, ref, code
                 continue;
             }
 
@@ -142,7 +147,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraData::evaluate (
             if (is_inside)
             {
                 ++num_extra;
-                addDetail(timestamp, tst_pos, true, true, false); // inside, extra, ref
+                addDetail(timestamp, tst_pos, true, true, false, 0); // inside, extra, ref, code
 
                 if (!has_tod)
                 {
@@ -158,7 +163,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraData::evaluate (
             }
             else if (!skip_no_data_details)
             {
-                addDetail(timestamp, tst_pos, false, false, false); // inside, extra, ref
+                addDetail(timestamp, tst_pos, false, false, false, 0); // inside, extra, ref, code
             }
         }
     }

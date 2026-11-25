@@ -16,6 +16,7 @@
  */
 
 #include "results/base/intervalbase.h"
+#include "results/base/detailcode.h"
 #include "results/base/featuredefinitions.h"
 
 #include "results/evaluationdetail.h"
@@ -247,6 +248,11 @@ void SingleIntervalBase::addReportTableColumns(ReportTableDefinition& def) const
 {
     def.addColumn("missed_updates", PropertyDataType::DOUBLE, "Missed Updates",
                   "Missed update intervals inside the gap, missed seconds in time ratio mode");
+    def.addColumn("invalid_updates", PropertyDataType::UINT, "Invalid Updates",
+                  "Test reports inside the gap without a valid value");
+
+    DetailCode::Gap::addTexts(def);
+    DetailCode::Value::addValueTexts(def);
 }
 
 /**
@@ -263,6 +269,8 @@ void SingleIntervalBase::fillReportTableRow(ReportTableRows& rows,
         double prev = prev_detail ? prev_detail->getValueAs<double>(DetailKey::MissedUIs).value_or(0.0) : 0.0;
         rows.set<double>("missed_updates", missed.value() - prev);
     }
+
+    setReportTableValue<unsigned int>(rows, "invalid_updates", detail, DetailKey::InvalidUpdates);
 }
 
 /**
@@ -283,6 +291,8 @@ void SingleIntervalBase::fillDetailFromReportTableRow(EvaluationDetail& detail,
         detail.setValue(DetailKey::MissedUIs, QVariant(prev + buffer.get<double>("missed_updates").get(row)));
     else
         detail.setValue(DetailKey::MissedUIs, QVariant(prev));
+
+    setDetailValue<unsigned int>(detail, DetailKey::InvalidUpdates, buffer, "invalid_updates", row);
 }
 
 /**

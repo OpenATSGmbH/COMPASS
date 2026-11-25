@@ -16,6 +16,7 @@
  */
 
 #include "results/detection/detection.h"
+#include "results/base/detailcode.h"
 #include "results/evaluationdetail.h"
 #include "results/base/featuredefinitions.h"
 
@@ -404,6 +405,8 @@ void SingleDetection::addReportTableColumns(ReportTableDefinition& def) const
 {
     def.addColumn("missed_updates", PropertyDataType::DOUBLE, "Missed Updates",
                   "Missed update intervals inside the gap, missed seconds in time ratio mode");
+
+    DetailCode::Gap::addTexts(def);
 }
 
 /**

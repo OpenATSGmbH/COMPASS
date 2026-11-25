@@ -19,6 +19,7 @@
 #include "requirement/group.h"
 
 #include "results/mode_c/correct_period.h"
+#include "results/base/detailcode.h"
 
 #include "report/sectioncontenttable.h"
 
@@ -108,6 +109,9 @@ ModeCCorrectPeriod::Validity ModeCCorrectPeriod::isValid(const dbContent::Target
     Validity v;
 
     v.value   = no_ref ? Validity::Value::RefDataMissing : (failed ? Validity::Value::Invalid : Validity::Value::Valid);
+    v.code    = comparisonCode(cmp_res,
+                               EvaluationRequirementResult::DetailCode::Value::ModeCDiffers,
+                               EvaluationRequirementResult::DetailCode::Value::ModeCMissing);
 
     return v;
 }

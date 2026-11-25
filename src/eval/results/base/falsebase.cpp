@@ -16,6 +16,7 @@
  */
 
 #include "results/base/falsebase.h"
+#include "results/base/detailcode.h"
 #include "results/base/featuredefinitions.h"
 
 namespace EvaluationRequirementResult
@@ -350,6 +351,8 @@ void SingleFalseBase::addReportTableColumns(ReportTableDefinition& def) const
                   "Test report value assessed as correct");
     def.addColumn("pos_inside", PropertyDataType::BOOL, "Position Inside",
                   "Test position inside the sector layer");
+
+    DetailCode::Value::addTexts(def);
 }
 
 /**

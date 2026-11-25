@@ -18,6 +18,7 @@
 #include "requirement/latency/latency.h"
 #include "requirement/base/trackoffsethelpers.h"
 #include "results/latency/latency.h"
+#include "results/base/detailcode.h"
 #include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
@@ -32,6 +33,8 @@ using namespace boost::posix_time;
 
 namespace EvaluationRequirement
 {
+
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
 
 PositionLatency::PositionLatency(
         const std::string& name, const std::string& short_name, const std::string& group_name,
@@ -103,12 +106,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                             const QVariant& num_pos_inside,
                             const QVariant& num_pos_outside,
                             const QVariant& num_value_ok,
-                            const QVariant& num_value_nok)
+                            const QVariant& num_value_nok,
+                            std::uint32_t code)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::Value, offset)
                                              .setValue(Result::DetailKey::CheckPassed, check_passed)
-                                             .addPosition(ref_pos));
+                                             .addPosition(ref_pos)
+                                             .addCode(code));
     };
 
     for (const auto& tst_id : tst_data)
@@ -127,7 +132,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                             {}, // ref_pos
                             {}, {}, along_ok, // pos_inside, value, value_ok,
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_value_ok, num_value_nok);
+                            num_value_ok, num_value_nok, DetailCode::NoRefData);
 
             ++num_no_ref;
             continue;
@@ -142,7 +147,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                             {}, // ref_pos
                             {}, {}, along_ok, // pos_inside, value, value_ok
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_value_ok, num_value_nok);
+                            num_value_ok, num_value_nok, DetailCode::NoRefPosition);
 
             ++num_no_ref;
             continue;
@@ -157,7 +162,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                             ref_pos, // ref_pos
                             is_inside, {}, along_ok, // pos_inside, value, value_ok
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_value_ok, num_value_nok);
+                            num_value_ok, num_value_nok, DetailCode::NoRefSpeed);
             ++num_no_ref;
             continue;
         }
@@ -175,7 +180,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                             ref_pos, // ref_pos
                             is_inside, {}, along_ok, // pos_inside, value, value_ok
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_value_ok, num_value_nok);
+                            num_value_ok, num_value_nok, 0);
             ++num_pos_outside;
             continue;
         }
@@ -190,7 +195,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                             ref_pos, // ref_pos
                             is_inside, {}, along_ok, // pos_inside, value, value_ok
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_value_ok, num_value_nok);
+                            num_value_ok, num_value_nok, DetailCode::RefInaccurate);
 
             ++num_ref_inaccurate;
             continue;            
@@ -208,7 +213,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                         ref_pos, // ref_pos
                         is_inside, {}, along_ok, // pos_inside, value, value_ok
                         num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                        num_value_ok, num_value_nok);
+                        num_value_ok, num_value_nok, Result::DistanceInvalid);
             ++num_pos_calc_errors;
             continue;
         }
@@ -219,7 +224,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                         ref_pos, // ref_pos
                         is_inside, {}, along_ok, // pos_inside, value, value_ok
                         num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                        num_value_ok, num_value_nok);
+                        num_value_ok, num_value_nok, Result::AngleInvalid);
             ++num_pos_calc_errors;
             continue;
         }
@@ -230,7 +235,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                         ref_pos, // ref_pos
                         is_inside, {}, along_ok, // pos_inside, value, value_ok
                         num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                        num_value_ok, num_value_nok);
+                        num_value_ok, num_value_nok, Result::SpeedInvalid);
             ++num_pos_calc_errors;
             continue;
         }
@@ -256,7 +261,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                     ref_pos,
                     is_inside, latency, along_ok, // pos_inside, value, value_ok
                     num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                    num_value_ok, num_value_nok);
+                    num_value_ok, num_value_nok, 0);
     }
 
     //        logdbg << "'" << name_ << "': utn " << target_data.utn_

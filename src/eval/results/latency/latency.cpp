@@ -53,6 +53,15 @@ SinglePositionLatency::SinglePositionLatency(const std::string& result_id,
 }
 
 /**
+ */
+void SinglePositionLatency::addDetailCodeTexts(ReportTableDefinition& def) const
+{
+    DetailCode::addTypeText(def, DistanceInvalid, "Distance not calculable");
+    DetailCode::addTypeText(def, AngleInvalid, "Angle not calculable");
+    DetailCode::addTypeText(def, SpeedInvalid, "Reference speed not usable");
+}
+
+/**
 */
 std::shared_ptr<Joined> SinglePositionLatency::createEmptyJoined(const std::string& result_id)
 {

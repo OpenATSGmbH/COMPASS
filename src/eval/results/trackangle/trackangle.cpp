@@ -21,6 +21,7 @@
 
 #include "requirement/base/base.h"
 #include "requirement/trackangle/trackangle.h"
+#include "requirement/trackangle/trackangle_helpers.h"
 
 #include "evaluationtargetdata.h"
 #include "evaluationmanager.h"
@@ -462,6 +463,9 @@ void SingleTrackAngle::addReportTableColumns(ReportTableDefinition& def) const
                   "Value within the requirement threshold");
     def.addColumn("pos_inside", PropertyDataType::BOOL, "Position Inside",
                   "Test position inside the sector layer");
+
+    DetailCode::addTypeText(def, EvaluationRequirement::TrackAngleHelpers::NoTstTrackAngle, "No test track angle");
+    DetailCode::addTypeText(def, EvaluationRequirement::TrackAngleHelpers::RefSpeedTooLow, "Reference speed too low");
 }
 
 /**

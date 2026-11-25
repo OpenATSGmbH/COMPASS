@@ -18,6 +18,7 @@
 #pragma once
 
 #include "results/base/probabilitybase.h"
+#include "results/base/detailcode.h"
 
 #include <boost/optional.hpp>
 
@@ -67,6 +68,12 @@ public:
         TrackNum, //unsigned int
         Inside,   //bool
         Extra    //bool
+    };
+
+    /// type bits of the detail code
+    enum CodeBit : std::uint32_t
+    {
+        NoTrackNumber = DetailCode::typeBit(0)
     };
 
 protected:

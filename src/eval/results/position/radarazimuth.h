@@ -44,7 +44,17 @@ public:
 
     virtual std::shared_ptr<Joined> createEmptyJoined(const std::string& result_id) override;
 
+    /// type bits of the detail code
+    enum CodeBit : std::uint32_t
+    {
+        NoDataSourceInfo       = DetailCode::typeBit(0),
+        RefTransformationError = DetailCode::typeBit(1),
+        TstTransformationError = DetailCode::typeBit(2)
+    };
+
 protected:
+    virtual void addDetailCodeTexts(ReportTableDefinition& def) const override;
+
     virtual OverviewLabels overviewLabels() const override { return { "Azimuth Error", "deg", true }; }
 
     virtual boost::optional<double> computeFinalResultValue() const override;

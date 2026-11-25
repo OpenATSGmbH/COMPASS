@@ -46,6 +46,7 @@ Check check(double ref_speed_ms, const boost::optional<float>& tst_speed_ms, con
     if (!tst_speed_ms.has_value())
         return c;
 
+    c.code      = 0;
     c.diff      = std::fabs(ref_speed_ms - *tst_speed_ms);
     c.threshold = threshold(ref_speed_ms, p);
     c.outcome   = compareValue(c.diff, c.threshold, p.check_type) ? Outcome::Passed : Outcome::Failed;

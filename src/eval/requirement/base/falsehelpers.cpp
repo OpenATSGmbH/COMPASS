@@ -16,6 +16,7 @@
  */
 
 #include "requirement/base/falsehelpers.h"
+#include "results/base/detailcode.h"
 
 #include <stdexcept>
 
@@ -68,6 +69,23 @@ ReportClass classify(const std::vector<ValueComparisonResult>& cmp_results, bool
     bool is_false = require_all_false ? num_different == num_compared : num_different > 0;
 
     return is_false ? ReportClass::False : ReportClass::Correct;
+}
+
+/**
+ */
+std::uint32_t code(ReportClass c)
+{
+    namespace Value = EvaluationRequirementResult::DetailCode::Value;
+
+    switch (c)
+    {
+        case ReportClass::NoRefValue: return Value::NoRefValue;
+        case ReportClass::Unknown:    return Value::NoTstValue;
+        case ReportClass::Correct:
+        case ReportClass::False:      return 0;
+    }
+
+    return 0;
 }
 
 /**

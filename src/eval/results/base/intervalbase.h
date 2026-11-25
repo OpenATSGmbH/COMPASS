@@ -71,6 +71,7 @@ public:
         MissOccurred,        //bool
         DiffTOD,             //float
         MissedUIs,           //unsigned int
+        InvalidUpdates       //unsigned int, miss events: invalid test reports inside the gap
     };
 
 protected:

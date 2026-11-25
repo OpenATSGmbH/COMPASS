@@ -240,7 +240,7 @@ TEST_CASE("Position Distance classifies each test report", "[eval][position_repo
         // the reason of each report as detail code bit, none for the compared ones
         CHECK(d[ 0 ].code == DetailCode::NoRefData);
         CHECK(d[ 1 ].code == DetailCode::NoRefPosition);
-        CHECK(d[ 2 ].code == DetailCode::OutsideSector);
+        CHECK(d[ 2 ].code == 0); // pos_inside false says it
         CHECK(d[ 3 ].code == DetailCode::RefInaccurate);
         CHECK(d[ 4 ].code == 0);
         CHECK(d[ 5 ].code == 0);

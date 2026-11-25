@@ -121,11 +121,15 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
                             const std::vector<dbContent::TargetPosition>& positions,
                             const QVariant& d_tod,
                             const QVariant& miss_occurred,
-                            const QVariant& missed_uis)
+                            const QVariant& missed_uis,
+                            const QVariant& invalid_updates,
+                            std::uint32_t code)
     {
-        details.push_back(Detail(timestamp, positions).setValue(Result::DetailKey::DiffTOD     , d_tod        )
-                                                      .setValue(Result::DetailKey::MissOccurred, miss_occurred)
-                                                      .setValue(Result::DetailKey::MissedUIs   , missed_uis   ));
+        details.push_back(Detail(timestamp, positions).setValue(Result::DetailKey::DiffTOD       , d_tod          )
+                                                      .setValue(Result::DetailKey::MissOccurred  , miss_occurred  )
+                                                      .setValue(Result::DetailKey::MissedUIs     , missed_uis     )
+                                                      .setValue(Result::DetailKey::InvalidUpdates, invalid_updates)
+                                                      .addCode(code));
     };
 
     size_t   ne           = events.size();
@@ -169,7 +173,9 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
                   positions, 
                   detail_info.evt_has_dt ? detail_info.evt_dt : QVariant(), 
                   detail_info.evt_has_misses, 
-                  misses_total);
+                  misses_total,
+                  detail_info.evt_has_misses ? QVariant(event.invalid_updates) : QVariant(),
+                  event.code);
     }
 
     auto counts = IntervalHelpers::counts(periods, events, missParams(), exclude_detection_misses_);

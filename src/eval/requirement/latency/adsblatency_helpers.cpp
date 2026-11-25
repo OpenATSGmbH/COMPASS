@@ -47,9 +47,13 @@ Check check(const boost::optional<float>& tomr_s, const boost::optional<float>& 
         return c;
 
     c.latency = latency(tomr_s.value(), tort_s.value());
+    c.code    = 0;
 
     if (c.latency < 0.0)
+    {
         c.outcome = Outcome::Negative;
+        c.code    = NegativeLatency;
+    }
     else if (c.latency > max_value_s)
         c.outcome = Outcome::TooHigh;
     else

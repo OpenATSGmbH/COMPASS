@@ -47,10 +47,19 @@ public:
 
     virtual std::shared_ptr<Joined> createEmptyJoined(const std::string& result_id) override;
 
+    /// type bits of the detail code
+    enum CodeBit : std::uint32_t
+    {
+        OffsetInvalid = DetailCode::typeBit(0),
+        SpeedInvalid  = DetailCode::typeBit(1)
+    };
+
     const std::vector<double>& alongValues() const { return along_values_; }
     const std::vector<double>& speedValues() const { return speed_values_; }
 
 protected:
+    virtual void addDetailCodeTexts(ReportTableDefinition& def) const override;
+
     virtual OverviewLabels overviewLabels() const override { return { "Time Stamp Error", "s", false }; }
 
     virtual boost::optional<double> computeFinalResultValue() const override;

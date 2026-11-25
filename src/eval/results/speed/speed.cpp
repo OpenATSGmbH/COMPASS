@@ -21,6 +21,7 @@
 
 #include "requirement/base/base.h"
 #include "requirement/speed/speed.h"
+#include "requirement/speed/speed_helpers.h"
 
 #include "evaluationtargetdata.h"
 #include "evaluationmanager.h"
@@ -443,6 +444,8 @@ void SingleSpeed::addReportTableColumns(ReportTableDefinition& def) const
                   "Value within the requirement threshold");
     def.addColumn("pos_inside", PropertyDataType::BOOL, "Position Inside",
                   "Test position inside the sector layer");
+
+    DetailCode::addTypeText(def, EvaluationRequirement::SpeedHelpers::NoTstSpeed, "No test speed");
 }
 
 /**

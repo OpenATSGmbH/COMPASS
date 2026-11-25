@@ -31,7 +31,6 @@ void addCommonTexts(ReportTableDefinition& def)
     def.detail_code_texts[ 0 ] = "No reference data";
     def.detail_code_texts[ 1 ] = "No reference position";
     def.detail_code_texts[ 2 ] = "No reference speed";
-    def.detail_code_texts[ 3 ] = "Outside sector";
     def.detail_code_texts[ 4 ] = "Inaccurate reference position";
     def.detail_code_texts[ 5 ] = "Value not calculable";
 }
@@ -50,6 +49,53 @@ void addTypeText(ReportTableDefinition& def, std::uint32_t bit, const std::strin
 
     def.detail_code_texts[ index ] = text;
 }
+
+namespace Value
+{
+
+/**
+ */
+void addTexts(ReportTableDefinition& def)
+{
+    addTypeText(def, NoRefValue, "No reference value");
+    addTypeText(def, NoTstValue, "Value missing in the test report");
+    addTypeText(def, Differs, "Value differs");
+
+    addValueTexts(def);
+}
+
+/**
+ */
+void addValueTexts(ReportTableDefinition& def)
+{
+    addTypeText(def, AcidDiffers, "ACID differs");
+    addTypeText(def, AcidMissing, "ACID missing in the test report");
+    addTypeText(def, AcadDiffers, "ACAD differs");
+    addTypeText(def, AcadMissing, "ACAD missing in the test report");
+    addTypeText(def, M3ADiffers, "M3A differs");
+    addTypeText(def, M3AMissing, "M3A missing in the test report");
+    addTypeText(def, ModeCDiffers, "Mode C differs more than the tolerance");
+    addTypeText(def, ModeCMissing, "Mode C missing in the test report");
+}
+
+} // namespace Value
+
+namespace Gap
+{
+
+/**
+ */
+void addTexts(ReportTableDefinition& def)
+{
+    addTypeText(def, MissAtPeriodBegin, "Miss at the start of the reference period");
+    addTypeText(def, MissInPeriod, "Miss inside the reference period");
+    addTypeText(def, MissAtPeriodEnd, "Miss at the end of the reference period");
+    addTypeText(def, PeriodWithoutValidUpdate, "No valid test report in the reference period");
+    addTypeText(def, MissInStatusCycle, "No test report in the reported update cycles");
+    addTypeText(def, NoRefValue, "No reference value at the valid test report of the gap");
+}
+
+} // namespace Gap
 
 } // namespace DetailCode
 } // namespace EvaluationRequirementResult

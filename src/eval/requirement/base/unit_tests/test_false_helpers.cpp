@@ -18,6 +18,7 @@
 #include "catch.hpp"
 
 #include "requirement/base/falsehelpers.h"
+#include "results/base/detailcode.h"
 
 #include "json.hpp"
 
@@ -144,4 +145,19 @@ TEST_CASE("FalseHelpers cases from JSON", "[eval][false_helpers]")
             CHECK(prob.value() == Approx(e.at("probability_false").get<double>()));
         }
     }
+}
+
+TEST_CASE("FalseHelpers detail code of the classes", "[eval][false_helpers]")
+{
+    namespace Value = EvaluationRequirementResult::DetailCode::Value;
+
+    CHECK(code(classify(ValueComparisonResult::Unknown_NoRefData)) == Value::NoRefValue);
+    CHECK(code(classify(ValueComparisonResult::Unknown_NoTstData)) == Value::NoTstValue);
+    CHECK(code(classify(ValueComparisonResult::Same)) == 0);
+    CHECK(code(classify(ValueComparisonResult::Different)) == 0); // the false value names it
+
+    // several values: unknown only without a compared value
+    CHECK(code(classify({ ValueComparisonResult::Unknown_NoTstData, ValueComparisonResult::Unknown_NoRefData }, false))
+          == Value::NoTstValue);
+    CHECK(code(classify({ ValueComparisonResult::Unknown_NoTstData, ValueComparisonResult::Same }, false)) == 0);
 }

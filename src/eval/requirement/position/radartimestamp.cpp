@@ -19,6 +19,7 @@
 #include "requirement/position/radartimestamp.h"
 #include "requirement/base/trackoffsethelpers.h"
 #include "results/position/radartimestamp.h"
+#include "results/base/detailcode.h"
 #include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
@@ -33,6 +34,8 @@ using namespace boost::posix_time;
 
 namespace EvaluationRequirement
 {
+
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
 
 PositionRadarTimeStamp::PositionRadarTimeStamp(
         const std::string& name, const std::string& short_name, const std::string& group_name, float ref_min_accuracy,
@@ -74,13 +77,15 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarTimeStamp::eva
                             const dbContent::TargetPosition& tst_pos,
                             const boost::optional<dbContent::TargetPosition>& ref_pos,
                             const QVariant& pos_inside,
-                            const QVariant& offset)
+                            const QVariant& offset,
+                            std::uint32_t code)
     {
         // the time stamp error is a statistic of all updates, single updates are not checked
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::Value, offset)
                                              .setValue(Result::DetailKey::CheckPassed, true)
-                                             .addPosition(ref_pos));
+                                             .addPosition(ref_pos)
+                                             .addCode(code));
     };
 
     Transformation ogr_geo2cart;
@@ -95,7 +100,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarTimeStamp::eva
         if (!target_data.hasMappedRefData(tst_id, max_ref_time_diff))
         {
             if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos, {}, {}, {});
+                addDetail(timestamp, tst_pos, {}, {}, {}, DetailCode::NoRefData);
 
             ++num_no_ref;
             continue;
@@ -106,7 +111,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarTimeStamp::eva
         if (!ref_pos.has_value())
         {
             if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos, {}, {}, {});
+                addDetail(timestamp, tst_pos, {}, {}, {}, DetailCode::NoRefPosition);
 
             ++num_no_ref;
             continue;
@@ -117,7 +122,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarTimeStamp::eva
         if (!ref_spd.has_value())
         {
             if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos, ref_pos, {}, {});
+                addDetail(timestamp, tst_pos, ref_pos, {}, {}, DetailCode::NoRefSpeed);
 
             ++num_no_ref;
             continue;
@@ -129,7 +134,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarTimeStamp::eva
         if (!is_inside)
         {
             if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos, ref_pos, is_inside, {});
+                addDetail(timestamp, tst_pos, ref_pos, is_inside, {}, 0);
 
             ++num_pos_outside;
             continue;
@@ -141,7 +146,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarTimeStamp::eva
         if (ref_pos_acc && *ref_pos_acc > ref_min_accuracy_)
         {
             if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos, ref_pos, is_inside, {});
+                addDetail(timestamp, tst_pos, ref_pos, is_inside, {}, DetailCode::RefInaccurate);
 
             ++num_ref_inaccurate;
             continue;
@@ -156,14 +161,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarTimeStamp::eva
         if (!transform_ok || !std::isfinite(distance) || !std::isfinite(angle)
             || !std::isfinite(ref_spd->track_angle_))
         {
-            addDetail(timestamp, tst_pos, ref_pos, is_inside, {});
+            addDetail(timestamp, tst_pos, ref_pos, is_inside, {}, Result::OffsetInvalid);
             ++num_pos_calc_errors;
             continue;
         }
 
         if (ref_spd->speed_ <= 0 || !std::isfinite(ref_spd->speed_))
         {
-            addDetail(timestamp, tst_pos, ref_pos, is_inside, {});
+            addDetail(timestamp, tst_pos, ref_pos, is_inside, {}, Result::SpeedInvalid);
             ++num_pos_calc_errors;
             continue;
         }
@@ -175,7 +180,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarTimeStamp::eva
 
         ++num_comp_passed;
 
-        addDetail(timestamp, tst_pos, ref_pos, is_inside, -d_along / ref_spd->speed_);
+        addDetail(timestamp, tst_pos, ref_pos, is_inside, -d_along / ref_spd->speed_, 0);
     }
 
     traced_assert(num_no_ref <= num_pos);

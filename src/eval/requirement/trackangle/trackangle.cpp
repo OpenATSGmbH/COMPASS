@@ -18,6 +18,7 @@
 #include "requirement/trackangle/trackangle.h"
 #include "requirement/trackangle/trackangle_helpers.h"
 #include "results/trackangle/trackangle.h"
+#include "results/base/detailcode.h"
 #include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
@@ -38,6 +39,8 @@ using namespace boost::posix_time;
 
 namespace EvaluationRequirement
 {
+
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
 
 TrackAngle::TrackAngle(
         const std::string& name, const std::string& short_name, const std::string& group_name,
@@ -136,7 +139,8 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                             const QVariant& num_pos_inside,
                             const QVariant& num_pos_outside,
                             const QVariant& num_comp_failed,
-                            const QVariant& num_comp_passed)
+                            const QVariant& num_comp_passed,
+                            std::uint32_t code)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::Offset, offset)
@@ -144,7 +148,8 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                                              .setValue(Result::DetailKey::ValueRef, value_ref)
                                              .setValue(Result::DetailKey::ValueTst, value_tst)
                                              .setValue(Result::DetailKey::SpeedRef, speed_ref)
-                                             .addPosition(ref_pos));
+                                             .addPosition(ref_pos)
+                                             .addCode(code));
                                              //.addLines(lines)
     };
 
@@ -178,7 +183,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                           {}, {}, comp_passed, // pos_inside, value, check_passed
                           {}, {}, {}, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed);
+                          num_comp_failed, num_comp_passed, DetailCode::NoRefData);
 
             ++num_no_ref;
             continue;
@@ -194,7 +199,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                           {}, {}, comp_passed, // pos_inside, value, check_passed
                           {}, {}, {}, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed);
+                          num_comp_failed, num_comp_passed, DetailCode::NoRefPosition);
 
             ++num_no_ref;
             continue;
@@ -211,7 +216,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                           is_inside, {}, comp_passed, // pos_inside, value, check_passed
                           {}, {}, {}, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed);
+                          num_comp_failed, num_comp_passed, 0);
 
             ++num_pos_outside;
             continue;
@@ -227,7 +232,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                           {}, {}, comp_passed, // pos_inside, value, check_passed
                           {}, {}, {}, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed);
+                          num_comp_failed, num_comp_passed, DetailCode::NoRefSpeed);
 
             ++num_no_ref;
             continue;
@@ -250,7 +255,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                           {}, {}, comp_passed, // pos_inside, value, check_passed
                           {}, {}, ref_spd->speed_, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed);
+                          num_comp_failed, num_comp_passed, angle_check.code);
 
             ++num_pos_ref_spd_low;
 
@@ -267,7 +272,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                           {}, {}, comp_passed, // pos_inside, value, check_passed
                           {}, {}, ref_spd->speed_, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed);
+                          num_comp_failed, num_comp_passed, angle_check.code);
 
             ++num_no_tst_value;
             continue;
@@ -301,7 +306,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                   is_inside, trackangle_min_diff, comp_passed, // pos_inside, value, check_passed
                   ref_trackangle_deg, *tst_trackangle_deg, ref_spd->speed_, // value_ref, value_tst, speed_ref
                   num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                  num_comp_failed, num_comp_passed);
+                  num_comp_failed, num_comp_passed, 0);
     }
 
     //        logdbg << "'" << name_ << "': utn " << target_data.utn_

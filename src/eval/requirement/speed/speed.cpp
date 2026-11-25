@@ -18,6 +18,7 @@
 #include "requirement/speed/speed.h"
 #include "requirement/speed/speed_helpers.h"
 #include "results/speed/speed.h"
+#include "results/base/detailcode.h"
 #include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
@@ -35,6 +36,8 @@ using namespace boost::posix_time;
 
 namespace EvaluationRequirement
 {
+
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
 
 Speed::Speed(
         const std::string& name, const std::string& short_name, const std::string& group_name,
@@ -126,12 +129,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
                             const QVariant& num_pos_inside,
                             const QVariant& num_pos_outside,
                             const QVariant& num_comp_failed,
-                            const QVariant& num_comp_passed)
+                            const QVariant& num_comp_passed,
+                            std::uint32_t code)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::Offset, offset)
                                              .setValue(Result::DetailKey::CheckPassed, check_passed)
-                                             .addPosition(ref_pos));
+                                             .addPosition(ref_pos)
+                                             .addCode(code));
     };
 
     SpeedHelpers::Params speed_params;
@@ -156,7 +161,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
                             {}, // ref_pos
                             {}, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_failed, num_comp_passed);
+                            num_comp_failed, num_comp_passed, DetailCode::NoRefData);
 
             ++num_no_ref;
             continue;
@@ -171,7 +176,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
                             {}, // ref_pos
                             {}, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_failed, num_comp_passed);
+                            num_comp_failed, num_comp_passed, DetailCode::NoRefPosition);
 
             ++num_no_ref;
             continue;
@@ -187,7 +192,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
                             ref_pos, // ref_pos
                             is_inside, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_failed, num_comp_passed);
+                            num_comp_failed, num_comp_passed, 0);
             ++num_pos_outside;
             continue;
         }
@@ -201,7 +206,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
                             {}, // ref_pos
                             {}, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_failed, num_comp_passed);
+                            num_comp_failed, num_comp_passed, DetailCode::NoRefSpeed);
 
             ++num_no_ref;
             continue;
@@ -219,7 +224,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
                             {}, // ref_pos
                             {}, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_failed, num_comp_passed);
+                            num_comp_failed, num_comp_passed, speed_check.code);
 
             ++num_no_tst_value;
             continue;
@@ -243,7 +248,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
                     ref_pos,
                     is_inside, spd_diff, comp_passed, // pos_inside, value, check_passed
                     num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                    num_comp_failed, num_comp_passed);
+                    num_comp_failed, num_comp_passed, 0);
     }
 
     //        logdbg << "" << name_ << "': utn " << target_data.utn_

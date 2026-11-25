@@ -127,3 +127,13 @@ TEST_CASE("SpeedHelpers cases from JSON", "[eval][speed_helpers]")
         CHECK((double)num_passed / (double)(num_passed + num_failed) == Approx(e.at("probability").get<double>()));
     }
 }
+
+TEST_CASE("SpeedHelpers detail code of the outcomes", "[eval][speed_helpers]")
+{
+    Params p;
+    p.threshold_value = 5.0f;
+
+    CHECK(check(100.0, {}, p).code == NoTstSpeed);
+    CHECK(check(100.0, 102.0f, p).code == 0);
+    CHECK(check(100.0, 110.0f, p).code == 0); // failed: the failed check says it
+}

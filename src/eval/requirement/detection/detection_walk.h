@@ -19,6 +19,7 @@
 
 #include "requirement/detection/detection_pd_helpers.h"
 
+#include <cstdint>
 #include <functional>
 #include <vector>
 
@@ -64,6 +65,7 @@ struct Step
     double                   missed    = 0.0;   // missed amount of the gap
     double                   sum_missed = 0.0;  // running sum of the missed amount after this step
     bool                     initiation = false; // FirstInPeriod gap that would be a miss, within the track initiation time
+    std::uint32_t            code      = 0;     // miss: reason bit (DetailCode::Gap)
 };
 
 struct Params
@@ -100,6 +102,9 @@ TimePeriodCollection referencePeriods(const std::vector<std::pair<boost::posix_t
 
 /// missed amount of a gap that is a miss: 1 gap (gap count), missed seconds (time ratio) or missed update intervals
 double missedAmount(float t_diff, const PDHelpers::MissTestParams& p, const Params& params);
+
+/// reason bit of a gap step that is a miss (DetailCode::Gap), 0 for other steps
+std::uint32_t missCode(const Step& step);
 
 /**
  * Per test report (sorted by time): whether it starts a system track. Track Begin decides if

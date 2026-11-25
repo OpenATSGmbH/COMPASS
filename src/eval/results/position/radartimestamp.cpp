@@ -62,6 +62,14 @@ SinglePositionRadarTimeStamp::SinglePositionRadarTimeStamp(const std::string& re
 }
 
 /**
+ */
+void SinglePositionRadarTimeStamp::addDetailCodeTexts(ReportTableDefinition& def) const
+{
+    DetailCode::addTypeText(def, OffsetInvalid, "Offset not calculable");
+    DetailCode::addTypeText(def, SpeedInvalid, "Reference speed not usable");
+}
+
+/**
 */
 std::shared_ptr<Joined> SinglePositionRadarTimeStamp::createEmptyJoined(const std::string& result_id)
 {

@@ -71,7 +71,7 @@ SingleDubiousTarget::SingleDubiousTarget(const std::string& result_id,
 
     is_dubious_      = is_dubious.value();
     duration_        = duration.value();
-    dubious_reasons_ = dubiousReasonsString(details[ 0 ].comments());
+    reasons_         = dubiousReasonsString(details[ 0 ].comments());
 }
 
 /**
@@ -138,7 +138,7 @@ nlohmann::json::array_t SingleDubiousTarget::targetTableValuesCustom() const
     return { num_pos_inside_,                        // "#PosInside"
              num_pos_inside_dubious_,                // "#DU"
              resultValueOptional(p_dubious_update_), // "PDU"
-             dubious_reasons_ };                     // "Reasons"
+             reasons_ };                             // "Reasons"
 }
 
 /**
@@ -160,10 +160,8 @@ std::vector<Single::TargetInfo> SingleDubiousTarget::targetInfos() const
 */
 bool SingleDubiousTarget::detailIsOkStatic(const EvaluationDetail& detail)
 {
-    auto comments = detail.comments().group(DetailCommentGroupDubious);
-    bool is_dub   = (comments.has_value() && !comments->empty());
-
-    return !is_dub;
+    //a test report is dubious by its reason bits, a period (parent detail) by its reasons
+    return !isDubiousUpdate(detail) && !detail.comments().hasComments(DetailCommentGroupDubious);
 }
 
 /**

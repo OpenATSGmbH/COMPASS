@@ -18,6 +18,7 @@
 #include "requirement/detection/detection_walk.h"
 #include "timeperiod.h"
 
+#include "results/base/detailcode.h"
 #include "timeconv.h"
 #include "traced_assert.h"
 
@@ -81,6 +82,30 @@ TimePeriodCollection referencePeriods(const std::vector<std::pair<ptime, bool>>&
     ref_periods.removeSmallPeriods(Utils::Time::partialSeconds(1));
 
     return ref_periods;
+}
+
+/**
+ * The reason bit of a gap step that is a miss.
+ */
+std::uint32_t missCode(const Step& step)
+{
+    namespace Gap = EvaluationRequirementResult::DetailCode::Gap;
+
+    switch (step.type)
+    {
+        case Step::Type::PeriodWithoutTestData:
+            return Gap::PeriodWithoutValidUpdate;
+        case Step::Type::PeriodEnd:
+            return step.t0_is_tst ? Gap::MissAtPeriodEnd : Gap::PeriodWithoutValidUpdate;
+        case Step::Type::FirstInPeriod:
+            return Gap::MissAtPeriodBegin;
+        case Step::Type::Gap:
+            return Gap::MissInPeriod;
+        default:
+            break;
+    }
+
+    return 0;
 }
 
 /**
@@ -167,6 +192,7 @@ Result walk(const TimePeriodCollection& ref_periods,
         {
             step.missed = missedAmount(step.t_diff, p, params);
             result.sum_missed += step.missed;
+            step.code = missCode(step);
         }
 
         step.sum_missed = result.sum_missed;

@@ -117,10 +117,12 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationChangeDelay::
     auto addDetail = [ & ] (const ptime& ts,
                             const dbContent::TargetPosition& pos,
                             const QVariant& value,
-                            const QVariant& check_passed)
+                            const QVariant& check_passed,
+                            std::uint32_t code)
     {
         details.push_back(Detail(ts, pos).setValue(Result::DetailKey::Value, value)
-                                         .setValue(Result::DetailKey::CheckPassed, check_passed));
+                                         .setValue(Result::DetailKey::CheckPassed, check_passed)
+                                         .addCode(code));
     };
 
     // changes of the stable reference value (transitional Mode A codes are ignored,
@@ -170,12 +172,12 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationChangeDelay::
         {
             case ChangeDelayHelpers::Assessment::Result::NotAssessable:
                 ++num_not_assessable;
-                addDetail(event_ts, event_pos, {}, {});
+                addDetail(event_ts, event_pos, {}, {}, assessment.code);
                 break;
 
             case ChangeDelayHelpers::Assessment::Result::NeverReported:
                 ++num_failed;
-                addDetail(event_ts, event_pos, {}, false);
+                addDetail(event_ts, event_pos, {}, false, assessment.code);
                 break;
 
             case ChangeDelayHelpers::Assessment::Result::Passed:
@@ -190,7 +192,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationChangeDelay::
                 else
                     ++num_failed;
 
-                addDetail(event_ts, event_pos, assessment.delay_s.value(), passed);
+                addDetail(event_ts, event_pos, assessment.delay_s.value(), passed, assessment.code);
                 break;
             }
         }

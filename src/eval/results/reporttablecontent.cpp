@@ -261,18 +261,22 @@ std::string rowComment(const ReportTableDefinition& definition,
     if (!code_text.empty())
         parts.push_back(code_text);
 
+    //the reference bits say which data is missing, without one of them it is the reference data
+    const bool code_no_ref = code & EvaluationRequirementResult::DetailCode::NoRef;
+
     auto ref_exists = boolValue(buffer, "ref_exists", row);
-    if (ref_exists.has_value() && !ref_exists.value() && !(code & EvaluationRequirementResult::DetailCode::NoRef))
-        parts.push_back("No reference");
+    const bool no_ref = code_no_ref || (ref_exists.has_value() && !ref_exists.value());
 
-    const bool code_outside = code & EvaluationRequirementResult::DetailCode::OutsideSector;
+    if (no_ref && !code_no_ref)
+        parts.push_back("No reference data");
 
+    //without a reference the position is not checked against the sector, the flag says outside
     auto pos_inside = boolValue(buffer, "pos_inside", row);
-    if (pos_inside.has_value() && !pos_inside.value() && !code_outside)
+    if (pos_inside.has_value() && !pos_inside.value() && !no_ref)
         parts.push_back("Outside sector");
 
     auto inside = boolValue(buffer, "inside", row);
-    if (inside.has_value() && !inside.value() && !code_outside)
+    if (inside.has_value() && !inside.value() && !no_ref)
         parts.push_back("Outside sector");
 
     auto check_passed = boolValue(buffer, "check_passed", row);
@@ -294,14 +298,6 @@ std::string rowComment(const ReportTableDefinition& definition,
     auto is_dubious = boolValue(buffer, "is_dubious", row);
     if (is_dubious.has_value() && is_dubious.value())
         parts.push_back("Dubious");
-
-    if (buffer.has<std::string>("dubious_reasons") &&
-        !buffer.get<std::string>("dubious_reasons").isNull(row))
-    {
-        auto reasons = buffer.get<std::string>("dubious_reasons").get(row);
-        if (!reasons.empty())
-            parts.push_back(reasons);
-    }
 
     boost::optional<double> missed = doubleValue(buffer, "missed_updates", row);
     if (!missed.has_value() &&

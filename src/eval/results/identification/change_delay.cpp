@@ -21,6 +21,7 @@
 
 #include "requirement/base/base.h"
 #include "requirement/identification/change_delay.h"
+#include "requirement/identification/change_delay_helpers.h"
 
 #include "evaluationtargetdata.h"
 #include "evaluationmanager.h"
@@ -287,6 +288,11 @@ void SingleIdentificationChangeDelay::addReportTableColumns(ReportTableDefinitio
                   "Delay of the identification change against the reference", "Time", "Second");
     def.addColumn("check_passed", PropertyDataType::BOOL, "Check Passed",
                   "Value within the requirement threshold");
+
+    DetailCode::addTypeText(def, EvaluationRequirement::ChangeDelayHelpers::NotAssessable,
+                            "Not assessable (insufficient test data after the change)");
+    DetailCode::addTypeText(def, EvaluationRequirement::ChangeDelayHelpers::NeverReported,
+                            "New value never reported");
 }
 
 /**

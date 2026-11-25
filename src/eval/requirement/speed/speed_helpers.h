@@ -18,6 +18,9 @@
 #pragma once
 
 #include "requirement/base/comparisontype.h"
+#include "results/base/detailcode.h"
+
+#include <cstdint>
 
 #include <boost/optional.hpp>
 
@@ -46,11 +49,18 @@ enum class Outcome
     Failed
 };
 
+/// type bits of the detail code of SingleSpeed
+enum CodeBit : std::uint32_t
+{
+    NoTstSpeed = EvaluationRequirementResult::DetailCode::typeBit(0)
+};
+
 struct Check
 {
-    Outcome outcome   = Outcome::NoTstValue;
-    float   diff      = 0.0f; // absolute speed difference [m/s]
-    float   threshold = 0.0f; // threshold used [m/s]
+    Outcome       outcome   = Outcome::NoTstValue;
+    float         diff      = 0.0f; // absolute speed difference [m/s]
+    float         threshold = 0.0f; // threshold used [m/s]
+    std::uint32_t code      = NoTstSpeed; // reason bits of the outcome, 0 if compared
 };
 
 /// the fixed threshold, or the percentage of the reference speed if enabled and higher

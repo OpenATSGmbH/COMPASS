@@ -18,6 +18,9 @@
 #pragma once
 
 #include "requirement/base/comparisontype.h"
+#include "results/base/detailcode.h"
+
+#include <cstdint>
 
 #include <boost/optional.hpp>
 
@@ -47,10 +50,18 @@ enum class Outcome
     Failed
 };
 
+/// type bits of the detail code of SingleTrackAngle
+enum CodeBit : std::uint32_t
+{
+    NoTstTrackAngle = EvaluationRequirementResult::DetailCode::typeBit(0),
+    RefSpeedTooLow  = EvaluationRequirementResult::DetailCode::typeBit(1)
+};
+
 struct Check
 {
-    Outcome outcome = Outcome::NoTstValue;
-    float   diff    = 0.0f; // smallest signed angle difference test - reference [deg], in [-180, 180)
+    Outcome       outcome = Outcome::NoTstValue;
+    float         diff    = 0.0f; // smallest signed angle difference test - reference [deg], in [-180, 180)
+    std::uint32_t code    = NoTstTrackAngle; // reason bits of the outcome, 0 if compared
 };
 
 /**

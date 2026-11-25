@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include "results/base/detailcode.h"
+
+#include <cstdint>
 #include <string>
 #include <vector>
 
@@ -44,6 +47,13 @@ struct Change
     std::string new_value;
 };
 
+/// type bits of the detail code of SingleIdentificationChangeDelay
+enum CodeBit : std::uint32_t
+{
+    NotAssessable = EvaluationRequirementResult::DetailCode::typeBit(0),
+    NeverReported = EvaluationRequirementResult::DetailCode::typeBit(1)
+};
+
 /// assessment of one change event
 struct Assessment
 {
@@ -57,6 +67,7 @@ struct Assessment
 
     Result                  result = Result::NotAssessable;
     boost::optional<double> delay_s; // only if the new value was reported
+    std::uint32_t           code   = 0; // reason bits of NotAssessable and NeverReported
 };
 
 /// ACID without trailing spaces, no value if empty

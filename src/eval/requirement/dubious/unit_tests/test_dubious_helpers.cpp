@@ -103,6 +103,12 @@ void checkUpdatesCase(const nlohmann::json& j)
         checkFlag(flags[cnt].acceleration, e, "acceleration");
         checkFlag(flags[cnt].turnrate, e, "turnrate");
         checkFlag(flags[cnt].rocd, e, "rocd");
+
+        // dubious if any value is set
+        const bool expected_dubious = e.contains("reported_speed_ms") || e.contains("calculated_speed_kts")
+                                   || e.contains("acceleration") || e.contains("turnrate") || e.contains("rocd");
+
+        CHECK(flags[cnt].dubious() == expected_dubious);
     }
 }
 
@@ -140,4 +146,13 @@ TEST_CASE("DubiousHelpers cases from JSON", "[eval][dubious_helpers]")
             }
         }
     }
+}
+
+TEST_CASE("DubiousHelpers::UpdateFlags::dubious", "[eval][dubious_helpers]")
+{
+    UpdateFlags f;
+    CHECK(!f.dubious());
+
+    f.rocd = 120.0;
+    CHECK(f.dubious());
 }

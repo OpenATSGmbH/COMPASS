@@ -237,8 +237,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTrack::evaluate (con
     unsigned int dubious_turnrate_found;
     unsigned int dubious_rocd_found;
 
-    bool all_updates_dubious; // for short or primary track
-    std::map<std::string, std::string> all_updates_dubious_reasons;
+    std::uint32_t all_updates_code; // reasons of the period, for all its updates
 
 
     DubiousHelpers::Params params;
@@ -256,8 +255,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTrack::evaluate (con
 
     for (auto& track_detail : finished_tracks)
     {
-        all_updates_dubious = false;
-        all_updates_dubious_reasons.clear();
+        all_updates_code = 0;
 
         dubious_groundspeed_found = 0;
         dubious_acceleration_found = 0;
@@ -266,28 +264,22 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTrack::evaluate (con
 
         if (!do_not_evaluate_target && mark_primary_only_ && !track_detail.has_mode_ac && !track_detail.has_mode_s)
         {
-            track_detail.dubious_reasons["Pri."] = "";
-
-            all_updates_dubious = true;
-            all_updates_dubious_reasons["Pri."] = "";
+            track_detail.reasons["Pri."] = "";
+            all_updates_code |= DubiousHelpers::PrimaryOnly;
         }
 
         if (!do_not_evaluate_target && use_min_updates_ && !track_detail.left_sector
                 && track_detail.num_pos_inside < min_updates_)
         {
-            track_detail.dubious_reasons["#Up"] = to_string(track_detail.num_pos_inside);
-
-            all_updates_dubious = true;
-            all_updates_dubious_reasons["#Up"] = to_string(track_detail.num_pos_inside);
+            track_detail.reasons["#Up"] = to_string(track_detail.num_pos_inside);
+            all_updates_code |= DubiousHelpers::FewUpdates;
         }
 
         if (!do_not_evaluate_target && use_min_duration_ && !track_detail.left_sector
                 && track_detail.duration < min_duration_)
         {
-            track_detail.dubious_reasons["Dur."] = Time::toString(track_detail.duration, 1);
-
-            all_updates_dubious = true;
-            all_updates_dubious_reasons["Dur."] = Time::toString(track_detail.duration, 1);
+            track_detail.reasons["Dur."] = Time::toString(track_detail.duration, 1);
+            all_updates_code |= DubiousHelpers::ShortDuration;
         }
 
         std::vector<DubiousHelpers::Update> updates(track_detail.details.size());
@@ -315,52 +307,52 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTrack::evaluate (con
             auto& update = track_detail.details[cnt];
             const auto& f = flags[cnt];
 
-            if (all_updates_dubious) // mark was primary/short track if required
-                Result::logComments(update, all_updates_dubious_reasons);
+            // mark was primary/short track if required, and the reasons of the test report with their values
+            update.addCode(all_updates_code);
 
             if (f.reported_speed_ms)
             {
-                Result::logComment(update, "Spd", String::doubleToStringPrecision(*f.reported_speed_ms, 1));
+                update.setValue(Result::DetailKey::ReportedSpeed, *f.reported_speed_ms);
                 ++dubious_groundspeed_found;
             }
 
             if (f.acceleration)
             {
-                Result::logComment(update, "Acc", String::doubleToStringPrecision(*f.acceleration, 1));
+                update.setValue(Result::DetailKey::Acceleration, *f.acceleration);
                 ++dubious_acceleration_found;
             }
 
             if (f.turnrate)
             {
-                Result::logComment(update, "TR", String::doubleToStringPrecision(*f.turnrate, 1));
+                update.setValue(Result::DetailKey::TurnRate, *f.turnrate);
                 ++dubious_turnrate_found;
             }
 
             if (f.rocd)
             {
-                Result::logComment(update, "ROCD", String::doubleToStringPrecision(*f.rocd, 1));
+                update.setValue(Result::DetailKey::ROCD, *f.rocd);
                 ++dubious_rocd_found;
             }
         }
 
         if (!do_not_evaluate_target && use_max_groundspeed_ && dubious_groundspeed_found > 0)
         {
-            track_detail.dubious_reasons["Spd"] = to_string(dubious_groundspeed_found);
+            track_detail.reasons["Spd"] = to_string(dubious_groundspeed_found);
         }
 
         if (!do_not_evaluate_target && use_max_acceleration_ && dubious_acceleration_found > 0)
         {
-            track_detail.dubious_reasons["Acc"] = to_string(dubious_acceleration_found);
+            track_detail.reasons["Acc"] = to_string(dubious_acceleration_found);
         }
 
         if (!do_not_evaluate_target && use_max_turnrate_ && dubious_turnrate_found > 0)
         {
-            track_detail.dubious_reasons["TR"] = to_string(dubious_turnrate_found);
+            track_detail.reasons["TR"] = to_string(dubious_turnrate_found);
         }
 
         if (!do_not_evaluate_target && use_rocd_ && dubious_rocd_found > 0)
         {
-            track_detail.dubious_reasons["ROCD"] = to_string(dubious_rocd_found);
+            track_detail.reasons["ROCD"] = to_string(dubious_rocd_found);
         }
 
         track_detail.num_pos_inside_dubious = track_detail.numDubious(); // num of tods with issues

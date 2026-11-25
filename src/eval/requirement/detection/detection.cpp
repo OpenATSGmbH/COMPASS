@@ -19,6 +19,7 @@
 #include "requirement/detection/detection_pd_helpers.h"
 #include "requirement/detection/detection_walk.h"
 #include "results/detection/detection.h"
+#include "results/base/detailcode.h"
 #include "standard/evaluationstandard.h"
 
 #include "evaluationmanager.h"
@@ -40,6 +41,8 @@ using namespace boost::posix_time;
 
 namespace EvaluationRequirement
 {
+
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
 
 /**
 */
@@ -193,7 +196,8 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluateStatusCy
                                   .setValue(Result::DetailKey::DiffTOD,
                                             Time::partialSeconds(miss.end - miss.begin))
                                   .setValue(Result::DetailKey::MissOccurred, true)
-                                  .setValue(Result::DetailKey::MissedUIs, miss.sum_missed));
+                                  .setValue(Result::DetailKey::MissedUIs, miss.sum_missed)
+                                  .addCode(DetailCode::Gap::MissInStatusCycle));
     }
 
     auto ret = make_shared<EvaluationRequirementResult::SingleDetection>(
@@ -354,11 +358,13 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                          const std::vector<dbContent::TargetPosition>& positions,
                          const QVariant& d_tod,
                          const QVariant& miss_occurred,
-                         const QVariant& missed_uis)
+                         const QVariant& missed_uis,
+                         std::uint32_t code)
     {
         details.push_back(Detail(ts, positions).setValue(Result::DetailKey::DiffTOD, d_tod)
                               .setValue(Result::DetailKey::MissOccurred, miss_occurred)
-                              .setValue(Result::DetailKey::MissedUIs, missed_uis));
+                              .setValue(Result::DetailKey::MissedUIs, missed_uis)
+                              .addCode(code));
     };
 
     std::vector<dbContent::TargetPosition> ref_updates;
@@ -434,7 +440,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                 auto last_pos = target_data.refChain().pos(step.t0);
 
                 storeRefUpdates(ref_updates, step.t0, step.t1, last_pos, pos_current);
-                addDetail(step.t1, ref_updates, step.t_diff, true, step.sum_missed);
+                addDetail(step.t1, ref_updates, step.t_diff, true, step.sum_missed, step.code);
                 break;
             }
             case Step::Type::PeriodEnd:
@@ -446,49 +452,49 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                     last_pos = target_data.refChain().pos(step.t0);
 
                 storeRefUpdates(ref_updates, step.t0, step.t1, last_pos, pos_current);
-                addDetail(timestamp, ref_updates, step.t_diff, step.miss, step.sum_missed);
+                addDetail(timestamp, ref_updates, step.t_diff, step.miss, step.sum_missed, step.code);
                 break;
             }
             case Step::Type::OutsideRefPeriods:
             {
                 if (!skip_no_data_details)
-                    addDetail(timestamp, { pos_current }, {}, false, step.sum_missed);
+                    addDetail(timestamp, { pos_current }, {}, false, step.sum_missed, DetailCode::NoRefData);
                 break;
             }
             case Step::Type::NoRefPos:
             {
                 if (!skip_no_data_details)
-                    addDetail(timestamp, { pos_current }, {}, false, step.sum_missed);
+                    addDetail(timestamp, { pos_current }, {}, false, step.sum_missed, DetailCode::NoRefPosition);
                 break;
             }
             case Step::Type::OutsideSector:
             {
                 if (!skip_no_data_details)
-                    addDetail(timestamp, { pos_current }, {}, false, step.sum_missed);
+                    addDetail(timestamp, { pos_current }, {}, false, step.sum_missed, 0);
                 break;
             }
             case Step::Type::FirstAfterOutside:
             {
                 storeRefUpdate(ref_updates, tst_ids[ step.tst_index ]);
-                addDetail(timestamp, ref_updates, {}, false, step.sum_missed);
+                addDetail(timestamp, ref_updates, {}, false, step.sum_missed, 0);
                 break;
             }
             case Step::Type::FirstInPeriod:
             {
                 storeRefUpdate(ref_updates, tst_ids[ step.tst_index ]);
-                addDetail(timestamp, ref_updates, {}, false, sum_missed_before);
+                addDetail(timestamp, ref_updates, {}, false, sum_missed_before, 0);
 
                 // gap from the period begin
                 auto last_pos = target_data.refChain().pos(step.t0);
 
                 storeRefUpdates(ref_updates, step.t0, step.t1, last_pos, {});
-                addDetail(timestamp, ref_updates, step.t_diff, step.miss, step.sum_missed);
+                addDetail(timestamp, ref_updates, step.t_diff, step.miss, step.sum_missed, step.code);
                 break;
             }
             case Step::Type::Gap:
             {
                 storeRefUpdates(ref_updates, step.t0, step.t1, {}, {});
-                addDetail(timestamp, ref_updates, step.t_diff, step.miss, step.sum_missed);
+                addDetail(timestamp, ref_updates, step.t_diff, step.miss, step.sum_missed, step.code);
                 break;
             }
         }

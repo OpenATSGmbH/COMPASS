@@ -150,7 +150,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
 
         if (!ref.ref_pos_inside(tst_id))
         {
-            addNoDataDetail(timestamp, tst_pos, DetailCode::OutsideSector, ref_pos, false);
+            addNoDataDetail(timestamp, tst_pos, 0, ref_pos, false);
             ++counts.num_pos_outside;
             continue;
         }

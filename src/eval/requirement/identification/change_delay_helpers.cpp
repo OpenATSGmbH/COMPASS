@@ -115,9 +115,15 @@ Assessment assessEvent(const ptime& event_ts,
         // no test report with the new value: only a failure if enough
         // test data time remained after the event to expect one
         if (tst_values.empty() || Utils::Time::partialSeconds(tst_values.back().first - event_ts) < max_delay_s)
+        {
             a.result = Assessment::Result::NotAssessable;
+            a.code   = NotAssessable;
+        }
         else
+        {
             a.result = Assessment::Result::NeverReported;
+            a.code   = NeverReported;
+        }
 
         return a;
     }

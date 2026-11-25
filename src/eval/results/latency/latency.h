@@ -44,7 +44,17 @@ public:
 
     virtual std::shared_ptr<Joined> createEmptyJoined(const std::string& result_id) override;
 
+    /// type bits of the detail code
+    enum CodeBit : std::uint32_t
+    {
+        DistanceInvalid = DetailCode::typeBit(0),
+        AngleInvalid    = DetailCode::typeBit(1),
+        SpeedInvalid    = DetailCode::typeBit(2)
+    };
+
 protected:
+    virtual void addDetailCodeTexts(ReportTableDefinition& def) const override;
+
     virtual std::vector<std::string> targetTableHeadersCustom() const override;
     virtual nlohmann::json::array_t targetTableValuesCustom() const override;
     virtual std::string targetTableCustomSortColumn() const override { return "#LTNOK"; }
