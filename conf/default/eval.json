@@ -3369,7 +3369,7 @@
                                         "prob_check_type": 1,
                                         "ref_min_accuracy": 210.0,
                                         "short_name": "PFD",
-                                        "threshold_value": 2100.0,
+                                        "threshold_value": 1690.0,
                                         "threshold_value_check_type": 2,
                                         "use": true
                                     }
