@@ -154,40 +154,40 @@ boost::optional<Sample> interpolate(const Sample& s1, const Sample& s2,
     const TargetPosition& pos1 = s1.pos;
     const TargetPosition& pos2 = s2.pos;
 
-    if (pos1.latitude_ == pos2.latitude_ && pos1.longitude_ == pos2.longitude_)
-    {
-        ret.pos = pos1;
-        return ret;
-    }
-
     // float as before the move into this function, keeps the results identical
     float d_t  = Time::partialSeconds(s2.timestamp - s1.timestamp);
     float d_t2 = Time::partialSeconds(timestamp - s1.timestamp);
 
-    bool ok;
-    double x_pos, y_pos;
+    const bool same_position = pos1.latitude_ == pos2.latitude_ && pos1.longitude_ == pos2.longitude_;
 
-    std::tie(ok, x_pos, y_pos) = trafo.distanceCart(
-        pos1.latitude_, pos1.longitude_, pos2.latitude_, pos2.longitude_);
+    double latitude  = pos1.latitude_;
+    double longitude = pos1.longitude_;
 
-    if (!ok)
+    if (!same_position)
     {
-        logerr << "error with latitude " << pos2.latitude_ << " longitude " << pos2.longitude_;
-        return {};
-    }
+        bool ok;
+        double x_pos, y_pos;
 
-    double v_x = x_pos / d_t;
-    double v_y = y_pos / d_t;
+        std::tie(ok, x_pos, y_pos) = trafo.distanceCart(
+            pos1.latitude_, pos1.longitude_, pos2.latitude_, pos2.longitude_);
 
-    double latitude, longitude;
+        if (!ok)
+        {
+            logerr << "error with latitude " << pos2.latitude_ << " longitude " << pos2.longitude_;
+            return {};
+        }
 
-    std::tie(ok, latitude, longitude) = trafo.wgsAddCartOffset(
-        pos1.latitude_, pos1.longitude_, v_x * d_t2, v_y * d_t2);
+        double v_x = x_pos / d_t;
+        double v_y = y_pos / d_t;
 
-    if (!ok)
-    {
-        logerr << "error with offset from latitude " << pos1.latitude_ << " longitude " << pos1.longitude_;
-        return {};
+        std::tie(ok, latitude, longitude) = trafo.wgsAddCartOffset(
+            pos1.latitude_, pos1.longitude_, v_x * d_t2, v_y * d_t2);
+
+        if (!ok)
+        {
+            logerr << "error with offset from latitude " << pos1.latitude_ << " longitude " << pos1.longitude_;
+            return {};
+        }
     }
 
     bool  has_altitude = false;
@@ -211,6 +211,9 @@ boost::optional<Sample> interpolate(const Sample& s1, const Sample& s2,
     }
 
     ret.pos = TargetPosition(latitude, longitude, has_altitude, true, altitude);
+
+    if (same_position)
+        return ret;
 
     if (s1.speed && s2.speed)
     {

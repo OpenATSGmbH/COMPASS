@@ -173,8 +173,9 @@ struct Sample
 /// timestamp in [s1.timestamp, s2.timestamp]. The position is interpolated in the local
 /// Cartesian plane around s1, the track angle along the shorter turn. A value is only
 /// interpolated if both samples have it, the altitude also if only one sample has it (then
-/// that one is used). If both positions are equal, s1's position is returned without speed,
-/// acceleration and rate of climb/descent. Returns none if the transformation fails.
+/// that one is used). If both horizontal positions are equal, the horizontal position is s1's,
+/// the altitude is interpolated, speed, acceleration and rate of climb/descent are not set.
+/// Returns none if the transformation fails.
 boost::optional<Sample> interpolate(const Sample& s1, const Sample& s2,
                                     const boost::posix_time::ptime& timestamp,
                                     Transformation& trafo);

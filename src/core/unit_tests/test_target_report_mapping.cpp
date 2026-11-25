@@ -495,7 +495,7 @@ TEST_CASE("interpolate", "[target_report_mapping]")
         REQUIRE(!interpolate(s1, s2, at(5), trafo)->rocd);
     }
 
-    SECTION("same position: first sample's position, no speed, acceleration or rocd")
+    SECTION("same position: first sample's position, interpolated altitude, no speed, acceleration or rocd")
     {
         Sample s1 = sample(0, 48.0, 16.0);
         Sample s2 = sample(10, 48.0, 16.0);
@@ -513,10 +513,25 @@ TEST_CASE("interpolate", "[target_report_mapping]")
         REQUIRE(s.has_value());
         REQUIRE(s->pos.latitude_ == 48.0);
         REQUIRE(s->pos.longitude_ == 16.0);
-        REQUIRE(s->pos.altitude_ == Approx(1000));
-        REQUIRE(!s->pos.altitude_calculated_);
+        REQUIRE(s->pos.has_altitude_);
+        REQUIRE(s->pos.altitude_ == Approx(1500));
+        REQUIRE(s->pos.altitude_calculated_);
         REQUIRE(!s->speed);
         REQUIRE(!s->acceleration);
         REQUIRE(!s->rocd);
+    }
+
+    SECTION("same position, altitude only in the second sample: its altitude")
+    {
+        Sample s1 = sample(0, 48.0, 16.0);
+        Sample s2 = sample(10, 48.0, 16.0);
+
+        s2.pos.has_altitude_ = true;
+        s2.pos.altitude_     = 2000;
+
+        auto s = interpolate(s1, s2, at(5), trafo);
+        REQUIRE(s.has_value());
+        REQUIRE(s->pos.has_altitude_);
+        REQUIRE(s->pos.altitude_ == Approx(2000));
     }
 }
