@@ -599,15 +599,7 @@ boost::optional<bool> EvaluationTargetData::mappedRefGroundBit(const DataID& tst
 
     auto gbs1 = ref_chain_.groundBit(mapping.dataid_ref1_);
 
-    if (!mapping.has_ref2_) // exact match: only a ground bit set and with a reference speed
-    {
-        if (mapping.has_ref_spd_ && gbs1.has_value() && *gbs1)
-            return gbs1;
-
-        return {};
-    }
-
-    if (gbs1.has_value() && *gbs1)
+    if (!mapping.has_ref2_ || (gbs1.has_value() && *gbs1))
         return gbs1;
 
     return ref_chain_.groundBit(mapping.dataid_ref2_);
