@@ -104,6 +104,18 @@ DataMappingTimes findDataMappingTimes(const IndexMap& indexes, const ptime& time
     return ret;
 }
 
+bool withinMaxGap(const DataMapping& mapping, const time_duration& d_max)
+{
+    if (!mapping.has_ref1_)
+        return false;
+
+    if (!mapping.has_ref2_)
+        return mapping.timestamp_ref1_ == mapping.timestamp_;
+
+    return mapping.timestamp_ - mapping.timestamp_ref1_ <= d_max
+           && mapping.timestamp_ref2_ - mapping.timestamp_ <= d_max;
+}
+
 boost::optional<Sample> interpolate(const Sample& s1, const Sample& s2,
                                     const ptime& timestamp,
                                     Transformation& trafo)

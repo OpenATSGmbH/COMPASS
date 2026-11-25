@@ -849,34 +849,8 @@ AnalysisDataset::refMappingWithin(unsigned int utn, ptime timestamp, time_durati
 
     auto mapping = it->second->calculateDataMapping(timestamp);
 
-    if (!mapping.has_ref_pos_)
+    if (!mapping.has_ref_pos_ || !dbContent::TargetReport::withinMaxGap(mapping, d_max))
         return boost::none;
-
-    auto absDur = [](time_duration d) {
-        return d.is_negative() ? -d : d;
-    };
-
-    if (mapping.has_ref1_ && mapping.has_ref2_)
-    {
-        auto lo = absDur(timestamp - mapping.timestamp_ref1_);
-        auto hi = absDur(mapping.timestamp_ref2_ - timestamp);
-        if (lo > d_max || hi > d_max)
-            return boost::none;
-    }
-    else if (mapping.has_ref1_)
-    {
-        if (absDur(timestamp - mapping.timestamp_ref1_) > d_max)
-            return boost::none;
-    }
-    else if (mapping.has_ref2_)
-    {
-        if (absDur(mapping.timestamp_ref2_ - timestamp) > d_max)
-            return boost::none;
-    }
-    else
-    {
-        return boost::none;
-    }
 
     return mapping;
 }

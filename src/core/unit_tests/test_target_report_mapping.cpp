@@ -72,6 +72,25 @@ TargetVelocity velocity(double speed_ms, double track_angle_deg)
     return v;
 }
 
+DataMapping mapping(double t, boost::optional<double> ref1, boost::optional<double> ref2)
+{
+    DataMapping m;
+    m.timestamp_ = at(t);
+
+    if (ref1)
+    {
+        m.has_ref1_       = true;
+        m.timestamp_ref1_ = at(*ref1);
+    }
+    if (ref2)
+    {
+        m.has_ref2_       = true;
+        m.timestamp_ref2_ = at(*ref2);
+    }
+
+    return m;
+}
+
 } // namespace
 
 TEST_CASE("findBracket", "[target_report_mapping]")
@@ -247,6 +266,43 @@ TEST_CASE("findDataMappingTimes", "[target_report_mapping]")
             REQUIRE(!m.has_other1_);
             REQUIRE(!m.has_other2_);
         }
+    }
+}
+
+TEST_CASE("withinMaxGap", "[target_report_mapping]")
+{
+    const time_duration d_max = seconds(5);
+
+    SECTION("no reference")
+    {
+        REQUIRE(!withinMaxGap(mapping(10, {}, {}), d_max));
+    }
+
+    SECTION("exact match, also with d_max 0")
+    {
+        REQUIRE(withinMaxGap(mapping(10, 10.0, {}), d_max));
+        REQUIRE(withinMaxGap(mapping(10, 10.0, {}), seconds(0)));
+    }
+
+    SECTION("ref1 only at another time")
+    {
+        REQUIRE(!withinMaxGap(mapping(10, 8.0, {}), d_max));
+    }
+
+    SECTION("both references within d_max")
+    {
+        REQUIRE(withinMaxGap(mapping(10, 7.0, 12.0), d_max));
+    }
+
+    SECTION("a gap equal to d_max passes")
+    {
+        REQUIRE(withinMaxGap(mapping(10, 5.0, 15.0), d_max));
+    }
+
+    SECTION("lower or upper reference too far")
+    {
+        REQUIRE(!withinMaxGap(mapping(10, 4.999, 12.0), d_max));
+        REQUIRE(!withinMaxGap(mapping(10, 7.0, 15.001), d_max));
     }
 }
 

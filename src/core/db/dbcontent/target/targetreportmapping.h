@@ -143,6 +143,10 @@ DataMapping findDataMapping(const IndexMap& indexes, const boost::posix_time::pt
 /// the entry after. Without an exact entry both other1 and other2 are needed, else none is set.
 DataMappingTimes findDataMappingTimes(const IndexMap& indexes, const boost::posix_time::ptime& timestamp);
 
+/// True if the mapping is an exact match, or if both reference entries are at most d_max
+/// away from the mapping's timestamp.
+bool withinMaxGap(const DataMapping& mapping, const boost::posix_time::time_duration& d_max);
+
 /// The values of one target report used for the interpolation.
 struct Sample
 {
