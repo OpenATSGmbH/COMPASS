@@ -51,6 +51,31 @@ Bracket findBracket(const IndexMap& indexes, const ptime& timestamp)
     return ret;
 }
 
+boost::optional<DataID> firstInRange(const IndexMap& indexes, const ptime& begin, const ptime& end)
+{
+    auto it = indexes.lower_bound(begin);
+
+    if (it == indexes.end() || it->first >= end)
+        return {};
+
+    return DataID(*it);
+}
+
+boost::optional<DataID> lastInRange(const IndexMap& indexes, const ptime& begin, const ptime& end)
+{
+    auto it = indexes.upper_bound(end);
+
+    if (it == indexes.begin())
+        return {};
+
+    --it;
+
+    if (it->first < begin)
+        return {};
+
+    return DataID(*it);
+}
+
 DataMapping findDataMapping(const IndexMap& indexes, const ptime& timestamp)
 {
     DataMapping ret;

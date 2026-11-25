@@ -168,6 +168,61 @@ TEST_CASE("findBracket", "[target_report_mapping]")
     }
 }
 
+TEST_CASE("firstInRange and lastInRange", "[target_report_mapping]")
+{
+    IndexMap indexes = makeIndexes({10, 20, 30, 40});
+
+    SECTION("empty collection or no entry in the range")
+    {
+        REQUIRE(!firstInRange(IndexMap(), at(0), at(50)));
+        REQUIRE(!lastInRange(IndexMap(), at(0), at(50)));
+        REQUIRE(!firstInRange(indexes, at(0), at(5)));
+        REQUIRE(!lastInRange(indexes, at(0), at(5)));
+        REQUIRE(!firstInRange(indexes, at(45), at(50)));
+        REQUIRE(!lastInRange(indexes, at(45), at(50)));
+        REQUIRE(!firstInRange(indexes, at(21), at(29)));
+        REQUIRE(!lastInRange(indexes, at(21), at(29)));
+    }
+
+    SECTION("entries inside the range")
+    {
+        requireEntry(firstInRange(indexes, at(15), at(35)), 20, 1);
+        requireEntry(lastInRange(indexes, at(15), at(35)), 30, 2);
+    }
+
+    SECTION("begin is inside both ranges, end only inside the last range")
+    {
+        requireEntry(firstInRange(indexes, at(20), at(30)), 20, 1);
+        requireEntry(lastInRange(indexes, at(20), at(30)), 30, 2);
+    }
+
+    SECTION("only an entry at the begin: first and last")
+    {
+        requireEntry(firstInRange(indexes, at(20), at(25)), 20, 1);
+        requireEntry(lastInRange(indexes, at(20), at(25)), 20, 1);
+    }
+
+    SECTION("only an entry at the end: last only")
+    {
+        REQUIRE(!firstInRange(indexes, at(25), at(30)));
+        requireEntry(lastInRange(indexes, at(25), at(30)), 30, 2);
+    }
+
+    SECTION("consecutive ranges: an entry at the shared boundary is first of the later one only")
+    {
+        REQUIRE(!firstInRange(indexes, at(25), at(30)));
+        requireEntry(firstInRange(indexes, at(30), at(35)), 30, 2);
+    }
+
+    SECTION("several entries at one timestamp: first of them for first, last of them for last")
+    {
+        IndexMap dup = makeIndexes({10, 20, 20, 30});
+
+        requireEntry(firstInRange(dup, at(15), at(25)), 20, 1);
+        requireEntry(lastInRange(dup, at(20), at(25)), 20, 2);
+    }
+}
+
 TEST_CASE("findDataMapping", "[target_report_mapping]")
 {
     IndexMap indexes = makeIndexes({10, 20, 30});

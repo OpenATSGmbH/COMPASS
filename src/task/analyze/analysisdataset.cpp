@@ -916,13 +916,7 @@ AnalysisDataset::firstReferenceSampleInRange(unsigned int utn, ptime begin, ptim
     if (it == ref_chains_.end())
         return boost::none;
 
-    const auto& indexes = it->second->timestampIndexes();
-
-    auto lb = indexes.lower_bound(begin);
-    if (lb == indexes.end() || lb->first >= end)
-        return boost::none;
-
-    return dbContent::TargetReport::DataID(*lb);
+    return dbContent::TargetReport::firstInRange(it->second->timestampIndexes(), begin, end);
 }
 
 boost::optional<dbContent::TargetReport::DataID>
@@ -932,17 +926,7 @@ AnalysisDataset::lastReferenceSampleInRange(unsigned int utn, ptime begin, ptime
     if (it == ref_chains_.end())
         return boost::none;
 
-    const auto& indexes = it->second->timestampIndexes();
-
-    auto ub = indexes.upper_bound(end);
-    if (ub == indexes.begin())
-        return boost::none;
-
-    --ub;
-    if (ub->first <= begin)
-        return boost::none;
-
-    return dbContent::TargetReport::DataID(*ub);
+    return dbContent::TargetReport::lastInRange(it->second->timestampIndexes(), begin, end);
 }
 
 boost::optional<std::uint64_t>

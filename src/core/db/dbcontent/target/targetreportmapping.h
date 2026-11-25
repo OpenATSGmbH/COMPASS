@@ -134,6 +134,18 @@ struct Bracket
 
 Bracket findBracket(const IndexMap& indexes, const boost::posix_time::ptime& timestamp);
 
+/// First entry with begin <= timestamp < end (the first of several at one timestamp),
+/// none if there is none. An entry at end belongs to a range that begins there.
+boost::optional<DataID> firstInRange(const IndexMap& indexes,
+                                     const boost::posix_time::ptime& begin,
+                                     const boost::posix_time::ptime& end);
+
+/// Last entry with begin <= timestamp <= end (the last of several at one timestamp),
+/// none if there is none.
+boost::optional<DataID> lastInRange(const IndexMap& indexes,
+                                    const boost::posix_time::ptime& begin,
+                                    const boost::posix_time::ptime& end);
+
 /// Reference entries for a timestamp: the exact entry as ref1 only, else the entries
 /// before (ref1) and after (ref2), or none if one of them is missing. Positions,
 /// speeds etc. are not set.

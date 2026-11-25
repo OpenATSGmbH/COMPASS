@@ -245,13 +245,14 @@ public:
                                boost::posix_time::time_duration d_max) const;
 
     /// First reference sample of `utn` with `begin <= timestamp < end`,
-    /// boost::none if there is none.
+    /// boost::none if there is none. A sample at `end` is left to the range that
+    /// begins there, record tables are keyed by this sample.
     boost::optional<dbContent::TargetReport::DataID>
         firstReferenceSampleInRange(unsigned int utn,
                                     boost::posix_time::ptime begin,
                                     boost::posix_time::ptime end) const;
 
-    /// Last reference sample of `utn` with `begin < timestamp <= end`,
+    /// Last reference sample of `utn` with `begin <= timestamp <= end`,
     /// boost::none if there is none.
     boost::optional<dbContent::TargetReport::DataID>
         lastReferenceSampleInRange(unsigned int utn,
