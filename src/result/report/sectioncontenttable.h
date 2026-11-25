@@ -311,7 +311,7 @@ protected:
     unsigned int  sort_column_  {0};
     Qt::SortOrder sort_order_   {Qt::AscendingOrder};
 
-    bool show_unused_   {true};
+    bool show_unused_   {false};
     bool show_tooltips_ {false};
 
     boost::optional<int> max_row_count_;
