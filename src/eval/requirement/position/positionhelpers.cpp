@@ -91,7 +91,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
                             const boost::optional<dbContent::TargetPosition>& ref_pos,
                             const boost::optional<bool>& pos_inside,
                             const boost::optional<double>& value,
-                            bool check_passed,
+                            const boost::optional<bool>& check_passed,
                             const std::string& comment)
     {
         result.details.push_back({ timestamp, tst_pos, ref_pos, pos_inside, value, check_passed, comment });
@@ -104,7 +104,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
                                   const std::string& comment)
     {
         if (!settings.skip_no_data_details)
-            addDetail(timestamp, tst_pos, ref_pos, pos_inside, {}, false, comment);
+            addDetail(timestamp, tst_pos, ref_pos, pos_inside, {}, {}, comment);
     };
 
     for (const auto& tst_index : tst_indexes)
@@ -182,7 +182,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
                 break;
             }
             case ReportCheck::Outcome::Invalid:
-                addDetail(timestamp, tst_pos, ref_pos, true, {}, false, report_check.comment);
+                addDetail(timestamp, tst_pos, ref_pos, true, {}, {}, report_check.comment);
                 ++counts.num_pos_calc_errors;
                 break;
             case ReportCheck::Outcome::Deferred:

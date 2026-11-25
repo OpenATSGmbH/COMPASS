@@ -127,7 +127,7 @@ struct PositionDetail
     boost::optional<dbContent::TargetPosition> ref_pos;
     boost::optional<bool>                      pos_inside;
     boost::optional<double>                    value;
-    bool                                       check_passed = false;
+    boost::optional<bool>                      check_passed; // none without a comparison
     std::string                                comment;
 };
 
@@ -144,7 +144,7 @@ using ReportCheckFunc = std::function<ReportCheck(const UsableReport&)>;
  * Walk over the test reports of the position requirements: per report the reference checks of
  * the lookup, then the check of the requirement for the usable reports. One detail per report,
  * in time order (except the deferred ones). A report without a comparison gets a detail without
- * a value, with the reference position if known.
+ * a value and without check_passed, so it is not an issue, with the reference position if known.
  */
 PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& tst_indexes,
                                      const TstPosFunc& tst_pos,

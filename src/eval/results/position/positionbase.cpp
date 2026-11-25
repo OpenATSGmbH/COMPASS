@@ -169,7 +169,8 @@ unsigned int SinglePositionBaseCommon::common_numIssues() const
 bool SinglePositionBaseCommon::common_detailIsOk(const EvaluationDetail& detail,
                                                  const std::shared_ptr<EvaluationRequirement::Base>& requirement) const
 {
-    // no comparison (no reference, outside, inaccurate reference, invalid value): not an issue
+    // no comparison (no reference, outside, inaccurate reference, invalid value): not an issue,
+    // like in the report tables, where these rows have no check_passed (ReportTableContent::rowIsOk())
     if (!detail.getValue(DetailKey::Value).isValid())
         return true;
 

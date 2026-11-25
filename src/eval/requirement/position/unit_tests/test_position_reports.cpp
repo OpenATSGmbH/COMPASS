@@ -239,7 +239,7 @@ TEST_CASE("Position Distance classifies each test report", "[eval][position_repo
         for (unsigned int i : {0, 1, 2, 3})
         {
             CHECK(!d[ i ].value);
-            CHECK(!d[ i ].check_passed);
+            CHECK(!d[ i ].check_passed.has_value());
         }
 
         for (unsigned int i : {4, 5, 6})
@@ -251,9 +251,9 @@ TEST_CASE("Position Distance classifies each test report", "[eval][position_repo
             CHECK(*d[ i ].value == Approx(reports[ i ].error_m).epsilon(0.005));
         }
 
-        CHECK(d[ 4 ].check_passed);
-        CHECK(!d[ 5 ].check_passed);
-        CHECK(d[ 6 ].check_passed);
+        CHECK(d[ 4 ].check_passed == true);
+        CHECK(d[ 5 ].check_passed == false);
+        CHECK(d[ 6 ].check_passed == true);
     }
 
     SECTION("skipped no-data details: only the details of the comparisons, same counts")
@@ -331,14 +331,14 @@ TEST_CASE("Details of the test reports without a comparison are the same for all
     const auto along    = run(reports, trackOffsets(TrackOffsetComponent::Along, 30.0), true);
     const auto across   = run(reports, trackOffsets(TrackOffsetComponent::Across, 30.0), true);
 
-    SECTION("no value, not passed, reference position if known")
+    SECTION("no value, no check_passed (not an issue), reference position if known")
     {
         for (const auto* evaluation : {&distance, &rms, &along, &across})
         {
             for (unsigned int i : {0, 2, 3})
             {
                 CHECK(!evaluation->details[ i ].value);
-                CHECK(!evaluation->details[ i ].check_passed);
+                CHECK(!evaluation->details[ i ].check_passed.has_value());
             }
 
             CHECK(!evaluation->details[ 0 ].ref_pos.has_value());
@@ -482,7 +482,7 @@ TEST_CASE("Position Along and Across: offset on the reference track", "[eval][po
         REQUIRE(commentsOf(evaluation) == std::vector<std::string>{"", "", "Across-track not OK"});
         CHECK(*evaluation.details[ 0 ].value == Approx(0.0).margin(0.01));
         CHECK(*evaluation.details[ 2 ].value == Approx(-10.0).epsilon(0.005));
-        CHECK(!evaluation.details[ 2 ].check_passed);
+        CHECK(evaluation.details[ 2 ].check_passed == false);
     }
 
     SECTION("an invalid reference track angle: calculation error, no value")
@@ -496,7 +496,7 @@ TEST_CASE("Position Along and Across: offset on the reference track", "[eval][po
         CHECK(evaluation.counts.num_pos_calc_errors == 1);
         CHECK(evaluation.counts.num_comp_passed + evaluation.counts.num_comp_failed == 0);
         CHECK(!evaluation.details[ 0 ].value);
-        CHECK(!evaluation.details[ 0 ].check_passed);
+        CHECK(!evaluation.details[ 0 ].check_passed.has_value());
         CHECK(evaluation.details[ 0 ].ref_pos.has_value());
         CHECK(evaluation.details[ 0 ].pos_inside == true);
     }

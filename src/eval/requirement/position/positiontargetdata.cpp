@@ -74,7 +74,7 @@ std::vector<EvaluationDetail> details(const PositionHelpers::PositionEvaluation&
         details.push_back(EvaluationDetail(d.timestamp, d.tst_pos)
                           .setValue(DetailKey::PosInside, d.pos_inside ? QVariant(*d.pos_inside) : QVariant("false"))
                           .setValue(DetailKey::Value, d.value ? QVariant(*d.value) : QVariant())
-                          .setValue(DetailKey::CheckPassed, d.check_passed)
+                          .setValue(DetailKey::CheckPassed, d.check_passed ? QVariant(*d.check_passed) : QVariant())
                           .addPosition(d.ref_pos)
                           .generalComment(d.comment));
 
