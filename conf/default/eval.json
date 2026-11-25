@@ -1982,8 +1982,7 @@
                     "instance_name": "EvaluationStandard1422",
                     "parameters": {
                         "name": "Tracker Comparison",
-                        "reference_max_time_diff": 5.0,
-                        "reference_min_accuracy": 50.0
+                        "reference_max_time_diff": 5.0
                     },
                     "sub_configs": [
                         {
@@ -2027,9 +2026,7 @@
                                         "hold_for_any_target": false,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
-                                        "max_ref_time_diff": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "minimum_probability": 0.95,
                                         "miss_tolerance": 0.9900000095367432,
                                         "name": "Detection",
                                         "prob": 0.9,
@@ -2076,8 +2073,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "ignore_primary_only": false,
-                                        "max_ref_time_diff": 5.0,
-                                        "maximum_probability": 0.0,
                                         "min_duration": 1.0,
                                         "min_num_updates": 1,
                                         "name": "Extra Data",
@@ -2093,8 +2088,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "ignore_primary_only": true,
-                                        "max_ref_time_diff": 5.0,
-                                        "maximum_probability": 0.0,
                                         "min_duration": 11.0,
                                         "min_num_updates": 3,
                                         "name": "Extra Track",
@@ -2182,8 +2175,6 @@
                                     "instance_name": "EvaluationRequirementModeAFalseConfigMode A False0",
                                     "parameters": {
                                         "comment": "",
-                                        "max_ref_time_diff": 4.0,
-                                        "maximum_probability_false": 0.01,
                                         "name": "Mode A False",
                                         "prob": 0.01,
                                         "prob_check_type": 1,
@@ -2196,8 +2187,6 @@
                                     "instance_name": "EvaluationRequirementModeAPresentConfigMode A Present0",
                                     "parameters": {
                                         "comment": "",
-                                        "max_ref_time_diff": 5.0,
-                                        "minimum_probability_present": 0.98,
                                         "name": "Mode A Present",
                                         "prob": 0.98,
                                         "prob_check_type": 3,
@@ -2232,16 +2221,11 @@
                                     "parameters": {
                                         "comment": "",
                                         "max_difference": 300.0,
-                                        "max_ref_time_diff": 5.0,
-                                        "maximum_probability_false": 0.009999999776482582,
-                                        "minimum_probability_present": 0.97,
                                         "name": "Mode C False",
                                         "prob": 0.03,
                                         "prob_check_type": 1,
                                         "short_name": "PFMC",
-                                        "use": true,
-                                        "use_maximum_probability_false": true,
-                                        "use_minimum_probability_present": true
+                                        "use": true
                                     }
                                 },
                                 {
@@ -2249,8 +2233,6 @@
                                     "instance_name": "EvaluationRequirementModeCPresentConfigMode C Present0",
                                     "parameters": {
                                         "comment": "",
-                                        "max_ref_time_diff": 5.0,
-                                        "minimum_probability_present": 0.98,
                                         "name": "Mode C Present",
                                         "prob": 0.97,
                                         "prob_check_type": 3,
@@ -2264,8 +2246,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "max_abs_value": 70.0,
-                                        "max_ref_time_diff": 5.0,
-                                        "minimum_probability": 0.9,
                                         "name": "Position Across",
                                         "prob": 0.9,
                                         "prob_check_type": 3,
@@ -2280,8 +2260,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "max_abs_value": 70.0,
-                                        "max_ref_time_diff": 5.0,
-                                        "minimum_probability": 0.9,
                                         "name": "Postion Along",
                                         "prob": 0.9,
                                         "prob_check_type": 3,
@@ -2295,11 +2273,7 @@
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigPosition Error0",
                                     "parameters": {
                                         "comment": "",
-                                        "dist_abs_value_check_type": 1,
                                         "failed_values_of_interest": true,
-                                        "max_abs_value": 70.0,
-                                        "max_ref_time_diff": 5.0,
-                                        "minimum_probability": 0.9,
                                         "name": "Position Correct",
                                         "prob": 0.9,
                                         "prob_check_type": 3,
@@ -2315,9 +2289,7 @@
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigPosition False0",
                                     "parameters": {
                                         "comment": "",
-                                        "dist_abs_value_check_type": 1,
                                         "failed_values_of_interest": false,
-                                        "max_abs_value": 700.0,
                                         "name": "Position False",
                                         "prob": 0.01,
                                         "prob_check_type": 1,
@@ -2334,8 +2306,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "name": "Position Correct RMS",
-                                        "prob": 0.9,
-                                        "prob_check_type": 3,
                                         "ref_min_accuracy": 20.0,
                                         "short_name": "PCP RMS",
                                         "threshold_value": 200.0,
@@ -2381,8 +2351,7 @@
                     "instance_name": "EvaluationStandardDubious Targets0",
                     "parameters": {
                         "name": "Dubious Targets",
-                        "reference_max_time_diff": 5.0,
-                        "reference_min_accuracy": 10.0
+                        "reference_max_time_diff": 5.0
                     },
                     "sub_configs": [
                         {
@@ -2474,8 +2443,7 @@
                     "instance_name": "EvaluationStandardEUROCAE ED-1160",
                     "parameters": {
                         "name": "EUROCAE ED-116",
-                        "reference_max_time_diff": 5.0,
-                        "reference_min_accuracy": 10.0
+                        "reference_max_time_diff": 5.0
                     },
                     "sub_configs": [
                         {
@@ -2533,8 +2501,7 @@
                     "parameters": {
                         "ignore_primary_only_targets": true,
                         "name": "EUROCAE ED-117",
-                        "reference_max_time_diff": 5.0,
-                        "reference_min_accuracy": 10.0
+                        "reference_max_time_diff": 5.0
                     },
                     "sub_configs": [
                         {
@@ -2978,8 +2945,7 @@
                     "instance_name": "EvaluationStandardEUROCAE ED-1420",
                     "parameters": {
                         "name": "EUROCAE ED-142",
-                        "reference_max_time_diff": 5.0,
-                        "reference_min_accuracy": 210.0
+                        "reference_max_time_diff": 5.0
                     },
                     "sub_configs": [
                         {
@@ -3028,7 +2994,6 @@
                                     "parameters": {
                                         "comment": "Ref 3.3.7",
                                         "max_difference": 300.0,
-                                        "maximum_probability_false": 0.001,
                                         "name": "Probability of False Code Detection MC",
                                         "prob": 0.001,
                                         "prob_check_type": 1,
@@ -3197,8 +3162,6 @@
                                     "parameters": {
                                         "comment": "Ref 3.3.8",
                                         "name": "Horizontal Position Accuracy",
-                                        "prob": 0.9,
-                                        "prob_check_type": 3,
                                         "ref_min_accuracy": 35.0,
                                         "short_name": "HPA",
                                         "threshold_value": 350.0,
@@ -3380,8 +3343,6 @@
                                     "parameters": {
                                         "comment": "Ref 3.3.8",
                                         "name": "Horizontal Position Accuracy",
-                                        "prob": 0.9,
-                                        "prob_check_type": 3,
                                         "ref_min_accuracy": 15.0,
                                         "short_name": "HPA",
                                         "threshold_value": 150.0,
@@ -4134,8 +4095,7 @@
                     "instance_name": "EvaluationStandardRadar0",
                     "parameters": {
                         "name": "Radar En-Route & TMA",
-                        "reference_max_time_diff": 5.0,
-                        "reference_min_accuracy": 10.0
+                        "reference_max_time_diff": 5.0
                     },
                     "sub_configs": [
                         {
@@ -4214,7 +4174,6 @@
                                     "parameters": {
                                         "comment": "EUROCONTROL SUR.ET1.ST01.1000-STD-01-01 6.3.3.2: validated false Mode C codes < 0.1 %",
                                         "max_difference": 300.0,
-                                        "maximum_probability_false": 0.009999999776482582,
                                         "name": "Validated False Mode C Codes",
                                         "prob": 0.001,
                                         "prob_check_type": 0,
@@ -4306,8 +4265,7 @@
                     "instance_name": "EvaluationStandardtest0",
                     "parameters": {
                         "name": "test",
-                        "reference_max_time_diff": 5.0,
-                        "reference_min_accuracy": 50.0
+                        "reference_max_time_diff": 5.0
                     },
                     "sub_configs": [
                         {
@@ -4351,9 +4309,7 @@
                                         "hold_for_any_target": false,
                                         "invert_prob": false,
                                         "max_gap_length_s": 5.0,
-                                        "max_ref_time_diff": 5.0,
                                         "min_gap_length_s": 3.0,
-                                        "minimum_probability": 0.95,
                                         "miss_tolerance": 0.9900000095367432,
                                         "name": "Detection",
                                         "prob": 0.9,
@@ -4428,8 +4384,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "ignore_primary_only": true,
-                                        "max_ref_time_diff": 5.0,
-                                        "maximum_probability": 0.0,
                                         "min_duration": 11.0,
                                         "min_num_updates": 3,
                                         "name": "Extra Data",
@@ -4445,8 +4399,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "ignore_primary_only": true,
-                                        "max_ref_time_diff": 5.0,
-                                        "maximum_probability": 0.0,
                                         "min_duration": 60.0,
                                         "min_num_updates": 10,
                                         "name": "Extra Track",
@@ -4461,8 +4413,6 @@
                                     "instance_name": "EvaluationRequirementIdentificationCorrectConfigProbability of Correct Identification0",
                                     "parameters": {
                                         "comment": "",
-                                        "max_ref_time_diff": 5.0,
-                                        "minimum_probability": 0.99,
                                         "name": "Identification Correct",
                                         "prob": 0.9,
                                         "prob_check_type": 3,
@@ -4552,8 +4502,6 @@
                                     "instance_name": "EvaluationRequirementModeAFalseConfigMode A False0",
                                     "parameters": {
                                         "comment": "",
-                                        "max_ref_time_diff": 4.0,
-                                        "maximum_probability_false": 0.01,
                                         "name": "Mode A False",
                                         "prob": 0.01,
                                         "prob_check_type": 1,
@@ -4566,8 +4514,6 @@
                                     "instance_name": "EvaluationRequirementModeAPresentConfigMode A Present0",
                                     "parameters": {
                                         "comment": "",
-                                        "max_ref_time_diff": 5.0,
-                                        "minimum_probability_present": 0.98,
                                         "name": "Mode A Present",
                                         "prob": 0.98,
                                         "prob_check_type": 3,
@@ -4615,16 +4561,11 @@
                                     "parameters": {
                                         "comment": "",
                                         "max_difference": 300.0,
-                                        "max_ref_time_diff": 5.0,
-                                        "maximum_probability_false": 0.009999999776482582,
-                                        "minimum_probability_present": 0.97,
                                         "name": "Mode C False",
                                         "prob": 0.03,
                                         "prob_check_type": 1,
                                         "short_name": "PFMC",
-                                        "use": true,
-                                        "use_maximum_probability_false": true,
-                                        "use_minimum_probability_present": true
+                                        "use": true
                                     }
                                 },
                                 {
@@ -4632,8 +4573,6 @@
                                     "instance_name": "EvaluationRequirementModeCPresentConfigMode C Present0",
                                     "parameters": {
                                         "comment": "",
-                                        "max_ref_time_diff": 5.0,
-                                        "minimum_probability_present": 0.98,
                                         "name": "Mode C Present",
                                         "prob": 0.97,
                                         "prob_check_type": 3,
@@ -4647,8 +4586,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "max_abs_value": 70.0,
-                                        "max_ref_time_diff": 5.0,
-                                        "minimum_probability": 0.9,
                                         "name": "Across",
                                         "prob": 0.9,
                                         "prob_check_type": 3,
@@ -4663,8 +4600,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "max_abs_value": 70.0,
-                                        "max_ref_time_diff": 5.0,
-                                        "minimum_probability": 0.9,
                                         "name": "Along",
                                         "prob": 0.9,
                                         "prob_check_type": 3,
@@ -4678,11 +4613,7 @@
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigPosition Error0",
                                     "parameters": {
                                         "comment": "",
-                                        "dist_abs_value_check_type": 1,
                                         "failed_values_of_interest": true,
-                                        "max_abs_value": 70.0,
-                                        "max_ref_time_diff": 5.0,
-                                        "minimum_probability": 0.9,
                                         "name": "Position Correct",
                                         "prob": 0.9,
                                         "prob_check_type": 3,
@@ -4698,9 +4629,7 @@
                                     "instance_name": "EvaluationRequirementPositionDistanceConfigPosition False0",
                                     "parameters": {
                                         "comment": "",
-                                        "dist_abs_value_check_type": 1,
                                         "failed_values_of_interest": false,
-                                        "max_abs_value": 700.0,
                                         "name": "Position False",
                                         "prob": 0.01,
                                         "prob_check_type": 1,
@@ -4717,8 +4646,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "name": "Position Correct RMS",
-                                        "prob": 0.9,
-                                        "prob_check_type": 3,
                                         "ref_min_accuracy": 30.0,
                                         "short_name": "PCP RMS",
                                         "threshold_value": 300.0,
@@ -4731,8 +4658,6 @@
                                     "parameters": {
                                         "comment": "",
                                         "max_abs_value": 0.5,
-                                        "max_ref_time_diff": 5.0,
-                                        "minimum_probability": 0.9,
                                         "name": "Latency",
                                         "prob": 0.9,
                                         "prob_check_type": 3,
@@ -4782,8 +4707,7 @@
                         "ignore_non_adsb_targets": true,
                         "ignore_primary_only_targets": true,
                         "name": "EUROCAE ED-129C",
-                        "reference_max_time_diff": 5.0,
-                        "reference_min_accuracy": 10.0
+                        "reference_max_time_diff": 5.0
                     },
                     "sub_configs": [
                         {
@@ -4800,16 +4724,11 @@
                                     "parameters": {
                                         "comment": "From EUROCAE ED-129C Section 3.3.3 REQ 497: The ratio of incorrect decoding of Pressure Altitude shall be less than 1x10-5. Pressure Altitude jumps (e.g. more than 2000 ft in 10 s) should be considered incorrect unless investigated to be avionics or aircraft related.",
                                         "max_difference": 300.0,
-                                        "max_ref_time_diff": 4.0,
-                                        "maximum_probability_false": 1e-05,
-                                        "minimum_probability_present": 0.97,
                                         "name": "Incorrect Pressure Altitude",
                                         "prob": 1e-05,
                                         "prob_check_type": 1,
                                         "short_name": "IPA",
-                                        "use": true,
-                                        "use_maximum_probability_false": true,
-                                        "use_minimum_probability_present": false
+                                        "use": true
                                     }
                                 },
                                 {
@@ -4833,8 +4752,6 @@
                                     "instance_name": "EvaluationRequirementModeAFalseConfigIncorrect Mode A Code0",
                                     "parameters": {
                                         "comment": "From EUROCAE ED-129C Section 3.3.3 REQ 646: The ratio of incorrect decoding of Mode A code shall be less than 1x10-5. Changing Mode A between two different stable codes is not considered incorrect (including transitional states received during change of Mode A code).",
-                                        "max_ref_time_diff": 4.0,
-                                        "maximum_probability_false": 1e-05,
                                         "name": "Incorrect Mode A Code",
                                         "prob": 1e-05,
                                         "prob_check_type": 1,

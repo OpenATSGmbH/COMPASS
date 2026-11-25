@@ -38,9 +38,9 @@ namespace DetailCode = EvaluationRequirementResult::DetailCode;
 
 ModeCFalse::ModeCFalse(const std::string& name, const std::string& short_name, const std::string& group_name,
                        double prob, COMPARISON_TYPE prob_check_type, EvaluationCalculator& calculator, 
-                       float maximum_probability_false, float maximum_difference)
+                       float maximum_difference)
     : ProbabilityBase(name, short_name, group_name, prob, prob_check_type, false, calculator),
-      maximum_probability_false_(maximum_probability_false), maximum_difference_(maximum_difference)
+      maximum_difference_(maximum_difference)
 {
 }
 
@@ -49,7 +49,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCFalse::evaluate (
         const SectorLayer& sector_layer)
 {
     logdbg << "'" << name_ << "': utn " << target_data.utn_
-           << " prob " << maximum_probability_false_;
+           << " prob " << threshold();
 
     time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
@@ -224,10 +224,5 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCFalse::evaluate (
 float ModeCFalse::maximumDifference() const
 {
     return maximum_difference_;
-}
-
-float ModeCFalse::maximumProbabilityFalse() const
-{
-    return maximum_probability_false_;
 }
 }

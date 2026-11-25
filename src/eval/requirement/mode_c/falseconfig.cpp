@@ -35,8 +35,6 @@ ModeCFalseConfig::ModeCFalseConfig(
         Group* parent)
     : ProbabilityBaseConfig(config, parent)
 {
-    registerParameter("maximum_probability_false", &maximum_probability_false_, 0.01f);
-
     registerParameter("max_difference", &max_difference_, 100.0f);
 }
 
@@ -44,19 +42,9 @@ std::shared_ptr<Base> ModeCFalseConfig::createRequirement()
 {
     shared_ptr<ModeCFalse> req = make_shared<ModeCFalse>(
                 name_, short_name_, group_.name(), prob_, prob_check_type_, calculator_,
-                maximum_probability_false_, max_difference_);
+                max_difference_);
 
     return req;
-}
-
-float ModeCFalseConfig::maximumProbabilityFalse() const
-{
-    return maximum_probability_false_;
-}
-
-void ModeCFalseConfig::maximumProbabilityFalse(float value)
-{
-    maximum_probability_false_ = value;
 }
 
 float ModeCFalseConfig::maxDifference() const
