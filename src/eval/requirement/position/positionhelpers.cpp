@@ -81,7 +81,6 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
                                      const TstPosFunc& tst_pos_of,
                                      const ReferenceLookup& ref,
                                      const ReportSettings& settings,
-                                     const DetailStyle& style,
                                      const ReportCheckFunc& check)
 {
     PositionEvaluation result;
@@ -105,7 +104,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
                                   const std::string& comment)
     {
         if (!settings.skip_no_data_details)
-            addDetail(timestamp, tst_pos, ref_pos, pos_inside, {}, style.unchecked_passed, comment);
+            addDetail(timestamp, tst_pos, ref_pos, pos_inside, {}, false, comment);
     };
 
     for (const auto& tst_index : tst_indexes)
@@ -141,7 +140,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
 
             if (!ref_spd.has_value())
             {
-                addNoDataDetail(timestamp, tst_pos, {}, {}, "No reference speed");
+                addNoDataDetail(timestamp, tst_pos, ref_pos, {}, "No reference speed");
                 ++counts.num_no_ref;
                 continue;
             }
@@ -159,10 +158,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
 
         if (ref_pos_acc && *ref_pos_acc > settings.ref_min_accuracy)
         {
-            if (style.inaccurate_with_ref)
-                addNoDataDetail(timestamp, tst_pos, ref_pos, true, "Inaccurate reference position");
-            else
-                addNoDataDetail(timestamp, tst_pos, {}, {}, "Inaccurate reference position");
+            addNoDataDetail(timestamp, tst_pos, ref_pos, true, "Inaccurate reference position");
 
             ++counts.num_ref_inaccurate;
             continue;
@@ -186,7 +182,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
                 break;
             }
             case ReportCheck::Outcome::Invalid:
-                addDetail(timestamp, tst_pos, ref_pos, true, {}, style.unchecked_passed, report_check.comment);
+                addDetail(timestamp, tst_pos, ref_pos, true, {}, false, report_check.comment);
                 ++counts.num_pos_calc_errors;
                 break;
             case ReportCheck::Outcome::Deferred:
@@ -238,10 +234,6 @@ PositionEvaluation evaluateDistances(const dbContent::TargetReport::IndexMap& ts
                                      const ReportSettings& settings,
                                      const DistanceSettings& distance_settings)
 {
-    DetailStyle style;
-    style.unchecked_passed    = false;
-    style.inaccurate_with_ref = false;
-
     Transformation trafo;
 
     // averaged position mode: usable samples with their error vector in the local
@@ -288,7 +280,7 @@ PositionEvaluation evaluateDistances(const dbContent::TargetReport::IndexMap& ts
         return compared(passed, *d, passed ? "Passed" : "Failed");
     };
 
-    PositionEvaluation result = evaluatePositions(tst_indexes, tst_pos, ref, settings, style, check);
+    PositionEvaluation result = evaluatePositions(tst_indexes, tst_pos, ref, settings, check);
 
     if (!distance_settings.use_averaging)
         return result;
@@ -335,10 +327,6 @@ PositionEvaluation evaluateDistancesRMS(const dbContent::TargetReport::IndexMap&
                                         const ReportSettings& settings,
                                         double threshold)
 {
-    DetailStyle style;
-    style.unchecked_passed    = false;
-    style.inaccurate_with_ref = true;
-
     Transformation trafo;
 
     auto check = [ & ] (const UsableReport& report) -> ReportCheck
@@ -353,7 +341,7 @@ PositionEvaluation evaluateDistancesRMS(const dbContent::TargetReport::IndexMap&
         return compared(passed, *d, passed ? "Passed" : "Failed");
     };
 
-    return evaluatePositions(tst_indexes, tst_pos, ref, settings, style, check);
+    return evaluatePositions(tst_indexes, tst_pos, ref, settings, check);
 }
 
 /**
@@ -366,10 +354,6 @@ PositionEvaluation evaluateTrackOffsets(const dbContent::TargetReport::IndexMap&
                                         double max_abs_value)
 {
     traced_assert(ref.ref_speed);
-
-    DetailStyle style;
-    style.unchecked_passed    = true;
-    style.inaccurate_with_ref = true;
 
     const bool along = component == TrackOffsetComponent::Along;
 
@@ -400,7 +384,7 @@ PositionEvaluation evaluateTrackOffsets(const dbContent::TargetReport::IndexMap&
         return compared(passed, value, passed ? "" : (along ? "Along-track not OK" : "Across-track not OK"));
     };
 
-    return evaluatePositions(tst_indexes, tst_pos, ref, settings, style, check);
+    return evaluatePositions(tst_indexes, tst_pos, ref, settings, check);
 }
 
 } // namespace PositionHelpers

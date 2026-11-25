@@ -83,16 +83,6 @@ struct ReportSettings
     bool   skip_no_data_details = false;
 };
 
-/**
- * The requirements differ in the details of the test reports without a comparison (no reference,
- * outside, inaccurate reference, invalid value). Kept as they are, they show in the detail tables.
- */
-struct DetailStyle
-{
-    bool unchecked_passed    = false; // check_passed of these details
-    bool inaccurate_with_ref = true;  // inaccurate reference: detail with reference position and inside
-};
-
 /// test report with a usable reference: inside the sector, reference accurate enough
 struct UsableReport
 {
@@ -153,13 +143,13 @@ using ReportCheckFunc = std::function<ReportCheck(const UsableReport&)>;
 /**
  * Walk over the test reports of the position requirements: per report the reference checks of
  * the lookup, then the check of the requirement for the usable reports. One detail per report,
- * in time order (except the deferred ones).
+ * in time order (except the deferred ones). A report without a comparison gets a detail without
+ * a value, with the reference position if known.
  */
 PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& tst_indexes,
                                      const TstPosFunc& tst_pos,
                                      const ReferenceLookup& ref,
                                      const ReportSettings& settings,
-                                     const DetailStyle& style,
                                      const ReportCheckFunc& check);
 
 struct DistanceSettings

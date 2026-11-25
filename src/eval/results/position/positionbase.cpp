@@ -169,6 +169,10 @@ unsigned int SinglePositionBaseCommon::common_numIssues() const
 bool SinglePositionBaseCommon::common_detailIsOk(const EvaluationDetail& detail,
                                                  const std::shared_ptr<EvaluationRequirement::Base>& requirement) const
 {
+    // no comparison (no reference, outside, inaccurate reference, invalid value): not an issue
+    if (!detail.getValue(DetailKey::Value).isValid())
+        return true;
+
     const EvaluationRequirement::PositionDistance* req = dynamic_cast<const EvaluationRequirement::PositionDistance*>(requirement.get());
 
     auto check_passed = detail.getValueAs<bool>(DetailKey::CheckPassed);

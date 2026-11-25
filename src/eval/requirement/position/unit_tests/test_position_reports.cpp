@@ -222,18 +222,25 @@ TEST_CASE("Position Distance classifies each test report", "[eval][position_repo
     {
         const auto& d = run(reports, distances(distanceSettings(30.0))).details;
 
-        for (unsigned int i : {0, 1, 3})
+        // no reference: no reference position
+        for (unsigned int i : {0, 1})
         {
             CHECK(!d[ i ].ref_pos.has_value());
             CHECK(!d[ i ].pos_inside);
+        }
+
+        // outside the sector, inaccurate reference: reference position and inside
+        CHECK(d[ 2 ].ref_pos.has_value());
+        CHECK(d[ 2 ].pos_inside == false);
+        CHECK(d[ 3 ].ref_pos.has_value());
+        CHECK(d[ 3 ].pos_inside == true);
+
+        // no comparison: no value, not passed
+        for (unsigned int i : {0, 1, 2, 3})
+        {
             CHECK(!d[ i ].value);
             CHECK(!d[ i ].check_passed);
         }
-
-        // outside the sector: reference position, but no distance
-        CHECK(d[ 2 ].ref_pos.has_value());
-        CHECK(d[ 2 ].pos_inside == false);
-        CHECK(!d[ 2 ].value);
 
         for (unsigned int i : {4, 5, 6})
         {
@@ -310,52 +317,57 @@ TEST_CASE("Reference data is read only as far as needed", "[eval][position_repor
     }
 }
 
-TEST_CASE("Details of the test reports without a comparison differ per requirement", "[eval][position_reports]")
+TEST_CASE("Details of the test reports without a comparison are the same for all requirements", "[eval][position_reports]")
 {
-    Report no_ref_data;  no_ref_data.has_ref_data = false;
-    Report inaccurate;   inaccurate.t_s = 1;  inaccurate.ref_acc = 20.0;
+    Report no_ref_data;   no_ref_data.has_ref_data = false;
+    Report no_ref_speed;  no_ref_speed.t_s = 1;  no_ref_speed.has_ref_speed = false;
+    Report outside;       outside.t_s = 2;       outside.inside = false;
+    Report inaccurate;    inaccurate.t_s = 3;    inaccurate.ref_acc = 20.0;
 
-    const std::vector<Report> reports {no_ref_data, inaccurate};
+    const std::vector<Report> reports {no_ref_data, no_ref_speed, outside, inaccurate};
 
     const auto distance = run(reports, distances(distanceSettings(30.0)));
     const auto rms      = run(reports, distancesRMS(30.0));
     const auto along    = run(reports, trackOffsets(TrackOffsetComponent::Along, 30.0), true);
     const auto across   = run(reports, trackOffsets(TrackOffsetComponent::Across, 30.0), true);
 
-    SECTION("check_passed: false for Distance and Distance RMS, true for Along and Across")
+    SECTION("no value, not passed, reference position if known")
     {
-        CHECK(!distance.details[ 0 ].check_passed);
-        CHECK(!rms.details[ 0 ].check_passed);
-        CHECK(along.details[ 0 ].check_passed);
-        CHECK(across.details[ 0 ].check_passed);
+        for (const auto* evaluation : {&distance, &rms, &along, &across})
+        {
+            for (unsigned int i : {0, 2, 3})
+            {
+                CHECK(!evaluation->details[ i ].value);
+                CHECK(!evaluation->details[ i ].check_passed);
+            }
 
-        CHECK(!distance.details[ 1 ].check_passed);
-        CHECK(!rms.details[ 1 ].check_passed);
-        CHECK(along.details[ 1 ].check_passed);
-        CHECK(across.details[ 1 ].check_passed);
+            CHECK(!evaluation->details[ 0 ].ref_pos.has_value());
+            CHECK(evaluation->details.back().ref_pos.has_value());
+            CHECK(evaluation->details.back().pos_inside == true);
+        }
     }
 
-    SECTION("inaccurate reference: reference position and inside, except for Distance")
+    SECTION("a missing reference speed counts only where the speed is needed")
     {
-        CHECK(!distance.details[ 1 ].ref_pos.has_value());
-        CHECK(!distance.details[ 1 ].pos_inside);
+        CHECK(commentsOf(distance) == std::vector<std::string>{
+                  "No reference data", "Passed", "Outside sector", "Inaccurate reference position"});
+        CHECK(commentsOf(along) == std::vector<std::string>{
+                  "No reference data", "No reference speed", "Outside sector", "Inaccurate reference position"});
 
-        for (const auto* evaluation : {&rms, &along, &across})
-        {
-            CHECK(evaluation->details[ 1 ].ref_pos.has_value());
-            CHECK(evaluation->details[ 1 ].pos_inside == true);
-            CHECK(!evaluation->details[ 1 ].value);
-        }
+        REQUIRE(along.details[ 1 ].ref_pos.has_value());
+        CHECK(!along.details[ 1 ].pos_inside);
     }
 
     SECTION("same counts")
     {
         for (const auto* evaluation : {&distance, &rms, &along, &across})
         {
-            CHECK(evaluation->counts.num_no_ref == 1);
-            CHECK(evaluation->counts.num_pos_inside == 1);
+            CHECK(evaluation->counts.num_pos_outside == 1);
             CHECK(evaluation->counts.num_ref_inaccurate == 1);
         }
+
+        CHECK(distance.counts.num_no_ref == 1);
+        CHECK(along.counts.num_no_ref == 2);
     }
 }
 
@@ -484,6 +496,7 @@ TEST_CASE("Position Along and Across: offset on the reference track", "[eval][po
         CHECK(evaluation.counts.num_pos_calc_errors == 1);
         CHECK(evaluation.counts.num_comp_passed + evaluation.counts.num_comp_failed == 0);
         CHECK(!evaluation.details[ 0 ].value);
+        CHECK(!evaluation.details[ 0 ].check_passed);
         CHECK(evaluation.details[ 0 ].ref_pos.has_value());
         CHECK(evaluation.details[ 0 ].pos_inside == true);
     }
