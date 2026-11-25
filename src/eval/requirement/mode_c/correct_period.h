@@ -72,7 +72,6 @@ protected:
                                                                               unsigned int misses_total) override;
     virtual bool useReferenceUpdate(const EvaluationTargetData& target_data,
                                     const dbContent::TargetReport::DataID& ref_id) const override;
-    virtual std::string outsidePeriodComment() const override;
 
     float max_distance_ft_;
     bool  level_flight_only_;

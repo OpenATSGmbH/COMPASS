@@ -106,15 +106,12 @@ std::vector<Event> periodEvents(const TimePeriod& period,
                            const TimePeriodUpdate* update,
                            const boost::posix_time::ptime& time0,
                            const boost::posix_time::ptime& time1,
-                           const std::string& error,
-                           bool has_ref_data,
                            bool compute_misses)
     {
         traced_assert(time1 >= time0);
 
         Event e;
         e.type           = type;
-        e.error          = error;
         e.interval_time0 = time0;
         e.interval_time1 = time1;
 
@@ -128,8 +125,6 @@ std::vector<Event> periodEvents(const TimePeriod& period,
             e.misses = numMisses(dt, p);
         }
 
-        e.had_ref_data = has_ref_data;
-
         events.push_back(e);
     };
 
@@ -140,7 +135,7 @@ std::vector<Event> periodEvents(const TimePeriod& period,
         {
             for (const auto& update : period.getUpdates())
             {
-                logEvent(events, Event::TypeNoReference, &update, update.data_id.timestamp(), update.data_id.timestamp(), "", true, false);
+                logEvent(events, Event::TypeNoReference, &update, update.data_id.timestamp(), update.data_id.timestamp(), false);
             }
         }
 
@@ -149,7 +144,7 @@ std::vector<Event> periodEvents(const TimePeriod& period,
 
     //log period entered
     if (!skip_no_data_details)
-        logEvent(events, Event::TypeEnterPeriod, nullptr, period.begin(), period.end(), "", true, false);
+        logEvent(events, Event::TypeEnterPeriod, nullptr, period.begin(), period.end(), false);
 
     //inside sector period
     const auto& updates = period.getUpdates();
@@ -158,7 +153,7 @@ std::vector<Event> periodEvents(const TimePeriod& period,
     {
         //no updates in period => add single event for this case
         if (!skip_no_data_details)
-            logEvent(events, Event::TypeEmptyPeriod, nullptr, period.begin(), period.end(), "", true, false);
+            logEvent(events, Event::TypeEmptyPeriod, nullptr, period.begin(), period.end(), false);
     }
     else
     {
@@ -166,7 +161,6 @@ std::vector<Event> periodEvents(const TimePeriod& period,
         size_t n = updates.size();
 
         const TimePeriodUpdate* valid_last     = nullptr;
-        bool                    had_ref_data   = true;
         int                     valid_last_idx = -1;
 
         for (size_t i = 0; i < n; ++i)
@@ -179,16 +173,13 @@ std::vector<Event> periodEvents(const TimePeriod& period,
             //invalid update => log and skip
             if (update_validity.value == IntervalValidity::Value::Invalid)
             {
-                logEvent(events, Event::TypeInvalid, &update, update.data_id.timestamp(), update.data_id.timestamp(), update_validity.comment, true, false);
+                logEvent(events, Event::TypeInvalid, &update, update.data_id.timestamp(), update.data_id.timestamp(), false);
                 continue;
             }
 
-            //was reference data missing? => yields a valid update (in dubio pro reo)
-            had_ref_data = update_validity.value != IntervalValidity::Value::RefDataMissing;
-
             //first valid update? => log
             if (!valid_last && !skip_no_data_details)
-                logEvent(events, Event::TypeFirstValidUpdateInPeriod, &update, update.data_id.timestamp(), update.data_id.timestamp(), "", had_ref_data, false);
+                logEvent(events, Event::TypeFirstValidUpdateInPeriod, &update, update.data_id.timestamp(), update.data_id.timestamp(), false);
 
             //valid update => check for misses
             logEvent(events, 
@@ -196,8 +187,6 @@ std::vector<Event> periodEvents(const TimePeriod& period,
                      &update,
                      valid_last ? valid_last->data_id.timestamp() : period.begin(),      // time0 is either the last valid update or period begin
                      update.data_id.timestamp(),                                         // time1 always update time
-                     "",
-                     had_ref_data,
                      true);                                                              // check misses in both cases
 
             valid_last     = &updates[ i ];
@@ -210,8 +199,8 @@ std::vector<Event> periodEvents(const TimePeriod& period,
             std::vector<Event> last_events;
 
             if (!skip_no_data_details)
-                logEvent(last_events, Event::TypeLastValidUpdateInPeriod, valid_last, valid_last->data_id.timestamp(), valid_last->data_id.timestamp(), "", had_ref_data, false);
-            logEvent(last_events, Event::TypeValidLast, valid_last, valid_last->data_id.timestamp(), period.end(), "", had_ref_data, true);
+                logEvent(last_events, Event::TypeLastValidUpdateInPeriod, valid_last, valid_last->data_id.timestamp(), valid_last->data_id.timestamp(), false);
+            logEvent(last_events, Event::TypeValidLast, valid_last, valid_last->data_id.timestamp(), period.end(), true);
 
             events.insert(events.begin() + valid_last_idx, last_events.begin(), last_events.end());
         }
@@ -219,12 +208,12 @@ std::vector<Event> periodEvents(const TimePeriod& period,
         //no valid updates in period => add single event for this case, the whole period is missed
         //(test target reports without a correct code, as between valid updates)
         if (!valid_last)
-            logEvent(events, Event::TypeEmptyPeriod, nullptr, period.begin(), period.end(), "", true, true);
+            logEvent(events, Event::TypeEmptyPeriod, nullptr, period.begin(), period.end(), true);
     }
 
     //log period left
     if (!skip_no_data_details)
-        logEvent(events, Event::TypeLeavePeriod, nullptr, period.begin(), period.end(), "", true, false);
+        logEvent(events, Event::TypeLeavePeriod, nullptr, period.begin(), period.end(), false);
 
     return events;
 }

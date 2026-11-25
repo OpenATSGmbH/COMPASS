@@ -110,13 +110,11 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraData::evaluate (
                             const dbContent::TargetPosition& tst_pos,
                             const QVariant& inside,
                             const QVariant& extra,
-                            const QVariant& ref_exists,
-                            const std::string& comment)
+                            const QVariant& ref_exists)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::Inside, inside)
                                              .setValue(Result::DetailKey::Extra, extra)
-                                             .setValue(Result::DetailKey::RefExists, ref_exists)
-                                             .generalComment(comment));
+                                             .setValue(Result::DetailKey::RefExists, ref_exists));
     };
 
     {
@@ -133,7 +131,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraData::evaluate (
             if (is_inside_ref_time_period)
             {
                 ++num_ok;
-                addDetail(timestamp, tst_pos, true, false, true, "OK"); // inside, extra, ref
+                addDetail(timestamp, tst_pos, true, false, true); // inside, extra, ref
                 continue;
             }
 
@@ -144,7 +142,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraData::evaluate (
             if (is_inside)
             {
                 ++num_extra;
-                addDetail(timestamp, tst_pos, true, true, false, "Extra"); // inside, extra, ref
+                addDetail(timestamp, tst_pos, true, true, false); // inside, extra, ref
 
                 if (!has_tod)
                 {
@@ -160,7 +158,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraData::evaluate (
             }
             else if (!skip_no_data_details)
             {
-                addDetail(timestamp, tst_pos, false, false, false, "Tst outside"); // inside, extra, ref
+                addDetail(timestamp, tst_pos, false, false, false); // inside, extra, ref
             }
         }
     }

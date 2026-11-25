@@ -81,7 +81,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCPresent::evaluate (
     boost::optional<dbContent::TargetPosition> ref_pos;
     //bool ok;
 
-    string comment;
     //bool lower_nok, upper_nok;
 
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
@@ -99,21 +98,18 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCPresent::evaluate (
             const QVariant& num_pos_outside,
             const QVariant& num_no_ref_id,
             const QVariant& num_present_id,
-            const QVariant& num_missing_id,
-            const std::string& comment)
+            const QVariant& num_missing_id)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::RefExists, ref_exists)
                           .setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                           .setValue(Result::DetailKey::IsNotOk, is_not_ok)
-                          .addPosition(ref_pos)
-                          .generalComment(comment));
+                          .addPosition(ref_pos));
     };
 
     for (const auto& tst_id : tst_data)
     {
         //ref_exists = false;
         is_inside = false;
-        comment = "";
 
         skip_detail = false;
 
@@ -128,7 +124,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCPresent::evaluate (
                 addDetail(timestamp, pos_current, {},
                           false, {}, false, // ref_exists, pos_inside, is_not_ok
                           num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                          num_no_ref_id, num_present_id, num_missing_id, "No reference data");
+                          num_no_ref_id, num_present_id, num_missing_id);
 
             ++num_no_ref_pos;
             continue;
@@ -145,7 +141,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCPresent::evaluate (
                 addDetail(timestamp, pos_current, {},
                           false, {}, false, // ref_exists, pos_inside, is_not_ok
                           num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                          num_no_ref_id, num_present_id, num_missing_id, "No reference position");
+                          num_no_ref_id, num_present_id, num_missing_id);
 
             ++num_no_ref_pos;
             continue;
@@ -160,7 +156,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCPresent::evaluate (
                 addDetail(timestamp, pos_current, ref_pos,
                           true, is_inside, false, // ref_exists, pos_inside, is_not_ok
                           num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                          num_no_ref_id, num_present_id, num_missing_id, "Outside sector");
+                          num_no_ref_id, num_present_id, num_missing_id);
 
             ++num_pos_outside;
             continue;
@@ -193,12 +189,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCPresent::evaluate (
         {
             if (code_present_tst)
             {
-                comment = "OK";
                 ++num_present_id;
             }
             else
             {
-                comment = "Id missing";
                 ++num_missing_id;
 
                 code_missing = true;
@@ -206,7 +200,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCPresent::evaluate (
         }
         else
         {
-            comment = "No reference id";
             ++num_no_ref_id;
 
             // skip_detail?
@@ -216,7 +209,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCPresent::evaluate (
             addDetail(timestamp, pos_current, ref_pos,
                       true, is_inside, code_missing, // ref_exists, pos_inside, is_not_ok
                       num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                      num_no_ref_id, num_present_id, num_missing_id, comment);
+                      num_no_ref_id, num_present_id, num_missing_id);
     }
 
     logdbg << "'" << name_ << "': utn " << target_data.utn_

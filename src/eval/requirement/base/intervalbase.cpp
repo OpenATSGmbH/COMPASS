@@ -121,13 +121,11 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
                             const std::vector<dbContent::TargetPosition>& positions,
                             const QVariant& d_tod,
                             const QVariant& miss_occurred,
-                            const QVariant& missed_uis,
-                            const std::string& comment)
+                            const QVariant& missed_uis)
     {
         details.push_back(Detail(timestamp, positions).setValue(Result::DetailKey::DiffTOD     , d_tod        )
                                                       .setValue(Result::DetailKey::MissOccurred, miss_occurred)
-                                                      .setValue(Result::DetailKey::MissedUIs   , missed_uis   )
-                                                      .generalComment(comment));
+                                                      .setValue(Result::DetailKey::MissedUIs   , missed_uis   ));
     };
 
     size_t   ne           = events.size();
@@ -146,9 +144,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
         auto detail_info = eventDetailInfo(target_data, event, ref_updates);
         if (!detail_info.generate_detail)
             continue;
-
-        //!events which cause misses should generate comments!
-        traced_assert(event.misses == 0 || !detail_info.evt_comment.empty());
 
         std::vector<dbContent::TargetPosition> positions;
         if (detail_info.evt_ref_updates_idx0.has_value() && detail_info.evt_ref_updates_idx1.has_value())
@@ -174,8 +169,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
                   positions, 
                   detail_info.evt_has_dt ? detail_info.evt_dt : QVariant(), 
                   detail_info.evt_has_misses, 
-                  misses_total, 
-                  detail_info.evt_comment);
+                  misses_total);
     }
 
     auto counts = IntervalHelpers::counts(periods, events, missParams(), exclude_detection_misses_);
@@ -197,14 +191,6 @@ IntervalBase::DetailInfo IntervalBase::eventDetailInfo(const EvaluationTargetDat
                                                        const Event& event,
                                                        std::vector<dbContent::TargetPosition>& ref_updates) const
 {
-    std::string thres        = Utils::String::doubleToStringPrecision(missThreshold(), 2);
-    std::string period       = "period " + (event.period.has_value() ? std::to_string(event.period.value()) : "");
-    std::string miss         = "(DToD > " + thres + ")";
-    std::string hit          = "(DToD <= " + thres + ")";
-    std::string evt_ts       = Utils::Time::toString(event.interval_time1);
-    std::string evt_interval = "[" + Utils::Time::toString(event.interval_time0) + "," + evt_ts + "]";
-    std::string error        = event.error.empty() ? "Unknown" : event.error;
-
     bool has_miss = event.misses > 0;
 
     IntervalBase::DetailInfo dinfo;
@@ -271,7 +257,6 @@ IntervalBase::DetailInfo IntervalBase::eventDetailInfo(const EvaluationTargetDat
             traced_assert(target_data.tstChain().posOpt(event.data_id).has_value());
 
             dinfo.evt_time        = event.data_id.timestamp();
-            dinfo.evt_comment     = outsidePeriodComment();
             dinfo.evt_position    = target_data.tstChain().pos(event.data_id);
             dinfo.evt_has_ref     = false;
             dinfo.generate_detail = true;
@@ -285,7 +270,6 @@ IntervalBase::DetailInfo IntervalBase::eventDetailInfo(const EvaluationTargetDat
             traced_assert(target_data.refChain().posOpt(event.interval_time0).has_value());
 
             dinfo.evt_time        = event.interval_time0;
-            dinfo.evt_comment     = "Entering " + period;
             dinfo.evt_position    = target_data.refChain().pos(event.interval_time0);
             dinfo.evt_has_ref     = true;
             dinfo.generate_detail = true;
@@ -299,7 +283,6 @@ IntervalBase::DetailInfo IntervalBase::eventDetailInfo(const EvaluationTargetDat
             traced_assert(target_data.tstChain().posOpt(event.data_id).has_value());
 
             dinfo.evt_time        = event.data_id.timestamp();
-            dinfo.evt_comment     = "First valid target report of " + period;
             dinfo.evt_position    = target_data.tstChain().pos(event.data_id);
             dinfo.evt_has_ref     = true;
             dinfo.generate_detail = true;
@@ -314,8 +297,6 @@ IntervalBase::DetailInfo IntervalBase::eventDetailInfo(const EvaluationTargetDat
             traced_assert(target_data.refChain().posOpt(event.interval_time0).has_value());
 
             dinfo.evt_time         = event.data_id.timestamp();
-            dinfo.evt_comment      = has_miss ? "Miss detected at start of current " + period + " " + miss + ", between " + evt_interval : 
-                                                "Begin of current " + period + " OK " + hit;
             dinfo.evt_position     = target_data.tstChain().pos(event.data_id);
             dinfo.evt_position_ref = target_data.refChain().pos(event.interval_time0);
             dinfo.evt_has_ref      = true;
@@ -335,7 +316,6 @@ IntervalBase::DetailInfo IntervalBase::eventDetailInfo(const EvaluationTargetDat
             traced_assert(target_data.tstChain().posOpt(event.interval_time0).has_value());
 
             dinfo.evt_time         = event.data_id.timestamp();
-            dinfo.evt_comment      = has_miss ? "Miss detected in current " + period + " " + miss + ", between " + evt_interval : "OK " + hit;
             dinfo.evt_position     = target_data.tstChain().pos(event.data_id);
             dinfo.evt_position_ref = target_data.tstChain().pos(event.interval_time0);
             dinfo.evt_has_ref      = true;
@@ -357,8 +337,6 @@ IntervalBase::DetailInfo IntervalBase::eventDetailInfo(const EvaluationTargetDat
             traced_assert(target_data.refChain().posOpt(event.interval_time1).has_value());
 
             dinfo.evt_time         = event.data_id.timestamp();
-            dinfo.evt_comment      = has_miss ? "Miss detected at end of current " + period + " " + miss + ", between " + evt_interval : 
-                                                "End of current " + period + " OK " + hit;
             dinfo.evt_position     = target_data.tstChain().pos(event.data_id);
             dinfo.evt_position_ref = target_data.refChain().pos(event.interval_time1);
             dinfo.evt_has_ref      = true;
@@ -377,7 +355,6 @@ IntervalBase::DetailInfo IntervalBase::eventDetailInfo(const EvaluationTargetDat
             traced_assert(target_data.tstChain().posOpt(event.data_id).has_value());
 
             dinfo.evt_time        = event.data_id.timestamp();
-            dinfo.evt_comment     = "Invalid target report: " + error;
             dinfo.evt_position    = target_data.tstChain().pos(event.data_id);
             dinfo.evt_has_ref     = true;
             dinfo.generate_detail = true;
@@ -391,7 +368,6 @@ IntervalBase::DetailInfo IntervalBase::eventDetailInfo(const EvaluationTargetDat
             traced_assert(target_data.tstChain().posOpt(event.data_id).has_value());
 
             dinfo.evt_time        = event.data_id.timestamp();
-            dinfo.evt_comment     = "Invalid target report: " + error;
             dinfo.evt_position    = target_data.tstChain().pos(event.data_id);
             dinfo.evt_has_ref     = true;
             dinfo.generate_detail = true;
@@ -405,7 +381,6 @@ IntervalBase::DetailInfo IntervalBase::eventDetailInfo(const EvaluationTargetDat
             traced_assert(target_data.tstChain().posOpt(event.data_id).has_value());
 
             dinfo.evt_time        = event.data_id.timestamp();
-            dinfo.evt_comment     = "Last valid target report of " + period;
             dinfo.evt_position    = target_data.tstChain().pos(event.data_id);
             dinfo.evt_has_ref     = true;
             dinfo.generate_detail = true;
@@ -419,7 +394,6 @@ IntervalBase::DetailInfo IntervalBase::eventDetailInfo(const EvaluationTargetDat
             traced_assert(target_data.refChain().posOpt(event.interval_time1).has_value());
 
             dinfo.evt_time        = event.interval_time1;
-            dinfo.evt_comment     = "Leaving " + period;
             dinfo.evt_position    = target_data.refChain().pos(event.interval_time1);
             dinfo.evt_has_ref     = true;
             dinfo.generate_detail = true;
@@ -434,7 +408,6 @@ IntervalBase::DetailInfo IntervalBase::eventDetailInfo(const EvaluationTargetDat
             traced_assert(target_data.refChain().posOpt(event.interval_time1).has_value());
 
             dinfo.evt_time         = event.interval_time1;
-            dinfo.evt_comment      = has_miss ? "Miss detected in period " + period + " without valid update " + miss + ", between " + evt_interval : "";
             dinfo.evt_position     = target_data.refChain().pos(event.interval_time1);
             dinfo.evt_position_ref = target_data.refChain().pos(event.interval_time0);
             dinfo.evt_has_ref      = true;
@@ -449,10 +422,6 @@ IntervalBase::DetailInfo IntervalBase::eventDetailInfo(const EvaluationTargetDat
             break;
         }
     }
-
-    //add remark that reference data was missing
-    if (!event.had_ref_data)
-        dinfo.evt_comment += " (no ref info)";
 
     return dinfo;
 }

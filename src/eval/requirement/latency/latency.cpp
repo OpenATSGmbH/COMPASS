@@ -89,7 +89,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
     bool along_ok;
 
     unsigned int num_distances {0};
-    string comment;
 
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
 
@@ -104,14 +103,12 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                             const QVariant& num_pos_inside,
                             const QVariant& num_pos_outside,
                             const QVariant& num_value_ok,
-                            const QVariant& num_value_nok,
-                            const std::string& comment)
+                            const QVariant& num_value_nok)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::Value, offset)
                                              .setValue(Result::DetailKey::CheckPassed, check_passed)
-                                             .addPosition(ref_pos)
-                                             .generalComment(comment));
+                                             .addPosition(ref_pos));
     };
 
     for (const auto& tst_id : tst_data)
@@ -130,8 +127,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                             {}, // ref_pos
                             {}, {}, along_ok, // pos_inside, value, value_ok,
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_value_ok, num_value_nok,
-                            "No reference data");
+                            num_value_ok, num_value_nok);
 
             ++num_no_ref;
             continue;
@@ -146,8 +142,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                             {}, // ref_pos
                             {}, {}, along_ok, // pos_inside, value, value_ok
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_value_ok, num_value_nok,
-                            "No reference position");
+                            num_value_ok, num_value_nok);
 
             ++num_no_ref;
             continue;
@@ -162,8 +157,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                             ref_pos, // ref_pos
                             is_inside, {}, along_ok, // pos_inside, value, value_ok
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_value_ok, num_value_nok,
-                            "No reference speed");
+                            num_value_ok, num_value_nok);
             ++num_no_ref;
             continue;
         }
@@ -181,8 +175,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                             ref_pos, // ref_pos
                             is_inside, {}, along_ok, // pos_inside, value, value_ok
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_value_ok, num_value_nok,
-                            "Outside sector");
+                            num_value_ok, num_value_nok);
             ++num_pos_outside;
             continue;
         }
@@ -197,8 +190,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                             ref_pos, // ref_pos
                             is_inside, {}, along_ok, // pos_inside, value, value_ok
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_value_ok, num_value_nok,
-                            "Inaccurate reference position");
+                            num_value_ok, num_value_nok);
 
             ++num_ref_inaccurate;
             continue;            
@@ -216,8 +208,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                         ref_pos, // ref_pos
                         is_inside, {}, along_ok, // pos_inside, value, value_ok
                         num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                        num_value_ok, num_value_nok,
-                        "Distance Invalid");
+                        num_value_ok, num_value_nok);
             ++num_pos_calc_errors;
             continue;
         }
@@ -228,8 +219,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                         ref_pos, // ref_pos
                         is_inside, {}, along_ok, // pos_inside, value, value_ok
                         num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                        num_value_ok, num_value_nok,
-                        "Angle Invalid");
+                        num_value_ok, num_value_nok);
             ++num_pos_calc_errors;
             continue;
         }
@@ -240,8 +230,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                         ref_pos, // ref_pos
                         is_inside, {}, along_ok, // pos_inside, value, value_ok
                         num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                        num_value_ok, num_value_nok,
-                        "Speed Invalid");
+                        num_value_ok, num_value_nok);
             ++num_pos_calc_errors;
             continue;
         }
@@ -257,20 +246,17 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
         {
             along_ok = false;
             ++num_value_nok;
-            comment = "Latency not OK";
         }
         else
         {
             ++num_value_ok;
-            comment = "";
         }
 
         addDetail(timestamp, tst_pos,
                     ref_pos,
                     is_inside, latency, along_ok, // pos_inside, value, value_ok
                     num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                    num_value_ok, num_value_nok,
-                    comment);
+                    num_value_ok, num_value_nok);
     }
 
     //        logdbg << "'" << name_ << "': utn " << target_data.utn_

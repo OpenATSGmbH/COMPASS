@@ -74,15 +74,13 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarTimeStamp::eva
                             const dbContent::TargetPosition& tst_pos,
                             const boost::optional<dbContent::TargetPosition>& ref_pos,
                             const QVariant& pos_inside,
-                            const QVariant& offset,
-                            const std::string& comment)
+                            const QVariant& offset)
     {
         // the time stamp error is a statistic of all updates, single updates are not checked
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::Value, offset)
                                              .setValue(Result::DetailKey::CheckPassed, true)
-                                             .addPosition(ref_pos)
-                                             .generalComment(comment));
+                                             .addPosition(ref_pos));
     };
 
     Transformation ogr_geo2cart;
@@ -97,7 +95,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarTimeStamp::eva
         if (!target_data.hasMappedRefData(tst_id, max_ref_time_diff))
         {
             if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos, {}, {}, {}, "No reference data");
+                addDetail(timestamp, tst_pos, {}, {}, {});
 
             ++num_no_ref;
             continue;
@@ -108,7 +106,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarTimeStamp::eva
         if (!ref_pos.has_value())
         {
             if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos, {}, {}, {}, "No reference position");
+                addDetail(timestamp, tst_pos, {}, {}, {});
 
             ++num_no_ref;
             continue;
@@ -119,7 +117,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarTimeStamp::eva
         if (!ref_spd.has_value())
         {
             if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos, ref_pos, {}, {}, "No reference speed");
+                addDetail(timestamp, tst_pos, ref_pos, {}, {});
 
             ++num_no_ref;
             continue;
@@ -131,7 +129,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarTimeStamp::eva
         if (!is_inside)
         {
             if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos, ref_pos, is_inside, {}, "Outside sector");
+                addDetail(timestamp, tst_pos, ref_pos, is_inside, {});
 
             ++num_pos_outside;
             continue;
@@ -143,7 +141,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarTimeStamp::eva
         if (ref_pos_acc && *ref_pos_acc > ref_min_accuracy_)
         {
             if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos, ref_pos, is_inside, {}, "Inaccurate reference position");
+                addDetail(timestamp, tst_pos, ref_pos, is_inside, {});
 
             ++num_ref_inaccurate;
             continue;
@@ -158,14 +156,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarTimeStamp::eva
         if (!transform_ok || !std::isfinite(distance) || !std::isfinite(angle)
             || !std::isfinite(ref_spd->track_angle_))
         {
-            addDetail(timestamp, tst_pos, ref_pos, is_inside, {}, "Offset Invalid");
+            addDetail(timestamp, tst_pos, ref_pos, is_inside, {});
             ++num_pos_calc_errors;
             continue;
         }
 
         if (ref_spd->speed_ <= 0 || !std::isfinite(ref_spd->speed_))
         {
-            addDetail(timestamp, tst_pos, ref_pos, is_inside, {}, "Speed Invalid");
+            addDetail(timestamp, tst_pos, ref_pos, is_inside, {});
             ++num_pos_calc_errors;
             continue;
         }
@@ -177,7 +175,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarTimeStamp::eva
 
         ++num_comp_passed;
 
-        addDetail(timestamp, tst_pos, ref_pos, is_inside, -d_along / ref_spd->speed_, "");
+        addDetail(timestamp, tst_pos, ref_pos, is_inside, -d_along / ref_spd->speed_);
     }
 
     traced_assert(num_no_ref <= num_pos);

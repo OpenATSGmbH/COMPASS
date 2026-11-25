@@ -118,7 +118,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
     bool comp_passed;
 
     unsigned int num_trackangle_comp {0};
-    string comment;
 
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
 
@@ -137,8 +136,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                             const QVariant& num_pos_inside,
                             const QVariant& num_pos_outside,
                             const QVariant& num_comp_failed,
-                            const QVariant& num_comp_passed,
-                            const std::string& comment)
+                            const QVariant& num_comp_passed)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::Offset, offset)
@@ -146,9 +144,8 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                                              .setValue(Result::DetailKey::ValueRef, value_ref)
                                              .setValue(Result::DetailKey::ValueTst, value_tst)
                                              .setValue(Result::DetailKey::SpeedRef, speed_ref)
-                                             .addPosition(ref_pos)
+                                             .addPosition(ref_pos));
                                              //.addLines(lines)
-                                             .generalComment(comment));
     };
 
 //    QColor ref_line_color = QColor("#ffa500");
@@ -181,8 +178,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                           {}, {}, comp_passed, // pos_inside, value, check_passed
                           {}, {}, {}, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed,
-                          "No reference data");
+                          num_comp_failed, num_comp_passed);
 
             ++num_no_ref;
             continue;
@@ -198,8 +194,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                           {}, {}, comp_passed, // pos_inside, value, check_passed
                           {}, {}, {}, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed,
-                          "No reference position");
+                          num_comp_failed, num_comp_passed);
 
             ++num_no_ref;
             continue;
@@ -216,8 +211,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                           is_inside, {}, comp_passed, // pos_inside, value, check_passed
                           {}, {}, {}, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed,
-                          "Outside sector");
+                          num_comp_failed, num_comp_passed);
 
             ++num_pos_outside;
             continue;
@@ -233,8 +227,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                           {}, {}, comp_passed, // pos_inside, value, check_passed
                           {}, {}, {}, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed,
-                          "No reference speed");
+                          num_comp_failed, num_comp_passed);
 
             ++num_no_ref;
             continue;
@@ -257,8 +250,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                           {}, {}, comp_passed, // pos_inside, value, check_passed
                           {}, {}, ref_spd->speed_, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed,
-                          "Reference speed too low");
+                          num_comp_failed, num_comp_passed);
 
             ++num_pos_ref_spd_low;
 
@@ -275,8 +267,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                           {}, {}, comp_passed, // pos_inside, value, check_passed
                           {}, {}, ref_spd->speed_, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed,
-                          "No tst speed");
+                          num_comp_failed, num_comp_passed);
 
             ++num_no_tst_value;
             continue;
@@ -299,24 +290,18 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
         {
             comp_passed = true;
             ++num_comp_passed;
-            comment = "Passed";
         }
         else
         {
             ++num_comp_failed;
-            comment = "Failed";
         }
-
-//        comment += " tst_track ref " +to_string(ref_trackangle_deg)
-//                + " tst " + to_string(tst_trackangle_deg) + " diff " + to_string(trackangle_min_diff);
 
         addDetail(timestamp, tst_pos,
                   ref_pos, //lines, // ref_pos, lines
                   is_inside, trackangle_min_diff, comp_passed, // pos_inside, value, check_passed
                   ref_trackangle_deg, *tst_trackangle_deg, ref_spd->speed_, // value_ref, value_tst, speed_ref
                   num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                  num_comp_failed, num_comp_passed,
-                  comment);
+                  num_comp_failed, num_comp_passed);
     }
 
     //        logdbg << "'" << name_ << "': utn " << target_data.utn_

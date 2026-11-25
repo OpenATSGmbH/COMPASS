@@ -112,7 +112,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
     bool comp_passed;
 
     unsigned int num_speeds {0};
-    string comment;
 
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
 
@@ -127,14 +126,12 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
                             const QVariant& num_pos_inside,
                             const QVariant& num_pos_outside,
                             const QVariant& num_comp_failed,
-                            const QVariant& num_comp_passed,
-                            const std::string& comment)
+                            const QVariant& num_comp_passed)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::Offset, offset)
                                              .setValue(Result::DetailKey::CheckPassed, check_passed)
-                                             .addPosition(ref_pos)
-                                             .generalComment(comment));
+                                             .addPosition(ref_pos));
     };
 
     SpeedHelpers::Params speed_params;
@@ -159,8 +156,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
                             {}, // ref_pos
                             {}, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_failed, num_comp_passed,
-                            "No reference data");
+                            num_comp_failed, num_comp_passed);
 
             ++num_no_ref;
             continue;
@@ -175,8 +171,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
                             {}, // ref_pos
                             {}, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_failed, num_comp_passed,
-                            "No reference position");
+                            num_comp_failed, num_comp_passed);
 
             ++num_no_ref;
             continue;
@@ -192,8 +187,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
                             ref_pos, // ref_pos
                             is_inside, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_failed, num_comp_passed,
-                            "Outside sector");
+                            num_comp_failed, num_comp_passed);
             ++num_pos_outside;
             continue;
         }
@@ -207,8 +201,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
                             {}, // ref_pos
                             {}, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_failed, num_comp_passed,
-                            "No reference speed");
+                            num_comp_failed, num_comp_passed);
 
             ++num_no_ref;
             continue;
@@ -226,8 +219,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
                             {}, // ref_pos
                             {}, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_failed, num_comp_passed,
-                            "No tst speed");
+                            num_comp_failed, num_comp_passed);
 
             ++num_no_tst_value;
             continue;
@@ -241,20 +233,17 @@ std::shared_ptr<EvaluationRequirementResult::Single> Speed::evaluate (
         {
             comp_passed = true;
             ++num_comp_passed;
-            comment = "Passed";
         }
         else
         {
             ++num_comp_failed;
-            comment = "Failed";
         }
 
         addDetail(timestamp, tst_pos,
                     ref_pos,
                     is_inside, spd_diff, comp_passed, // pos_inside, value, check_passed
                     num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                    num_comp_failed, num_comp_passed,
-                    comment);
+                    num_comp_failed, num_comp_passed);
     }
 
     //        logdbg << "" << name_ << "': utn " << target_data.utn_

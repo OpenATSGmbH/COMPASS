@@ -94,16 +94,6 @@ bool ModeCCorrectPeriod::useReferenceUpdate(const EvaluationTargetData& target_d
 
 /**
  */
-std::string ModeCCorrectPeriod::outsidePeriodComment() const
-{
-    if (level_flight_only_)
-        return "Outside sector/reference period or not in level flight";
-
-    return IntervalBase::outsidePeriodComment();
-}
-
-/**
- */
 ModeCCorrectPeriod::Validity ModeCCorrectPeriod::isValid(const dbContent::TargetReport::DataID& data_id,
                                                          const EvaluationTargetData& target_data,
                                                          const SectorLayer& sector_layer,
@@ -111,14 +101,13 @@ ModeCCorrectPeriod::Validity ModeCCorrectPeriod::isValid(const dbContent::Target
 {
     auto cmp_res = compareModeC(data_id, target_data, max_ref_time_diff, max_distance_ft_);
 
-    bool no_ref = cmp_res.first == ValueComparisonResult::Unknown_NoRefData;
-    bool failed = cmp_res.first == ValueComparisonResult::Unknown_NoTstData || 
-                  cmp_res.first == ValueComparisonResult::Different;
+    bool no_ref = cmp_res == ValueComparisonResult::Unknown_NoRefData;
+    bool failed = cmp_res == ValueComparisonResult::Unknown_NoTstData || 
+                  cmp_res == ValueComparisonResult::Different;
 
     Validity v;
 
     v.value   = no_ref ? Validity::Value::RefDataMissing : (failed ? Validity::Value::Invalid : Validity::Value::Valid);
-    v.comment = failed ? "ModeC failed (" + cmp_res.second + ")" : "";
 
     return v;
 }

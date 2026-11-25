@@ -73,7 +73,7 @@ IdentificationCorrectPeriod::Validity IdentificationCorrectPeriod::isValid(const
                                                                            const SectorLayer& sector_layer,
                                                                            const boost::posix_time::time_duration& max_ref_time_diff) const
 {
-    std::pair<EvaluationRequirement::ValueComparisonResult, std::string> cmp_res;
+    EvaluationRequirement::ValueComparisonResult cmp_res {};
 
     switch(identification_type_)
     {
@@ -88,16 +88,13 @@ IdentificationCorrectPeriod::Validity IdentificationCorrectPeriod::isValid(const
             break;
     }
                             
-    bool no_ref = cmp_res.first == ValueComparisonResult::Unknown_NoRefData;
-    bool failed = cmp_res.first == ValueComparisonResult::Unknown_NoTstData || 
-                  cmp_res.first == ValueComparisonResult::Different;
+    bool no_ref = cmp_res == ValueComparisonResult::Unknown_NoRefData;
+    bool failed = cmp_res == ValueComparisonResult::Unknown_NoTstData || 
+                  cmp_res == ValueComparisonResult::Different;
 
     Validity v;
 
-    auto id_name = identificationName(identification_type_);
-
     v.value   = no_ref ? Validity::Value::RefDataMissing : (failed ? Validity::Value::Invalid : Validity::Value::Valid);
-    v.comment = failed ? id_name + " failed (" + cmp_res.second + ")" : "";
 
     return v;
 }

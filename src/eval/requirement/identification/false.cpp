@@ -79,8 +79,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
 
     bool result_false;
 
-    string comment;
-
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
     bool skip_detail;
 
@@ -96,21 +94,18 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
                             const QVariant& num_pos_outside,
                             const QVariant& num_unknown_id,
                             const QVariant& num_correct_id,
-                            const QVariant& num_false_id,
-                            const std::string& comment)
+                            const QVariant& num_false_id)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::RefExists, ref_exists)
                                              .setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::IsNotOk, is_not_ok)
-                                             .addPosition(ref_pos)
-                                             .generalComment(comment));
+                                             .addPosition(ref_pos));
     };
 
     for (const auto& tst_id : tst_data)
     {
         ref_exists = false;
         is_inside = false;
-        comment = "";
 
         skip_detail = false;
 
@@ -125,7 +120,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
                 addDetail(timestamp, pos_current, {},
                             false, {}, false, // ref_exists, pos_inside,
                             num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                            num_unknown, num_correct, num_false, "No reference data");
+                            num_unknown, num_correct, num_false);
 
             ++num_no_ref_pos;
             continue;
@@ -142,7 +137,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
                 addDetail(timestamp, pos_current, {},
                             false, {}, false, // ref_exists, pos_inside,
                             num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                            num_unknown, num_correct, num_false, "No reference position");
+                            num_unknown, num_correct, num_false);
 
             ++num_no_ref_pos;
             continue;
@@ -158,7 +153,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
                 addDetail(timestamp, pos_current, ref_pos,
                             ref_exists, is_inside, false, // ref_exists, pos_inside,
                             num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                            num_unknown, num_correct, num_false, "Outside sector");
+                            num_unknown, num_correct, num_false);
 
             ++num_pos_outside;
             continue;
@@ -168,25 +163,12 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
         // compare the used identification values
         std::vector<ValueComparisonResult> cmp_results;
 
-        auto useCompare = [ & ] (const std::pair<ValueComparisonResult, std::string>& cmp, const std::string& value_name)
-        {
-            cmp_results.push_back(cmp.first);
-
-            if (cmp.first == ValueComparisonResult::Different)
-            {
-                if (comment.size())
-                    comment += ", ";
-
-                comment += value_name + " false (" + cmp.second + ")";
-            }
-        };
-
         if (use_ms_ti_)
-            useCompare(compareTi(tst_id, target_data, max_ref_time_diff), "ACID");
+            cmp_results.push_back(compareTi(tst_id, target_data, max_ref_time_diff));
         if (use_ms_ta_)
-            useCompare(compareTa(tst_id, target_data, max_ref_time_diff), "ACAD");
+            cmp_results.push_back(compareTa(tst_id, target_data, max_ref_time_diff));
         if (use_mode_a_)
-            useCompare(compareModeA(tst_id, target_data, max_ref_time_diff), "M3A");
+            cmp_results.push_back(compareModeA(tst_id, target_data, max_ref_time_diff));
 
         auto report_class = FalseHelpers::classify(cmp_results, require_all_false_);
 
@@ -198,7 +180,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
                 if (skip_no_data_details)
                     skip_detail = true;
 
-                comment = "No reference value";
                 ++num_no_ref_val;
                 break;
 
@@ -206,7 +187,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
                 if (skip_no_data_details)
                     skip_detail = true;
 
-                comment = "No test value";
                 ++num_unknown;
                 break;
 
@@ -223,7 +203,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
             addDetail(timestamp, pos_current, ref_pos,
                         ref_exists, is_inside, result_false,
                         num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                        num_unknown, num_correct, num_false, comment);
+                        num_unknown, num_correct, num_false);
     }
 
     logdbg << "'" << name_ << "': utn " << target_data.utn_

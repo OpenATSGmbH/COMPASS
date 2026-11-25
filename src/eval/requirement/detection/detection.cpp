@@ -193,10 +193,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluateStatusCy
                                   .setValue(Result::DetailKey::DiffTOD,
                                             Time::partialSeconds(miss.end - miss.begin))
                                   .setValue(Result::DetailKey::MissOccurred, true)
-                                  .setValue(Result::DetailKey::MissedUIs, miss.sum_missed)
-                                  .generalComment("Miss detected, no target report in reported"
-                                                  " update cycle [" + Time::toString(miss.begin)
-                                                  + ", " + Time::toString(miss.end) + "]"));
+                                  .setValue(Result::DetailKey::MissedUIs, miss.sum_missed));
     }
 
     auto ret = make_shared<EvaluationRequirementResult::SingleDetection>(
@@ -357,13 +354,11 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                          const std::vector<dbContent::TargetPosition>& positions,
                          const QVariant& d_tod,
                          const QVariant& miss_occurred,
-                         const QVariant& missed_uis,
-                         const std::string& comment)
+                         const QVariant& missed_uis)
     {
         details.push_back(Detail(ts, positions).setValue(Result::DetailKey::DiffTOD, d_tod)
                               .setValue(Result::DetailKey::MissOccurred, miss_occurred)
-                              .setValue(Result::DetailKey::MissedUIs, missed_uis)
-                              .generalComment(comment));
+                              .setValue(Result::DetailKey::MissedUIs, missed_uis));
     };
 
     std::vector<dbContent::TargetPosition> ref_updates;
@@ -410,8 +405,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
         ref_updates.push_back(pos1.value());
     };
 
-    std::string thres = String::doubleToStringPrecision(missThreshold(), 2);
-
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
 
     dbContent::TargetPosition pos_current;
@@ -440,10 +433,8 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                 pos_current   = target_data.refChain().pos(step.t1);
                 auto last_pos = target_data.refChain().pos(step.t0);
 
-                std::string comment = "Miss detected (DToD > " + thres + "), last was " + Time::toString(step.t0);
-
                 storeRefUpdates(ref_updates, step.t0, step.t1, last_pos, pos_current);
-                addDetail(step.t1, ref_updates, step.t_diff, true, step.sum_missed, comment);
+                addDetail(step.t1, ref_updates, step.t_diff, true, step.sum_missed);
                 break;
             }
             case Step::Type::PeriodEnd:
@@ -454,75 +445,50 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                 if (!step.t0_is_tst)
                     last_pos = target_data.refChain().pos(step.t0);
 
-                std::string comment;
-                if (step.miss)
-                    comment = "Miss detected in previous period " + to_string(step.period)
-                              + " (DToD > " + thres + "), between [" + Time::toString(step.t0) + ", "
-                              + Time::toString(step.t1) + "]\n";
-                else
-                    comment = "Previous period " + to_string(step.period) + " OK (DToD <= " + thres + ")\n";
-
                 storeRefUpdates(ref_updates, step.t0, step.t1, last_pos, pos_current);
-                addDetail(timestamp, ref_updates, step.t_diff, step.miss, step.sum_missed, comment);
+                addDetail(timestamp, ref_updates, step.t_diff, step.miss, step.sum_missed);
                 break;
             }
             case Step::Type::OutsideRefPeriods:
             {
                 if (!skip_no_data_details)
-                    addDetail(timestamp, { pos_current }, {}, false, step.sum_missed,
-                              "Outside of reference time periods");
+                    addDetail(timestamp, { pos_current }, {}, false, step.sum_missed);
                 break;
             }
             case Step::Type::NoRefPos:
             {
                 if (!skip_no_data_details)
-                    addDetail(timestamp, { pos_current }, {}, false, step.sum_missed,
-                              "At exact beginning of reference time period");
+                    addDetail(timestamp, { pos_current }, {}, false, step.sum_missed);
                 break;
             }
             case Step::Type::OutsideSector:
             {
                 if (!skip_no_data_details)
-                    addDetail(timestamp, { pos_current }, {}, false, step.sum_missed, "Outside sector");
+                    addDetail(timestamp, { pos_current }, {}, false, step.sum_missed);
                 break;
             }
             case Step::Type::FirstAfterOutside:
             {
                 storeRefUpdate(ref_updates, tst_ids[ step.tst_index ]);
-                addDetail(timestamp, ref_updates, {}, false, step.sum_missed, "First target report after outside sector");
+                addDetail(timestamp, ref_updates, {}, false, step.sum_missed);
                 break;
             }
             case Step::Type::FirstInPeriod:
             {
                 storeRefUpdate(ref_updates, tst_ids[ step.tst_index ]);
-                addDetail(timestamp, ref_updates, {}, false, sum_missed_before,
-                          "First target report in period " + to_string(step.period));
+                addDetail(timestamp, ref_updates, {}, false, sum_missed_before);
 
                 // gap from the period begin
                 auto last_pos = target_data.refChain().pos(step.t0);
 
-                std::string comment;
-                if (step.initiation)
-                    comment = "Current period " + to_string(step.period) + " OK, track initiated within TRIT (DToD <= "
-                              + String::doubleToStringPrecision(trit_s_, 2) + " s)\n";
-                else if (step.miss)
-                    comment = "Miss detected in current period " + to_string(step.period)
-                              + " (DToD > " + thres + "), between [" + Time::toString(step.t0)
-                              + ", " + Time::toString(step.t1) + "]\n";
-                else
-                    comment = "Current period " + to_string(step.period) + " OK (DToD <= " + thres + ")\n";
-
                 storeRefUpdates(ref_updates, step.t0, step.t1, last_pos, {});
-                addDetail(timestamp, ref_updates, step.t_diff, step.miss, step.sum_missed, comment);
+                addDetail(timestamp, ref_updates, step.t_diff, step.miss, step.sum_missed);
                 break;
             }
             case Step::Type::Gap:
             {
-                std::string comment = step.miss ? "Miss detected (DToD > " + thres + "), last was " + Time::toString(step.t0)
-                                                : "OK (DToD <= " + thres + ")";
-
                 storeRefUpdates(ref_updates, step.t0, step.t1, {}, {});
-                addDetail(timestamp, ref_updates, step.t_diff, step.miss, step.sum_missed, comment);
+                addDetail(timestamp, ref_updates, step.t_diff, step.miss, step.sum_missed);
                 break;
             }
         }

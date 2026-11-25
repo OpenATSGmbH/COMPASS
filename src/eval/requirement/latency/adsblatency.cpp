@@ -86,13 +86,11 @@ std::shared_ptr<EvaluationRequirementResult::Single> ADSBLatency::evaluate (
                             const dbContent::TargetPosition& tst_pos,
                             const QVariant& pos_inside,
                             const QVariant& value,
-                            const QVariant& check_passed,
-                            const std::string& comment)
+                            const QVariant& check_passed)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::Value, value)
-                                             .setValue(Result::DetailKey::CheckPassed, check_passed)
-                                             .generalComment(comment));
+                                             .setValue(Result::DetailKey::CheckPassed, check_passed));
     };
 
     for (const auto& tst_id : tst_data)
@@ -108,7 +106,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ADSBLatency::evaluate (
         if (!is_inside)
         {
             if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos, is_inside, {}, {}, "Outside sector");
+                addDetail(timestamp, tst_pos, is_inside, {}, {});
 
             ++num_pos_outside;
             continue;
@@ -121,7 +119,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ADSBLatency::evaluate (
         if (c.outcome == ADSBLatencyHelpers::Outcome::NoTimeData)
         {
             if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos, is_inside, {}, {}, "No time stamp data");
+                addDetail(timestamp, tst_pos, is_inside, {}, {});
 
             ++num_no_data;
             continue;
@@ -131,17 +129,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> ADSBLatency::evaluate (
 
         bool value_ok = c.outcome == ADSBLatencyHelpers::Outcome::Passed;
 
-        string comment;
-
         if (value_ok)
             ++num_value_ok;
         else
         {
             ++num_value_nok;
-            comment = c.outcome == ADSBLatencyHelpers::Outcome::Negative ? "Negative latency" : "Latency not OK";
         }
 
-        addDetail(timestamp, tst_pos, is_inside, c.latency, value_ok, comment);
+        addDetail(timestamp, tst_pos, is_inside, c.latency, value_ok);
     }
 
     traced_assert(num_pos == num_pos_inside + num_pos_outside);

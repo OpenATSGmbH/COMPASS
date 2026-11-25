@@ -78,7 +78,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCFalse::evaluate (
     //bool ok;
 
     ValueComparisonResult cmp_res;
-    string comment;
 
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
     bool skip_detail;
@@ -95,21 +94,18 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCFalse::evaluate (
                             const QVariant& num_pos_outside,
                             const QVariant& num_unknown_id,
                             const QVariant& num_correct_id,
-                            const QVariant& num_false_id,
-                            const std::string& comment)
+                            const QVariant& num_false_id)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::RefExists, ref_exists)
                                              .setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::IsNotOk, is_not_ok)
-                                             .addPosition(ref_pos)
-                                             .generalComment(comment));
+                                             .addPosition(ref_pos));
     };
 
     for (const auto& tst_id : tst_data)
     {
         ref_exists = false;
         is_inside = false;
-        comment = "";
 
         skip_detail = false;
 
@@ -124,7 +120,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCFalse::evaluate (
                 addDetail(timestamp, pos_current, {},
                             false, {}, false, // ref_exists, pos_inside, is_not_ok
                             num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                            num_unknown, num_correct, num_false, "No reference data");
+                            num_unknown, num_correct, num_false);
 
             ++num_no_ref_pos;
             continue;
@@ -141,7 +137,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCFalse::evaluate (
                 addDetail(timestamp, pos_current, {},
                             false, {}, false, // ref_exists, pos_inside, is_not_ok
                             num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                            num_unknown, num_correct, num_false, "No reference position");
+                            num_unknown, num_correct, num_false);
 
             ++num_no_ref_pos;
             continue;
@@ -157,14 +153,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCFalse::evaluate (
                 addDetail(timestamp, pos_current, ref_pos,
                             ref_exists, is_inside, false, // ref_exists, pos_inside, is_not_ok
                             num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                            num_unknown, num_correct, num_false, "Outside sector");
+                            num_unknown, num_correct, num_false);
 
             ++num_pos_outside;
             continue;
         }
         ++num_pos_inside;
 
-        tie(cmp_res, comment) = compareModeC(tst_id, target_data, max_ref_time_diff, maximum_difference_);
+        cmp_res = compareModeC(tst_id, target_data, max_ref_time_diff, maximum_difference_);
 
         auto report_class = FalseHelpers::classify(cmp_res);
 
@@ -199,7 +195,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCFalse::evaluate (
             addDetail(timestamp, pos_current, ref_pos,
                         ref_exists, is_inside, !code_ok,
                         num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                        num_unknown, num_correct, num_false, comment);
+                        num_unknown, num_correct, num_false);
     }
 
     logdbg << "'" << name_ << "': utn " << target_data.utn_

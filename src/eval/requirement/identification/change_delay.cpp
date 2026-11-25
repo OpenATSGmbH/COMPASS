@@ -117,12 +117,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationChangeDelay::
     auto addDetail = [ & ] (const ptime& ts,
                             const dbContent::TargetPosition& pos,
                             const QVariant& value,
-                            const QVariant& check_passed,
-                            const std::string& comment)
+                            const QVariant& check_passed)
     {
         details.push_back(Detail(ts, pos).setValue(Result::DetailKey::Value, value)
-                                         .setValue(Result::DetailKey::CheckPassed, check_passed)
-                                         .generalComment(comment));
+                                         .setValue(Result::DetailKey::CheckPassed, check_passed));
     };
 
     // changes of the stable reference value (transitional Mode A codes are ignored,
@@ -168,21 +166,16 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationChangeDelay::
 
         auto assessment = ChangeDelayHelpers::assessEvent(event_ts, change.new_value, tst_values, max_delay_s_);
 
-        string change_str = identificationName(identification_type_)
-                            + " change '" + change.old_value + "' -> '" + change.new_value + "'";
-
         switch (assessment.result)
         {
             case ChangeDelayHelpers::Assessment::Result::NotAssessable:
                 ++num_not_assessable;
-                addDetail(event_ts, event_pos, {}, {},
-                          change_str + ": not assessable (insufficient test data after event)");
+                addDetail(event_ts, event_pos, {}, {});
                 break;
 
             case ChangeDelayHelpers::Assessment::Result::NeverReported:
                 ++num_failed;
-                addDetail(event_ts, event_pos, {}, false,
-                          change_str + ": new value never reported");
+                addDetail(event_ts, event_pos, {}, false);
                 break;
 
             case ChangeDelayHelpers::Assessment::Result::Passed:
@@ -197,8 +190,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationChangeDelay::
                 else
                     ++num_failed;
 
-                addDetail(event_ts, event_pos, assessment.delay_s.value(), passed,
-                          change_str + (passed ? "" : ": delay not OK"));
+                addDetail(event_ts, event_pos, assessment.delay_s.value(), passed);
                 break;
             }
         }

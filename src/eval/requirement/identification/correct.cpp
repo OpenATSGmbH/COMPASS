@@ -88,24 +88,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
     boost::optional<dbContent::TargetPosition> ref_pos;
     //bool ok;
 
-    string comment;
-
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
 
     std::vector<ValueComparisonResult> cmp_results;
     bool result_ok;
-
-    auto addCompare = [ & ] (const std::pair<ValueComparisonResult, std::string>& cmp, const std::string& value_name)
-    {
-        cmp_results.push_back(cmp.first);
-
-        if (cmp.first == ValueComparisonResult::Unknown_NoTstData || cmp.first == ValueComparisonResult::Different)
-        {
-            if (comment.size())
-                comment += ", ";
-            comment += value_name + " failed (" + cmp.second + ")";
-        }
-    };
 
     auto addDetail = [ & ] (const ptime& ts,
                             const dbContent::TargetPosition& tst_pos,
@@ -118,21 +104,18 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
                             const QVariant& num_pos_inside,
                             const QVariant& num_pos_outside,
                             const QVariant& num_correct,
-                            const QVariant& num_not_correct,
-                            const std::string& comment)
+                            const QVariant& num_not_correct)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::RefExists, ref_exists)
                                              .setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::IsNotCorrect, is_not_correct)
-                                             .addPosition(ref_pos)
-                                             .generalComment(comment));
+                                             .addPosition(ref_pos));
     };
 
     for (const auto& tst_id : tst_data)
     {
         ref_exists = false;
         is_inside = false;
-        comment = "";
 
         ++num_updates;
 
@@ -145,7 +128,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
                 addDetail(timestamp, pos_current, {},
                             false, {}, false, // ref_exists, pos_inside, is_not_correct
                             num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                            num_correct, num_not_correct, "No reference data");
+                            num_correct, num_not_correct);
 
             ++num_no_ref_pos;
             continue;
@@ -162,7 +145,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
                 addDetail(timestamp, pos_current, {},
                             false, {}, false, // ref_exists, pos_inside, is_not_correct
                             num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                            num_correct, num_not_correct, "No reference position");
+                            num_correct, num_not_correct);
 
             ++num_no_ref_pos;
             continue;
@@ -178,7 +161,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
                 addDetail(timestamp, pos_current, ref_pos,
                             ref_exists, is_inside, false, // ref_exists, pos_inside, is_not_correct
                             num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                            num_correct, num_not_correct, "Outside sector");
+                            num_correct, num_not_correct);
 
             ++num_pos_outside;
             continue;
@@ -188,13 +171,13 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
         cmp_results.clear();
 
         if (use_ms_ti_)
-            addCompare(compareTi(tst_id, target_data, max_ref_time_diff), "ACID"); // aircraft id
+            cmp_results.push_back(compareTi(tst_id, target_data, max_ref_time_diff)); // aircraft id
 
         if (use_ms_ta_)
-            addCompare(compareTa(tst_id, target_data, max_ref_time_diff), "ACAD"); // mode s
+            cmp_results.push_back(compareTa(tst_id, target_data, max_ref_time_diff)); // mode s
 
         if (use_mode_a_)
-            addCompare(compareModeA(tst_id, target_data, max_ref_time_diff), "M3A");
+            cmp_results.push_back(compareModeA(tst_id, target_data, max_ref_time_diff));
 
         auto report_class = CorrectHelpers::classify(cmp_results, require_correctness_of_all_);
 
@@ -204,7 +187,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
                 addDetail(timestamp, pos_current, ref_pos,
                             ref_exists, is_inside, false, // ref_exists, pos_inside, is_not_correct
                             num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                            num_correct, num_not_correct, "No reference id");
+                            num_correct, num_not_correct);
 
             ++num_no_ref_id;
 
@@ -221,7 +204,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
         addDetail(timestamp, pos_current, ref_pos,
                     ref_exists, is_inside, !result_ok,
                     num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                    num_correct, num_not_correct, comment);
+                    num_correct, num_not_correct);
     }
 
     logdbg << "'" << name_ << "': utn " << target_data.utn_

@@ -83,7 +83,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
     bool comp_passed{false};
 
     unsigned int num_distances {0};
-    string comment;
 
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
 
@@ -98,14 +97,12 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
                             const QVariant& num_pos_inside,
                             const QVariant& num_pos_outside,
                             const QVariant& num_comp_passed,
-                            const QVariant& num_comp_failed,
-                            const std::string& comment)
+                            const QVariant& num_comp_failed)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
                                              .setValue(Result::DetailKey::Value, offset)
                                              .setValue(Result::DetailKey::CheckPassed, check_passed)
-                                             .addPosition(ref_pos)
-                                             .generalComment(comment));
+                                             .addPosition(ref_pos));
     };
 
     // prepare coordinate systems
@@ -136,8 +133,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
                             {}, // ref_pos
                             {}, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed,
-                            "No data source info");
+                            num_comp_passed, num_comp_failed);
 
             ++num_no_ref;
             continue;
@@ -150,8 +146,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
                             {}, // ref_pos
                             {}, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed,
-                            "No reference data");
+                            num_comp_passed, num_comp_failed);
 
             ++num_no_ref;
             continue;
@@ -166,8 +161,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
                             {}, // ref_pos
                             {}, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed,
-                            "No reference position");
+                            num_comp_passed, num_comp_failed);
 
             ++num_no_ref;
             continue;
@@ -183,8 +177,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
                             ref_pos, // ref_pos
                             is_inside, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed, 
-                            "Outside sector");
+                            num_comp_passed, num_comp_failed);
             ++num_pos_outside;
             continue;
         }
@@ -199,8 +192,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
                             ref_pos, // ref_pos
                             is_inside, {}, comp_passed, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed, 
-                            "Inaccurate reference position");
+                            num_comp_passed, num_comp_failed);
 
             ++num_ref_inaccurate;
             continue;            
@@ -216,8 +208,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
                       ref_pos, // ref_pos
                       is_inside, {}, comp_passed, // pos_inside, value, check_passed
                       num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                      num_comp_passed, num_comp_failed,
-                      "Ref. position transformation error");
+                      num_comp_passed, num_comp_failed);
             ++num_pos_calc_errors;
             continue;
         }
@@ -232,8 +223,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
                       ref_pos, // ref_pos
                       is_inside, {}, comp_passed, // pos_inside, value, check_passed
                       num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                      num_comp_passed, num_comp_failed,
-                      "Tst. position transformation error");
+                      num_comp_passed, num_comp_failed);
             ++num_pos_calc_errors;
             continue;
         }
@@ -246,8 +236,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
                         ref_pos, // ref_pos
                         is_inside, {}, comp_passed, // pos_inside, value, check_passed
                         num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                        num_comp_passed, num_comp_failed, 
-                        "Azimuth Invalid");
+                        num_comp_passed, num_comp_failed);
             ++num_pos_calc_errors;
             continue;
         }
@@ -258,26 +247,22 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarAzimuth::evalu
         {
             comp_passed = true;
             ++num_comp_passed;
-            comment = "";
         }
         else if (RadarHelpers::passed(azm_deg_diff, threshold()))
         {
             comp_passed = true;
             ++num_comp_passed;
-            comment = "Passed";
         }
         else
         {
             ++num_comp_failed;
-            comment = "Failed";
         }
 
         addDetail(timestamp, tst_pos,
                     ref_pos,
                     is_inside, azm_deg_diff, comp_passed, // pos_inside, value, check_passed
                     num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                    num_comp_passed, num_comp_failed,
-                    comment);
+                    num_comp_passed, num_comp_failed);
     }
 
     //        logdbg << "'" << name_ << "': utn " << target_data.utn_

@@ -25,8 +25,6 @@
 #include "logger.h"
 #include "timeperiod.h"
 
-#include <boost/algorithm/string/join.hpp>
-
 using namespace std;
 using namespace Utils;
 using namespace boost::posix_time;
@@ -175,13 +173,11 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraTrack::evaluate (
                             const dbContent::TargetPosition& tst_pos,
                             const QVariant& inside,
                             const QVariant& track_num,
-                            const QVariant& extra,
-                            const std::string& comment)
+                            const QVariant& extra)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::Inside, inside)
                                              .setValue(Result::DetailKey::TrackNum, track_num)
-                                             .setValue(Result::DetailKey::Extra, extra)
-                                             .generalComment(comment));
+                                             .setValue(Result::DetailKey::Extra, extra));
     };
 
     for (const auto& tst_id : tst_data)
@@ -209,7 +205,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraTrack::evaluate (
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos, false, // inside
                             track_num_var, // track_num
-                            false, "Tst outside"); // extra
+                            false); // extra
 
             ++num_pos_outside;
             continue;
@@ -220,7 +216,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraTrack::evaluate (
         {
             addDetail(timestamp, tst_pos, true, // inside
                         track_num_var, // track_num
-                        false, "No track num"); // extra
+                        false); // extra
             ++num_no_track_num;
             continue;
         }
@@ -252,15 +248,14 @@ std::shared_ptr<EvaluationRequirementResult::Single> ExtraTrack::evaluate (
 
             addDetail(timestamp, tst_pos, true, // inside
                         track_num_var, // track_num
-                        true, // extra
-                        "Extra tracks: "+ boost::algorithm::join(extra_track_nums, ","));
+                        true); // extra
         }
         else
         {
             ++num_ok;
             addDetail(timestamp, tst_pos, true, // inside
                         track_num_var, // track_num
-                        false, "OK"); // extra
+                        false); // extra
         }
     }
 

@@ -58,10 +58,8 @@ struct Event
     Type                            type;           // event type
     dbContent::TargetReport::DataID data_id;        // data id of the update causing the event (if an update is involved)
     boost::optional<uint32_t>       period;         // index to the period the event happened in
-    std::string                     error;          // error description in case of an invalid update
     boost::posix_time::ptime        interval_time0; // start time of the event interval (note: =/= period start!)
     boost::posix_time::ptime        interval_time1; // end time of the event interval (note: =/= period end!)
-    bool                            had_ref_data;   // reference data was available
 
     uint32_t                        misses = 0;     // misses caused by the event
 };
@@ -79,7 +77,6 @@ struct IntervalValidity
     };
 
     Value        value = Value::Invalid; // validity value
-    std::string  comment;                // additional textual info
 };
 
 /**

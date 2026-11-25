@@ -119,22 +119,18 @@ protected:
     static std::function<boost::optional<std::string>(const dbContent::TargetReport::Chain&,
                                                       const dbContent::TargetReport::Chain::DataID&)> getACID;
     static std::function<bool(const std::string&, const std::string&)> cmpACID;
-    static std::function<std::string(const std::string&)> printACID;
 
     static std::function<boost::optional<unsigned int>(const dbContent::TargetReport::Chain&,
                                                        const dbContent::TargetReport::Chain::DataID&)> getACAD;
     static std::function<bool(const unsigned int&, const unsigned int&)> cmpACAD;
-    static std::function<std::string(const unsigned int&)> printACAD;
 
     static std::function<boost::optional<unsigned int>(const dbContent::TargetReport::Chain&,
                                                        const dbContent::TargetReport::Chain::DataID&)> getModeA;
     static std::function<bool(const unsigned int&, const unsigned int&)> cmpModeA;
-    static std::function<std::string(const unsigned int&)> printModeA;
 
     static std::function<boost::optional<float>(const dbContent::TargetReport::Chain&,
                                                 const dbContent::TargetReport::Chain::DataID&)> getModeC;
     static std::function<bool(const float&, const float&, const float&)> cmpModeC;
-    static std::function<std::string(const float&)> printModeC;
 
     // moms
 
@@ -148,72 +144,65 @@ protected:
                                                        const dbContent::TargetReport::Chain::DataID&)> getMomVertRate;
 
     static std::function<bool(const unsigned char&, const unsigned char&)> cmpMomAny;
-    static std::function<std::string(const unsigned char&)> printMomTransAcc;
-    static std::function<std::string(const unsigned char&)> printMomLongAcc;
-    static std::function<std::string(const unsigned char&)> printMomVertRate;
 
     // rocd
 
     static std::function<boost::optional<float>(const dbContent::TargetReport::Chain&,
                                                       const dbContent::TargetReport::Chain::DataID&)> getROCD;
     static std::function<bool(const float&, const float&, const float&)> cmpROCD;
-    static std::function<std::string(const float&)> printROCD;
 
     // acceleration
 
     static std::function<boost::optional<double>(const dbContent::TargetReport::Chain&,
                                                  const dbContent::TargetReport::Chain::DataID&)> getAcceleration;
     static std::function<bool(const double&, const double&, const double&)> cmpAcceleration;
-    static std::function<std::string(const double&)> printAcceleration;
 
     // coasting
     static std::function<boost::optional<unsigned char>(const dbContent::TargetReport::Chain&,
                                                 const dbContent::TargetReport::Chain::DataID&)> getCoasting;
     static std::function<bool(const unsigned char&, const unsigned char&)> cmpCoasting;
-    static std::function<std::string(const unsigned char&)> printCoasting;
 
     template <typename T>
-    std::pair<ValueComparisonResult, std::string> compare (
+    ValueComparisonResult compare (
         const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
         boost::posix_time::time_duration max_ref_time_diff,
         std::function<boost::optional<T>(const dbContent::TargetReport::Chain& chain,
                                                     const dbContent::TargetReport::Chain::DataID& id)>& getter,
-        std::function<bool(const T& val1, const T& val2)>& cmp,
-        std::function<std::string(const T& val)>& to_str
+        std::function<bool(const T& val1, const T& val2)>& cmp
         ) const;
 
-    std::pair<ValueComparisonResult, std::string> compareTi (
+    ValueComparisonResult compareTi (
         const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
         boost::posix_time::time_duration max_ref_time_diff) const;
-    std::pair<ValueComparisonResult, std::string> compareTa (
+    ValueComparisonResult compareTa (
         const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
         boost::posix_time::time_duration max_ref_time_diff) const;
-    std::pair<ValueComparisonResult, std::string> compareModeA (
+    ValueComparisonResult compareModeA (
         const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
         boost::posix_time::time_duration max_ref_time_diff) const;
-    std::pair<ValueComparisonResult, std::string> compareModeC (
+    ValueComparisonResult compareModeC (
         const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
         boost::posix_time::time_duration max_ref_time_diff, float max_val_diff) const; // tod tst
 
-    std::pair<ValueComparisonResult, std::string> compareMomLongAcc (
+    ValueComparisonResult compareMomLongAcc (
         const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
         boost::posix_time::time_duration max_ref_time_diff) const;
-    std::pair<ValueComparisonResult, std::string> compareMomTransAcc (
+    ValueComparisonResult compareMomTransAcc (
         const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
         boost::posix_time::time_duration max_ref_time_diff) const;
-    std::pair<ValueComparisonResult, std::string> compareMomVertRate (
+    ValueComparisonResult compareMomVertRate (
         const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
         boost::posix_time::time_duration max_ref_time_diff) const;
 
-    std::pair<ValueComparisonResult, std::string> compareROCD (
+    ValueComparisonResult compareROCD (
         const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
         boost::posix_time::time_duration max_ref_time_diff, float max_val_diff) const; // tod tst
 
-    std::pair<ValueComparisonResult, std::string> compareAcceleration (
+    ValueComparisonResult compareAcceleration (
         const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
         boost::posix_time::time_duration max_ref_time_diff, float max_val_diff) const; // tod tst
 
-    std::pair<ValueComparisonResult, std::string> compareCoasting (
+    ValueComparisonResult compareCoasting (
         const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
         boost::posix_time::time_duration max_ref_time_diff) const;
 
@@ -224,13 +213,12 @@ private:
 };
 
 template <typename T>
-std::pair<ValueComparisonResult, std::string> Base::compare (
+ValueComparisonResult Base::compare (
     const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
     boost::posix_time::time_duration max_ref_time_diff,
     std::function<boost::optional<T>(const dbContent::TargetReport::Chain& chain,
                                      const dbContent::TargetReport::Chain::DataID& id)>& getter,
-    std::function<bool(const T& val1, const T& val2)>& cmp,
-    std::function<std::string(const T& val)>& to_str
+    std::function<bool(const T& val1, const T& val2)>& cmp
     ) const // tst timestamp
 {
     boost::posix_time::ptime ref_lower, ref_upper;
@@ -253,76 +241,32 @@ std::pair<ValueComparisonResult, std::string> Base::compare (
 //        if (tst_value.has_value()) TODO really?????
 //            return {ValueComparisonResult::Different, "Tst data without ref value"};
 //        else
-            return {ValueComparisonResult::Unknown_NoRefData, "No ref value"};
+            return ValueComparisonResult::Unknown_NoRefData;
     }
 
     if (tst_value.has_value())
     {
         bool value_ok;
-        bool lower_nok, upper_nok;
 
         traced_assert(has_ref_data); // ref times possible
 
         value_ok = false;
 
-        lower_nok = false;
-        upper_nok = false;
-
         if (ref_value_lower.has_value())
-        {
             value_ok = cmp(*ref_value_lower, *tst_value);
-            lower_nok = !value_ok;
-        }
 
         if (!value_ok && ref_value_upper.has_value())
-        {
             value_ok = cmp(*ref_value_upper, *tst_value);
-            upper_nok = !value_ok;
-        }
 
         if (value_ok)
-            return {ValueComparisonResult::Same, "OK"};
+            return ValueComparisonResult::Same;
         else
-        {
-            std::string comment = "Not OK:";
-
-            if (lower_nok)
-            {
-                comment += " tst '" + to_str(*tst_value)
-                           +"' ref at " + Utils::Time::toString(ref_lower)
-                           + " '" + to_str(*ref_value_lower) + "'";
-            }
-            else
-            {
-                traced_assert(upper_nok);
-                comment += " tst '" + to_str(*tst_value)
-                           +"' ref at " + Utils::Time::toString(ref_upper)
-                           + " '" + to_str(*ref_value_upper)
-                           + "'";
-            }
-
-            return {ValueComparisonResult::Different, comment};
-        }
+            return ValueComparisonResult::Different;
 
     }
     else
     {
-        std::string ref_tmp;
-
-        if (ref_value_lower)
-            ref_tmp = "'"+to_str(*ref_value_lower)+"'";
-        
-        if (ref_value_upper && ref_tmp != "'"+to_str(*ref_value_upper)+"'")
-        {
-            assert (ref_value_upper);
-            if (ref_tmp.size())
-                ref_tmp += ",";
-            
-            ref_tmp += "'"+to_str(*ref_value_upper)+"'";
-        }
-        assert (ref_tmp.size());
-
-        return {ValueComparisonResult::Unknown_NoTstData, "No test value, ref "+ref_tmp};
+        return ValueComparisonResult::Unknown_NoTstData;
     }
 }
 

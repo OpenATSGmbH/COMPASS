@@ -45,9 +45,6 @@ public:
     bool hasComments(const std::string& group_id) const;
     size_t numComments(const std::string& group_id) const;
 
-    EvaluationDetailComments& generalComment(const std::string& c);
-    const std::string& generalComment() const;
-
     EvaluationDetailComments& comment(const std::string& group_id,
                                       const std::string& comment_id,
                                       const std::string& c);
@@ -61,7 +58,6 @@ public:
 private:
     std::map<std::string, CommentGroup>& comments() const;
 
-    std::string comment_;
     mutable boost::optional<std::map<std::string, CommentGroup>> comments_;
 };
 
@@ -125,7 +121,6 @@ public:
 
     EvaluationDetailComments& comments() { return comments_; }
     const EvaluationDetailComments& comments() const { return comments_; }
-    EvaluationDetail& generalComment(const std::string& c);
 
     EvaluationDetail& addDetail(const EvaluationDetail& detail);
     EvaluationDetail& addDetails(const Details& details);
