@@ -73,8 +73,9 @@ TEST_CASE("issue count grid colors and legend", "[eval][issuecountgrid]")
         CHECK(rs.color_map.sampleValue(1.0)    == yellow);
         CHECK(rs.color_map.sampleValue(1000.0) == red);
 
-        //1000^0.2 = 3.98: 1 - 3, 4 - 15, 16 - 63, 64 - 251, 252 - 1000 (the maximum has the color of the last step)
-        CHECK(texts(rs.legend_entries) == std::vector<std::string>{ "0", "1 - 3", "4 - 15", "16 - 63", "64 - 251", "252 - 1000" });
+        //1000^0.2 = 3.98: 1 - 3, 4 - 15, 16 - 63, 64 - 251, 252 - 1000 (the maximum has the color of the last step),
+        //the legend gives the lowest count of each color
+        CHECK(texts(rs.legend_entries) == std::vector<std::string>{ "0", "1", "4", "16", "64", "252" });
 
         //each legend entry has the color the grid gives its counts
         CHECK(rs.legend_entries.entries()[ 1 ].first == rs.color_map.sampleValue(3.0));
@@ -88,11 +89,8 @@ TEST_CASE("issue count grid colors and legend", "[eval][issuecountgrid]")
 
         const auto t = texts(rs.legend_entries);
 
-        REQUIRE(t.size() >= 2);
-        CHECK(t.front() == "0");
-        CHECK(t[ 1 ].rfind("1", 0) == 0);
-        CHECK(t.back().find("3") != std::string::npos);
-        CHECK(t.size() <= 4);
+        //1 yellow, 3 red (the maximum), 2 between: one entry per count
+        CHECK(t == std::vector<std::string>{ "0", "1", "2", "3" });
     }
 
     SECTION("the render settings survive the view point JSON")

@@ -360,7 +360,8 @@ public:
 
     /**
      * Color map and legend for the issue counts 0 to max_issues: 0 green, then yellow to red in logarithmic
-     * steps from 1 to the maximum. The legend lists the counts of each color that can occur.
+     * steps from 1 to the maximum. The legend lists, as in the Grid View, one count per color: the lowest count
+     * of the color, for the colors that can occur.
     */
     static Grid2DRenderSettings renderSettings(unsigned int max_issues)
     {
@@ -397,8 +398,7 @@ public:
             while (last < max_issues && rs.color_map.sampleValue(last + 1) == color)
                 ++last;
 
-            legend.addEntry(color, first == last ? std::to_string(first)
-                                                 : std::to_string(first) + " - " + std::to_string(last));
+            legend.addEntry(color, std::to_string(first));
             first = last + 1;
         }
 
