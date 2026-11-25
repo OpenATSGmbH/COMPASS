@@ -19,6 +19,7 @@
 
 #include <cstdint>
 #include "dbcontent/target/targetreportdefs.h"
+#include "dbcontent/target/targetreportmapping.h"
 #include "targetposition.h"
 #include "dbcontent/target/targetpositionaccuracy.h"
 #include "dbcontent/target/targetvelocity.h"
@@ -41,99 +42,11 @@ class DBContentAccessor;
 
 namespace TargetReport {
 
-/**
- */
-struct Index
-{
-    Index() = default;
-    Index(unsigned int idx_ext,
-          unsigned int idx_int) : idx_external(idx_ext), idx_internal(idx_int) {}
-
-    unsigned int idx_external; //external index (usually index into buffer)
-    unsigned int idx_internal; //internal index (index into internal data structures)
-};
-
-/**
- */
-class DataID
-{
-  public:
-    typedef std::pair<const boost::posix_time::ptime, Index> IndexPair;
-
-    DataID() = default;
-    DataID(const boost::posix_time::ptime& timestamp) : timestamp_(timestamp), valid_(true) {}
-    DataID(const boost::posix_time::ptime& timestamp, const Index& index) : timestamp_(timestamp), index_(index), valid_(true) {}
-    DataID(const IndexPair& ipair) : timestamp_(ipair.first), index_(ipair.second), valid_(true) {}
-    virtual ~DataID() = default;
-
-    bool valid() const { return valid_; }
-    const boost::posix_time::ptime& timestamp() const { return timestamp_; }
-    bool hasIndex() const { return index_.has_value(); }
-
-    DataID& addIndex(const Index& index)
-    {
-        index_ = index;
-        return *this;
-    }
-
-    const Index& index() const
-    {
-        if (!hasIndex())
-            throw std::runtime_error("DataID: index: No index stored");
-        return index_.value();
-    }
-
-  private:
-    boost::posix_time::ptime timestamp_;
-    boost::optional<Index>   index_;
-    bool                     valid_ = false;
-};
-
-
-struct DataMappingTimes // mapping to respective tst data
-{
-    boost::posix_time::ptime timestamp_; // tod of test
-
-    bool has_other1_ {false};
-    boost::posix_time::ptime timestamp_other1_;
-    DataID dataid_other1_;
-
-    bool has_other2_ {false};
-    boost::posix_time::ptime timestamp_other2_;
-    DataID dataid_other2_;
-};
-
-
-struct DataMapping // mapping to respective ref data
-{
-    boost::posix_time::ptime timestamp_; // timestamp of original
-
-    bool has_ref1_ {false};
-    boost::posix_time::ptime timestamp_ref1_;
-    DataID dataid_ref1_;
-
-    bool has_ref2_ {false};
-    boost::posix_time::ptime timestamp_ref2_;
-    DataID dataid_ref2_;
-
-    bool has_ref_pos_ {false};
-    dbContent::TargetPosition pos_ref_;
-
-    bool has_ref_spd_ {false};
-    dbContent::TargetVelocity spd_ref_;
-
-    bool has_ref_acc_ {false}; // acceleration m/s2
-    double ref_acc_{0};
-
-    bool has_ref_rocd_ {false}; // rate of limb/descent ft/min
-    double ref_rocd_{0};
-};
-
 class Chain
 {
 public:
     typedef TargetReport::DataID                                  DataID;
-    typedef std::multimap<boost::posix_time::ptime, Index>      IndexMap;
+    typedef TargetReport::IndexMap                                IndexMap;
 
     Chain(std::shared_ptr<dbContent::DBContentAccessor> accessor, const std::string& dbcontent_name);
     virtual ~Chain();
@@ -274,7 +187,7 @@ protected:
     std::shared_ptr<dbContent::DBContentAccessor> accessor_;
     std::string dbcontent_name_;
 
-    std::multimap<boost::posix_time::ptime, Index> timestamp_index_lookup_; // timestamp -> index
+    IndexMap timestamp_index_lookup_; // timestamp -> index
     std::vector<unsigned int> indexes_;
 
     boost::optional<std::vector<bool>> ignored_positions_;

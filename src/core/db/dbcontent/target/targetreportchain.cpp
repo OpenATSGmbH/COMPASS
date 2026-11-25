@@ -1019,71 +1019,7 @@ boost::posix_time::ptime Chain::timestampFromDataID(const DataID& id) const
 
 DataMapping Chain::calculateDataMapping(ptime timestamp) const
 {
-    DataMapping ret;
-
-    ret.timestamp_ = timestamp;
-
-    if (timestamp_index_lookup_.count(timestamp)) // found exact time
-    {
-        ret.has_ref1_ = true;
-        ret.timestamp_ref1_ = timestamp;
-        ret.dataid_ref1_ = dataID(timestamp_index_lookup_.find(timestamp)->first);
-
-        ret.has_ref2_ = false;
-
-        addPositionsSpeedsToMapping(ret);
-
-        return ret;
-    }
-
-    //    Return iterator to lower bound
-    //    Returns an iterator pointing to the first element in the container whose key is not considered to go
-    //    before k (i.e., either it is equivalent or goes after).
-
-    auto lb_it = timestamp_index_lookup_.lower_bound(timestamp);
-
-    //auto ub_it = ref_chain_->upper_bound(tod);
-
-    if (lb_it != timestamp_index_lookup_.end()) // upper tod found
-    {
-        traced_assert(lb_it->first >= timestamp);
-
-        // save upper value
-        ret.has_ref2_ = true;
-        ret.timestamp_ref2_ = lb_it->first;
-        ret.dataid_ref2_ = dataID(lb_it->first);
-
-        // search lower values by decrementing iterator
-        while (lb_it != timestamp_index_lookup_.end()
-               && (timestamp < lb_it->first || lb_it->first == ret.timestamp_ref2_))
-        {
-            if (lb_it == timestamp_index_lookup_.begin()) // exit condition on first value
-            {
-                if (timestamp < lb_it->first) // set as not found
-                    lb_it = timestamp_index_lookup_.end();
-
-                break;
-            }
-
-            lb_it--;
-        }
-
-        if (lb_it != timestamp_index_lookup_.end() && lb_it->first != ret.timestamp_ref2_) // lower tod found
-        {
-            traced_assert(timestamp >= lb_it->first);
-
-            // add lower value
-            ret.has_ref1_ = true;
-            ret.timestamp_ref1_ = lb_it->first;
-            ret.dataid_ref1_ = dataID(lb_it->first);
-        }
-        else // not found, clear previous
-        {
-            ret.has_ref2_ = false;
-            ret.timestamp_ref2_ = {};
-            ret.dataid_ref1_ = {};
-        }
-    }
+    DataMapping ret = TargetReport::findDataMapping(timestamp_index_lookup_, timestamp);
 
     addPositionsSpeedsToMapping(ret);
 
@@ -1291,57 +1227,7 @@ void Chain::addPositionsSpeedsToMapping (DataMapping& mapping) const
 
 DataMappingTimes Chain::findDataMappingTimes(ptime timestamp_ref) const // ref tod
 {
-    DataMappingTimes ret;
-
-    ret.timestamp_ = timestamp_ref;
-
-    //    Return iterator to lower bound
-    //    Returns an iterator pointing to the first element in the container whose key is not considered to go
-    //    before k (i.e., either it is equivalent or goes after).
-
-    auto lb_it = timestamp_index_lookup_.lower_bound(timestamp_ref);
-
-    if (lb_it != timestamp_index_lookup_.end()) // upper tod found
-    {
-        traced_assert(lb_it->first >= timestamp_ref);
-
-        // save upper value
-        ret.has_other2_ = true;
-        ret.timestamp_other2_ = lb_it->first;
-        ret.dataid_other2_ = dataID(lb_it->first);
-
-        // search lower values by decrementing iterator
-        while (lb_it != timestamp_index_lookup_.end() && (timestamp_ref < lb_it->first || lb_it->first == ret.timestamp_other2_))
-        {
-            if (lb_it == timestamp_index_lookup_.begin()) // exit condition on first value
-            {
-                if (timestamp_ref < lb_it->first) // set as not found
-                    lb_it = timestamp_index_lookup_.end();
-
-                break;
-            }
-
-            lb_it--;
-        }
-
-        if (lb_it != timestamp_index_lookup_.end() && lb_it->first != ret.timestamp_other2_) // lower tod found
-        {
-            traced_assert(timestamp_ref >= lb_it->first);
-
-            // add lower value
-            ret.has_other1_ = true;
-            ret.timestamp_other1_ = lb_it->first;
-            ret.dataid_other1_ = dataID(lb_it->first);
-        }
-        else // not found, clear previous
-        {
-            ret.has_other2_ = false;
-            ret.timestamp_other2_ = {};
-            ret.dataid_other2_ = {};
-        }
-    }
-
-    return ret;
+    return TargetReport::findDataMappingTimes(timestamp_index_lookup_, timestamp_ref);
 }
 
 void Chain::setIgnoredPositions(std::vector<bool> ignored_positions)

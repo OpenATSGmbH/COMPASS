@@ -1,6 +1,7 @@
 target_sources(compass_tests PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/test_cpp17.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_number.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_target_report_mapping.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_latex_image.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_latex_document.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_creator_registry.cpp
