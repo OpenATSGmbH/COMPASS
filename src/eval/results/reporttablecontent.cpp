@@ -16,6 +16,7 @@
  */
 
 #include "results/reporttablecontent.h"
+#include "results/base/detailcode.h"
 
 #include "buffer.h"
 #include "logger.h"
@@ -151,7 +152,17 @@ bool isGapTable(const ReportTableDefinition& definition)
 }
 
 /**
- * The record number and the UTN are the join keys, they carry no information for the reader.
+ * The record number and the UTN are the join keys, they carry no information for the reader. The
+ * detail code is shown as the text of the comment.
+ */
+bool isDetailsTableColumn(const std::string& name)
+{
+    return name != ReportTableDefinition::KeyColumnName &&
+           name != ReportTableDefinition::UTNColumnName &&
+           name != ReportTableDefinition::DetailCodeColumnName;
+}
+
+/**
  */
 std::vector<std::string> detailsTableHeaders(const ReportTableDefinition& definition)
 {
@@ -159,8 +170,7 @@ std::vector<std::string> detailsTableHeaders(const ReportTableDefinition& defini
 
     for (const auto& column : definition.columns)
     {
-        if (column.name == ReportTableDefinition::KeyColumnName ||
-            column.name == ReportTableDefinition::UTNColumnName)
+        if (!isDetailsTableColumn(column.name))
             continue;
 
         headers.push_back(column.display_name);
@@ -181,8 +191,7 @@ nlohmann::json::array_t detailsTableValues(const ReportTableDefinition& definiti
 
     for (const auto& column : definition.columns)
     {
-        if (column.name == ReportTableDefinition::KeyColumnName ||
-            column.name == ReportTableDefinition::UTNColumnName)
+        if (!isDetailsTableColumn(column.name))
             continue;
 
         values.push_back(columnValue(column, buffer, row));
@@ -242,16 +251,28 @@ std::string rowComment(const ReportTableDefinition& definition,
 {
     std::vector<std::string> parts;
 
+    //the reasons of the detail code first, the flag texts only where the code does not say it
+    std::uint32_t code = 0;
+    if (buffer.has<unsigned int>(ReportTableDefinition::DetailCodeColumnName) &&
+        !buffer.get<unsigned int>(ReportTableDefinition::DetailCodeColumnName).isNull(row))
+        code = buffer.get<unsigned int>(ReportTableDefinition::DetailCodeColumnName).get(row);
+
+    auto code_text = definition.detailCodeText(code);
+    if (!code_text.empty())
+        parts.push_back(code_text);
+
     auto ref_exists = boolValue(buffer, "ref_exists", row);
-    if (ref_exists.has_value() && !ref_exists.value())
+    if (ref_exists.has_value() && !ref_exists.value() && !(code & EvaluationRequirementResult::DetailCode::NoRef))
         parts.push_back("No reference");
 
+    const bool code_outside = code & EvaluationRequirementResult::DetailCode::OutsideSector;
+
     auto pos_inside = boolValue(buffer, "pos_inside", row);
-    if (pos_inside.has_value() && !pos_inside.value())
+    if (pos_inside.has_value() && !pos_inside.value() && !code_outside)
         parts.push_back("Outside sector");
 
     auto inside = boolValue(buffer, "inside", row);
-    if (inside.has_value() && !inside.value())
+    if (inside.has_value() && !inside.value() && !code_outside)
         parts.push_back("Outside sector");
 
     auto check_passed = boolValue(buffer, "check_passed", row);

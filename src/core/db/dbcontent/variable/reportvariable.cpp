@@ -137,9 +137,11 @@ ReportContent::ReportContent(const std::string& report_name,
 
         for (const auto& column : table.columns)
         {
-            //the key columns carry no information for a View, they are the join
+            //the key columns carry no information for a View, they are the join, and the detail
+            //code is only the source of the comment text
             if (column.name == ReportTableDefinition::KeyColumnName ||
-                column.name == ReportTableDefinition::UTNColumnName)
+                column.name == ReportTableDefinition::UTNColumnName ||
+                column.name == ReportTableDefinition::DetailCodeColumnName)
                 continue;
 
             //a column display name repeats across the tables of a report, the table display

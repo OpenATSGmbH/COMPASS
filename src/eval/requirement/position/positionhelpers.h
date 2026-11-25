@@ -22,6 +22,7 @@
 #include "dbcontent/target/targetreportmapping.h"
 #include "dbcontent/target/targetvelocity.h"
 
+#include <cstdint>
 #include <functional>
 #include <string>
 #include <vector>
@@ -124,7 +125,7 @@ struct PositionDetail
     boost::posix_time::ptime                   timestamp;
     dbContent::TargetPosition                  tst_pos;
     boost::optional<dbContent::TargetPosition> ref_pos;
-    bool                                       ref_exists = true; // false: no reference data, position or speed
+    std::uint32_t                              code = 0; // reason bits, see DetailCode
     boost::optional<bool>                      pos_inside;
     boost::optional<double>                    value;
     boost::optional<bool>                      check_passed; // none without a comparison
@@ -143,7 +144,8 @@ using ReportCheckFunc = std::function<ReportCheck(const UsableReport&)>;
  * Walk over the test reports of the position requirements: per report the reference checks of
  * the lookup, then the check of the requirement for the usable reports. One detail per report,
  * in time order (except the deferred ones). A report without a comparison gets a detail without
- * a value and without check_passed, so it is not an issue, with the reference position if known.
+ * a value and without check_passed, so it is not an issue, with the reference position if known,
+ * and its reason as DetailCode bit.
  */
 PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& tst_indexes,
                                      const TstPosFunc& tst_pos,

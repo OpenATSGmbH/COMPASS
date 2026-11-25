@@ -21,6 +21,7 @@
 #include "timeconv.h"
 #include "traced_assert.h"
 
+#include <cstdint>
 #include <string>
 #include <map>
 #include <tuple>
@@ -119,6 +120,10 @@ public:
 
     QRectF bounds(double eps = 0.0) const;
 
+    /// reason bits, see DetailCode (results/base/detailcode.h)
+    EvaluationDetail& addCode(std::uint32_t bits) { code_ |= bits; return *this; }
+    std::uint32_t code() const { return code_; }
+
     EvaluationDetailComments& comments() { return comments_; }
     const EvaluationDetailComments& comments() const { return comments_; }
 
@@ -137,6 +142,7 @@ private:
                                                   // the last position shall refer to the position the detail is measured against,
                                                   // e.g. a reference trajectory position, an interval begin, etc.
     std::vector<QVariant>            values_;
+    std::uint32_t                    code_ = 0;
     EvaluationDetailComments         comments_;
     mutable boost::optional<Details> details_;
 };

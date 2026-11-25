@@ -19,6 +19,7 @@
 #include "results/base/result_t.h"
 #include "results/base/joined.h"
 #include "results/reporttablecontent.h"
+#include "results/base/detailcode.h"
 
 #include "report/report.h"
 #include "report/section.h"
@@ -347,6 +348,10 @@ Single::EvaluationDetails Single::detailsFromReportTableRows(const ReportTableDe
         EvaluationDetail detail(timestamp.value(), row_positions);
 
         fillDetailFromReportTableRow(detail, buffer, row, prev_detail.get_ptr());
+
+        if (buffer.has<unsigned int>(ReportTableDefinition::DetailCodeColumnName) &&
+            !buffer.get<unsigned int>(ReportTableDefinition::DetailCodeColumnName).isNull(row))
+            detail.addCode(buffer.get<unsigned int>(ReportTableDefinition::DetailCodeColumnName).get(row));
 
         if (!nested)
         {
@@ -981,6 +986,10 @@ ReportTableDefinition Single::reportTableDefinition() const
                       "Record number of the test report at the end of the gap");
     }
 
+    def.addColumn(ReportTableDefinition::DetailCodeColumnName, PropertyDataType::UINT, "Detail Code",
+                  "Reason bits of the comment, texts in the table definition");
+    DetailCode::addCommonTexts(def);
+
     addReportTableColumns(def);
 
     return def;
@@ -1130,6 +1139,9 @@ void Single::addReportTableRows(ReportTableRows& rows) const
             if (after)
                 rows.set<std::uint64_t>("tst_rec_num_after", *after);
         }
+
+        if (detail.code())
+            rows.set<unsigned int>(ReportTableDefinition::DetailCodeColumnName, detail.code());
 
         fillReportTableRow(rows, detail, parent_detail, prev_detail);
 

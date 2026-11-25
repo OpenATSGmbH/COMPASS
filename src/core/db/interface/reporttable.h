@@ -24,6 +24,7 @@
 
 #include "json_fwd.hpp"
 
+#include <map>
 #include <memory>
 #include <set>
 #include <string>
@@ -112,6 +113,9 @@ struct ReportTableDefinition
     /// checks key, columns and hosts, returns the first problem or an empty string
     std::string validate() const;
 
+    /// texts of the set bits of a detail code, in bit order, separated by ", "
+    std::string detailCodeText(std::uint32_t code) const;
+
     nlohmann::json toJSON() const;
     bool fromJSON(const nlohmann::json& j);
 
@@ -126,12 +130,14 @@ struct ReportTableDefinition
     static const std::string KeyColumnName;
     static const std::string UTNColumnName;
     static const std::string TimestampColumnName;
+    static const std::string DetailCodeColumnName;
 
     std::string                    key;                        // lower case identifier, unique per report
     ReportTableKind                kind = ReportTableKind::Record;
     std::string                    display_name;               // group shown in the variable selection
     std::vector<std::string>       host_dbcontents;            // data contents the record numbers refer to
     std::vector<ReportTableColumn> columns;
+    std::map<unsigned int, std::string> detail_code_texts;     // bit index of the detail code to its text
 };
 
 /**

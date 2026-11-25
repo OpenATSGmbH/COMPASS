@@ -18,6 +18,7 @@
 #include "catch.hpp"
 
 #include "requirement/position/positionhelpers.h"
+#include "results/base/detailcode.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/optional/optional_io.hpp>
@@ -38,6 +39,8 @@ using dbContent::TargetVelocity;
 using dbContent::TargetReport::DataID;
 using dbContent::TargetReport::Index;
 using dbContent::TargetReport::IndexMap;
+
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
 
 namespace
 {
@@ -168,7 +171,7 @@ PositionEvaluation run(const std::vector<Report>& reports, const Evaluate& evalu
 /// what the report table shows of a detail
 std::string kindOf(const PositionDetail& detail)
 {
-    if (!detail.ref_exists)
+    if (detail.code & DetailCode::NoRef)
         return "no ref";
     if (detail.pos_inside == false)
         return "outside";
@@ -234,16 +237,21 @@ TEST_CASE("Position Distance classifies each test report", "[eval][position_repo
     {
         const auto& d = run(reports, distances(distanceSettings(30.0))).details;
 
-        // no reference: no reference position, no inside (comment "No reference", not "Outside sector")
+        // the reason of each report as detail code bit, none for the compared ones
+        CHECK(d[ 0 ].code == DetailCode::NoRefData);
+        CHECK(d[ 1 ].code == DetailCode::NoRefPosition);
+        CHECK(d[ 2 ].code == DetailCode::OutsideSector);
+        CHECK(d[ 3 ].code == DetailCode::RefInaccurate);
+        CHECK(d[ 4 ].code == 0);
+        CHECK(d[ 5 ].code == 0);
+        CHECK(d[ 6 ].code == 0);
+
+        // no reference: no reference position, no inside (comment "No reference data", not "Outside sector")
         for (unsigned int i : {0, 1})
         {
-            CHECK(!d[ i ].ref_exists);
             CHECK(!d[ i ].ref_pos.has_value());
             CHECK(!d[ i ].pos_inside);
         }
-
-        for (unsigned int i : {2, 3, 4, 5, 6})
-            CHECK(d[ i ].ref_exists);
 
         // outside the sector, inaccurate reference: reference position and inside
         CHECK(d[ 2 ].ref_pos.has_value());
@@ -368,6 +376,7 @@ TEST_CASE("Details of the test reports without a comparison are the same for all
         CHECK(kindsOf(distance) == std::vector<std::string>{"no ref", "passed", "outside", "no comparison"});
         CHECK(kindsOf(along) == std::vector<std::string>{"no ref", "no ref", "outside", "no comparison"});
 
+        CHECK(along.details[ 1 ].code == DetailCode::NoRefSpeed);
         REQUIRE(along.details[ 1 ].ref_pos.has_value());
         CHECK(!along.details[ 1 ].pos_inside);
     }
@@ -505,6 +514,7 @@ TEST_CASE("Position Along and Across: offset on the reference track", "[eval][po
 
         REQUIRE(kindsOf(evaluation) == std::vector<std::string>{"no comparison"});
         CHECK(evaluation.counts.num_pos_calc_errors == 1);
+        CHECK(evaluation.details[ 0 ].code == DetailCode::ValueInvalid);
         CHECK(evaluation.counts.num_comp_passed + evaluation.counts.num_comp_failed == 0);
         CHECK(!evaluation.details[ 0 ].value);
         CHECK(!evaluation.details[ 0 ].check_passed.has_value());

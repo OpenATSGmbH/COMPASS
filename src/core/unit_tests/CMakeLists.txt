@@ -1,4 +1,5 @@
 target_sources(compass_tests PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/test_report_table_definition.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_cpp17.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_number.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_target_report_mapping.cpp

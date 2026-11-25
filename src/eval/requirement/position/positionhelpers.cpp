@@ -18,6 +18,7 @@
 #include "requirement/position/positionhelpers.h"
 
 #include "requirement/base/trackoffsethelpers.h"
+#include "results/base/detailcode.h"
 #include "projection/transformation.h"
 #include "timeconv.h"
 #include "traced_assert.h"
@@ -29,6 +30,8 @@ namespace EvaluationRequirement
 {
 namespace PositionHelpers
 {
+
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
 
 /**
  */
@@ -87,23 +90,23 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
 
     auto addDetail = [ & ] (const boost::posix_time::ptime& timestamp,
                             const dbContent::TargetPosition& tst_pos,
-                            bool ref_exists,
+                            std::uint32_t code,
                             const boost::optional<dbContent::TargetPosition>& ref_pos,
                             const boost::optional<bool>& pos_inside,
                             const boost::optional<double>& value,
                             const boost::optional<bool>& check_passed)
     {
-        result.details.push_back({ timestamp, tst_pos, ref_pos, ref_exists, pos_inside, value, check_passed });
+        result.details.push_back({ timestamp, tst_pos, ref_pos, code, pos_inside, value, check_passed });
     };
 
     auto addNoDataDetail = [ & ] (const boost::posix_time::ptime& timestamp,
                                   const dbContent::TargetPosition& tst_pos,
-                                  bool ref_exists,
+                                  std::uint32_t code,
                                   const boost::optional<dbContent::TargetPosition>& ref_pos,
                                   const boost::optional<bool>& pos_inside)
     {
         if (!settings.skip_no_data_details)
-            addDetail(timestamp, tst_pos, ref_exists, ref_pos, pos_inside, {}, {});
+            addDetail(timestamp, tst_pos, code, ref_pos, pos_inside, {}, {});
     };
 
     for (const auto& tst_index : tst_indexes)
@@ -117,7 +120,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
 
         if (!ref.has_ref_data(tst_id))
         {
-            addNoDataDetail(timestamp, tst_pos, false, {}, {});
+            addNoDataDetail(timestamp, tst_pos, DetailCode::NoRefData, {}, {});
             ++counts.num_no_ref;
             continue;
         }
@@ -126,7 +129,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
 
         if (!ref_pos.has_value())
         {
-            addNoDataDetail(timestamp, tst_pos, false, {}, {});
+            addNoDataDetail(timestamp, tst_pos, DetailCode::NoRefPosition, {}, {});
             ++counts.num_no_ref;
             continue;
         }
@@ -139,7 +142,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
 
             if (!ref_spd.has_value())
             {
-                addNoDataDetail(timestamp, tst_pos, false, ref_pos, {});
+                addNoDataDetail(timestamp, tst_pos, DetailCode::NoRefSpeed, ref_pos, {});
                 ++counts.num_no_ref;
                 continue;
             }
@@ -147,7 +150,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
 
         if (!ref.ref_pos_inside(tst_id))
         {
-            addNoDataDetail(timestamp, tst_pos, true, ref_pos, false);
+            addNoDataDetail(timestamp, tst_pos, DetailCode::OutsideSector, ref_pos, false);
             ++counts.num_pos_outside;
             continue;
         }
@@ -157,7 +160,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
 
         if (ref_pos_acc && *ref_pos_acc > settings.ref_min_accuracy)
         {
-            addNoDataDetail(timestamp, tst_pos, true, ref_pos, true);
+            addNoDataDetail(timestamp, tst_pos, DetailCode::RefInaccurate, ref_pos, true);
 
             ++counts.num_ref_inaccurate;
             continue;
@@ -177,11 +180,11 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
                 else
                     ++counts.num_comp_failed;
 
-                addDetail(timestamp, tst_pos, true, ref_pos, true, report_check.value, passed);
+                addDetail(timestamp, tst_pos, 0, ref_pos, true, report_check.value, passed);
                 break;
             }
             case ReportCheck::Outcome::Invalid:
-                addDetail(timestamp, tst_pos, true, ref_pos, true, {}, {});
+                addDetail(timestamp, tst_pos, DetailCode::ValueInvalid, ref_pos, true, {}, {});
                 ++counts.num_pos_calc_errors;
                 break;
             case ReportCheck::Outcome::Deferred:
@@ -307,7 +310,7 @@ PositionEvaluation evaluateDistances(const dbContent::TargetReport::IndexMap& ts
         const auto& first = samples[ window.first ];
 
         result.details.push_back({ first.error.timestamp, first.tst_pos, first.ref_pos,
-                                   true, true, window.mean_distance, passed });
+                                   0, true, window.mean_distance, passed });
     }
 
     return result;

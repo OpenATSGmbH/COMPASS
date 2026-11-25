@@ -31,6 +31,7 @@ const std::string ReportTableDefinition::TableNamePrefix     = "result_";
 const std::string ReportTableDefinition::KeyColumnName       = "rec_num";
 const std::string ReportTableDefinition::UTNColumnName       = "utn";
 const std::string ReportTableDefinition::TimestampColumnName = "timestamp";
+const std::string ReportTableDefinition::DetailCodeColumnName = "detail_code";
 
 namespace
 {
@@ -46,6 +47,7 @@ namespace
     const std::string FieldHosts          = "host_dbcontents";
     const std::string FieldColumns        = "columns";
     const std::string FieldNumRows        = "num_rows";
+    const std::string FieldCodeTexts      = "detail_code_texts";
 
     // words that break an unquoted SQL position, rejected as column names
     const std::set<std::string> SQLKeywords =
@@ -297,6 +299,15 @@ nlohmann::json ReportTableDefinition::toJSON() const
 
     j[ FieldColumns ] = j_columns;
 
+    if (!detail_code_texts.empty())
+    {
+        nlohmann::json j_texts = nlohmann::json::object();
+        for (const auto& t : detail_code_texts)
+            j_texts[ std::to_string(t.first) ] = t.second;
+
+        j[ FieldCodeTexts ] = j_texts;
+    }
+
     return j;
 }
 
@@ -329,7 +340,35 @@ bool ReportTableDefinition::fromJSON(const nlohmann::json& j)
         columns.push_back(c);
     }
 
+    //absent in reports written before the detail codes
+    detail_code_texts.clear();
+    if (j.contains(FieldCodeTexts) && j[ FieldCodeTexts ].is_object())
+    {
+        for (const auto& t : j[ FieldCodeTexts ].items())
+            detail_code_texts[ (unsigned int)std::stoul(t.key()) ] = t.value().get<std::string>();
+    }
+
     return true;
+}
+
+/**
+ */
+std::string ReportTableDefinition::detailCodeText(std::uint32_t code) const
+{
+    std::string text;
+
+    for (const auto& t : detail_code_texts)
+    {
+        if (t.first >= 32 || !(code & (1u << t.first)))
+            continue;
+
+        if (!text.empty())
+            text += ", ";
+
+        text += t.second;
+    }
+
+    return text;
 }
 
 /**

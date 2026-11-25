@@ -17,6 +17,7 @@
 
 #include "requirement/position/positiontargetdata.h"
 #include "results/position/positionbase.h"
+#include "results/base/detailcode.h"
 #include "evaluationtargetdata.h"
 
 #include <QVariant>
@@ -72,11 +73,12 @@ std::vector<EvaluationDetail> details(const PositionHelpers::PositionEvaluation&
 
     for (const auto& d : evaluation.details)
         details.push_back(EvaluationDetail(d.timestamp, d.tst_pos)
-                          .setValue(DetailKey::RefExists, d.ref_exists)
+                          .setValue(DetailKey::RefExists, !(d.code & EvaluationRequirementResult::DetailCode::NoRef))
                           .setValue(DetailKey::PosInside, d.pos_inside ? QVariant(*d.pos_inside) : QVariant())
                           .setValue(DetailKey::Value, d.value ? QVariant(*d.value) : QVariant())
                           .setValue(DetailKey::CheckPassed, d.check_passed ? QVariant(*d.check_passed) : QVariant())
-                          .addPosition(d.ref_pos));
+                          .addPosition(d.ref_pos)
+                          .addCode(d.code));
 
     return details;
 }
