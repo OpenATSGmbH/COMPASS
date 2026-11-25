@@ -16,10 +16,17 @@
  */
 
 #include "targetreportmapping.h"
+#include "projection/transformation.h"
+#include "number.h"
+#include "timeconv.h"
+#include "logger.h"
+#include "traced_assert.h"
 
 #include <iterator>
+#include <tuple>
 
 using namespace boost::posix_time;
+using namespace Utils;
 
 namespace dbContent {
 
@@ -93,6 +100,97 @@ DataMappingTimes findDataMappingTimes(const IndexMap& indexes, const ptime& time
         ret.timestamp_other1_ = bracket.before->timestamp();
         ret.dataid_other1_    = *bracket.before;
     }
+
+    return ret;
+}
+
+boost::optional<Sample> interpolate(const Sample& s1, const Sample& s2,
+                                    const ptime& timestamp,
+                                    Transformation& trafo)
+{
+    traced_assert(s1.timestamp < s2.timestamp);
+    traced_assert(s1.timestamp <= timestamp && timestamp <= s2.timestamp);
+
+    Sample ret;
+    ret.timestamp = timestamp;
+
+    const TargetPosition& pos1 = s1.pos;
+    const TargetPosition& pos2 = s2.pos;
+
+    if (pos1.latitude_ == pos2.latitude_ && pos1.longitude_ == pos2.longitude_)
+    {
+        ret.pos = pos1;
+        return ret;
+    }
+
+    // float as before the move into this function, keeps the results identical
+    float d_t  = Time::partialSeconds(s2.timestamp - s1.timestamp);
+    float d_t2 = Time::partialSeconds(timestamp - s1.timestamp);
+
+    bool ok;
+    double x_pos, y_pos;
+
+    std::tie(ok, x_pos, y_pos) = trafo.distanceCart(
+        pos1.latitude_, pos1.longitude_, pos2.latitude_, pos2.longitude_);
+
+    if (!ok)
+    {
+        logerr << "error with latitude " << pos2.latitude_ << " longitude " << pos2.longitude_;
+        return {};
+    }
+
+    double v_x = x_pos / d_t;
+    double v_y = y_pos / d_t;
+
+    double latitude, longitude;
+
+    std::tie(ok, latitude, longitude) = trafo.wgsAddCartOffset(
+        pos1.latitude_, pos1.longitude_, v_x * d_t2, v_y * d_t2);
+
+    if (!ok)
+    {
+        logerr << "error with offset from latitude " << pos1.latitude_ << " longitude " << pos1.longitude_;
+        return {};
+    }
+
+    bool  has_altitude = false;
+    float altitude     = 0.0;
+
+    if (pos1.has_altitude_ && !pos2.has_altitude_)
+    {
+        has_altitude = true;
+        altitude     = pos1.altitude_;
+    }
+    else if (!pos1.has_altitude_ && pos2.has_altitude_)
+    {
+        has_altitude = true;
+        altitude     = pos2.altitude_;
+    }
+    else if (pos1.has_altitude_ && pos2.has_altitude_)
+    {
+        float v_alt  = (pos2.altitude_ - pos1.altitude_) / d_t;
+        has_altitude = true;
+        altitude     = pos1.altitude_ + v_alt * d_t2;
+    }
+
+    ret.pos = TargetPosition(latitude, longitude, has_altitude, true, altitude);
+
+    if (s1.speed && s2.speed)
+    {
+        double acceleration_ms2 = (s2.speed->speed_ - s1.speed->speed_) / d_t;
+
+        TargetVelocity speed;
+        speed.speed_       = s1.speed->speed_ + acceleration_ms2 * d_t2;
+        speed.track_angle_ = Number::interpolateAngle(s1.speed->track_angle_, s2.speed->track_angle_, d_t2 / d_t);
+
+        ret.speed = speed;
+    }
+
+    if (s1.acceleration && s2.acceleration)
+        ret.acceleration = *s1.acceleration + (*s2.acceleration - *s1.acceleration) / d_t * d_t2;
+
+    if (s1.rocd && s2.rocd)
+        ret.rocd = *s1.rocd + (*s2.rocd - *s1.rocd) / d_t * d_t2;
 
     return ret;
 }

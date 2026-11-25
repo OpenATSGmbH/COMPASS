@@ -18,6 +18,7 @@
 #include "catch.hpp"
 
 #include "dbcontent/target/targetreportmapping.h"
+#include "projection/transformation.h"
 
 #include <cmath>
 #include <vector>
@@ -53,6 +54,22 @@ void requireEntry(const boost::optional<DataID>& id, double seconds, unsigned in
     REQUIRE(id->timestamp() == at(seconds));
     REQUIRE(id->index().idx_internal == idx_internal);
     REQUIRE(id->index().idx_external == 100 + idx_internal);
+}
+
+Sample sample(double seconds, double latitude, double longitude)
+{
+    Sample s;
+    s.timestamp = at(seconds);
+    s.pos       = TargetPosition(latitude, longitude, false, false, 0.0f);
+    return s;
+}
+
+TargetVelocity velocity(double speed_ms, double track_angle_deg)
+{
+    TargetVelocity v;
+    v.speed_       = speed_ms;
+    v.track_angle_ = track_angle_deg;
+    return v;
 }
 
 } // namespace
@@ -230,5 +247,165 @@ TEST_CASE("findDataMappingTimes", "[target_report_mapping]")
             REQUIRE(!m.has_other1_);
             REQUIRE(!m.has_other2_);
         }
+    }
+}
+
+TEST_CASE("interpolate", "[target_report_mapping]")
+{
+    Transformation trafo;
+
+    // 0.01 deg is about 1.1 km north and 0.74 km east at 48 deg latitude, the straight
+    // line in the local plane deviates from the geodesic by much less than 1e-6 deg
+    const double deg_margin = 1e-6;
+
+    SECTION("position at the midpoint of a north-south line")
+    {
+        auto s = interpolate(sample(0, 48.0, 16.0), sample(10, 48.01, 16.0), at(5), trafo);
+        REQUIRE(s.has_value());
+        REQUIRE(s->timestamp == at(5));
+        REQUIRE(s->pos.latitude_ == Approx(48.005).margin(deg_margin));
+        REQUIRE(s->pos.longitude_ == Approx(16.0).margin(deg_margin));
+    }
+
+    SECTION("position at a quarter of an east-west line")
+    {
+        auto s = interpolate(sample(0, 48.0, 16.0), sample(10, 48.0, 16.02), at(2.5), trafo);
+        REQUIRE(s.has_value());
+        REQUIRE(s->pos.latitude_ == Approx(48.0).margin(deg_margin));
+        REQUIRE(s->pos.longitude_ == Approx(16.005).margin(deg_margin));
+    }
+
+    SECTION("at the times of the samples")
+    {
+        auto s1 = interpolate(sample(0, 48.0, 16.0), sample(10, 48.01, 16.01), at(0), trafo);
+        REQUIRE(s1.has_value());
+        REQUIRE(s1->pos.latitude_ == Approx(48.0).margin(deg_margin));
+        REQUIRE(s1->pos.longitude_ == Approx(16.0).margin(deg_margin));
+
+        auto s2 = interpolate(sample(0, 48.0, 16.0), sample(10, 48.01, 16.01), at(10), trafo);
+        REQUIRE(s2.has_value());
+        REQUIRE(s2->pos.latitude_ == Approx(48.01).margin(deg_margin));
+        REQUIRE(s2->pos.longitude_ == Approx(16.01).margin(deg_margin));
+    }
+
+    SECTION("altitude")
+    {
+        Sample s1 = sample(0, 48.0, 16.0);
+        Sample s2 = sample(10, 48.01, 16.0);
+
+        SECTION("both: linear, marked as calculated")
+        {
+            s1.pos.has_altitude_ = true;
+            s1.pos.altitude_     = 1000;
+            s2.pos.has_altitude_ = true;
+            s2.pos.altitude_     = 2000;
+
+            auto s = interpolate(s1, s2, at(5), trafo);
+            REQUIRE(s.has_value());
+            REQUIRE(s->pos.has_altitude_);
+            REQUIRE(s->pos.altitude_calculated_);
+            REQUIRE(s->pos.altitude_ == Approx(1500));
+        }
+
+        SECTION("only the first: its altitude")
+        {
+            s1.pos.has_altitude_ = true;
+            s1.pos.altitude_     = 1000;
+
+            auto s = interpolate(s1, s2, at(5), trafo);
+            REQUIRE(s->pos.has_altitude_);
+            REQUIRE(s->pos.altitude_ == Approx(1000));
+        }
+
+        SECTION("only the second: its altitude")
+        {
+            s2.pos.has_altitude_ = true;
+            s2.pos.altitude_     = 2000;
+
+            auto s = interpolate(s1, s2, at(5), trafo);
+            REQUIRE(s->pos.has_altitude_);
+            REQUIRE(s->pos.altitude_ == Approx(2000));
+        }
+
+        SECTION("none")
+        {
+            auto s = interpolate(s1, s2, at(5), trafo);
+            REQUIRE(!s->pos.has_altitude_);
+        }
+    }
+
+    SECTION("speed and track angle")
+    {
+        Sample s1 = sample(0, 48.0, 16.0);
+        Sample s2 = sample(10, 48.01, 16.0);
+
+        SECTION("both: linear speed, track angle across north")
+        {
+            s1.speed = velocity(100, 350);
+            s2.speed = velocity(120, 10);
+
+            auto mid = interpolate(s1, s2, at(5), trafo);
+            REQUIRE(mid->speed.has_value());
+            REQUIRE(mid->speed->speed_ == Approx(110));
+            REQUIRE(mid->speed->track_angle_ == Approx(0.0).margin(1e-9));
+
+            auto quarter = interpolate(s1, s2, at(2.5), trafo);
+            REQUIRE(quarter->speed->speed_ == Approx(105));
+            REQUIRE(quarter->speed->track_angle_ == Approx(355));
+        }
+
+        SECTION("only one: no speed")
+        {
+            s1.speed = velocity(100, 350);
+
+            auto s = interpolate(s1, s2, at(5), trafo);
+            REQUIRE(s.has_value());
+            REQUIRE(!s->speed);
+        }
+    }
+
+    SECTION("acceleration and rate of climb/descent")
+    {
+        Sample s1 = sample(0, 48.0, 16.0);
+        Sample s2 = sample(10, 48.01, 16.0);
+
+        s1.acceleration = 1.0;
+        s2.acceleration = 3.0;
+        s1.rocd         = 500.0;
+        s2.rocd         = 1500.0;
+
+        auto s = interpolate(s1, s2, at(5), trafo);
+        REQUIRE(s->acceleration.has_value());
+        REQUIRE(*s->acceleration == Approx(2.0));
+        REQUIRE(s->rocd.has_value());
+        REQUIRE(*s->rocd == Approx(1000.0));
+
+        s2.rocd.reset();
+        REQUIRE(!interpolate(s1, s2, at(5), trafo)->rocd);
+    }
+
+    SECTION("same position: first sample's position, no speed, acceleration or rocd")
+    {
+        Sample s1 = sample(0, 48.0, 16.0);
+        Sample s2 = sample(10, 48.0, 16.0);
+
+        s1.pos.has_altitude_ = true;
+        s1.pos.altitude_     = 1000;
+        s2.pos.has_altitude_ = true;
+        s2.pos.altitude_     = 2000;
+        s1.speed = velocity(0, 90);
+        s2.speed = velocity(0, 90);
+        s1.acceleration = s2.acceleration = 0.0;
+        s1.rocd = s2.rocd = 0.0;
+
+        auto s = interpolate(s1, s2, at(5), trafo);
+        REQUIRE(s.has_value());
+        REQUIRE(s->pos.latitude_ == 48.0);
+        REQUIRE(s->pos.longitude_ == 16.0);
+        REQUIRE(s->pos.altitude_ == Approx(1000));
+        REQUIRE(!s->pos.altitude_calculated_);
+        REQUIRE(!s->speed);
+        REQUIRE(!s->acceleration);
+        REQUIRE(!s->rocd);
     }
 }

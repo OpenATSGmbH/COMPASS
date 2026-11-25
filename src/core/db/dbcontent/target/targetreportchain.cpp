@@ -1028,201 +1028,60 @@ DataMapping Chain::calculateDataMapping(ptime timestamp) const
 
 void Chain::addPositionsSpeedsToMapping (DataMapping& mapping) const
 {
-    if (!mapping.has_ref1_ && !mapping.has_ref2_)
+    if (!mapping.has_ref1_)
         return;
 
-    if (mapping.has_ref1_ && !mapping.has_ref2_)
+    boost::optional<Sample> s = sample(mapping.dataid_ref1_);
+
+    if (s && mapping.has_ref2_)
     {
-        boost::optional<dbContent::TargetPosition> pos1 = posOpt(mapping.dataid_ref1_);
+        boost::optional<Sample> s2 = sample(mapping.dataid_ref2_);
 
-        if (!pos1.has_value())
-            return;
-
-        mapping.has_ref_pos_ = true;
-        mapping.pos_ref_ = *pos1;
-
-        boost::optional<dbContent::TargetVelocity> spd1 = speed(mapping.dataid_ref1_);
-
-        if (spd1.has_value())
-        {
-            mapping.has_ref_spd_ = true;
-            mapping.spd_ref_ = *spd1;
-        }
-
-        return;
+        s = s2 ? TargetReport::interpolate(*s, *s2, mapping.timestamp_, trafo_) : boost::none;
     }
 
-    boost::optional<dbContent::TargetPosition> pos1 = posOpt(mapping.dataid_ref1_);
-    boost::optional<dbContent::TargetPosition> pos2 = posOpt(mapping.dataid_ref2_);
-
-    if (!pos1.has_value() || !pos2.has_value())
+    if (!s)
         return;
 
-    ptime lower_ts = mapping.timestamp_ref1_;
-    ptime upper_ts = mapping.timestamp_ref2_;
+    mapping.has_ref_pos_ = true;
+    mapping.pos_ref_     = s->pos;
 
-    float d_t = Time::partialSeconds(upper_ts - lower_ts);
-
-    boost::optional<dbContent::TargetVelocity> spd1;
-    boost::optional<dbContent::TargetVelocity> spd2;
-
-    double acceleration_ms2;
-    double speed_ms, angle_deg;
-
-    boost::optional<double> acc1, acc2;
-    double delta_acc;
-    boost::optional<double> rocd1, rocd2;
-    double delta_rocd;
-
-    logdbg << "d_t " << d_t;
-
-    traced_assert(d_t > 0);
-
-    if (pos1->latitude_ == pos2->latitude_ && pos1->longitude_ == pos2->longitude_) // same pos
+    if (s->speed)
     {
-        mapping.has_ref_pos_ = true;
-        mapping.pos_ref_ = *pos1;
-
-        mapping.spd_ref_.track_angle_ = NAN;
-        mapping.spd_ref_.speed_       = NAN;
+        mapping.has_ref_spd_ = true;
+        mapping.spd_ref_     = *s->speed;
     }
-    else
+
+    if (s->acceleration)
     {
-        if (lower_ts == upper_ts) // same time
-        {
-            logwrn << "ref has same time twice";
-        }
-        else
-        {
-            logdbg << "pos1 "
-                   << pos1->latitude_ << ", " << pos1->longitude_;
-            logdbg << "pos2 "
-                   << pos2->latitude_ << ", " << pos2->longitude_;
-
-            bool ok;
-            double x_pos, y_pos;
-
-            tie(ok, x_pos, y_pos) = trafo_.distanceCart(
-                        pos1->latitude_, pos1->longitude_, pos2->latitude_, pos2->longitude_);
-
-            //                logdbg << "geo2cart";
-            //                bool ret = ogr_geo2cart->Transform(1, &x_pos, &y_pos); // wgs84 to cartesian offsets
-            if (!ok)
-            {
-                logerr << "error with latitude " << pos2->latitude_
-                       << " longitude " << pos2->longitude_;
-            }
-            else // calculate interpolated position
-            {
-                logdbg << "offsets x " << fixed << x_pos
-                       << " y " << fixed << y_pos << " dist " << fixed << sqrt(pow(x_pos,2)+pow(y_pos,2));
-
-                // double x_pos_orig = x_pos;
-                // double y_pos_orig = y_pos;
-
-                double v_x = x_pos/d_t;
-                double v_y = y_pos/d_t;
-                logdbg << "v_x " << v_x << " v_y " << v_y;
-
-                float d_t2 = Time::partialSeconds(mapping.timestamp_ - lower_ts);
-                logdbg << "d_t2 " << d_t2;
-
-                traced_assert(d_t2 >= 0);
-
-                x_pos = v_x * d_t2;
-                y_pos = v_y * d_t2;
-
-                logdbg << "interpolated offsets x "
-                       << x_pos << " y " << y_pos;
-
-                tie (ok, x_pos, y_pos) = trafo_.wgsAddCartOffset(pos1->latitude_, pos1->longitude_, x_pos, y_pos);
-
-                // x_pos long, y_pos lat
-
-                logdbg << "interpolated lat "
-                       << x_pos << " long " << y_pos;
-
-                // calculate altitude
-                bool has_altitude = false;
-                float altitude = 0.0;
-
-                if (pos1->has_altitude_ && !pos2->has_altitude_)
-                {
-                    has_altitude = true;
-                    altitude = pos1->altitude_;
-                }
-                else if (!pos1->has_altitude_ && pos2->has_altitude_)
-                {
-                    has_altitude = true;
-                    altitude = pos2->altitude_;
-                }
-                else if (pos1->has_altitude_ && pos2->has_altitude_)
-                {
-                    float v_alt = (pos2->altitude_ - pos1->altitude_)/d_t;
-                    has_altitude = true;
-                    altitude = pos1->altitude_ + v_alt*d_t2;
-                }
-
-                logdbg << "pos1 has alt "
-                       << pos1->has_altitude_ << " alt " << pos1->altitude_
-                       << " pos2 has alt " << pos2->has_altitude_ << " alt " << pos2->altitude_
-                       << " interpolated has alt " << has_altitude << " alt " << altitude;
-
-                mapping.has_ref_pos_ = true;
-
-                mapping.pos_ref_ = dbContent::TargetPosition(x_pos, y_pos, has_altitude, true, altitude);
-
-                // calulcate interpolated speed / track angle
-
-                mapping.has_ref_spd_ = false;
-
-                spd1 = speed(mapping.dataid_ref1_);
-                spd2 = speed(mapping.dataid_ref2_);
-
-                if (spd1.has_value() && spd2.has_value())
-                {
-                    acceleration_ms2 = (spd2->speed_ - spd1->speed_)/d_t;
-                    speed_ms = spd1->speed_ + acceleration_ms2 * d_t2;
-
-                    //loginf << "UGA spd1 " << spd1.speed_ << " 2 " << spd2.speed_ << " ipld " << speed;
-
-                    angle_deg = Number::interpolateAngle(spd1->track_angle_, spd2->track_angle_, d_t2 / d_t);
-
-                    //                        loginf << "UGA ang1 " << spd1.track_angle_ << " 2 " << spd2.track_angle_
-                    //                               << " angle_diff " << angle_diff << " turnrate " << turnrate << " ipld " << angle;
-
-                    mapping.has_ref_spd_          = true;
-                    mapping.spd_ref_.speed_       = speed_ms;
-                    mapping.spd_ref_.track_angle_ = angle_deg;
-                }
-
-                // acceleration
-                acc1 = acceleration(mapping.dataid_ref1_);
-                acc2 = acceleration(mapping.dataid_ref2_);
-
-                if (acc1.has_value() && acc2.has_value())
-                {
-                    delta_acc = (*acc2 - *acc1)/d_t;
-
-                    mapping.has_ref_acc_ = true;
-                    mapping.ref_acc_ = *acc1 + delta_acc * d_t2;
-                }
-
-                // rocd
-                rocd1 = acceleration(mapping.dataid_ref1_);
-                rocd2 = acceleration(mapping.dataid_ref2_);
-
-                if (rocd1.has_value() && rocd2.has_value())
-                {
-                    delta_rocd = (*rocd2 - *rocd1)/d_t;
-
-                    mapping.has_ref_rocd_ = true;
-                    mapping.ref_rocd_ = *rocd1 + delta_rocd * d_t2;
-                }
-            }
-        }
+        mapping.has_ref_acc_ = true;
+        mapping.ref_acc_     = *s->acceleration;
     }
-    // else do nothing
+
+    if (s->rocd)
+    {
+        mapping.has_ref_rocd_ = true;
+        mapping.ref_rocd_     = *s->rocd;
+    }
+}
+
+boost::optional<Sample> Chain::sample(const DataID& id) const
+{
+    boost::optional<TargetPosition> pos = posOpt(id);
+
+    if (!pos)
+        return {};
+
+    Sample s;
+    s.timestamp    = timestampFromDataID(id);
+    s.pos          = *pos;
+    s.speed        = speed(id);
+    s.acceleration = acceleration(id);
+
+    if (auto rocd_ftmin = rocd(id))
+        s.rocd = *rocd_ftmin;
+
+    return s;
 }
 
 DataMappingTimes Chain::findDataMappingTimes(ptime timestamp_ref) const // ref tod

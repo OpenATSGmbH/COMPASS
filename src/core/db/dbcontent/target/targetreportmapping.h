@@ -26,6 +26,8 @@
 #include <map>
 #include <stdexcept>
 
+class Transformation;
+
 namespace dbContent {
 
 namespace TargetReport {
@@ -140,6 +142,26 @@ DataMapping findDataMapping(const IndexMap& indexes, const boost::posix_time::pt
 /// Entries around a timestamp: other1 is the entry before, other2 the exact entry or else
 /// the entry after. Without an exact entry both other1 and other2 are needed, else none is set.
 DataMappingTimes findDataMappingTimes(const IndexMap& indexes, const boost::posix_time::ptime& timestamp);
+
+/// The values of one target report used for the interpolation.
+struct Sample
+{
+    boost::posix_time::ptime timestamp;
+    TargetPosition pos;
+    boost::optional<TargetVelocity> speed;  // m/s, track angle deg
+    boost::optional<double> acceleration;   // m/s2
+    boost::optional<double> rocd;           // ft/min
+};
+
+/// Linear interpolation between s1 and s2 at timestamp, s1.timestamp < s2.timestamp and
+/// timestamp in [s1.timestamp, s2.timestamp]. The position is interpolated in the local
+/// Cartesian plane around s1, the track angle along the shorter turn. A value is only
+/// interpolated if both samples have it, the altitude also if only one sample has it (then
+/// that one is used). If both positions are equal, s1's position is returned without speed,
+/// acceleration and rate of climb/descent. Returns none if the transformation fails.
+boost::optional<Sample> interpolate(const Sample& s1, const Sample& s2,
+                                    const boost::posix_time::ptime& timestamp,
+                                    Transformation& trafo);
 
 } // namespace TargetReport
 

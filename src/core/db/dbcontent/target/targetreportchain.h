@@ -184,6 +184,8 @@ public:
     bool ignorePosition(const DataID& id) const;
 
 protected:
+    boost::optional<Sample> sample(const DataID& id) const;
+
     std::shared_ptr<dbContent::DBContentAccessor> accessor_;
     std::string dbcontent_name_;
 
