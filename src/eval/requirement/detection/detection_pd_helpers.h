@@ -31,7 +31,7 @@ namespace PDHelpers
 {
 
 // Parameters of the time-difference miss test, as documented in
-// src/eval/requirement/detection/readme_detection.md, section 3.4.
+// experimental_src/evaluation/readme_eval_requirements.md, section Detection 3.4.
 struct MissTestParams
 {
     float update_interval_s = 1.0f;
@@ -56,7 +56,7 @@ inline float adjustedGap(float gap_s, const MissTestParams& p)
 }
 
 // True iff `gap_s` counts as a miss under `p`. Matches the filter rule from
-// readme_detection.md section 3.4: the minimum and maximum gap length select
+// readme_eval_requirements.md section Detection 3.4: the minimum and maximum gap length select
 // on the raw gap, the tolerance applies only to the update interval test.
 // The standards state the gap length thresholds on the measured gap, so the
 // tolerance must not shift them.
@@ -119,7 +119,7 @@ struct RefPeriod
 // excluded reference update (TimePeriodCollection::createFromReference()).
 //
 // Mirrors the reference-period construction in
-// `Detection::evaluate()` (readme_detection.md section 3.2), minus the
+// `Detection::evaluate()` (readme_eval_requirements.md section Detection 3.2), minus the
 // sector filter, which is evaluation-specific. The exclusion-interval filter
 // is applied by the caller, which removes the excluded timestamps and passes
 // them as breaks.

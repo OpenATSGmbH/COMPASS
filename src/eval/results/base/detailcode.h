@@ -27,7 +27,7 @@ namespace EvaluationRequirementResult
 
 /**
  * Reason bits of an evaluation detail, stored in the report table column "detail_code" and turned
- * into the comment text of the per-target sections (readme_detail_codes.md). Bits 0 to 7 are the
+ * into the comment text of the per-target sections (experimental_src/evaluation/readme_detail_codes.md). Bits 0 to 7 are the
  * common reasons below, bits from TypeBit are defined by each result type.
  */
 namespace DetailCode
