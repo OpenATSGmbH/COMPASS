@@ -109,7 +109,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
                             const QVariant& num_value_nok,
                             std::uint32_t code)
     {
-        details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
+        details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside)
                                              .setValue(Result::DetailKey::Value, offset)
                                              .setValue(Result::DetailKey::CheckPassed, check_passed)
                                              .addPosition(ref_pos)
@@ -130,7 +130,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                             {}, // ref_pos
-                            {}, {}, along_ok, // pos_inside, value, value_ok,
+                            {}, {}, {}, // pos_inside, value, value_ok,
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                             num_value_ok, num_value_nok, DetailCode::NoRefData);
 
@@ -145,7 +145,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                             {}, // ref_pos
-                            {}, {}, along_ok, // pos_inside, value, value_ok
+                            {}, {}, {}, // pos_inside, value, value_ok
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                             num_value_ok, num_value_nok, DetailCode::NoRefPosition);
 
@@ -160,7 +160,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                             ref_pos, // ref_pos
-                            is_inside, {}, along_ok, // pos_inside, value, value_ok
+                            is_inside, {}, {}, // pos_inside, value, value_ok
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                             num_value_ok, num_value_nok, DetailCode::NoRefSpeed);
             ++num_no_ref;
@@ -178,7 +178,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                             ref_pos, // ref_pos
-                            is_inside, {}, along_ok, // pos_inside, value, value_ok
+                            is_inside, {}, {}, // pos_inside, value, value_ok
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                             num_value_ok, num_value_nok, 0);
             ++num_pos_outside;
@@ -193,7 +193,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                             ref_pos, // ref_pos
-                            is_inside, {}, along_ok, // pos_inside, value, value_ok
+                            is_inside, {}, {}, // pos_inside, value, value_ok
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                             num_value_ok, num_value_nok, DetailCode::RefInaccurate);
 
@@ -211,7 +211,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
         {
             addDetail(timestamp, tst_pos,
                         ref_pos, // ref_pos
-                        is_inside, {}, along_ok, // pos_inside, value, value_ok
+                        is_inside, {}, {}, // pos_inside, value, value_ok
                         num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                         num_value_ok, num_value_nok, Result::DistanceInvalid);
             ++num_pos_calc_errors;
@@ -222,7 +222,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
         {
             addDetail(timestamp, tst_pos,
                         ref_pos, // ref_pos
-                        is_inside, {}, along_ok, // pos_inside, value, value_ok
+                        is_inside, {}, {}, // pos_inside, value, value_ok
                         num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                         num_value_ok, num_value_nok, Result::AngleInvalid);
             ++num_pos_calc_errors;
@@ -233,7 +233,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionLatency::evaluate (
         {
             addDetail(timestamp, tst_pos,
                         ref_pos, // ref_pos
-                        is_inside, {}, along_ok, // pos_inside, value, value_ok
+                        is_inside, {}, {}, // pos_inside, value, value_ok
                         num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                         num_value_ok, num_value_nok, Result::SpeedInvalid);
             ++num_pos_calc_errors;

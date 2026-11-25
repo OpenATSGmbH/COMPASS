@@ -112,7 +112,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationCorrect::eval
                             std::uint32_t code)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::RefExists, ref_exists)
-                                             .setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
+                                             .setValue(Result::DetailKey::PosInside, pos_inside)
                                              .setValue(Result::DetailKey::IsNotCorrect, is_not_correct)
                                              .addPosition(ref_pos)
                                              .addCode(code));

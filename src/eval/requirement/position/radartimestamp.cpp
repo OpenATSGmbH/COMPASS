@@ -81,7 +81,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarTimeStamp::eva
                             std::uint32_t code)
     {
         // the time stamp error is a statistic of all updates, single updates are not checked
-        details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
+        details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside)
                                              .setValue(Result::DetailKey::Value, offset)
                                              .setValue(Result::DetailKey::CheckPassed, true)
                                              .addPosition(ref_pos)

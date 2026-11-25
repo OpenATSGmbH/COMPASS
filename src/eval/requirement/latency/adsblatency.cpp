@@ -92,7 +92,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ADSBLatency::evaluate (
                             const QVariant& check_passed,
                             std::uint32_t code)
     {
-        details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
+        details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside)
                                              .setValue(Result::DetailKey::Value, value)
                                              .setValue(Result::DetailKey::CheckPassed, check_passed)
                                              .addCode(code));

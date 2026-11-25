@@ -104,7 +104,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
                             const QVariant& num_comp_failed,
                             std::uint32_t code)
     {
-        details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
+        details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside)
                                              .setValue(Result::DetailKey::Value, offset)
                                              .setValue(Result::DetailKey::CheckPassed, check_passed)
                                              .addPosition(ref_pos)
@@ -141,7 +141,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                             {}, // ref_pos
-                            {}, {}, comp_passed, // pos_inside, value, check_passed
+                            {}, {}, {}, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                             num_comp_passed, num_comp_failed, Result::NoDataSourceInfo);
 
@@ -154,7 +154,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                             {}, // ref_pos
-                            {}, {}, comp_passed, // pos_inside, value, check_passed
+                            {}, {}, {}, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                             num_comp_passed, num_comp_failed, DetailCode::NoRefData);
 
@@ -169,7 +169,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                             {}, // ref_pos
-                            {}, {}, comp_passed, // pos_inside, value, check_passed
+                            {}, {}, {}, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                             num_comp_passed, num_comp_failed, DetailCode::NoRefPosition);
 
@@ -185,7 +185,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                             ref_pos, // ref_pos
-                            is_inside, {}, comp_passed, // pos_inside, value, check_passed
+                            is_inside, {}, {}, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                             num_comp_passed, num_comp_failed, 0);
             ++num_pos_outside;
@@ -200,7 +200,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                             ref_pos, // ref_pos
-                            is_inside, {}, comp_passed, // pos_inside, value, check_passed
+                            is_inside, {}, {}, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                             num_comp_passed, num_comp_failed, DetailCode::RefInaccurate);
 
@@ -222,7 +222,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
         {
             addDetail(timestamp, tst_pos,
                       ref_pos, // ref_pos
-                      is_inside, {}, comp_passed, // pos_inside, value, rcheck_passed
+                      is_inside, {}, {}, // pos_inside, value, rcheck_passed
                       num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                       num_comp_passed, num_comp_failed, Result::RefTransformationError);
             ++num_pos_calc_errors;
@@ -237,7 +237,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
         {
             addDetail(timestamp, tst_pos,
                       ref_pos, // ref_pos
-                      is_inside, {}, comp_passed, // pos_inside, value, check_passed
+                      is_inside, {}, {}, // pos_inside, value, check_passed
                       num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                       num_comp_passed, num_comp_failed, Result::TstTransformationError);
             ++num_pos_calc_errors;
@@ -250,7 +250,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
         {
             addDetail(timestamp, tst_pos,
                         ref_pos, // ref_pos
-                        is_inside, {}, comp_passed, // pos_inside, value, check_passed
+                        is_inside, {}, {}, // pos_inside, value, check_passed
                         num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                         num_comp_passed, num_comp_failed, DetailCode::ValueInvalid);
             ++num_pos_calc_errors;

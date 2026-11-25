@@ -105,7 +105,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCPresent::evaluate (
             std::uint32_t code)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::RefExists, ref_exists)
-                          .setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
+                          .setValue(Result::DetailKey::PosInside, pos_inside)
                           .setValue(Result::DetailKey::IsNotOk, is_not_ok)
                           .addPosition(ref_pos)
                           .addCode(code));

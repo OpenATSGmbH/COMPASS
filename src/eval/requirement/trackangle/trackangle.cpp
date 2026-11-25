@@ -142,7 +142,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                             const QVariant& num_comp_passed,
                             std::uint32_t code)
     {
-        details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
+        details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside)
                                              .setValue(Result::DetailKey::Offset, offset)
                                              .setValue(Result::DetailKey::CheckPassed, check_passed)
                                              .setValue(Result::DetailKey::ValueRef, value_ref)
@@ -180,7 +180,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                           {}, //lines, // ref_pos, lines
-                          {}, {}, comp_passed, // pos_inside, value, check_passed
+                          {}, {}, {}, // pos_inside, value, check_passed
                           {}, {}, {}, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                           num_comp_failed, num_comp_passed, DetailCode::NoRefData);
@@ -196,7 +196,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                           {}, //lines, // ref_pos, lines
-                          {}, {}, comp_passed, // pos_inside, value, check_passed
+                          {}, {}, {}, // pos_inside, value, check_passed
                           {}, {}, {}, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                           num_comp_failed, num_comp_passed, DetailCode::NoRefPosition);
@@ -213,7 +213,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                           {}, //lines, // ref_pos, lines
-                          is_inside, {}, comp_passed, // pos_inside, value, check_passed
+                          is_inside, {}, {}, // pos_inside, value, check_passed
                           {}, {}, {}, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                           num_comp_failed, num_comp_passed, 0);
@@ -229,7 +229,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                           {}, //lines, // ref_pos, lines
-                          {}, {}, comp_passed, // pos_inside, value, check_passed
+                          {}, {}, {}, // pos_inside, value, check_passed
                           {}, {}, {}, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                           num_comp_failed, num_comp_passed, DetailCode::NoRefSpeed);
@@ -252,7 +252,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                           {}, //lines, // ref_pos, lines
-                          {}, {}, comp_passed, // pos_inside, value, check_passed
+                          {}, {}, {}, // pos_inside, value, check_passed
                           {}, {}, ref_spd->speed_, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                           num_comp_failed, num_comp_passed, angle_check.code);
@@ -269,7 +269,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                           {}, //lines, // ref_pos, lines
-                          {}, {}, comp_passed, // pos_inside, value, check_passed
+                          {}, {}, {}, // pos_inside, value, check_passed
                           {}, {}, ref_spd->speed_, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
                           num_comp_failed, num_comp_passed, angle_check.code);

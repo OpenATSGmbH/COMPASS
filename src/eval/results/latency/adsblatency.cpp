@@ -152,9 +152,10 @@ std::vector<Single::TargetInfo> SingleADSBLatency::targetInfos() const
 */
 bool SingleADSBLatency::detailIsOk(const EvaluationDetail& detail) const
 {
+    // no comparison (outside, no time data, not assessable): not an issue
     auto check_passed = detail.getValue(DetailKey::CheckPassed);
 
-    return check_passed.isValid() && check_passed.toBool();
+    return !check_passed.isValid() || check_passed.toBool();
 }
 
 /**

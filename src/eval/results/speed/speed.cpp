@@ -260,8 +260,10 @@ bool SingleSpeed::detailIsOk(const EvaluationDetail& detail) const
 
     auto failed_values_of_interest = req->failedValuesOfInterest();
 
+    // no comparison (no reference, outside, no test value): not an issue
     auto check_passed = detail.getValueAs<bool>(DetailKey::CheckPassed);
-    traced_assert(check_passed.has_value());
+    if (!check_passed.has_value())
+        return true;
 
     return (( failed_values_of_interest &&  check_passed.value()) ||
             (!failed_values_of_interest && !check_passed.value()));
