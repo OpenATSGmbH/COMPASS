@@ -96,6 +96,12 @@ public:
                              const boost::posix_time::time_duration& max_ref_time_diff,
                              const RefUpdateFilter& ref_update_filter = RefUpdateFilter());
 
+    /// periods of the usable reference updates: a period ends at an update that is not usable,
+    /// or before an update more than max_ref_time_diff after the period end
+    void createFromReference(const dbContent::TargetReport::IndexMap& ref_indexes,
+                             const boost::posix_time::time_duration& max_ref_time_diff,
+                             const RefUpdateFilter& is_usable);
+
     void addUpdate(const TimePeriodUpdate& update);
 
     bool isInside (boost::posix_time::ptime time) const;
