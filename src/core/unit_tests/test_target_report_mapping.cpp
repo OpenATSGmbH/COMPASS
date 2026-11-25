@@ -134,16 +134,16 @@ TEST_CASE("findBracket", "[target_report_mapping]")
         REQUIRE(!b.after);
     }
 
-    SECTION("several entries at one timestamp: last before, first exact and after")
+    SECTION("several entries at one timestamp: the first of them")
     {
         IndexMap dup = makeIndexes({10, 10, 20, 20, 30, 30});
 
         Bracket between = findBracket(dup, at(15));
-        requireEntry(between.before, 10, 1);
+        requireEntry(between.before, 10, 0);
         requireEntry(between.after, 20, 2);
 
         Bracket exact = findBracket(dup, at(20));
-        requireEntry(exact.before, 10, 1);
+        requireEntry(exact.before, 10, 0);
         requireEntry(exact.exact, 20, 2);
         requireEntry(exact.after, 30, 4);
     }

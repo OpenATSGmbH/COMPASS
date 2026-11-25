@@ -40,7 +40,7 @@ Bracket findBracket(const IndexMap& indexes, const ptime& timestamp)
     auto upper = indexes.upper_bound(timestamp);
 
     if (lower != indexes.begin())
-        ret.before = DataID(*std::prev(lower));
+        ret.before = DataID(*indexes.lower_bound(std::prev(lower)->first));
 
     if (lower != upper)
         ret.exact = DataID(*lower);

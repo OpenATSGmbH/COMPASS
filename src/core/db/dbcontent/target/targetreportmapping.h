@@ -124,12 +124,12 @@ struct DataMapping // mapping to respective ref data
 };
 
 /// The entries of an IndexMap around a timestamp. With several entries at one timestamp,
-/// exact and after are the first of them, before is the last of them.
+/// the first of them is used.
 struct Bracket
 {
     boost::optional<DataID> exact;  // entry at the timestamp
-    boost::optional<DataID> before; // last entry before the timestamp
-    boost::optional<DataID> after;  // first entry after the timestamp
+    boost::optional<DataID> before; // entry at the last timestamp before the timestamp
+    boost::optional<DataID> after;  // entry at the first timestamp after the timestamp
 };
 
 Bracket findBracket(const IndexMap& indexes, const boost::posix_time::ptime& timestamp);
