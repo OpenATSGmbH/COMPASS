@@ -154,6 +154,7 @@ public:
     const EvaluationStandard& currentStandard() const;
 
     bool hasStandard(const std::string& name) const;
+    std::vector<std::string> standardNames() const; // sorted case-insensitively
     void addStandard(const std::string& name);
     void deleteCurrentStandard();
 

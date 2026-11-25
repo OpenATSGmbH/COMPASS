@@ -59,6 +59,8 @@
 #include <QThread>
 #include <QMessageBox>
 
+#include <algorithm>
+#include <cctype>
 #include <memory>
 //#include <fstream>
 #include <cstdlib>
@@ -1084,6 +1086,26 @@ bool EvaluationCalculator::hasStandard(const std::string& name) const
 
 /**
  */
+std::vector<std::string> EvaluationCalculator::standardNames() const
+{
+    std::vector<std::string> names;
+
+    for (const auto& standard : standards_)
+        names.push_back(standard->name());
+
+    auto lower = [] (unsigned char c) { return std::tolower(c); };
+
+    std::sort(names.begin(), names.end(), [&] (const std::string& a, const std::string& b)
+    {
+        return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end(),
+                                            [&] (char x, char y) { return lower(x) < lower(y); });
+    });
+
+    return names;
+}
+
+/**
+ */
 void EvaluationCalculator::addStandard(const std::string& name)
 {
     loginf << "name " << name;
@@ -1117,11 +1139,19 @@ void EvaluationCalculator::deleteCurrentStandard()
 
     traced_assert(iter != standards_.end());
 
+    // select the neighbor in the sorted list: the next standard, or the previous one if it was the last
+    auto names = standardNames();
+    size_t pos = std::find(names.begin(), names.end(), name) - names.begin();
+    std::string next_name;
+
+    if (names.size() > 1)
+        next_name = pos + 1 < names.size() ? names.at(pos + 1) : names.at(pos - 1);
+
     standards_.erase(iter);
 
     emit standardsChanged();
 
-    currentStandardName("");
+    currentStandardName(next_name);
 }
 
 /**

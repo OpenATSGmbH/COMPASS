@@ -21,6 +21,7 @@
 #include "evaluationstandard.h"
 #include "evaluationstandardwidget.h"
 #include "logger.h"
+#include "questiondialog.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -258,6 +259,12 @@ void EvaluationStandardTabWidget::removeStandardSlot ()
     loginf;
 
     traced_assert(calculator_.hasCurrentStandard());
+
+    QString msg = "Do you really want to remove standard '"
+                  + QString::fromStdString(calculator_.currentStandardName()) + "'?";
+    if (!QuestionDialog::ask(this, "Remove Standard", msg))
+        return;
+
     calculator_.deleteCurrentStandard();
 }
 
