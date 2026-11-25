@@ -1508,7 +1508,7 @@ boost::optional<bool> EvaluationTargetData::availableTstGroundBit(
 
     DataID indexed_id = DataID(ts, index);
 
-    auto gbs = ref_chain_.groundBit(indexed_id);
+    auto gbs = tst_chain_.groundBit(indexed_id);
 
     if (gbs.has_value() && *gbs)
         return gbs;
