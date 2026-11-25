@@ -3252,7 +3252,7 @@
                 },
                 {
                     "file": "flightdeck/reports/figures/content_figure.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "flightdeck/reports/reports.tex:322"
@@ -7037,7 +7037,7 @@
                 },
                 {
                     "file": "eval/figures/geo_eval_detection.png",
-                    "dirty": true,
+                    "dirty": false,
                     "used": true,
                     "used_in": [
                         "eval/eval_inspect.tex:67"
