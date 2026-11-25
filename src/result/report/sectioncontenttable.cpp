@@ -1201,7 +1201,6 @@ void SectionContentTable::addActionsToMenu(QMenu* menu)
 {
     //add general actions
 
-    //@TODO: seems to be broken at the moment, fix functionality
     QAction* unused_action = menu->addAction("Show Unused");
     unused_action->setCheckable(true);
     unused_action->setChecked(show_unused_);
@@ -1983,6 +1982,23 @@ std::vector<std::string> SectionContentTable::proxyHeadings() const
     traced_assert(proxy_headings.size() == numProxyColumns());
 
     return proxy_headings;
+}
+
+/***************************************************************************************************
+ * TableQSortFilterProxyModel
+ ***************************************************************************************************/
+
+/**
+ */
+bool TableQSortFilterProxyModel::filterAcceptsRow(int source_row, const QModelIndex& source_parent) const
+{
+    if (show_unused_)
+        return true;
+
+    QModelIndex index = sourceModel()->index(source_row, 0, source_parent);
+    unsigned int style = sourceModel()->data(index, SectionContentTable::CellStyleRole).toUInt();
+
+    return !SectionContentTable::cellIsInactive(style);
 }
 
 /***************************************************************************************************

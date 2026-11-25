@@ -74,28 +74,14 @@ public:
 
     void showUnused(bool value)
     {
-        //emit layoutAboutToBeChanged();
-
         show_unused_ = value;
-
-        //emit layoutChanged();
     }
 
 protected:
     bool show_unused_ {true};
 
-    bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const
-    {
-        //return sourceModel()->row(source_row)[0].checkState() == Qt::Checked;
-
-        QModelIndex index = sourceModel()->index(source_row, 0, source_parent);
-
-        bool accepted = show_unused_ ? true : (sourceModel()->flags(index) & Qt::ItemIsEnabled) != 0;
-
-        //loginf << "row " << index.row() << " col " << index.column() << " => " << accepted;
-
-        return accepted;
-    }
+    // unused rows are the inactive ones (e.g. targets not used in an evaluation)
+    bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const override;
 };
 
 class SectionContentTableWidget;
@@ -325,7 +311,7 @@ protected:
     unsigned int  sort_column_  {0};
     Qt::SortOrder sort_order_   {Qt::AscendingOrder};
 
-    bool show_unused_   {false};
+    bool show_unused_   {true};
     bool show_tooltips_ {false};
 
     boost::optional<int> max_row_count_;
