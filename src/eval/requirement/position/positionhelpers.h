@@ -20,6 +20,7 @@
 #include "requirement/base/comparisontype.h"
 #include "targetposition.h"
 #include "dbcontent/target/targetreportmapping.h"
+#include "dbcontent/target/targetvelocity.h"
 
 #include <functional>
 #include <string>
@@ -63,41 +64,73 @@ struct AveragingWindow
 std::vector<AveragingWindow> averagingWindows(const std::vector<ErrorSample>& samples, double window_s);
 
 /**
- * Reference data of a test report. evaluateDistances() calls the functions in this order and
+ * Reference data of a test report. evaluatePositions() calls the functions in this order and
  * stops at the first that rules the report out, so the later (expensive) lookups only run when
- * needed.
+ * needed. ref_speed is only called if set.
  */
 struct ReferenceLookup
 {
-    std::function<bool(const dbContent::TargetReport::DataID&)>                               has_ref_data;
+    std::function<bool(const dbContent::TargetReport::DataID&)>                                        has_ref_data;
     std::function<boost::optional<dbContent::TargetPosition>(const dbContent::TargetReport::DataID&)> ref_pos;
-    std::function<bool(const dbContent::TargetReport::DataID&)>                               ref_pos_inside;
-    std::function<boost::optional<double>(const dbContent::TargetReport::DataID&)>            ref_min_acc;
+    std::function<boost::optional<dbContent::TargetVelocity>(const dbContent::TargetReport::DataID&)> ref_speed;
+    std::function<bool(const dbContent::TargetReport::DataID&)>                                        ref_pos_inside;
+    std::function<boost::optional<double>(const dbContent::TargetReport::DataID&)>                     ref_min_acc;
 };
 
-struct DistanceSettings
+struct ReportSettings
 {
-    double          threshold          = 0.0;
-    COMPARISON_TYPE check_type         = COMPARISON_TYPE::LESS_THAN_OR_EQUAL;
-    double          ref_min_accuracy   = 0.0;  // max. reference std. dev. [m]
-    bool            use_averaging      = false;
-    double          averaging_window_s = 0.0;
-    bool            skip_no_data_details = false;
+    double ref_min_accuracy     = 0.0; // max. reference std. dev. [m]
+    bool   skip_no_data_details = false;
 };
 
-struct DistanceCounts
+/**
+ * The requirements differ in the details of the test reports without a comparison (no reference,
+ * outside, inaccurate reference, invalid value). Kept as they are, they show in the detail tables.
+ */
+struct DetailStyle
+{
+    bool unchecked_passed    = false; // check_passed of these details
+    bool inaccurate_with_ref = true;  // inaccurate reference: detail with reference position and inside
+};
+
+/// test report with a usable reference: inside the sector, reference accurate enough
+struct UsableReport
+{
+    boost::posix_time::ptime                   timestamp;
+    dbContent::TargetPosition                  tst_pos;
+    dbContent::TargetPosition                  ref_pos;
+    boost::optional<dbContent::TargetVelocity> ref_spd; // set if ReferenceLookup::ref_speed is set
+};
+
+/// check of a usable test report by the requirement
+struct ReportCheck
+{
+    enum class Outcome
+    {
+        Passed,
+        Failed,
+        Invalid, // no value, e.g. a failed calculation (counted as calculation error)
+        Deferred // compared later by the caller, no detail (averaging)
+    };
+
+    Outcome     outcome = Outcome::Invalid;
+    double      value   = 0.0;
+    std::string comment;
+};
+
+struct PositionCounts
 {
     unsigned int num_pos             = 0;
     unsigned int num_no_ref          = 0;
     unsigned int num_pos_outside     = 0;
-    unsigned int num_pos_inside      = 0; // includes the inaccurate reference and invalid distance reports
+    unsigned int num_pos_inside      = 0; // includes the inaccurate reference and invalid value reports
     unsigned int num_ref_inaccurate  = 0;
     unsigned int num_pos_calc_errors = 0;
     unsigned int num_comp_passed     = 0;
     unsigned int num_comp_failed     = 0;
 };
 
-struct DistanceDetail
+struct PositionDetail
 {
     boost::posix_time::ptime                   timestamp;
     dbContent::TargetPosition                  tst_pos;
@@ -108,22 +141,65 @@ struct DistanceDetail
     std::string                                comment;
 };
 
-struct DistanceEvaluation
+struct PositionEvaluation
 {
-    DistanceCounts              counts;
-    std::vector<DistanceDetail> details;
+    PositionCounts              counts;
+    std::vector<PositionDetail> details;
+};
+
+using TstPosFunc      = std::function<dbContent::TargetPosition(const dbContent::TargetReport::DataID&)>;
+using ReportCheckFunc = std::function<ReportCheck(const UsableReport&)>;
+
+/**
+ * Walk over the test reports of the position requirements: per report the reference checks of
+ * the lookup, then the check of the requirement for the usable reports. One detail per report,
+ * in time order (except the deferred ones).
+ */
+PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& tst_indexes,
+                                     const TstPosFunc& tst_pos,
+                                     const ReferenceLookup& ref,
+                                     const ReportSettings& settings,
+                                     const DetailStyle& style,
+                                     const ReportCheckFunc& check);
+
+struct DistanceSettings
+{
+    double          threshold          = 0.0;
+    COMPARISON_TYPE check_type         = COMPARISON_TYPE::LESS_THAN_OR_EQUAL;
+    bool            use_averaging      = false;
+    double          averaging_window_s = 0.0;
 };
 
 /**
- * Position Distance of the test reports: per report the distance to the mapped reference
- * position, compared with the threshold. With averaging, one comparison per averaging window
- * on the mean position error (see averagingWindows()).
+ * Position Distance: per report the distance to the mapped reference position, compared with
+ * the threshold. With averaging, one comparison per averaging window on the mean position error
+ * (see averagingWindows()), its details after the ones of the reports.
  */
-DistanceEvaluation evaluateDistances(
-        const dbContent::TargetReport::IndexMap& tst_indexes,
-        const std::function<dbContent::TargetPosition(const dbContent::TargetReport::DataID&)>& tst_pos,
-        const ReferenceLookup& ref,
-        const DistanceSettings& settings);
+PositionEvaluation evaluateDistances(const dbContent::TargetReport::IndexMap& tst_indexes,
+                                     const TstPosFunc& tst_pos,
+                                     const ReferenceLookup& ref,
+                                     const ReportSettings& settings,
+                                     const DistanceSettings& distance_settings);
+
+/// Position Distance RMS: per report the distance to the mapped reference position, passed if <= threshold
+PositionEvaluation evaluateDistancesRMS(const dbContent::TargetReport::IndexMap& tst_indexes,
+                                        const TstPosFunc& tst_pos,
+                                        const ReferenceLookup& ref,
+                                        const ReportSettings& settings,
+                                        double threshold);
+
+enum class TrackOffsetComponent { Along, Across };
+
+/**
+ * Position Along / Across: per report the offset along or across the reference track (needs
+ * ReferenceLookup::ref_speed), passed if its absolute value is <= max_abs_value.
+ */
+PositionEvaluation evaluateTrackOffsets(const dbContent::TargetReport::IndexMap& tst_indexes,
+                                        const TstPosFunc& tst_pos,
+                                        const ReferenceLookup& ref,
+                                        const ReportSettings& settings,
+                                        TrackOffsetComponent component,
+                                        double max_abs_value);
 
 } // namespace PositionHelpers
 

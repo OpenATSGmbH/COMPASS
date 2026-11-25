@@ -16,6 +16,7 @@
  */
 
 #include "requirement/position/distance.h"
+#include "requirement/position/positiontargetdata.h"
 #include "requirement/position/positionhelpers.h"
 #include "results/position/distance.h"
 #include "standard/evaluationstandard.h"
@@ -82,46 +83,28 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionDistance::evaluate 
 
     const time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
-    using dbContent::TargetReport::DataID;
-
-    PositionHelpers::ReferenceLookup ref;
-    ref.has_ref_data   = [ & ] (const DataID& id) { return target_data.hasMappedRefData(id, max_ref_time_diff); };
-    ref.ref_pos        = [ & ] (const DataID& id) { return target_data.mappedRefPos(id, max_ref_time_diff); };
-    ref.ref_pos_inside = [ & ] (const DataID& id) { return target_data.isTimeStampNotExcluded(id.timestamp())
-                                                           && target_data.mappedRefPosInside(sector_layer, id); };
-    ref.ref_min_acc    = [ & ] (const DataID& id) { return target_data.mappedRefMinAcc(id, max_ref_time_diff, false); }; // max std dev
-
-    PositionHelpers::DistanceSettings settings;
-    settings.threshold            = threshold_value_;
-    settings.check_type           = threshold_value_check_type_;
+    PositionHelpers::ReportSettings settings;
     settings.ref_min_accuracy     = ref_min_accuracy_;
-    settings.use_averaging        = use_averaging_;
-    settings.averaging_window_s   = averaging_window_s_;
     settings.skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
+
+    PositionHelpers::DistanceSettings distance_settings;
+    distance_settings.threshold          = threshold_value_;
+    distance_settings.check_type         = threshold_value_check_type_;
+    distance_settings.use_averaging      = use_averaging_;
+    distance_settings.averaging_window_s = averaging_window_s_;
 
     const auto evaluation = PositionHelpers::evaluateDistances(
                 target_data.tstChain().timestampIndexes(),
-                [ & ] (const DataID& id) { return target_data.tstChain().pos(id); },
-                ref, settings);
-
-    typedef EvaluationRequirementResult::SinglePositionDistance Result;
-
-    Result::EvaluationDetails details;
-    details.reserve(evaluation.details.size());
-
-    for (const auto& d : evaluation.details)
-        details.push_back(EvaluationDetail(d.timestamp, d.tst_pos)
-                          .setValue(Result::DetailKey::PosInside, d.pos_inside ? QVariant(*d.pos_inside) : QVariant("false"))
-                          .setValue(Result::DetailKey::Value, d.value ? QVariant(*d.value) : QVariant())
-                          .setValue(Result::DetailKey::CheckPassed, d.check_passed)
-                          .addPosition(d.ref_pos)
-                          .generalComment(d.comment));
+                PositionTargetData::tstPositions(target_data),
+                PositionTargetData::referenceLookup(target_data, sector_layer, max_ref_time_diff, false),
+                settings, distance_settings);
 
     const auto& c = evaluation.counts;
 
-    return make_shared<EvaluationRequirementResult::SinglePositionDistance>(
+    return std::make_shared<EvaluationRequirementResult::SinglePositionDistance>(
                 "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
-                calculator_, details, c.num_pos, c.num_no_ref, c.num_pos_outside, c.num_pos_inside, c.num_ref_inaccurate,
+                calculator_, PositionTargetData::details(evaluation),
+                c.num_pos, c.num_no_ref, c.num_pos_outside, c.num_pos_inside, c.num_ref_inaccurate,
                 c.num_comp_passed, c.num_comp_failed);
 }
 

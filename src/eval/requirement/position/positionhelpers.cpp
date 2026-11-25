@@ -17,6 +17,7 @@
 
 #include "requirement/position/positionhelpers.h"
 
+#include "requirement/base/trackoffsethelpers.h"
 #include "projection/transformation.h"
 #include "stringconv.h"
 #include "timeconv.h"
@@ -76,25 +77,15 @@ std::vector<AveragingWindow> averagingWindows(const std::vector<ErrorSample>& sa
 
 /**
  */
-DistanceEvaluation evaluateDistances(const dbContent::TargetReport::IndexMap& tst_indexes,
-                                     const std::function<dbContent::TargetPosition(const dbContent::TargetReport::DataID&)>& tst_pos_of,
+PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& tst_indexes,
+                                     const TstPosFunc& tst_pos_of,
                                      const ReferenceLookup& ref,
-                                     const DistanceSettings& settings)
+                                     const ReportSettings& settings,
+                                     const DetailStyle& style,
+                                     const ReportCheckFunc& check)
 {
-    DistanceEvaluation result;
-    DistanceCounts&    counts = result.counts;
-
-    Transformation ogr_geo2cart;
-
-    // averaged position mode: usable samples with their error vector in the local
-    // Cartesian frame, compared per averaging window after the walk below
-    struct AveragingSample
-    {
-        ErrorSample               error;
-        dbContent::TargetPosition tst_pos;
-        dbContent::TargetPosition ref_pos;
-    };
-    std::vector<AveragingSample> samples;
+    PositionEvaluation result;
+    PositionCounts&    counts = result.counts;
 
     auto addDetail = [ & ] (const boost::posix_time::ptime& timestamp,
                             const dbContent::TargetPosition& tst_pos,
@@ -105,6 +96,16 @@ DistanceEvaluation evaluateDistances(const dbContent::TargetReport::IndexMap& ts
                             const std::string& comment)
     {
         result.details.push_back({ timestamp, tst_pos, ref_pos, pos_inside, value, check_passed, comment });
+    };
+
+    auto addNoDataDetail = [ & ] (const boost::posix_time::ptime& timestamp,
+                                  const dbContent::TargetPosition& tst_pos,
+                                  const boost::optional<dbContent::TargetPosition>& ref_pos,
+                                  const boost::optional<bool>& pos_inside,
+                                  const std::string& comment)
+    {
+        if (!settings.skip_no_data_details)
+            addDetail(timestamp, tst_pos, ref_pos, pos_inside, {}, style.unchecked_passed, comment);
     };
 
     for (const auto& tst_index : tst_indexes)
@@ -118,9 +119,7 @@ DistanceEvaluation evaluateDistances(const dbContent::TargetReport::IndexMap& ts
 
         if (!ref.has_ref_data(tst_id))
         {
-            if (!settings.skip_no_data_details)
-                addDetail(timestamp, tst_pos, {}, {}, {}, false, "No reference data");
-
+            addNoDataDetail(timestamp, tst_pos, {}, {}, "No reference data");
             ++counts.num_no_ref;
             continue;
         }
@@ -129,18 +128,28 @@ DistanceEvaluation evaluateDistances(const dbContent::TargetReport::IndexMap& ts
 
         if (!ref_pos.has_value())
         {
-            if (!settings.skip_no_data_details)
-                addDetail(timestamp, tst_pos, {}, {}, {}, false, "No reference position");
-
+            addNoDataDetail(timestamp, tst_pos, {}, {}, "No reference position");
             ++counts.num_no_ref;
             continue;
         }
 
+        boost::optional<dbContent::TargetVelocity> ref_spd;
+
+        if (ref.ref_speed)
+        {
+            ref_spd = ref.ref_speed(tst_id);
+
+            if (!ref_spd.has_value())
+            {
+                addNoDataDetail(timestamp, tst_pos, {}, {}, "No reference speed");
+                ++counts.num_no_ref;
+                continue;
+            }
+        }
+
         if (!ref.ref_pos_inside(tst_id))
         {
-            if (!settings.skip_no_data_details)
-                addDetail(timestamp, tst_pos, ref_pos, false, {}, false, "Outside sector");
-
+            addNoDataDetail(timestamp, tst_pos, ref_pos, false, "Outside sector");
             ++counts.num_pos_outside;
             continue;
         }
@@ -150,99 +159,248 @@ DistanceEvaluation evaluateDistances(const dbContent::TargetReport::IndexMap& ts
 
         if (ref_pos_acc && *ref_pos_acc > settings.ref_min_accuracy)
         {
-            if (!settings.skip_no_data_details)
-                addDetail(timestamp, tst_pos, {}, {}, {}, false, "Inaccurate reference position");
+            if (style.inaccurate_with_ref)
+                addNoDataDetail(timestamp, tst_pos, ref_pos, true, "Inaccurate reference position");
+            else
+                addNoDataDetail(timestamp, tst_pos, {}, {}, "Inaccurate reference position");
 
             ++counts.num_ref_inaccurate;
             continue;
         }
 
-        bool transform_ok;
+        const ReportCheck report_check = check({ timestamp, tst_pos, *ref_pos, ref_spd });
 
-        if (settings.use_averaging)
+        switch (report_check.outcome)
         {
-            // collect the error vector, one comparison per averaging window follows below
-            double sample_distance, sample_angle;
-
-            std::tie(transform_ok, sample_distance, sample_angle) = ogr_geo2cart.distanceAngleCart(
-                        ref_pos->latitude_, ref_pos->longitude_, tst_pos.latitude_, tst_pos.longitude_);
-            traced_assert(transform_ok);
-
-            if (std::isnan(sample_distance) || std::isinf(sample_distance)
-                    || std::isnan(sample_angle) || std::isinf(sample_angle))
+            case ReportCheck::Outcome::Passed:
+            case ReportCheck::Outcome::Failed:
             {
-                addDetail(timestamp, tst_pos, ref_pos, true, {}, false, "Distance Invalid");
-                ++counts.num_pos_calc_errors;
-                continue;
+                const bool passed = report_check.outcome == ReportCheck::Outcome::Passed;
+
+                if (passed)
+                    ++counts.num_comp_passed;
+                else
+                    ++counts.num_comp_failed;
+
+                addDetail(timestamp, tst_pos, ref_pos, true, report_check.value, passed, report_check.comment);
+                break;
             }
-
-            samples.push_back({ { timestamp,
-                                  sample_distance * std::cos(sample_angle),
-                                  sample_distance * std::sin(sample_angle) },
-                                tst_pos, *ref_pos });
-            continue;
-        }
-
-        double distance;
-
-        std::tie(transform_ok, distance) = ogr_geo2cart.distanceL2Cart(
-                    ref_pos->latitude_, ref_pos->longitude_, tst_pos.latitude_, tst_pos.longitude_);
-        traced_assert(transform_ok);
-
-        if (std::isnan(distance) || std::isinf(distance))
-        {
-            addDetail(timestamp, tst_pos, ref_pos, true, {}, false, "Distance Invalid");
-            ++counts.num_pos_calc_errors;
-            continue;
-        }
-
-        const bool passed = compareValue(std::fabs(distance), settings.threshold, settings.check_type);
-
-        if (passed)
-            ++counts.num_comp_passed;
-        else
-            ++counts.num_comp_failed;
-
-        addDetail(timestamp, tst_pos, ref_pos, true, distance, passed, passed ? "Passed" : "Failed");
-    }
-
-    // averaged position mode: one comparison per averaging window, on the mean
-    // position error of the test reports inside it. A window is anchored at the
-    // first sample not yet consumed, so a data gap does not create empty windows.
-    if (settings.use_averaging)
-    {
-        std::vector<ErrorSample> error_samples;
-        error_samples.reserve(samples.size());
-
-        for (const auto& sample : samples)
-            error_samples.push_back(sample.error);
-
-        for (const auto& window : averagingWindows(error_samples, settings.averaging_window_s))
-        {
-            const size_t num_in_window = window.end - window.first;
-            traced_assert(num_in_window > 0);
-
-            const bool passed = compareValue(window.mean_distance, settings.threshold, settings.check_type);
-
-            if (passed)
-                ++counts.num_comp_passed;
-            else
-                ++counts.num_comp_failed;
-
-            const std::string comment = std::string(passed ? "Passed" : "Failed")
-                    + " (mean position error of " + std::to_string(num_in_window) + " reports over "
-                    + Utils::String::doubleToStringPrecision(window.span_s, 1) + " s)";
-
-            const auto& first = samples[ window.first ];
-
-            addDetail(first.error.timestamp, first.tst_pos, first.ref_pos,
-                      true, window.mean_distance, passed, comment);
+            case ReportCheck::Outcome::Invalid:
+                addDetail(timestamp, tst_pos, ref_pos, true, {}, style.unchecked_passed, report_check.comment);
+                ++counts.num_pos_calc_errors;
+                break;
+            case ReportCheck::Outcome::Deferred:
+                break;
         }
     }
 
     traced_assert(counts.num_pos - counts.num_no_ref == counts.num_pos_inside + counts.num_pos_outside);
 
     return result;
+}
+
+namespace
+{
+
+ReportCheck compared(bool passed, double value, const std::string& comment)
+{
+    return { passed ? ReportCheck::Outcome::Passed : ReportCheck::Outcome::Failed, value, comment };
+}
+
+ReportCheck invalid(const std::string& comment)
+{
+    return { ReportCheck::Outcome::Invalid, 0.0, comment };
+}
+
+/// distance from the reference to the test position, none if not finite
+boost::optional<double> refDistance(Transformation& trafo, const UsableReport& report)
+{
+    bool   transform_ok;
+    double distance;
+
+    std::tie(transform_ok, distance) = trafo.distanceL2Cart(
+                report.ref_pos.latitude_, report.ref_pos.longitude_, report.tst_pos.latitude_, report.tst_pos.longitude_);
+    traced_assert(transform_ok);
+
+    if (std::isnan(distance) || std::isinf(distance))
+        return boost::none;
+
+    return distance;
+}
+
+} // namespace
+
+/**
+ */
+PositionEvaluation evaluateDistances(const dbContent::TargetReport::IndexMap& tst_indexes,
+                                     const TstPosFunc& tst_pos,
+                                     const ReferenceLookup& ref,
+                                     const ReportSettings& settings,
+                                     const DistanceSettings& distance_settings)
+{
+    DetailStyle style;
+    style.unchecked_passed    = false;
+    style.inaccurate_with_ref = false;
+
+    Transformation trafo;
+
+    // averaged position mode: usable samples with their error vector in the local
+    // Cartesian frame, compared per averaging window after the walk
+    struct AveragingSample
+    {
+        ErrorSample               error;
+        dbContent::TargetPosition tst_pos;
+        dbContent::TargetPosition ref_pos;
+    };
+    std::vector<AveragingSample> samples;
+
+    auto check = [ & ] (const UsableReport& report) -> ReportCheck
+    {
+        if (distance_settings.use_averaging)
+        {
+            bool   transform_ok;
+            double sample_distance, sample_angle;
+
+            std::tie(transform_ok, sample_distance, sample_angle) = trafo.distanceAngleCart(
+                        report.ref_pos.latitude_, report.ref_pos.longitude_,
+                        report.tst_pos.latitude_, report.tst_pos.longitude_);
+            traced_assert(transform_ok);
+
+            if (std::isnan(sample_distance) || std::isinf(sample_distance)
+                    || std::isnan(sample_angle) || std::isinf(sample_angle))
+                return invalid("Distance Invalid");
+
+            samples.push_back({ { report.timestamp,
+                                  sample_distance * std::cos(sample_angle),
+                                  sample_distance * std::sin(sample_angle) },
+                                report.tst_pos, report.ref_pos });
+
+            return { ReportCheck::Outcome::Deferred, 0.0, "" };
+        }
+
+        const auto d = refDistance(trafo, report);
+
+        if (!d)
+            return invalid("Distance Invalid");
+
+        const bool passed = compareValue(std::fabs(*d), distance_settings.threshold, distance_settings.check_type);
+
+        return compared(passed, *d, passed ? "Passed" : "Failed");
+    };
+
+    PositionEvaluation result = evaluatePositions(tst_indexes, tst_pos, ref, settings, style, check);
+
+    if (!distance_settings.use_averaging)
+        return result;
+
+    // one comparison per averaging window, on the mean position error of the test reports
+    // inside it. A window is anchored at the first sample not yet consumed, so a data gap
+    // does not create empty windows.
+    std::vector<ErrorSample> error_samples;
+    error_samples.reserve(samples.size());
+
+    for (const auto& sample : samples)
+        error_samples.push_back(sample.error);
+
+    for (const auto& window : averagingWindows(error_samples, distance_settings.averaging_window_s))
+    {
+        const size_t num_in_window = window.end - window.first;
+        traced_assert(num_in_window > 0);
+
+        const bool passed = compareValue(window.mean_distance, distance_settings.threshold, distance_settings.check_type);
+
+        if (passed)
+            ++result.counts.num_comp_passed;
+        else
+            ++result.counts.num_comp_failed;
+
+        const std::string comment = std::string(passed ? "Passed" : "Failed")
+                + " (mean position error of " + std::to_string(num_in_window) + " reports over "
+                + Utils::String::doubleToStringPrecision(window.span_s, 1) + " s)";
+
+        const auto& first = samples[ window.first ];
+
+        result.details.push_back({ first.error.timestamp, first.tst_pos, first.ref_pos,
+                                   true, window.mean_distance, passed, comment });
+    }
+
+    return result;
+}
+
+/**
+ */
+PositionEvaluation evaluateDistancesRMS(const dbContent::TargetReport::IndexMap& tst_indexes,
+                                        const TstPosFunc& tst_pos,
+                                        const ReferenceLookup& ref,
+                                        const ReportSettings& settings,
+                                        double threshold)
+{
+    DetailStyle style;
+    style.unchecked_passed    = false;
+    style.inaccurate_with_ref = true;
+
+    Transformation trafo;
+
+    auto check = [ & ] (const UsableReport& report) -> ReportCheck
+    {
+        const auto d = refDistance(trafo, report);
+
+        if (!d)
+            return invalid("DistanceRMS Invalid");
+
+        const bool passed = std::fabs(*d) <= threshold;
+
+        return compared(passed, *d, passed ? "Passed" : "Failed");
+    };
+
+    return evaluatePositions(tst_indexes, tst_pos, ref, settings, style, check);
+}
+
+/**
+ */
+PositionEvaluation evaluateTrackOffsets(const dbContent::TargetReport::IndexMap& tst_indexes,
+                                        const TstPosFunc& tst_pos,
+                                        const ReferenceLookup& ref,
+                                        const ReportSettings& settings,
+                                        TrackOffsetComponent component,
+                                        double max_abs_value)
+{
+    traced_assert(ref.ref_speed);
+
+    DetailStyle style;
+    style.unchecked_passed    = true;
+    style.inaccurate_with_ref = true;
+
+    const bool along = component == TrackOffsetComponent::Along;
+
+    Transformation trafo;
+
+    auto check = [ & ] (const UsableReport& report) -> ReportCheck
+    {
+        bool   transform_ok;
+        double distance, angle;
+
+        std::tie(transform_ok, distance, angle) = trafo.distanceAngleCart(
+                    report.ref_pos.latitude_, report.ref_pos.longitude_,
+                    report.tst_pos.latitude_, report.tst_pos.longitude_);
+        traced_assert(transform_ok);
+
+        if (std::isnan(distance) || std::isinf(distance))
+            return invalid("Distance Invalid");
+
+        if (!std::isfinite(angle) || !std::isfinite(report.ref_spd->track_angle_))
+            return invalid("Angle Invalid");
+
+        const auto offset = TrackOffsetHelpers::trackOffset(distance, angle, report.ref_spd->track_angle_);
+        const double value = along ? offset.along : offset.across;
+        traced_assert(std::isfinite(value));
+
+        const bool passed = std::fabs(value) <= max_abs_value;
+
+        return compared(passed, value, passed ? "" : (along ? "Along-track not OK" : "Across-track not OK"));
+    };
+
+    return evaluatePositions(tst_indexes, tst_pos, ref, settings, style, check);
 }
 
 } // namespace PositionHelpers
