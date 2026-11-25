@@ -365,6 +365,54 @@ void excludeDetectionMisses(const TimePeriodCollection& periods,
     counts.misses  = std::min(counts.misses, counts.sum_uis);
 }
 
+/**
+ * The misses of each miss event without the detection misses inside its gap, so the details agree
+ * with counts(..., true): the detection misses of a gap are counted over the gaps between all test
+ * target reports inside it (including its begin and end), as in excludeDetectionMisses().
+ */
+void excludeDetectionMisses(const TimePeriodCollection& periods,
+                            const MissParams& p,
+                            std::vector<Event>& events)
+{
+    for (auto& e : events)
+    {
+        if (e.misses == 0)
+            continue;
+
+        const auto t0 = e.interval_time0;
+        const auto t1 = e.interval_time1;
+
+        // inside period holding the gap
+        const TimePeriod* period = nullptr;
+        for (size_t i = 0; i < periods.size() && !period; ++i)
+        {
+            const auto& per = periods.period(i);
+            if (per.type() == TimePeriod::Type::InsideSector && per.begin() <= t0 && t1 <= per.end())
+                period = &per;
+        }
+
+        if (!period)
+            continue;
+
+        uint32_t detection_misses = 0;
+        auto     t_last           = t0;
+
+        for (const auto& update : period->getUpdates())
+        {
+            auto t = update.data_id.timestamp();
+            if (t <= t0 || t >= t1)
+                continue;
+
+            detection_misses += numMisses(Utils::Time::partialSeconds(t - t_last), p);
+            t_last = t;
+        }
+
+        detection_misses += numMisses(Utils::Time::partialSeconds(t1 - t_last), p);
+
+        e.misses = e.misses > detection_misses ? e.misses - detection_misses : 0;
+    }
+}
+
 } // namespace IntervalHelpers
 
 } // namespace EvaluationRequirement

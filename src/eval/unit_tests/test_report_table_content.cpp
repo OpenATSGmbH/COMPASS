@@ -115,3 +115,29 @@ TEST_CASE("ReportTableContent rowComment with detail codes", "[report_table_cont
         CHECK(headers.back() == ReportTableContent::ColumnCommentHeader);
     }
 }
+
+namespace
+{
+
+/// comment of a gap row with the missed amount, the column unit as the detection counting mode sets it
+std::string gapComment(const std::string& unit, double missed)
+{
+    auto def = ReportTableDefinition::record("gap_table", "Gaps", { "RefTraj" });
+    def.addColumn("missed_updates", PropertyDataType::DOUBLE, "Missed", "", "", unit);
+
+    Buffer buffer(def.propertyList());
+    buffer.get<unsigned int>(ReportTableDefinition::UTNColumnName).set(0, 1);
+    buffer.get<double>("missed_updates").set(0, missed);
+
+    return ReportTableContent::rowComment(def, buffer, 0);
+}
+
+} // namespace
+
+TEST_CASE("ReportTableContent rowComment of gap rows per counting mode", "[report_table_content]")
+{
+    CHECK(gapComment("", 3.0) == "3.00 missed updates");       // update interval counting
+    CHECK(gapComment("Second", 12.5) == "12.50 s missed");     // time ratio mode
+    CHECK(gapComment("Gap", 1.0) == "");                       // gap count mode: the row is the gap
+    CHECK(gapComment("", 0.0) == "");                          // no miss
+}

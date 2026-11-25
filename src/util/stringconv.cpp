@@ -89,7 +89,7 @@ std::string percentToStringProtected(double x, double y, unsigned int precision)
 
     std::ostringstream out;
     
-    out << std::fixed << std::setprecision(precision) << x / y;
+    out << std::fixed << std::setprecision(precision) << 100.0 * x / y;
 
     return out.str();
 }

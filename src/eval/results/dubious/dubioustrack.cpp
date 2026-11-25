@@ -224,9 +224,11 @@ nlohmann::json::array_t SingleDubiousTrack::targetTableValuesCustom() const
 std::vector<Single::TargetInfo> SingleDubiousTrack::targetInfos() const
 {
     auto p_dubious_up_var          = SingleProbabilityBase::formatProbabilityOptional(p_dubious_update_);
-    auto track_duration_var        = Utils::String::doubleToStringPrecision(track_duration_all_,2).c_str();
-    auto track_duration_dub_var    = Utils::String::doubleToStringPrecision(track_duration_dubious_,2).c_str();
-    auto track_duration_nondub_var = Utils::String::doubleToStringPrecision(track_duration_nondub_,2).c_str();
+    auto round2 = [] (double value) { return nlohmann::json(std::round(value * 100.0) / 100.0); };
+
+    auto track_duration_var        = round2(track_duration_all_);
+    auto track_duration_dub_var    = round2(track_duration_dubious_);
+    auto track_duration_nondub_var = round2(track_duration_nondub_);
     auto dubious_t_avg_var         = num_tracks_dubious_ > 0 ? nlohmann::json(roundf(track_duration_dubious_/(float)num_tracks_dubious_ * 100.0) / 100.0) : nlohmann::json();
 
     nlohmann::json p_dubious_t_var, p_nondub_t_var;
@@ -249,7 +251,7 @@ std::vector<Single::TargetInfo> SingleDubiousTrack::targetInfos() const
              TargetInfo("Duration Non-Dubious [s]"       , "Duration of non-dubious tracks"         , track_duration_nondub_var),
              TargetInfo("Average Duration Dubious [s]"   , "Average duration of dubious tracks"     , dubious_t_avg_var        ),
              TargetInfo("Duration Dubious Ratio [%]"     , "Duration ratio of dubious tracks"       , p_dubious_t_var          ),
-             TargetInfo("Duration Non-Dubious Ration [%]", "Duration ratio of non-dubious tracks"   , p_nondub_t_var           ) };
+             TargetInfo("Duration Non-Dubious Ratio [%]", "Duration ratio of non-dubious tracks"   , p_nondub_t_var           ) };
 }
 
 /**

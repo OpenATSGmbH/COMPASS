@@ -320,3 +320,53 @@ TEST_CASE("IntervalHelpers cases from JSON", "[eval][interval_helpers]")
         CHECK(result.misses  == c.expected.misses);
     }
 }
+
+TEST_CASE("IntervalHelpers::excludeDetectionMisses gives the gap events their code misses", "[eval][interval_helpers]")
+{
+    // update interval 8 s, period 0 to 80 s. A valid code at 0, no report until 40, invalid codes at
+    // 40 and 48, valid codes from 56 on. The code gap 0-56 s has 7 misses, the detection gap 0-40 s 5
+    // of them, so 2 misses of the code remain, in the event and in the counts.
+    MissParams p;
+    p.update_interval_s = 8.0f;
+
+    TimePeriodCollection periods;
+    periods.add(TimePeriod(at(0.0), at(80.0)));
+
+    const std::vector<std::pair<double, bool>> updates = {
+        { 0.0, true }, { 40.0, false }, { 48.0, false }, { 56.0, true }, { 64.0, true }, { 72.0, true }, { 80.0, true } };
+
+    std::vector<DataID> tst_updates;
+    for (unsigned int i = 0; i < updates.size(); ++i)
+        tst_updates.emplace_back(at(updates[ i ].first), dbContent::TargetReport::Index(i, i));
+
+    addTestUpdates(periods, tst_updates);
+
+    auto validity = [ & ] (const DataID& data_id)
+    {
+        IntervalValidity v;
+        v.value = updates.at(data_id.index().idx_external).second ? IntervalValidity::Value::Valid
+                                                                    : IntervalValidity::Value::Invalid;
+        return v;
+    };
+
+    auto events = periodEvents(periods, validity, p, false);
+    auto c      = counts(periods, events, p, true);
+
+    CHECK(c.sum_uis == 5);
+    CHECK(c.misses == 2);
+
+    excludeDetectionMisses(periods, p, events);
+
+    uint32_t sum = 0;
+    for (const auto& e : events)
+        sum += e.misses;
+
+    CHECK(sum == c.misses);
+
+    auto it = std::find_if(events.begin(), events.end(),
+                           [] (const Event& e) { return e.misses > 0; });
+    REQUIRE(it != events.end());
+    CHECK(it->interval_time0 == at(0.0));
+    CHECK(it->interval_time1 == at(56.0));
+    CHECK(it->misses == 2);
+}

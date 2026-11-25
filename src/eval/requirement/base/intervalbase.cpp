@@ -114,6 +114,12 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
 
     auto events = IntervalHelpers::periodEvents(periods, validity, missParams(), skip_no_data_details);
 
+    auto counts = IntervalHelpers::counts(periods, events, missParams(), exclude_detection_misses_);
+
+    // the details show the same misses as the counts
+    if (exclude_detection_misses_)
+        IntervalHelpers::excludeDetectionMisses(periods, missParams(), events);
+
     //process events and create details
     Details details;
 
@@ -177,8 +183,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> IntervalBase::evaluate(cons
                   detail_info.evt_has_misses ? QVariant(event.invalid_updates) : QVariant(),
                   event.code);
     }
-
-    auto counts = IntervalHelpers::counts(periods, events, missParams(), exclude_detection_misses_);
 
     //create derived-specific result
     return createResult("UTN:" + std::to_string(target_data.utn_),
@@ -342,18 +346,20 @@ IntervalBase::DetailInfo IntervalBase::eventDetailInfo(const EvaluationTargetDat
             traced_assert(target_data.tstChain().posOpt(event.data_id).has_value());
             traced_assert(target_data.refChain().posOpt(event.interval_time1).has_value());
 
-            dinfo.evt_time         = event.data_id.timestamp();
-            dinfo.evt_position     = target_data.tstChain().pos(event.data_id);
-            dinfo.evt_position_ref = target_data.refChain().pos(event.interval_time1);
+            // the gap runs from the last valid update to the period end, like all gap details
+            // the detail time is the gap end
+            dinfo.evt_time         = event.interval_time1;
+            dinfo.evt_position     = target_data.refChain().pos(event.interval_time1);
+            dinfo.evt_position_ref = target_data.tstChain().pos(event.data_id);
             dinfo.evt_has_ref      = true;
             dinfo.evt_has_dt       = true;
             dinfo.generate_detail  = true;
 
-            storeRefUpdates(dinfo, 
-                            event.data_id, 
-                            event.interval_time1, 
+            storeRefUpdates(dinfo,
+                            event.data_id,
+                            event.interval_time1,
                             {},
-                            dinfo.evt_position_ref);
+                            dinfo.evt_position);
             break;
         }
         case Event::TypeInvalid:

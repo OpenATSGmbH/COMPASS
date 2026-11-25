@@ -452,7 +452,8 @@ std::shared_ptr<EvaluationRequirementResult::Single> Detection::evaluate (const 
                     last_pos = target_data.refChain().pos(step.t0);
 
                 storeRefUpdates(ref_updates, step.t0, step.t1, last_pos, pos_current);
-                addDetail(timestamp, ref_updates, step.t_diff, step.miss, step.sum_missed, step.code);
+                // at the period end, the gap end (the closing test report can lie in a later period)
+                addDetail(step.t1, ref_updates, step.t_diff, step.miss, step.sum_missed, step.code);
                 break;
             }
             case Step::Type::OutsideRefPeriods:

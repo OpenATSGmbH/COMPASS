@@ -120,9 +120,9 @@ std::vector<std::string> SingleIdentificationChangeDelay::targetTableHeadersCust
 nlohmann::json::array_t SingleIdentificationChangeDelay::targetTableValuesCustom() const
 {
     return { num_events_,
-             formatValue(accumulator_.min()),
-             formatValue(accumulator_.max()),
-             formatValue(accumulator_.mean()),
+             (accumulator_.numValues() ? json(formatValue(accumulator_.min())) : json()),
+             (accumulator_.numValues() ? json(formatValue(accumulator_.max())) : json()),
+             (accumulator_.numValues() ? json(formatValue(accumulator_.mean())) : json()),
              num_passed_,
              num_failed_ };
 }
@@ -133,10 +133,10 @@ std::vector<Single::TargetInfo> SingleIdentificationChangeDelay::targetInfos() c
 {
     return { { "#Events [1]"  , "Number of identity change events"           , num_events_         },
              { "#NotAssessable [1]", "Number of events without sufficient data", num_not_assessable_ },
-             { "CDMin [s]"    , "Minimum of change delay"                    , formatValue(accumulator_.min())    },
-             { "CDMax [s]"    , "Maximum of change delay"                    , formatValue(accumulator_.max())    },
-             { "CDAvg [s]"    , "Average of change delay"                    , formatValue(accumulator_.mean())   },
-             { "CDSDev [s]"   , "Standard Deviation of change delay"         , formatValue(accumulator_.stddev()) },
+             { "CDMin [s]"    , "Minimum of change delay"                    , (accumulator_.numValues() ? json(formatValue(accumulator_.min())) : json())    },
+             { "CDMax [s]"    , "Maximum of change delay"                    , (accumulator_.numValues() ? json(formatValue(accumulator_.max())) : json())    },
+             { "CDAvg [s]"    , "Average of change delay"                    , (accumulator_.numValues() ? json(formatValue(accumulator_.mean())) : json())   },
+             { "CDSDev [s]"   , "Standard Deviation of change delay"         , (accumulator_.numValues() ? json(formatValue(accumulator_.stddev())) : json()) },
              { "#CDOK [1]"    , "Number of events with acceptable delay"     , num_passed_         },
              { "#CDNOK [1]"   , "Number of events with unacceptable delay"   , num_failed_         } };
 }
@@ -252,10 +252,10 @@ std::vector<Joined::SectorInfo> JoinedIdentificationChangeDelay::sectorInfos() c
 {
     return { { "#Events [1]"  , "Number of identity change events"           , num_events_         },
              { "#NotAssessable [1]", "Number of events without sufficient data", num_not_assessable_ },
-             { "CDMin [s]"    , "Minimum of change delay"                    , formatValue(accumulator_.min())    },
-             { "CDMax [s]"    , "Maximum of change delay"                    , formatValue(accumulator_.max())    },
-             { "CDAvg [s]"    , "Average of change delay"                    , formatValue(accumulator_.mean())   },
-             { "CDSDev [s]"   , "Standard Deviation of change delay"         , formatValue(accumulator_.stddev()) },
+             { "CDMin [s]"    , "Minimum of change delay"                    , (accumulator_.numValues() ? json(formatValue(accumulator_.min())) : json())    },
+             { "CDMax [s]"    , "Maximum of change delay"                    , (accumulator_.numValues() ? json(formatValue(accumulator_.max())) : json())    },
+             { "CDAvg [s]"    , "Average of change delay"                    , (accumulator_.numValues() ? json(formatValue(accumulator_.mean())) : json())   },
+             { "CDSDev [s]"   , "Standard Deviation of change delay"         , (accumulator_.numValues() ? json(formatValue(accumulator_.stddev())) : json()) },
              { "#CDOK [1]"    , "Number of events with acceptable delay"     , num_passed_         },
              { "#CDNOK [1]"   , "Number of events with unacceptable delay"   , num_failed_         } };
 }
@@ -279,6 +279,25 @@ FeatureDefinitions JoinedIdentificationChangeDelay::getCustomAnnotationDefinitio
         .addDataSeries("", SingleIdentificationChangeDelay::DetailKey::Value);
 
     return defs;
+}
+
+/**
+ * From the change event (the detail time, a reference report) to the first test report with the new
+ * value. Without a reported value (never reported, not assessable) the bounds only hold the reference
+ * report of the change.
+ */
+boost::optional<std::pair<boost::posix_time::ptime, boost::posix_time::ptime>>
+SingleIdentificationChangeDelay::reportTableGapBounds(const EvaluationDetail& detail) const
+{
+    const auto begin = detail.timestamp();
+    const auto delay = detail.getValueAs<double>(DetailKey::Value);
+
+    // the reference report of the change lies in [begin, end), so the end lies after it
+    auto end = begin + boost::posix_time::microseconds(1);
+    if (delay.has_value() && delay.value() > 0.0)
+        end = begin + boost::posix_time::microseconds(static_cast<long long>(delay.value() * 1e6));
+
+    return std::make_pair(begin, end);
 }
 
 /**

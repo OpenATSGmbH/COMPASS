@@ -87,6 +87,13 @@ protected:
     virtual std::vector<TargetInfo> targetInfos() const override;
 
     virtual bool detailIsOk(const EvaluationDetail& detail) const override;
+
+    // a change event lies at a reference report (the test has no report there): one row per event,
+    // keyed by the reference report of the change, from the change to the reported new value
+    ReportTableKeyKind reportTableKeyKind() const override { return ReportTableKeyKind::ReferenceGap; }
+    boost::optional<std::pair<boost::posix_time::ptime, boost::posix_time::ptime>>
+        reportTableGapBounds(const EvaluationDetail& detail) const override;
+
     void addReportTableColumns(ReportTableDefinition& def) const override;
     void fillReportTableRow(ReportTableRows& rows,
                             const EvaluationDetail& detail,

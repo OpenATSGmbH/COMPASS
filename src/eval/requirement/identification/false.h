@@ -36,7 +36,7 @@ public:
             const SectorLayer& sector_layer) override;
 
     std::string probabilityNameShort() const override final { return "PF"; }
-    std::string probabilityName() const override final { return "Probability of Mode 3/A false"; }
+    std::string probabilityName() const override final { return "Probability of false identification"; }
 
     bool requireAllFalse() const;
 

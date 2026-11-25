@@ -306,7 +306,15 @@ std::string rowComment(const ReportTableDefinition& definition,
         missed = (double)buffer.get<unsigned int>("missed_updates").get(row);
 
     if (missed.has_value() && missed.value() > 0.0)
-        parts.push_back(Utils::String::doubleToStringPrecision(missed.value(), 2) + " missed updates");
+    {
+        // the unit of the column says the counting mode of the detection (time ratio, gap count)
+        std::string unit = definition.hasColumn("missed_updates") ? definition.column("missed_updates").unit : "";
+
+        if (unit == "Second")
+            parts.push_back(Utils::String::doubleToStringPrecision(missed.value(), 2) + " s missed");
+        else if (unit != "Gap") // in gap count mode the row is the gap itself
+            parts.push_back(Utils::String::doubleToStringPrecision(missed.value(), 2) + " missed updates");
+    }
 
     std::string comment;
     for (const auto& part : parts)

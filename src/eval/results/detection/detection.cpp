@@ -403,8 +403,16 @@ FeatureDefinitions JoinedDetection::getCustomAnnotationDefinitions() const
  */
 void SingleDetection::addReportTableColumns(ReportTableDefinition& def) const
 {
-    def.addColumn("missed_updates", PropertyDataType::DOUBLE, "Missed Updates",
-                  "Missed update intervals inside the gap, missed seconds in time ratio mode");
+    // the column holds the missed amount of the counting mode, the gap comment follows its unit
+    if (isTimeRatio(requirement_))
+        def.addColumn("missed_updates", PropertyDataType::DOUBLE, "Missed Time",
+                      "Missed seconds inside the gap (time ratio mode)", "Time", "Second");
+    else if (isGapCount(requirement_))
+        def.addColumn("missed_updates", PropertyDataType::DOUBLE, "Missed Gaps",
+                      "Counted gaps, 1 per gap (gap count mode)", "", "Gap");
+    else
+        def.addColumn("missed_updates", PropertyDataType::DOUBLE, "Missed Updates",
+                      "Missed update intervals inside the gap");
 
     DetailCode::Gap::addTexts(def);
 }

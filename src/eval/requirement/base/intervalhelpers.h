@@ -139,6 +139,11 @@ void excludeDetectionMisses(const TimePeriodCollection& periods,
                             const MissParams& p,
                             Counts& counts);
 
+/// the misses of each miss event without the detection misses inside its gap, for the details (see counts())
+void excludeDetectionMisses(const TimePeriodCollection& periods,
+                            const MissParams& p,
+                            std::vector<Event>& events);
+
 } // namespace IntervalHelpers
 
 } // namespace EvaluationRequirement
