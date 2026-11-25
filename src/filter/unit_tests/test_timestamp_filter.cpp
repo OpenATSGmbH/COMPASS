@@ -120,23 +120,54 @@ TEST_CASE("TimestampFilter inactive returns empty", "[filter][timestamp]")
     CHECK(first);
 }
 
-TEST_CASE("TimestampFilter reset with ptime values", "[filter][timestamp]")
+TEST_CASE("TimestampFilter fitToTimeRange", "[filter][timestamp]")
 {
+    using Utils::Time::fromString;
+
     auto mock = createStandardMock();
-    auto cfg = makeFilterConfig("TimestampFilter", "TimestampFilter0", {
-        {"min_value", "2026-01-05 09:59:58.752"},
-        {"max_value", "2026-01-05 12:05:19.968"}
-    });
+    auto db_min = fromString("2026-01-05 08:00:00.000");
+    auto db_max = fromString("2026-01-05 12:00:00.000");
 
-    TimestampFilter filter(cfg, nullptr, mock);
+    auto fitted = [&] (const std::string& min, const std::string& max)
+    {
+        auto cfg = makeFilterConfig("TimestampFilter", "TimestampFilter0", {
+            {"min_value", min},
+            {"max_value", max}
+        });
 
-    auto new_min = Utils::Time::fromString("2026-02-01 00:00:00.000");
-    auto new_max = Utils::Time::fromString("2026-02-01 23:59:59.999");
+        TimestampFilter filter(cfg, nullptr, mock);
+        filter.fitToTimeRange(db_min, db_max);
 
-    filter.reset(new_min, new_max);
+        return std::make_pair(filter.minValue(), filter.maxValue());
+    };
 
-    CHECK(filter.minValue() == new_min);
-    CHECK(filter.maxValue() == new_max);
+    SECTION("stored range inside the database range is kept")
+    {
+        auto range = fitted("2026-01-05 09:00:00.000", "2026-01-05 10:00:00.000");
+        CHECK(range.first == fromString("2026-01-05 09:00:00.000"));
+        CHECK(range.second == fromString("2026-01-05 10:00:00.000"));
+    }
+
+    SECTION("overlapping stored range is cut to the database range")
+    {
+        auto range = fitted("2026-01-05 07:00:00.000", "2026-01-05 09:00:00.000");
+        CHECK(range.first == db_min);
+        CHECK(range.second == fromString("2026-01-05 09:00:00.000"));
+    }
+
+    SECTION("stored range outside the database range is replaced")
+    {
+        auto range = fitted("2026-02-01 00:00:00.000", "2026-02-01 23:59:59.999");
+        CHECK(range.first == db_min);
+        CHECK(range.second == db_max);
+    }
+
+    SECTION("empty stored range is replaced")
+    {
+        auto range = fitted("", "");
+        CHECK(range.first == db_min);
+        CHECK(range.second == db_max);
+    }
 }
 
 TEST_CASE("TimestampFilter viewpoint save/load round-trip", "[filter][timestamp][viewpoint]")

@@ -345,7 +345,7 @@ An operator can be chosen with the drop-down menu, the supplied operators are co
   \caption{SQL operators}
 \end{table}
 
-A value must be supplied. The value is typed in directly (a single value for most operators, or Min/Max values for BETWEEN). When a new database is opened, the Timestamp filter is reset to the database's min/max timestamps; other filters retain their previous values, which may need to be adjusted manually if they no longer apply.\\
+A value must be supplied. The value is typed in directly (a single value for most operators, or Min/Max values for BETWEEN). When a database is opened, the Timestamp filter keeps its previous range if that range overlaps the database's min/max timestamps. The range is then cut to these timestamps. Otherwise the range is set to the database's min/max timestamps. Other filters retain their previous values, which may need to be adjusted manually if they no longer apply.\\
 
 After a condition is defined, it has to be added using the 'Add condition' button. Existing conditions are shown in the 'Current conditions' list. Please note that for now added conditions cannot be removed. \\\\
 Now the described process can be repeated until a usable filter emerges, which is added using the 'Add'

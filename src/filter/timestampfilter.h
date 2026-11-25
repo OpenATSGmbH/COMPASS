@@ -38,7 +38,8 @@ public:
 
     virtual bool filters(const std::string& dbcontent_name) override;
     virtual void reset() override;
-    void reset(boost::posix_time::ptime min, boost::posix_time::ptime max);
+    // keeps the stored range cut to [min, max] if it overlaps it, else sets [min, max]
+    void fitToTimeRange(boost::posix_time::ptime min, boost::posix_time::ptime max);
 
     virtual void saveViewPointConditions (nlohmann::json& filters) override;
     virtual void loadViewPointConditions (const nlohmann::json& filters) override;

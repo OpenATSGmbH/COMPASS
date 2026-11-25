@@ -559,7 +559,7 @@ void FilterManager::databaseOpenedSlot()
 
         TimestampFilter* ts_filter = dynamic_cast<TimestampFilter*>(getFilter("Timestamp"));
         traced_assert(ts_filter);
-        ts_filter->reset(minmax_ts.first, minmax_ts.second);
+        ts_filter->fitToTimeRange(minmax_ts.first, minmax_ts.second);
 
         if (hasFilter("Excluded Time Windows"))
         {
