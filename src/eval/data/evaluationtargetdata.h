@@ -138,6 +138,8 @@ public:
     std::string mopsVersionStr() const;
 
     // ref
+    /// reference entries within d_max of the test report, see withinMaxGap(), the reference
+    /// position may still be missing (mappedRefPos())
     bool hasMappedRefData(const dbContent::TargetReport::Chain::DataID& tst_id,
                           boost::posix_time::time_duration d_max) const;
     std::pair<boost::posix_time::ptime, boost::posix_time::ptime> mappedRefTimes(

@@ -50,17 +50,6 @@ using namespace Utils;
 using namespace boost::posix_time;
 using namespace dbContent::TargetReport;
 
-namespace
-{
-
-/// an exact match needs a reference position, an interpolated mapping only the times
-bool hasRefWithin(const DataMapping& mapping, const time_duration& d_max)
-{
-    return withinMaxGap(mapping, d_max) && (mapping.has_ref2_ || mapping.has_ref_pos_);
-}
-
-}
-
 //const unsigned int debug_utn = 3275;
 
 double EvaluationTargetData::interest_thres_req_high_ = 0.05;
@@ -465,7 +454,7 @@ const dbContent::TargetReport::Chain& EvaluationTargetData::tstChain() const
 bool EvaluationTargetData::hasMappedRefData(const DataID& tst_id,
                                             time_duration d_max) const
 {
-    return hasRefWithin(mappedRefMapping(tst_id), d_max);
+    return withinMaxGap(mappedRefMapping(tst_id), d_max);
 }
 
 /**
@@ -475,7 +464,7 @@ std::pair<ptime, ptime> EvaluationTargetData::mappedRefTimes(const DataID& tst_i
 {
     const DataMapping& mapping = mappedRefMapping(tst_id);
 
-    if (!hasRefWithin(mapping, d_max))
+    if (!withinMaxGap(mapping, d_max))
         return {{}, {}};
 
     return {mapping.timestamp_ref1_, mapping.has_ref2_ ? mapping.timestamp_ref2_ : ptime()};
@@ -549,7 +538,7 @@ boost::optional<double> EvaluationTargetData::mappedRefMinAcc(
 
     boost::optional<double> acc_max;
 
-    if (hasRefWithin(mapping, d_max))
+    if (withinMaxGap(mapping, d_max))
     {
         auto acc1 = ref_chain_.posAccuracy(mapping.dataid_ref1_);
 
