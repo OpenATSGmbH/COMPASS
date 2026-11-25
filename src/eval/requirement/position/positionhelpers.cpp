@@ -17,9 +17,13 @@
 
 #include "requirement/position/positionhelpers.h"
 
+#include "projection/transformation.h"
+#include "stringconv.h"
 #include "timeconv.h"
+#include "traced_assert.h"
 
 #include <cmath>
+#include <tuple>
 
 namespace EvaluationRequirement
 {
@@ -68,6 +72,177 @@ std::vector<AveragingWindow> averagingWindows(const std::vector<ErrorSample>& sa
     }
 
     return windows;
+}
+
+/**
+ */
+DistanceEvaluation evaluateDistances(const dbContent::TargetReport::IndexMap& tst_indexes,
+                                     const std::function<dbContent::TargetPosition(const dbContent::TargetReport::DataID&)>& tst_pos_of,
+                                     const ReferenceLookup& ref,
+                                     const DistanceSettings& settings)
+{
+    DistanceEvaluation result;
+    DistanceCounts&    counts = result.counts;
+
+    Transformation ogr_geo2cart;
+
+    // averaged position mode: usable samples with their error vector in the local
+    // Cartesian frame, compared per averaging window after the walk below
+    struct AveragingSample
+    {
+        ErrorSample               error;
+        dbContent::TargetPosition tst_pos;
+        dbContent::TargetPosition ref_pos;
+    };
+    std::vector<AveragingSample> samples;
+
+    auto addDetail = [ & ] (const boost::posix_time::ptime& timestamp,
+                            const dbContent::TargetPosition& tst_pos,
+                            const boost::optional<dbContent::TargetPosition>& ref_pos,
+                            const boost::optional<bool>& pos_inside,
+                            const boost::optional<double>& value,
+                            bool check_passed,
+                            const std::string& comment)
+    {
+        result.details.push_back({ timestamp, tst_pos, ref_pos, pos_inside, value, check_passed, comment });
+    };
+
+    for (const auto& tst_index : tst_indexes)
+    {
+        const dbContent::TargetReport::DataID tst_id(tst_index);
+        const auto& timestamp = tst_index.first;
+
+        ++counts.num_pos;
+
+        const dbContent::TargetPosition tst_pos = tst_pos_of(tst_id);
+
+        if (!ref.has_ref_data(tst_id))
+        {
+            if (!settings.skip_no_data_details)
+                addDetail(timestamp, tst_pos, {}, {}, {}, false, "No reference data");
+
+            ++counts.num_no_ref;
+            continue;
+        }
+
+        const auto ref_pos = ref.ref_pos(tst_id);
+
+        if (!ref_pos.has_value())
+        {
+            if (!settings.skip_no_data_details)
+                addDetail(timestamp, tst_pos, {}, {}, {}, false, "No reference position");
+
+            ++counts.num_no_ref;
+            continue;
+        }
+
+        if (!ref.ref_pos_inside(tst_id))
+        {
+            if (!settings.skip_no_data_details)
+                addDetail(timestamp, tst_pos, ref_pos, false, {}, false, "Outside sector");
+
+            ++counts.num_pos_outside;
+            continue;
+        }
+        ++counts.num_pos_inside;
+
+        const auto ref_pos_acc = ref.ref_min_acc(tst_id);
+
+        if (ref_pos_acc && *ref_pos_acc > settings.ref_min_accuracy)
+        {
+            if (!settings.skip_no_data_details)
+                addDetail(timestamp, tst_pos, {}, {}, {}, false, "Inaccurate reference position");
+
+            ++counts.num_ref_inaccurate;
+            continue;
+        }
+
+        bool transform_ok;
+
+        if (settings.use_averaging)
+        {
+            // collect the error vector, one comparison per averaging window follows below
+            double sample_distance, sample_angle;
+
+            std::tie(transform_ok, sample_distance, sample_angle) = ogr_geo2cart.distanceAngleCart(
+                        ref_pos->latitude_, ref_pos->longitude_, tst_pos.latitude_, tst_pos.longitude_);
+            traced_assert(transform_ok);
+
+            if (std::isnan(sample_distance) || std::isinf(sample_distance)
+                    || std::isnan(sample_angle) || std::isinf(sample_angle))
+            {
+                addDetail(timestamp, tst_pos, ref_pos, true, {}, false, "Distance Invalid");
+                ++counts.num_pos_calc_errors;
+                continue;
+            }
+
+            samples.push_back({ { timestamp,
+                                  sample_distance * std::cos(sample_angle),
+                                  sample_distance * std::sin(sample_angle) },
+                                tst_pos, *ref_pos });
+            continue;
+        }
+
+        double distance;
+
+        std::tie(transform_ok, distance) = ogr_geo2cart.distanceL2Cart(
+                    ref_pos->latitude_, ref_pos->longitude_, tst_pos.latitude_, tst_pos.longitude_);
+        traced_assert(transform_ok);
+
+        if (std::isnan(distance) || std::isinf(distance))
+        {
+            addDetail(timestamp, tst_pos, ref_pos, true, {}, false, "Distance Invalid");
+            ++counts.num_pos_calc_errors;
+            continue;
+        }
+
+        const bool passed = compareValue(std::fabs(distance), settings.threshold, settings.check_type);
+
+        if (passed)
+            ++counts.num_comp_passed;
+        else
+            ++counts.num_comp_failed;
+
+        addDetail(timestamp, tst_pos, ref_pos, true, distance, passed, passed ? "Passed" : "Failed");
+    }
+
+    // averaged position mode: one comparison per averaging window, on the mean
+    // position error of the test reports inside it. A window is anchored at the
+    // first sample not yet consumed, so a data gap does not create empty windows.
+    if (settings.use_averaging)
+    {
+        std::vector<ErrorSample> error_samples;
+        error_samples.reserve(samples.size());
+
+        for (const auto& sample : samples)
+            error_samples.push_back(sample.error);
+
+        for (const auto& window : averagingWindows(error_samples, settings.averaging_window_s))
+        {
+            const size_t num_in_window = window.end - window.first;
+            traced_assert(num_in_window > 0);
+
+            const bool passed = compareValue(window.mean_distance, settings.threshold, settings.check_type);
+
+            if (passed)
+                ++counts.num_comp_passed;
+            else
+                ++counts.num_comp_failed;
+
+            const std::string comment = std::string(passed ? "Passed" : "Failed")
+                    + " (mean position error of " + std::to_string(num_in_window) + " reports over "
+                    + Utils::String::doubleToStringPrecision(window.span_s, 1) + " s)";
+
+            const auto& first = samples[ window.first ];
+
+            addDetail(first.error.timestamp, first.tst_pos, first.ref_pos,
+                      true, window.mean_distance, passed, comment);
+        }
+    }
+
+    traced_assert(counts.num_pos - counts.num_no_ref == counts.num_pos_inside + counts.num_pos_outside);
+
+    return result;
 }
 
 } // namespace PositionHelpers

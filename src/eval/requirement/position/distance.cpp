@@ -80,287 +80,49 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionDistance::evaluate 
     logdbg << "'" << name_ << "': utn " << target_data.utn_
            << " threshold_value " << threshold_value_ << " threshold_value_check_type " << threshold_value_check_type_;
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
+    const time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
-    const auto& tst_data = target_data.tstChain().timestampIndexes();
+    using dbContent::TargetReport::DataID;
 
-    logdbg << "'" << name_ << "': utn " << target_data.utn_ << " test data size " << tst_data.size();
+    PositionHelpers::ReferenceLookup ref;
+    ref.has_ref_data   = [ & ] (const DataID& id) { return target_data.hasMappedRefData(id, max_ref_time_diff); };
+    ref.ref_pos        = [ & ] (const DataID& id) { return target_data.mappedRefPos(id, max_ref_time_diff); };
+    ref.ref_pos_inside = [ & ] (const DataID& id) { return target_data.isTimeStampNotExcluded(id.timestamp())
+                                                           && target_data.mappedRefPosInside(sector_layer, id); };
+    ref.ref_min_acc    = [ & ] (const DataID& id) { return target_data.mappedRefMinAcc(id, max_ref_time_diff, false); }; // max std dev
 
-    unsigned int num_pos {0};
-    unsigned int num_no_ref {0};
-    unsigned int num_pos_outside {0};
-    unsigned int num_pos_inside {0};
-    unsigned int num_ref_inaccurate {0};
-    unsigned int num_pos_calc_errors {0};
-    unsigned int num_comp_failed {0};
-    unsigned int num_comp_passed {0};
+    PositionHelpers::DistanceSettings settings;
+    settings.threshold            = threshold_value_;
+    settings.check_type           = threshold_value_check_type_;
+    settings.ref_min_accuracy     = ref_min_accuracy_;
+    settings.use_averaging        = use_averaging_;
+    settings.averaging_window_s   = averaging_window_s_;
+    settings.skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
+
+    const auto evaluation = PositionHelpers::evaluateDistances(
+                target_data.tstChain().timestampIndexes(),
+                [ & ] (const DataID& id) { return target_data.tstChain().pos(id); },
+                ref, settings);
 
     typedef EvaluationRequirementResult::SinglePositionDistance Result;
-    typedef EvaluationDetail                                    Detail;
-    typedef Result::EvaluationDetails                           Details;
-    Details details;
 
-    ptime timestamp;
+    Result::EvaluationDetails details;
+    details.reserve(evaluation.details.size());
 
-    Transformation ogr_geo2cart;
+    for (const auto& d : evaluation.details)
+        details.push_back(EvaluationDetail(d.timestamp, d.tst_pos)
+                          .setValue(Result::DetailKey::PosInside, d.pos_inside ? QVariant(*d.pos_inside) : QVariant("false"))
+                          .setValue(Result::DetailKey::Value, d.value ? QVariant(*d.value) : QVariant())
+                          .setValue(Result::DetailKey::CheckPassed, d.check_passed)
+                          .addPosition(d.ref_pos)
+                          .generalComment(d.comment));
 
-    dbContent::TargetPosition tst_pos;
-
-    bool is_inside;
-    boost::optional<dbContent::TargetPosition> ref_pos;
-
-    bool comp_passed;
-
-    unsigned int num_distances {0};
-    string comment;
-
-    // averaged position mode: usable samples with their error vector in the local
-    // Cartesian frame, compared per averaging window after the walk below
-    struct AveragingSample
-    {
-        ptime                     timestamp;
-        dbContent::TargetPosition tst_pos;
-        dbContent::TargetPosition ref_pos;
-        double                    dx {0};
-        double                    dy {0};
-    };
-    std::vector<AveragingSample> samples;
-
-    bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
-
-    auto addDetail = [ & ] (const ptime& ts,
-                            const dbContent::TargetPosition& tst_pos,
-                            const boost::optional<dbContent::TargetPosition>& ref_pos,
-                            const QVariant& pos_inside,
-                            const QVariant& offset,
-                            const QVariant& check_passed,
-                            const QVariant& num_pos,
-                            const QVariant& num_no_ref,
-                            const QVariant& num_pos_inside,
-                            const QVariant& num_pos_outside,
-                            const QVariant& num_comp_passed,
-                            const QVariant& num_comp_failed,
-                            const std::string& comment)
-    {
-        details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
-                                             .setValue(Result::DetailKey::Value, offset)
-                                             .setValue(Result::DetailKey::CheckPassed, check_passed)
-                                             .addPosition(ref_pos)
-                                             .generalComment(comment));
-    };
-
-    for (const auto& tst_id : tst_data)
-    {
-        ++num_pos;
-
-        timestamp = tst_id.first;
-        tst_pos = target_data.tstChain().pos(tst_id);
-
-        comp_passed = false;
-
-        if (!target_data.hasMappedRefData(tst_id, max_ref_time_diff))
-        {
-            if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos,
-                            {}, // ref_pos
-                            {}, {}, comp_passed, // pos_inside, value, check_passed
-                            num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed,
-                            "No reference data");
-
-            ++num_no_ref;
-            continue;
-        }
-
-        ref_pos = target_data.mappedRefPos(tst_id, max_ref_time_diff);
-
-        if (!ref_pos.has_value())
-        {
-            if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos,
-                            {}, // ref_pos
-                            {}, {}, comp_passed, // pos_inside, value, check_passed
-                            num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed,
-                            "No reference position");
-
-            ++num_no_ref;
-            continue;
-        }
-
-        is_inside = target_data.isTimeStampNotExcluded(timestamp)
-                    && target_data.mappedRefPosInside(sector_layer, tst_id);
-
-        if (!is_inside)
-        {
-            if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos,
-                            ref_pos, // ref_pos
-                            is_inside, {}, comp_passed, // pos_inside, value, check_passed
-                            num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed, 
-                            "Outside sector");
-            ++num_pos_outside;
-            continue;
-        }
-        ++num_pos_inside;
-
-        auto ref_pos_acc = target_data.mappedRefMinAcc(tst_id, max_ref_time_diff, false); // max std dev
-
-        logdbg << "utn " << target_data.utn_ << " ref_pos_acc " << (bool) ref_pos_acc << " acc " << (ref_pos_acc ? *ref_pos_acc : 666.0) << " ref_min_accuracy " << ref_min_accuracy_;
-
-        if (ref_pos_acc && *ref_pos_acc > ref_min_accuracy_)
-        {
-            if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos,
-                            {}, // ref_pos
-                            {}, {}, comp_passed, // pos_inside, value, check_passed
-                            num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed,
-                            "Inaccurate reference position");
-
-            ++num_ref_inaccurate;
-
-            continue;            
-        }
-
-        bool   transform_ok;
-        double distance;
-
-        if (use_averaging_)
-        {
-            // collect the error vector, one comparison per averaging window follows below
-            double sample_distance, sample_angle;
-
-            std::tie(transform_ok, sample_distance, sample_angle) = ogr_geo2cart.distanceAngleCart(
-                        ref_pos->latitude_, ref_pos->longitude_, tst_pos.latitude_, tst_pos.longitude_);
-            traced_assert(transform_ok);
-
-            if (std::isnan(sample_distance) || std::isinf(sample_distance)
-                    || std::isnan(sample_angle) || std::isinf(sample_angle))
-            {
-                addDetail(timestamp, tst_pos,
-                            ref_pos, // ref_pos
-                            is_inside, {}, comp_passed, // pos_inside, value, check_passed
-                            num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed,
-                            "Distance Invalid");
-                ++num_pos_calc_errors;
-                continue;
-            }
-
-            samples.push_back({timestamp, tst_pos, *ref_pos,
-                               sample_distance * std::cos(sample_angle),
-                               sample_distance * std::sin(sample_angle)});
-            continue;
-        }
-
-        std::tie(transform_ok, distance) = ogr_geo2cart.distanceL2Cart(ref_pos->latitude_, ref_pos->longitude_, tst_pos.latitude_, tst_pos.longitude_);
-        traced_assert(transform_ok);
-
-        if (std::isnan(distance) || std::isinf(distance))
-        {
-            addDetail(timestamp, tst_pos,
-                        ref_pos, // ref_pos
-                        is_inside, {}, comp_passed, // pos_inside, value, check_passed
-                        num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                        num_comp_passed, num_comp_failed, 
-                        "Distance Invalid");
-            ++num_pos_calc_errors;
-            continue;
-        }
-
-        ++num_distances;
-
-        if (compareValue(fabs(distance), threshold_value_, threshold_value_check_type_))
-        {
-            comp_passed = true;
-            ++num_comp_passed;
-            comment = "Passed";
-        }
-        else
-        {
-            ++num_comp_failed;
-            comment = "Failed";
-        }
-
-        addDetail(timestamp, tst_pos,
-                    ref_pos,
-                    is_inside, distance, comp_passed, // pos_inside, value, check_passed
-                    num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                    num_comp_passed, num_comp_failed,
-                    comment);
-    }
-
-    // averaged position mode: one comparison per averaging window, on the mean
-    // position error of the test reports inside it. A window is anchored at the
-    // first sample not yet consumed, so a data gap does not create empty windows.
-    if (use_averaging_)
-    {
-        std::vector<PositionHelpers::ErrorSample> error_samples;
-        error_samples.reserve(samples.size());
-
-        for (const auto& sample : samples)
-            error_samples.push_back({ sample.timestamp, sample.dx, sample.dy });
-
-        for (const auto& window : PositionHelpers::averagingWindows(error_samples, averaging_window_s_))
-        {
-            const size_t num_in_window = window.end - window.first;
-            traced_assert(num_in_window > 0);
-
-            ++num_distances;
-
-            const bool window_passed = compareValue(window.mean_distance, threshold_value_, threshold_value_check_type_);
-
-            if (window_passed)
-            {
-                ++num_comp_passed;
-                comment = "Passed";
-            }
-            else
-            {
-                ++num_comp_failed;
-                comment = "Failed";
-            }
-
-            comment += " (mean position error of " + to_string(num_in_window) + " reports over "
-                    + String::doubleToStringPrecision(window.span_s, 1) + " s)";
-
-            addDetail(samples[ window.first ].timestamp, samples[ window.first ].tst_pos,
-                        samples[ window.first ].ref_pos,
-                        true, window.mean_distance, window_passed, // pos_inside, value, check_passed
-                        num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                        num_comp_passed, num_comp_failed,
-                        comment);
-        }
-    }
-
-    //        logdbg << "'" << name_ << "': utn " << target_data.utn_
-    //               << " num_pos " << num_pos << " num_no_ref " <<  num_no_ref
-    //               << " num_pos_outside " << num_pos_outside << " num_pos_inside " << num_pos_inside
-    //               << " num_pos_ok " << num_pos_ok << " num_pos_nok " << num_pos_nok
-    //               << " num_distances " << num_distances;
-
-    traced_assert(num_no_ref <= num_pos);
-
-    if (num_pos - num_no_ref != num_pos_inside + num_pos_outside)
-        loginf << "'" << name_ << "': utn " << target_data.utn_
-               << " num_pos " << num_pos << " num_no_ref " <<  num_no_ref
-               << " num_pos_outside " << num_pos_outside 
-               << " num_pos_inside " << num_pos_inside
-               << " num_pos_calc_errors " << num_pos_calc_errors
-               << " num_distances " << num_distances;
-
-    traced_assert(num_pos - num_no_ref == num_pos_inside + num_pos_outside);
-
-    traced_assert(num_distances == num_comp_failed + num_comp_passed);
-
-    //assert (details.size() == num_pos);
+    const auto& c = evaluation.counts;
 
     return make_shared<EvaluationRequirementResult::SinglePositionDistance>(
                 "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
-                calculator_, details, num_pos, num_no_ref, num_pos_outside, num_pos_inside, num_ref_inaccurate,
-                 num_comp_passed, num_comp_failed);
+                calculator_, details, c.num_pos, c.num_no_ref, c.num_pos_outside, c.num_pos_inside, c.num_ref_inaccurate,
+                c.num_comp_passed, c.num_comp_failed);
 }
 
 }

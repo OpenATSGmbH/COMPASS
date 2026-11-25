@@ -17,9 +17,16 @@
 
 #pragma once
 
+#include "requirement/base/comparisontype.h"
+#include "targetposition.h"
+#include "dbcontent/target/targetreportmapping.h"
+
+#include <functional>
+#include <string>
 #include <vector>
 
 #include <boost/date_time/posix_time/ptime.hpp>
+#include <boost/optional.hpp>
 
 namespace EvaluationRequirement
 {
@@ -54,6 +61,69 @@ struct AveragingWindow
  * create empty windows.
  */
 std::vector<AveragingWindow> averagingWindows(const std::vector<ErrorSample>& samples, double window_s);
+
+/**
+ * Reference data of a test report. evaluateDistances() calls the functions in this order and
+ * stops at the first that rules the report out, so the later (expensive) lookups only run when
+ * needed.
+ */
+struct ReferenceLookup
+{
+    std::function<bool(const dbContent::TargetReport::DataID&)>                               has_ref_data;
+    std::function<boost::optional<dbContent::TargetPosition>(const dbContent::TargetReport::DataID&)> ref_pos;
+    std::function<bool(const dbContent::TargetReport::DataID&)>                               ref_pos_inside;
+    std::function<boost::optional<double>(const dbContent::TargetReport::DataID&)>            ref_min_acc;
+};
+
+struct DistanceSettings
+{
+    double          threshold          = 0.0;
+    COMPARISON_TYPE check_type         = COMPARISON_TYPE::LESS_THAN_OR_EQUAL;
+    double          ref_min_accuracy   = 0.0;  // max. reference std. dev. [m]
+    bool            use_averaging      = false;
+    double          averaging_window_s = 0.0;
+    bool            skip_no_data_details = false;
+};
+
+struct DistanceCounts
+{
+    unsigned int num_pos             = 0;
+    unsigned int num_no_ref          = 0;
+    unsigned int num_pos_outside     = 0;
+    unsigned int num_pos_inside      = 0; // includes the inaccurate reference and invalid distance reports
+    unsigned int num_ref_inaccurate  = 0;
+    unsigned int num_pos_calc_errors = 0;
+    unsigned int num_comp_passed     = 0;
+    unsigned int num_comp_failed     = 0;
+};
+
+struct DistanceDetail
+{
+    boost::posix_time::ptime                   timestamp;
+    dbContent::TargetPosition                  tst_pos;
+    boost::optional<dbContent::TargetPosition> ref_pos;
+    boost::optional<bool>                      pos_inside;
+    boost::optional<double>                    value;
+    bool                                       check_passed = false;
+    std::string                                comment;
+};
+
+struct DistanceEvaluation
+{
+    DistanceCounts              counts;
+    std::vector<DistanceDetail> details;
+};
+
+/**
+ * Position Distance of the test reports: per report the distance to the mapped reference
+ * position, compared with the threshold. With averaging, one comparison per averaging window
+ * on the mean position error (see averagingWindows()).
+ */
+DistanceEvaluation evaluateDistances(
+        const dbContent::TargetReport::IndexMap& tst_indexes,
+        const std::function<dbContent::TargetPosition(const dbContent::TargetReport::DataID&)>& tst_pos,
+        const ReferenceLookup& ref,
+        const DistanceSettings& settings);
 
 } // namespace PositionHelpers
 
