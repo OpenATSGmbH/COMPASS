@@ -220,6 +220,16 @@ ReportTableColumn SinglePositionBaseCommon::common_reportTableValueColumn(const 
 }
 
 /**
+ * Only the requirements of PositionHelpers::evaluatePositions() (Distance, Distance RMS, Along,
+ * Across) set RefExists, the others would get an empty column.
+ */
+bool SinglePositionBaseCommon::common_hasRefExists(const std::string& result_type)
+{
+    return result_type == "SinglePositionDistance" || result_type == "SinglePositionDistanceRMS"
+        || result_type == "SinglePositionAlong"    || result_type == "SinglePositionAcross";
+}
+
+/**
  */
 void SinglePositionBaseCommon::common_addReportTableColumns(ReportTableDefinition& def,
                                                             const std::string& result_type) const
@@ -229,6 +239,10 @@ void SinglePositionBaseCommon::common_addReportTableColumns(ReportTableDefinitio
                   "Value within the requirement threshold");
     def.addColumn("pos_inside", PropertyDataType::BOOL, "Position Inside",
                   "Test position inside the sector layer");
+
+    if (common_hasRefExists(result_type))
+        def.addColumn("ref_exists", PropertyDataType::BOOL, "Reference Exists",
+                      "Reference data exists for the test report");
 }
 
 /**
@@ -240,6 +254,9 @@ void SinglePositionBaseCommon::common_fillReportTableRow(ReportTableRows& rows,
     Single::setReportTableValue<double>(rows, common_reportTableValueColumn(result_type).name, detail, DetailKey::Value);
     Single::setReportTableValue<bool>(rows, "check_passed", detail, DetailKey::CheckPassed);
     Single::setReportTableValue<bool>(rows, "pos_inside", detail, DetailKey::PosInside);
+
+    if (common_hasRefExists(result_type))
+        Single::setReportTableValue<bool>(rows, "ref_exists", detail, DetailKey::RefExists);
 }
 
 /**
@@ -252,6 +269,7 @@ void SinglePositionBaseCommon::common_fillDetailFromReportTableRow(EvaluationDet
     Single::setDetailValue<double>(detail, DetailKey::Value, buffer, common_reportTableValueColumn(result_type).name, row);
     Single::setDetailValue<bool>(detail, DetailKey::CheckPassed, buffer, "check_passed", row);
     Single::setDetailValue<bool>(detail, DetailKey::PosInside, buffer, "pos_inside", row);
+    Single::setDetailValue<bool>(detail, DetailKey::RefExists, buffer, "ref_exists", row);
 }
 
 /**

@@ -97,6 +97,7 @@ public:
         Value,          //float
         CheckPassed,    //bool
         PosInside,      //bool
+        RefExists,      //bool, set by the requirements of PositionHelpers::evaluatePositions()
         PositionBaseMax
     };
 
@@ -106,6 +107,7 @@ protected:
     bool common_detailIsOk(const EvaluationDetail& detail,
                            const std::shared_ptr<EvaluationRequirement::Base>& requirement) const;
 
+    static bool common_hasRefExists(const std::string& result_type);
     /// the value column of the report table, named by the result type
     ReportTableColumn common_reportTableValueColumn(const std::string& result_type) const;
     void common_addReportTableColumns(ReportTableDefinition& def,

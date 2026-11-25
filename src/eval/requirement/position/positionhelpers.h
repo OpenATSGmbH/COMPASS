@@ -103,9 +103,8 @@ struct ReportCheck
         Deferred // compared later by the caller, no detail (averaging)
     };
 
-    Outcome     outcome = Outcome::Invalid;
-    double      value   = 0.0;
-    std::string comment;
+    Outcome outcome = Outcome::Invalid;
+    double  value   = 0.0;
 };
 
 struct PositionCounts
@@ -125,10 +124,10 @@ struct PositionDetail
     boost::posix_time::ptime                   timestamp;
     dbContent::TargetPosition                  tst_pos;
     boost::optional<dbContent::TargetPosition> ref_pos;
+    bool                                       ref_exists = true; // false: no reference data, position or speed
     boost::optional<bool>                      pos_inside;
     boost::optional<double>                    value;
     boost::optional<bool>                      check_passed; // none without a comparison
-    std::string                                comment;
 };
 
 struct PositionEvaluation

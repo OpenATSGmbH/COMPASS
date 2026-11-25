@@ -72,11 +72,11 @@ std::vector<EvaluationDetail> details(const PositionHelpers::PositionEvaluation&
 
     for (const auto& d : evaluation.details)
         details.push_back(EvaluationDetail(d.timestamp, d.tst_pos)
-                          .setValue(DetailKey::PosInside, d.pos_inside ? QVariant(*d.pos_inside) : QVariant("false"))
+                          .setValue(DetailKey::RefExists, d.ref_exists)
+                          .setValue(DetailKey::PosInside, d.pos_inside ? QVariant(*d.pos_inside) : QVariant())
                           .setValue(DetailKey::Value, d.value ? QVariant(*d.value) : QVariant())
                           .setValue(DetailKey::CheckPassed, d.check_passed ? QVariant(*d.check_passed) : QVariant())
-                          .addPosition(d.ref_pos)
-                          .generalComment(d.comment));
+                          .addPosition(d.ref_pos));
 
     return details;
 }

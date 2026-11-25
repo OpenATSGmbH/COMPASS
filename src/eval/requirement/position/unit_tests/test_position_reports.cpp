@@ -165,14 +165,27 @@ PositionEvaluation run(const std::vector<Report>& reports, const Evaluate& evalu
                     ref);
 }
 
-std::vector<std::string> commentsOf(const PositionEvaluation& evaluation)
+/// what the report table shows of a detail
+std::string kindOf(const PositionDetail& detail)
 {
-    std::vector<std::string> comments;
+    if (!detail.ref_exists)
+        return "no ref";
+    if (detail.pos_inside == false)
+        return "outside";
+    if (!detail.check_passed.has_value())
+        return "no comparison";
+
+    return *detail.check_passed ? "passed" : "failed";
+}
+
+std::vector<std::string> kindsOf(const PositionEvaluation& evaluation)
+{
+    std::vector<std::string> kinds;
 
     for (const auto& detail : evaluation.details)
-        comments.push_back(detail.comment);
+        kinds.push_back(kindOf(detail));
 
-    return comments;
+    return kinds;
 }
 
 } // namespace
@@ -207,9 +220,8 @@ TEST_CASE("Position Distance classifies each test report", "[eval][position_repo
     {
         const auto evaluation = run(reports, distances(distanceSettings(30.0)));
 
-        REQUIRE(commentsOf(evaluation) == std::vector<std::string>{
-                    "No reference data", "No reference position", "Outside sector",
-                    "Inaccurate reference position", "Passed", "Failed", "Passed"});
+        REQUIRE(kindsOf(evaluation) == std::vector<std::string>{
+                    "no ref", "no ref", "outside", "no comparison", "passed", "failed", "passed"});
 
         for (unsigned int i = 0; i < reports.size(); ++i)
         {
@@ -222,12 +234,16 @@ TEST_CASE("Position Distance classifies each test report", "[eval][position_repo
     {
         const auto& d = run(reports, distances(distanceSettings(30.0))).details;
 
-        // no reference: no reference position
+        // no reference: no reference position, no inside (comment "No reference", not "Outside sector")
         for (unsigned int i : {0, 1})
         {
+            CHECK(!d[ i ].ref_exists);
             CHECK(!d[ i ].ref_pos.has_value());
             CHECK(!d[ i ].pos_inside);
         }
+
+        for (unsigned int i : {2, 3, 4, 5, 6})
+            CHECK(d[ i ].ref_exists);
 
         // outside the sector, inaccurate reference: reference position and inside
         CHECK(d[ 2 ].ref_pos.has_value());
@@ -261,7 +277,7 @@ TEST_CASE("Position Distance classifies each test report", "[eval][position_repo
         const auto evaluation = run(reports, distances(distanceSettings(30.0), reportSettings(true)));
         const auto all = run(reports, distances(distanceSettings(30.0)));
 
-        CHECK(commentsOf(evaluation) == std::vector<std::string>{"Passed", "Failed", "Passed"});
+        CHECK(kindsOf(evaluation) == std::vector<std::string>{"passed", "failed", "passed"});
         CHECK(evaluation.counts.num_no_ref == all.counts.num_no_ref);
         CHECK(evaluation.counts.num_pos_outside == all.counts.num_pos_outside);
         CHECK(evaluation.counts.num_ref_inaccurate == all.counts.num_ref_inaccurate);
@@ -313,7 +329,7 @@ TEST_CASE("Reference data is read only as far as needed", "[eval][position_repor
         CHECK(evaluation.counts.num_no_ref == 3);
         CHECK(evaluation.counts.num_pos_outside == 1);
         CHECK(evaluation.counts.num_comp_passed == 1);
-        CHECK(commentsOf(evaluation)[ 2 ] == "No reference speed");
+        CHECK(kindsOf(evaluation)[ 2 ] == "no ref");
     }
 }
 
@@ -349,10 +365,8 @@ TEST_CASE("Details of the test reports without a comparison are the same for all
 
     SECTION("a missing reference speed counts only where the speed is needed")
     {
-        CHECK(commentsOf(distance) == std::vector<std::string>{
-                  "No reference data", "Passed", "Outside sector", "Inaccurate reference position"});
-        CHECK(commentsOf(along) == std::vector<std::string>{
-                  "No reference data", "No reference speed", "Outside sector", "Inaccurate reference position"});
+        CHECK(kindsOf(distance) == std::vector<std::string>{"no ref", "passed", "outside", "no comparison"});
+        CHECK(kindsOf(along) == std::vector<std::string>{"no ref", "no ref", "outside", "no comparison"});
 
         REQUIRE(along.details[ 1 ].ref_pos.has_value());
         CHECK(!along.details[ 1 ].pos_inside);
@@ -415,10 +429,7 @@ TEST_CASE("Position Distance with averaging: one comparison per window", "[eval]
 
     SECTION("details: the reports without a comparison, then one per window")
     {
-        REQUIRE(commentsOf(evaluation) == std::vector<std::string>{
-                    "No reference data",
-                    "Passed (mean position error of 3 reports over 2.0 s)",
-                    "Failed (mean position error of 1 reports over 0.0 s)"});
+        REQUIRE(kindsOf(evaluation) == std::vector<std::string>{"no ref", "passed", "failed"});
 
         const auto& first_window = evaluation.details[ 1 ];
 
@@ -445,7 +456,7 @@ TEST_CASE("Position Distance RMS: passed if the distance is <= threshold", "[eva
 
     const auto evaluation = run({near, far}, distancesRMS(30.0));
 
-    REQUIRE(commentsOf(evaluation) == std::vector<std::string>{"Passed", "Failed"});
+    REQUIRE(kindsOf(evaluation) == std::vector<std::string>{"passed", "failed"});
     CHECK(evaluation.counts.num_comp_passed == 1);
     CHECK(evaluation.counts.num_comp_failed == 1);
 
@@ -467,7 +478,7 @@ TEST_CASE("Position Along and Across: offset on the reference track", "[eval][po
     {
         const auto evaluation = run(reports, trackOffsets(TrackOffsetComponent::Along, 5.0), true);
 
-        REQUIRE(commentsOf(evaluation) == std::vector<std::string>{"Along-track not OK", "", ""});
+        REQUIRE(kindsOf(evaluation) == std::vector<std::string>{"failed", "passed", "passed"});
         CHECK(*evaluation.details[ 0 ].value == Approx(10.0).epsilon(0.005));
         CHECK(*evaluation.details[ 1 ].value == Approx(-3.0).epsilon(0.005));
         CHECK(*evaluation.details[ 2 ].value == Approx(0.0).margin(0.01));
@@ -479,7 +490,7 @@ TEST_CASE("Position Along and Across: offset on the reference track", "[eval][po
     {
         const auto evaluation = run(reports, trackOffsets(TrackOffsetComponent::Across, 5.0), true);
 
-        REQUIRE(commentsOf(evaluation) == std::vector<std::string>{"", "", "Across-track not OK"});
+        REQUIRE(kindsOf(evaluation) == std::vector<std::string>{"passed", "passed", "failed"});
         CHECK(*evaluation.details[ 0 ].value == Approx(0.0).margin(0.01));
         CHECK(*evaluation.details[ 2 ].value == Approx(-10.0).epsilon(0.005));
         CHECK(evaluation.details[ 2 ].check_passed == false);
@@ -492,7 +503,7 @@ TEST_CASE("Position Along and Across: offset on the reference track", "[eval][po
 
         const auto evaluation = run({no_track}, trackOffsets(TrackOffsetComponent::Along, 5.0), true);
 
-        REQUIRE(commentsOf(evaluation) == std::vector<std::string>{"Angle Invalid"});
+        REQUIRE(kindsOf(evaluation) == std::vector<std::string>{"no comparison"});
         CHECK(evaluation.counts.num_pos_calc_errors == 1);
         CHECK(evaluation.counts.num_comp_passed + evaluation.counts.num_comp_failed == 0);
         CHECK(!evaluation.details[ 0 ].value);

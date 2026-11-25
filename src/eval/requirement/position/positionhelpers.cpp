@@ -19,7 +19,6 @@
 
 #include "requirement/base/trackoffsethelpers.h"
 #include "projection/transformation.h"
-#include "stringconv.h"
 #include "timeconv.h"
 #include "traced_assert.h"
 
@@ -88,23 +87,23 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
 
     auto addDetail = [ & ] (const boost::posix_time::ptime& timestamp,
                             const dbContent::TargetPosition& tst_pos,
+                            bool ref_exists,
                             const boost::optional<dbContent::TargetPosition>& ref_pos,
                             const boost::optional<bool>& pos_inside,
                             const boost::optional<double>& value,
-                            const boost::optional<bool>& check_passed,
-                            const std::string& comment)
+                            const boost::optional<bool>& check_passed)
     {
-        result.details.push_back({ timestamp, tst_pos, ref_pos, pos_inside, value, check_passed, comment });
+        result.details.push_back({ timestamp, tst_pos, ref_pos, ref_exists, pos_inside, value, check_passed });
     };
 
     auto addNoDataDetail = [ & ] (const boost::posix_time::ptime& timestamp,
                                   const dbContent::TargetPosition& tst_pos,
+                                  bool ref_exists,
                                   const boost::optional<dbContent::TargetPosition>& ref_pos,
-                                  const boost::optional<bool>& pos_inside,
-                                  const std::string& comment)
+                                  const boost::optional<bool>& pos_inside)
     {
         if (!settings.skip_no_data_details)
-            addDetail(timestamp, tst_pos, ref_pos, pos_inside, {}, {}, comment);
+            addDetail(timestamp, tst_pos, ref_exists, ref_pos, pos_inside, {}, {});
     };
 
     for (const auto& tst_index : tst_indexes)
@@ -118,7 +117,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
 
         if (!ref.has_ref_data(tst_id))
         {
-            addNoDataDetail(timestamp, tst_pos, {}, {}, "No reference data");
+            addNoDataDetail(timestamp, tst_pos, false, {}, {});
             ++counts.num_no_ref;
             continue;
         }
@@ -127,7 +126,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
 
         if (!ref_pos.has_value())
         {
-            addNoDataDetail(timestamp, tst_pos, {}, {}, "No reference position");
+            addNoDataDetail(timestamp, tst_pos, false, {}, {});
             ++counts.num_no_ref;
             continue;
         }
@@ -140,7 +139,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
 
             if (!ref_spd.has_value())
             {
-                addNoDataDetail(timestamp, tst_pos, ref_pos, {}, "No reference speed");
+                addNoDataDetail(timestamp, tst_pos, false, ref_pos, {});
                 ++counts.num_no_ref;
                 continue;
             }
@@ -148,7 +147,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
 
         if (!ref.ref_pos_inside(tst_id))
         {
-            addNoDataDetail(timestamp, tst_pos, ref_pos, false, "Outside sector");
+            addNoDataDetail(timestamp, tst_pos, true, ref_pos, false);
             ++counts.num_pos_outside;
             continue;
         }
@@ -158,7 +157,7 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
 
         if (ref_pos_acc && *ref_pos_acc > settings.ref_min_accuracy)
         {
-            addNoDataDetail(timestamp, tst_pos, ref_pos, true, "Inaccurate reference position");
+            addNoDataDetail(timestamp, tst_pos, true, ref_pos, true);
 
             ++counts.num_ref_inaccurate;
             continue;
@@ -178,11 +177,11 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
                 else
                     ++counts.num_comp_failed;
 
-                addDetail(timestamp, tst_pos, ref_pos, true, report_check.value, passed, report_check.comment);
+                addDetail(timestamp, tst_pos, true, ref_pos, true, report_check.value, passed);
                 break;
             }
             case ReportCheck::Outcome::Invalid:
-                addDetail(timestamp, tst_pos, ref_pos, true, {}, {}, report_check.comment);
+                addDetail(timestamp, tst_pos, true, ref_pos, true, {}, {});
                 ++counts.num_pos_calc_errors;
                 break;
             case ReportCheck::Outcome::Deferred:
@@ -198,14 +197,14 @@ PositionEvaluation evaluatePositions(const dbContent::TargetReport::IndexMap& ts
 namespace
 {
 
-ReportCheck compared(bool passed, double value, const std::string& comment)
+ReportCheck compared(bool passed, double value)
 {
-    return { passed ? ReportCheck::Outcome::Passed : ReportCheck::Outcome::Failed, value, comment };
+    return { passed ? ReportCheck::Outcome::Passed : ReportCheck::Outcome::Failed, value };
 }
 
-ReportCheck invalid(const std::string& comment)
+ReportCheck invalid()
 {
-    return { ReportCheck::Outcome::Invalid, 0.0, comment };
+    return { ReportCheck::Outcome::Invalid, 0.0 };
 }
 
 /// distance from the reference to the test position, none if not finite
@@ -260,24 +259,24 @@ PositionEvaluation evaluateDistances(const dbContent::TargetReport::IndexMap& ts
 
             if (std::isnan(sample_distance) || std::isinf(sample_distance)
                     || std::isnan(sample_angle) || std::isinf(sample_angle))
-                return invalid("Distance Invalid");
+                return invalid();
 
             samples.push_back({ { report.timestamp,
                                   sample_distance * std::cos(sample_angle),
                                   sample_distance * std::sin(sample_angle) },
                                 report.tst_pos, report.ref_pos });
 
-            return { ReportCheck::Outcome::Deferred, 0.0, "" };
+            return { ReportCheck::Outcome::Deferred, 0.0 };
         }
 
         const auto d = refDistance(trafo, report);
 
         if (!d)
-            return invalid("Distance Invalid");
+            return invalid();
 
         const bool passed = compareValue(std::fabs(*d), distance_settings.threshold, distance_settings.check_type);
 
-        return compared(passed, *d, passed ? "Passed" : "Failed");
+        return compared(passed, *d);
     };
 
     PositionEvaluation result = evaluatePositions(tst_indexes, tst_pos, ref, settings, check);
@@ -296,8 +295,7 @@ PositionEvaluation evaluateDistances(const dbContent::TargetReport::IndexMap& ts
 
     for (const auto& window : averagingWindows(error_samples, distance_settings.averaging_window_s))
     {
-        const size_t num_in_window = window.end - window.first;
-        traced_assert(num_in_window > 0);
+        traced_assert(window.end > window.first);
 
         const bool passed = compareValue(window.mean_distance, distance_settings.threshold, distance_settings.check_type);
 
@@ -306,14 +304,10 @@ PositionEvaluation evaluateDistances(const dbContent::TargetReport::IndexMap& ts
         else
             ++result.counts.num_comp_failed;
 
-        const std::string comment = std::string(passed ? "Passed" : "Failed")
-                + " (mean position error of " + std::to_string(num_in_window) + " reports over "
-                + Utils::String::doubleToStringPrecision(window.span_s, 1) + " s)";
-
         const auto& first = samples[ window.first ];
 
         result.details.push_back({ first.error.timestamp, first.tst_pos, first.ref_pos,
-                                   true, window.mean_distance, passed, comment });
+                                   true, true, window.mean_distance, passed });
     }
 
     return result;
@@ -334,11 +328,11 @@ PositionEvaluation evaluateDistancesRMS(const dbContent::TargetReport::IndexMap&
         const auto d = refDistance(trafo, report);
 
         if (!d)
-            return invalid("DistanceRMS Invalid");
+            return invalid();
 
         const bool passed = std::fabs(*d) <= threshold;
 
-        return compared(passed, *d, passed ? "Passed" : "Failed");
+        return compared(passed, *d);
     };
 
     return evaluatePositions(tst_indexes, tst_pos, ref, settings, check);
@@ -370,10 +364,10 @@ PositionEvaluation evaluateTrackOffsets(const dbContent::TargetReport::IndexMap&
         traced_assert(transform_ok);
 
         if (std::isnan(distance) || std::isinf(distance))
-            return invalid("Distance Invalid");
+            return invalid();
 
         if (!std::isfinite(angle) || !std::isfinite(report.ref_spd->track_angle_))
-            return invalid("Angle Invalid");
+            return invalid();
 
         const auto offset = TrackOffsetHelpers::trackOffset(distance, angle, report.ref_spd->track_angle_);
         const double value = along ? offset.along : offset.across;
@@ -381,7 +375,7 @@ PositionEvaluation evaluateTrackOffsets(const dbContent::TargetReport::IndexMap&
 
         const bool passed = std::fabs(value) <= max_abs_value;
 
-        return compared(passed, value, passed ? "" : (along ? "Along-track not OK" : "Across-track not OK"));
+        return compared(passed, value);
     };
 
     return evaluatePositions(tst_indexes, tst_pos, ref, settings, check);
