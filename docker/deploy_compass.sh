@@ -28,6 +28,10 @@ cp -r /usr/lib/x86_64-linux-gnu/osgPlugins-3.6.5 appimage/appdir/lib/ 2>/dev/nul
 cp -r /usr/lib64/osgPlugins-3.6.5/ appimage/appdir/lib/ 2>/dev/null || true
 cp /usr/lib64/libosgEarth* appimage/appdir/lib/ 2>/dev/null || true
 
+# PROJ data (proj.db) of the bundled libproj, PROJ_DATA / PROJ_LIB set by compass_client. The host's
+# proj.db of a different PROJ version cannot be read (osgEarth then crashes on a null SRS).
+cp -r /usr/share/proj appimage/appdir/proj
+
 # plugin modules: nothing has them as DT_NEEDED, so linuxdeploy does not find them; copied in here, their
 # dependencies are bundled via --deploy-deps-only below
 LINUXDEPLOY_PLUGINS=()

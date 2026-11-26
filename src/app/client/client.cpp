@@ -995,11 +995,13 @@ void Client::checkAndSetupConfig()
             string gdal_path = string(appdir) + "/compass/data/gdal";
             CPLSetConfigOption("GDAL_DATA", gdal_path.c_str());
 
-#ifdef _WIN32
-            // proj.db of the package, on Linux PROJ finds it in the system paths
+            // proj.db of the package: the bundled PROJ cannot read the database of a different PROJ
+            // version, e.g. on the host system => null SRS in osgEarth. PROJ < 9.1 reads PROJ_LIB.
             string proj_path = string(appdir) + "/proj";
             qputenv("PROJ_DATA", proj_path.c_str());
+            qputenv("PROJ_LIB", proj_path.c_str());
 
+#ifdef _WIN32
             // no OSGEARTH_DEFAULT_FONT here: osgEarth reads it when its DLL loads, before main. Its
             // attempt with arial.ttf then fails ("Error reading file arial.ttf"), harmless: the
             // geographic view sets times.ttf as default font (GeographicViewRenderWidget)
