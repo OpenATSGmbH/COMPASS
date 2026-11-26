@@ -2001,6 +2001,64 @@ bool TableQSortFilterProxyModel::filterAcceptsRow(int source_row, const QModelIn
     return !SectionContentTable::cellIsInactive(style);
 }
 
+namespace
+{
+    /**
+     * Value comparison of QSortFilterProxyModel::lessThan() (Qt5 QAbstractItemModelPrivate::isVariantLessThan(),
+     * private API): invalid values last, numbers numerically, all others as strings.
+     */
+    bool variantLessThan(const QVariant& left,
+                         const QVariant& right,
+                         Qt::CaseSensitivity cs,
+                         bool locale_aware)
+    {
+        if (left.userType() == QMetaType::UnknownType)
+            return false;
+        if (right.userType() == QMetaType::UnknownType)
+            return true;
+
+        switch (left.userType())
+        {
+            case QMetaType::Int:       return left.toInt()       < right.toInt();
+            case QMetaType::UInt:      return left.toUInt()      < right.toUInt();
+            case QMetaType::LongLong:  return left.toLongLong()  < right.toLongLong();
+            case QMetaType::ULongLong: return left.toULongLong() < right.toULongLong();
+            case QMetaType::Float:     return left.toFloat()     < right.toFloat();
+            case QMetaType::Double:    return left.toDouble()    < right.toDouble();
+            case QMetaType::QChar:     return left.toChar()      < right.toChar();
+            default:
+                break;
+        }
+
+        if (locale_aware)
+            return left.toString().localeAwareCompare(right.toString()) < 0;
+
+        return left.toString().compare(right.toString(), cs) < 0;
+    }
+}
+
+/**
+ * Compares the values like QSortFilterProxyModel, equal values by source row. The source rows are
+ * ascending in both sort orders: a descending sort calls lessThan(right, left).
+ */
+bool TableQSortFilterProxyModel::lessThan(const QModelIndex& source_left, const QModelIndex& source_right) const
+{
+    //each value is fetched once, the conversion from json is the costly part
+    const QVariant left  = sourceModel()->data(source_left,  sortRole());
+    const QVariant right = sourceModel()->data(source_right, sortRole());
+
+    const Qt::CaseSensitivity cs           = sortCaseSensitivity();
+    const bool                locale_aware = isSortLocaleAware();
+
+    if (variantLessThan(left, right, cs, locale_aware))
+        return true;
+    if (variantLessThan(right, left, cs, locale_aware))
+        return false;
+
+    return sortOrder() == Qt::AscendingOrder ? source_left.row() < source_right.row()
+                                             : source_left.row() > source_right.row();
+}
+
 /***************************************************************************************************
  * SectionContentTableModel
  ***************************************************************************************************/

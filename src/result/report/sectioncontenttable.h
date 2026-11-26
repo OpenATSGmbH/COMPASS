@@ -82,6 +82,9 @@ protected:
 
     // unused rows are the inactive ones (e.g. targets not used in an evaluation)
     bool filterAcceptsRow(int source_row, const QModelIndex& source_parent) const override;
+
+    // equal values in source row order => the order depends only on sort column and order
+    bool lessThan(const QModelIndex& source_left, const QModelIndex& source_right) const override;
 };
 
 class SectionContentTableWidget;
