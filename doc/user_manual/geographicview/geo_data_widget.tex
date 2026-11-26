@@ -95,16 +95,10 @@ The following entries exist:
 \begin{itemize}
  \item Copy '\textit{text}': Copies the clicked label cell's text to the clipboard. Only shown when the click hits a non-header cell.
  \item Toggle Label: Hide the label.
- \item Target Report: Submenu with per-report actions. Enabled only for layers that support them:
-    \begin{itemize}
-     \item Show/Clear ARTAS Target Report Usage: ARTAS tracker layers
-     \item Show/Clear MLAT Contributing RUs: CAT020 MLAT layers
-    \end{itemize}
- \item Group: Same operations as on the item group's layer menu
- \item Parents: Same operations as on the item's parent layer menu (DBContent, Line, DataSource, DSType)
+ \item Reset Position: Returns a manually placed label to the automatic placement (see \nameref{sec:geoview_label_placement}). Only shown for manually placed labels.
+ \item Edit Content: Opens the label content dialog of the label's DBContent (see \nameref{sec:geoview_label_contents}).
+ \item Target Report, Item and Parents submenus: Same as in the Data Menu below.
 \end{itemize}
-
-Below the Copy and Target Report entries, the menu duplicates the actions of the Data Menu (see \nameref{sec:data_operations} for details).
 
 \subsubsection{Data Menu}
 
@@ -121,11 +115,26 @@ The data context menu allows the following operations:
 
 \begin{itemize}
  \item Toggle Label: Toggle label display of a single target report
- \item Group: Same operations as on the item group's layer menu
- \item Parents: Same operations as on the item's parent layer menu
+ \item Target Report: Submenu with actions for the clicked target report. Enabled only for layers that support them:
+    \begin{itemize}
+     \item Show/Clear ARTAS Target Report Usage: ARTAS tracker layers
+     \item Show/Clear MLAT Contributing RUs: CAT020 MLAT layers
+    \end{itemize}
+ \item Item (e.g. 'Aircraft Address 58B22D'): Submenu with actions for all target reports of the item the clicked target report belongs to. The item depends on the grouping selected in the 'Item Mode' combo box (see \nameref{sec:geo_item_mode}):
+    \begin{itemize}
+     \item Zoom to Data: Zooms the map to the item
+     \item Clear Labels: Removes all labels of the item
+     \item Select Data, Add Data to Selection, Remove Data from Selection: Changes the selection
+     \item Show/Clear ARTAS Target Report Usage: Only for items with ARTAS tracker data
+     \item Show/Clear Ground Lines: Only if 'Use height' is active
+     \item Show/Clear Ground Speed Vectors
+     \item Show/Clear Position Accuracy Ellipses
+     \item Show/Clear MLAT Contributing RUs: Only for items with CAT020 MLAT data
+    \end{itemize}
+ \item Parents: Submenu with one submenu per parent layer of the clicked target report: DBContent, Line, DataSource and DSType. Each contains the same entries as the layer menu in the 'Layers' tab (see \nameref{sec:data_operations})
 \end{itemize}
 
-Depending on the grouping mode in the 'Config' tab, different parent layer items are shown. For each of these parents the same menu entries exist as if they were clicked in the 'Layers' tab. Please refer to \nameref{sec:data_operations} for details.
+The Show/Clear entries are disabled while live mode is running.
 
 
 \subsubsection{Quick Menu}
@@ -284,9 +293,7 @@ The following items exist:
 \end{itemize}
 \ \\
 
-During usage of the time filter, most changes in the Configuration panel are not available (except for changes in the Layers tab and current style). \\
-
-Please \textbf{note} that the time filter is automatically deactivated if a re-load is triggered.
+During usage of the time filter, most changes in the Configuration panel are not available (except for changes in the Layers tab and current style).
 
 \subsubsection{Depth Check}
 
