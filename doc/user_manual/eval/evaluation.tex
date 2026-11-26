@@ -57,8 +57,8 @@ The value can be changed per requirement in the 'Standard' tab, in the configura
 
 \begin{figure}[H]
     \centering
-    \hspace*{-2.5cm}
-    \includegraphics[width=19cm]{figures/eval_overview.png}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/eval_overview.png}
   \caption{Evaluation dialog}
 \end{figure}
 
@@ -82,8 +82,8 @@ Pressing the 'Run' button at the bottom will run the Evaluation, and generate a 
 
 \begin{figure}[H]
   \centering
-  \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/eval_main.png}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/eval_main.png}
   \caption{Evaluation Main tab}
 \end{figure}
 
@@ -149,17 +149,18 @@ All requirement mappings thus should be deselected for this layer (see figure be
 
 \begin{figure}[H]
   \centering
-  \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/eval_unmap_min_height_filter.png}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/eval_unmap_min_height_filter.png}
   \caption{Minimum Height Filter}
 \end{figure}
 
 \subsection{Standard Tab}
+\label{sec:eval_standard}
 
 \begin{figure}[H]
   \centering
-  \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/eval_standard.png}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/eval_standard.png}
   \caption{Evaluation Standard tab}
 \end{figure}
 
@@ -174,26 +175,62 @@ Below, the following buttons exist:
 \end{itemize}
 \ \\
 
-At the bottom, the 'Reference Maximum Time Difference [s]' field can be edited to adjust the maximum time difference between reference updates. This value is used to find time-adjacent reference target reports for test target reports. Please adjust this value to e.g. the reference update period plus 1 second. \\
+At the bottom, the following general settings of the current standard can be edited:
+\begin{itemize}
+\item Reference Maximum Time Difference [s]: Maximum time difference between reference updates. This value is used to find time-adjacent reference target reports for test target reports. Please adjust this value to e.g. the reference update period plus 1 second.
+\item Ignore Primary Only Targets: Targets without any secondary attributes (no Mode S address, no aircraft identification, no Mode 3/A code, no Mode C code) are ignored
+\item Ignore Non-ADSB Targets: Targets never detected in ADS-B data (CAT021) are ignored
+\item Ignore Mode A/C Only Targets: Targets with a Mode 3/A code or a Mode C code, but without any Mode S attribute, are ignored
+\end{itemize}
+\ \\
+
+The 3 target settings define which targets are relevant for the standard. A standard for secondary surveillance, e.g. \nameref{sec:eval_req_detection} of an MLAT system, cannot be assessed with targets that carry no transponder, an ADS-B standard cannot be assessed with targets that never transmit ADS-B, and a standard stating its requirements for Mode S targets only cannot be assessed with Mode A/C-only targets. After the evaluation data is loaded, the current standard checks each target and marks the not relevant ones as ignored. \\
+
+\begin{itemize}
+\item The ignored state comes from the current standard and is not stored in the target. The target usage set in the Targets tab, or by the 'Filter UTNs' function, is not changed. Selecting a different standard therefore changes which targets are ignored, without any manual correction.
+\item Ignored targets are listed in the results as unusable results, with the reason 'Primary-only', 'No ADS-B data' or 'Mode A/C-only'. They do not contribute to the sector sums.
+\end{itemize}
+\ \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} \textbf{Please note that} 'Ignore Non-ADSB Targets' uses the ADS-B data in the database as the only evidence. If the database contains a single ADS-B data source, and this source is the one under test, a target that the source never received is ignored as well, although it can be an ADS-B equipped target that was not detected. In this case, check the ignored targets before the assessment. \\
 
 Currently, the following standards are (partly) supported:
 \begin{itemize}  
 \item EUROCAE ED-116 (\href{https://eshop.eurocae.net/eurocae-documents-and-reports/ed-116/}{Link})
-\item EUROCAE ED-117/A (\href{https://eshop.eurocae.net/eurocae-documents-and-reports/ed-117a/}{Link})
+\item EUROCAE ED-117/A (\href{https://eshop.eurocae.net/eurocae-documents-and-reports/ed-117a/}{Link}), see \nameref{sec:appendix_eval_std_ed117} and \nameref{sec:appendix_eval_std_ed117a}
+\item EUROCAE ED-129C (\href{https://eshop.eurocae.net/eurocae-documents-and-reports/ed-129c/}{Link})
 \item EUROCAE ED-87C/E (\href{https://eshop.eurocae.net/eurocae-documents-and-reports/ed-87c/}{Link})
 \item EUROCAE ED-142 (\href{https://eshop.eurocae.net/eurocae-documents-and-reports/ed-142/}{Link})
-\item Radar: EUROCONTROL Standard Document for Radar Surveillance in En-Route Airspace and Major Terminal Areas (\href{https://www.eurocontrol.int/sites/default/files/publication/files/surveillance-standard-document-for-radar-surveillance-in-en-route-airspace-and-major-terminal-areas199703.pdf}{Link})
+\item Radar En-Route \& TMA: EUROCONTROL Standard Document for Radar Surveillance in En-Route Airspace and Major Terminal Areas, SUR.ET1.ST01.1000-STD-01-01, section 6.3 'Performance Requirements for SSR Sensors' (\href{https://www.eurocontrol.int/sites/default/files/publication/files/surveillance-standard-document-for-radar-surveillance-in-en-route-airspace-and-major-terminal-areas199703.pdf}{Link})
 \end{itemize}
 \ \\
 
-Please note that, while the EUROCAE ED-117A has been tested using simulator data, the following limitations exist:
-\begin{itemize}  
-\item In the Stands area, the position accuracy should be calculated using a 5 second position averaging. This is currently not performed, since the averaging method is not specified, and is currently being discussed with users.
-\item Some MLAT sensors use a different update rate for non-moving targets. This is currently not regarded, since what constitutes non-movement is not (generally) specified, and will lower the probability of detection.
+For the EUROCAE ED-117 and ED-117A standards, the mapping of each requirement of the source document onto a COMPASS requirement is documented in \nameref{sec:appendix_eval_standards}. Both definitions were checked against the source documents and assessed with surface recordings. The two limitations stated in earlier versions of this document have since been addressed:
+\begin{itemize}
+\item The position accuracy on stands is calculated over a 5 second averaging window, using the 'Use Averaging' option of the \nameref{sec:eval_req_pos_distance} requirement.
+\item A lower update rate for non-moving targets is supported by the 'Use Stationary Update Interval' option of the \nameref{sec:eval_req_detection} requirement. It is not set in the supplied ED-117/A definitions, since neither document states what constitutes non-movement. It can be set per requirement where the assessed system is known to behave this way.
 \end{itemize}
 \ \\
 
-Please note that these limitations will be corrected in the near future. \\ 
+For the EUROCAE ED-129C standard (ADS-B Ground Station performance), the following applies:
+\begin{itemize}
+\item The Probability of Update and Ratio of Long Gaps requirements use the \nameref{sec:eval_req_detection} requirement with the time-based calculation (ED-129C Appendix C 'Interarrivaltime' method).
+\item The latency requirements (\nameref{sec:eval_req_adsb_latency}) require CAT021 test data with the data items I021/073 (Time of Message Reception for Position) and I021/077 (Time of Report Transmission).
+\item The ACID and Mode A change delay recommendation (REC 495) is checked with the \nameref{sec:eval_req_id_change_delay} requirement.
+\item The requirements regarding time stamp accuracy relative to UTC (REQ 20, REQ 21, REQ 308) cannot be evaluated from recorded data and are not part of the standard definition.
+\end{itemize}
+\ \\
+
+For the EUROCAE ED-142 standard, the following applies:
+\begin{itemize}
+\item The Probability of Code Detection ACAD, M3A and MC requirements use the 'Exclude Detection Misses' option of the \nameref{sec:eval_req_id_correct_periods} and \nameref{sec:eval_req_mc_correct_periods} requirements. ED-142 section 6.4.3 counts only update intervals in which a target report was output. Update intervals without any target report are part of the Probability of Position Detection.
+\item For the Aircraft Address, the ED-142 definition states a ratio of target reports, but the formula in section 6.4.3 counts update intervals. The supplied standard uses the formula.
+\item The Probability of Code Detection MC requirements use the \nameref{sec:eval_req_mc_correct_periods} requirement with the 'Level Flight Only' option (ED-142 section 6.4.3, segments of trajectories with constant flight level only).
+\item The Probability of Long Position Gaps requirements use the \nameref{sec:eval_req_detection} requirement with a minimum gap length of 26.4 s (En-Route) and 16.5 s (TMA), without 'Use Gap Count'. As in ED-142 section 6.4.8, the missed update intervals in the long gaps are divided by the expected update intervals.
+\item The Probability of False pressure altitude (ED-142 section 3.3.7, at most 0.1 \%) is checked with the \nameref{sec:eval_req_mc_false} requirement.
+\item The output of changed ACID and Mode A codes (ED-142 section 3.3.2, within 24 s for En-Route and 15 s for TMA, with a probability of 95 \%) is checked with the \nameref{sec:eval_req_id_change_delay} requirement. Emergency codes are checked as Mode A changes with the same maximum delay, not within one update interval. SPI changes are not checked.
+\end{itemize}
+\ \\
 
 The other standards have not yet been tested to the fullest degree, which is a work in progress.
 
@@ -213,8 +250,8 @@ Below that, the current standard is shown. On the left side, a tree-view exists 
 
 \begin{figure}[H]
   \centering
-  \hspace*{-2cm}
-    \includegraphics[width=18cm,frame]{figures/eval_standard_add_req.png}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/eval_standard_add_req.png}
   \caption{Evaluation Standard tab: Add requirement}
 \end{figure}
 
@@ -236,6 +273,7 @@ The following requirements exist:
     \hline
     \textbf{Type} & \textbf{Description} \\ \hline
     \nameref{sec:eval_req_accel_correct} & Calculates probability of correct acceleration \\ \hline
+    \nameref{sec:eval_req_adsb_latency} & Calculates the probability of the ADS-B Ground Station latency being within a threshold (based on test data only) \\ \hline
     \nameref{sec:eval_req_trk_coast_correct} & Calculates probability of correct track coasting flag \\ \hline
     \nameref{sec:eval_req_detection} & Calculates probability of detection  \\ \hline
     \nameref{sec:eval_req_dubious_targets} & Calculates probability of dubious targets based on physical movement (based on test data only) \\ \hline
@@ -244,6 +282,7 @@ The following requirements exist:
     \nameref{sec:eval_req_extra_track} & Calculates probability of undetected tracks (based on reference data only) \\ \hline
     \nameref{sec:eval_req_id_correct} & Calculates probability of correct secondary identification \\ \hline
     \nameref{sec:eval_req_id_correct_periods} & Calculates probability of correct secondary identification based on UIs \\ \hline
+    \nameref{sec:eval_req_id_change_delay} & Calculates probability of acceptable identification change delay \\ \hline
     \nameref{sec:eval_req_id_false} & Calculates probability of false secondary identification \\ \hline
     \nameref{sec:eval_req_mom_long} & Calculates probability of correct MoM Longitudinal Acceleration \\ \hline
     \nameref{sec:eval_req_mom_trans} & Calculates probability of correct MoM Transversal Acceleration \\ \hline
@@ -259,8 +298,9 @@ The following requirements exist:
     \nameref{sec:eval_req_pos_distance} & Calculates the probability of the position error being within or outside a threshold \\ \hline
     \nameref{sec:eval_req_pos_distance_rms} & Calculates the probability of the position error being within or outside an RMS threshold \\ \hline
     \nameref{sec:eval_req_pos_latency}  & Calculates the probability of the position latency being within a threshold \\ \hline
-    \nameref{sec:eval_req_pos_radar_azm} & Calculates the probability of the position azimuth error being within or outside a threshold \\ \hline
-    \nameref{sec:eval_req_pos_radar_rng} & Calculates the probability of the position range error being within or outside a threshold \\ \hline
+    \nameref{sec:eval_req_pos_radar_azm} & Checks the standard deviation or the bias of the radar azimuth error \\ \hline
+    \nameref{sec:eval_req_pos_radar_rng} & Checks the standard deviation, the bias or the gain of the radar slant range error \\ \hline
+    \nameref{sec:eval_req_pos_radar_tse} & Checks the systematic time stamp error of a radar \\ \hline
     \nameref{sec:eval_req_rocd_correct} & Calculates the probability of correct ROCD \\ \hline
     \nameref{sec:eval_req_speed} & Calculates the probability of the speed error being within or outside a threshold or percentage \\ \hline
     \nameref{sec:eval_req_track_angle} & Calculates the probability of correct track angle \\ \hline
@@ -277,9 +317,21 @@ Each requirement has the following common attributes:
 \item Name: Name of the requirement
 \item Short Name: Abbreviated name of the requirement
 \item Comment: Any text comment, e.g. reference to source document
+\item Target Selection: Target class the requirement is evaluated for
 \item Probability [1]: Probability threshold, as [0,1]
 \item Probability Check Type: Probability comparison type for calculated probability against probability threshold
 \end{itemize}
+\ \\
+
+The 'Target Selection' defines which targets the requirement is evaluated for:
+\begin{itemize}
+\item All Targets: Every target, the default
+\item Cooperative Only: Targets with a Mode 3/A code, a Mode C code or a Mode S attribute
+\item Non-cooperative Only: Targets with none of those, detected by primary means only
+\end{itemize}
+\ \\
+
+Standards state some requirements for cooperative targets only, and others for every target. A target of another class than the selected one is reported as an unusable result with the reason, and does not contribute to the sector sum. The same target may therefore be assessed by one requirement and skipped by another. This selection is applied in addition to the target filters of the 'Standard' tab, see \nameref{sec:eval_standard}. \\
 \ \\
 
 For detailed information about each requirement please refer to section \nameref{sec:eval_requirements}.
@@ -287,9 +339,9 @@ For detailed information about each requirement please refer to section \nameref
 \subsection{Results Config Tab}
 
 \begin{figure}[H]
-  \hspace*{-2cm}
   \centering
-    \includegraphics[width=12cm,frame]{figures/eval_results_config.png}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/eval_results_config.png}
   \caption{Evaluation Results tab}
 \end{figure}
 
@@ -307,6 +359,75 @@ The following settings can be used to configure the content of the generated res
 \end{itemize}
 \ \\
 
+\subsubsection{Report Figures}
+\label{sec:eval_report_figures}
+
+The 'Report Figures' group sets how the figures of the evaluation report are drawn (see \nameref{sec:report_section_figures}):
+
+\begin{itemize}
+\item Histogram Bars: Number of bars of the histograms of value distributions (e.g. 'Full distribution' of a position error), 10 by default
+\item Histogram Log Scale: Logarithmic count axis of the histograms with one data series, on by default
+\begin{itemize}
+\item Histograms with several data series are stacked and always use a linear axis
+\end{itemize}
+\item Export Image Width, Export Image Height: Layout size of an exported figure image, 1200 x 800 by default
+\begin{itemize}
+\item The image has twice this size in pixels
+\item A smaller layout gives larger text in the image, e.g. for two figures next to each other on one page
+\end{itemize}
+\item Report Figure Background: See below
+\end{itemize}
+\ \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} \textbf{Please note that these settings are written into the figures when the evaluation runs.
+Changed settings apply to the next evaluation, not to existing reports.} \\
+
+\subsubsection{Report Figure Background}
+\label{sec:eval_report_figure_background}
+
+The 'Report Figure Background' group in the 'Report Figures' group sets the background of the report figures with a grid over longitude and latitude (e.g. the sector overview figures).
+The report shows and exports these figures with this background, and the 'View' button gives it to the Grid View.
+The values are the same as the background items of the Grid View, see \nameref{sec:grid_background}. \\
+
+\begin{figure}[H]
+  \center
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/eval_report_figure_background.png}
+  \caption{Evaluation Report Figure Background}
+\end{figure}
+
+\begin{itemize}
+\item Background Color: Color below the map and the grid, black by default. 'Select Color' opens the color dialog.
+\item Show Map: Draws the map below the grid, off by default
+\begin{itemize}
+\item Map tiles that are not in the cache need an internet connection
+\end{itemize}
+\item Map: Map file of the maps folder, the first map file by default
+\item Map Opacity: Opacity of the map in percent, 50\% by default
+\item Show National Borders: Draws the national borders above the grid, on by default
+\item Show Sectors: Draws the selected sectors above the grid, on by default
+\item Sectors: One checkbox per sector layer and per sector of the active Data Context
+\begin{itemize}
+\item By default, the evaluated sector layers are selected (the sector layers with a used requirement group)
+\item 'Select All' selects all sector layers and all sectors, 'Select None' deselects all sector layers
+\end{itemize}
+\end{itemize}
+\ \\
+
+The sector selection applies as follows:
+
+\begin{itemize}
+\item A figure of a sector layer draws its own sector layer, if it is selected
+\item The other evaluated sector layers are not drawn in this figure
+\item The sector layers that are not evaluated are drawn in all figures, if they are selected
+\item The default selection follows the evaluated sector layers, until a sector checkbox is changed
+\item After a change, the selection is stored. A sector layer that is added to the Data Context later is selected.
+\end{itemize}
+\ \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} \textbf{Please note that the background is written into the figures when the evaluation runs.
+A changed background applies to the next evaluation, not to existing reports.} \\
+
 \subsection{Evaluation}
 \label{sec:eval_run_eval} 
 
@@ -320,11 +441,14 @@ Please note that the post-processing step uses all available cores on the CPU.
 
 \begin{figure}[H]
   \centering 
-    \includegraphics[width=10cm]{figures/eval_eval_status.png}
+    \includegraphics[width=5cm,frame]{figures/eval_eval_status.png}
   \caption{Evaluation: Running evaluation status}
 \end{figure}
 
 \subfile{eval_inspect}
 \subfile{eval_excluded_data}
 \subfile{eval_targets}
-\subfile{eval_requirements}
+
+\section{Requirements}
+
+The requirement types and their parameters are described in the User Manual Appendix, see \nameref{sec:eval_requirements}.

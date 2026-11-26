@@ -17,7 +17,7 @@
 
 #include "catch.hpp"
 
-#include "eval/requirement/detection/detection_pd_helpers.h"
+#include "requirement/detection/detection_pd_helpers.h"
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -26,6 +26,7 @@
 using EvaluationRequirement::PDHelpers::MissTestParams;
 using EvaluationRequirement::PDHelpers::isMiss;
 using EvaluationRequirement::PDHelpers::numMisses;
+using EvaluationRequirement::PDHelpers::missDuration;
 using EvaluationRequirement::PDHelpers::buildReferencePeriods;
 
 using boost::posix_time::ptime;
@@ -120,11 +121,30 @@ TEST_CASE("PDHelpers::isMiss - tolerance combined with min/max",
     p.use_max_gap_length = true;
     p.max_gap_length_s   = 10.0f;
 
-    // adj = gap - 0.5
-    REQUIRE_FALSE(isMiss(2.49f, p));  // adj = 1.99 -> below min
-    REQUIRE      (isMiss(2.55f, p));  // adj = 2.05 -> miss
-    REQUIRE      (isMiss(10.5f, p));  // adj = 10.0 -> at max boundary
-    REQUIRE_FALSE(isMiss(10.51f, p)); // adj = 10.01 -> above max
+    // min and max select on the raw gap, the tolerance only shifts the UI test
+    REQUIRE_FALSE(isMiss(1.99f, p));  // raw below min
+    REQUIRE      (isMiss(2.0f,  p));  // raw at min, adj = 1.5 -> miss
+    REQUIRE      (isMiss(2.49f, p));  // raw above min, adj = 1.99 -> miss
+    REQUIRE      (isMiss(10.0f, p));  // raw at max boundary
+    REQUIRE_FALSE(isMiss(10.01f, p)); // raw above max
+    REQUIRE_FALSE(isMiss(10.5f, p));  // raw above max, tolerance does not shift it
+}
+
+TEST_CASE("PDHelpers::isMiss - tolerance does not lift a raw gap over the minimum",
+          "[pd_helpers][misstest]")
+{
+    // ED-117A PLG on the manoeuvring area: gaps of 3 s and more count, and the
+    // 0.5 s tolerance must not turn that threshold into 3.5 s
+    MissTestParams p;
+    p.update_interval_s  = 1.0f;
+    p.use_miss_tolerance = true;
+    p.miss_tolerance_s   = 0.5f;
+    p.use_min_gap_length = true;
+    p.min_gap_length_s   = 3.0f;
+
+    REQUIRE_FALSE(isMiss(2.9f, p));
+    REQUIRE      (isMiss(3.0f, p));
+    REQUIRE      (isMiss(3.4f, p));
 }
 
 TEST_CASE("PDHelpers::numMisses - returns 0 for non-misses",
@@ -145,6 +165,59 @@ TEST_CASE("PDHelpers::numMisses - update_interval_s == 0 returns 0",
     MissTestParams p;
     p.update_interval_s = 0.0f;
     REQUIRE(numMisses(5.0f, p) == 0);
+}
+
+TEST_CASE("PDHelpers::missDuration - update interval only",
+          "[pd_helpers][misstest][timeratio]")
+{
+    // ED-129C Appendix C Equation 2-2: contribution max(G - UI, 0)
+    MissTestParams p;
+    p.update_interval_s = 1.0f;
+
+    REQUIRE(missDuration(0.5f, p) == Approx(0.0f));   // not a miss -> 0
+    REQUIRE(missDuration(1.0f, p) == Approx(0.0f));   // boundary, not a miss
+    REQUIRE(missDuration(1.5f, p) == Approx(0.5f));
+    REQUIRE(missDuration(4.0f, p) == Approx(3.0f));
+}
+
+TEST_CASE("PDHelpers::missDuration - miss tolerance",
+          "[pd_helpers][misstest][timeratio]")
+{
+    MissTestParams p;
+    p.update_interval_s  = 1.0f;
+    p.use_miss_tolerance = true;
+    p.miss_tolerance_s   = 0.2f;
+
+    REQUIRE(missDuration(1.1f, p) == Approx(0.0f));           // adj = 0.9, not a miss
+    REQUIRE(missDuration(2.2f, p) == Approx(1.0f));           // adj = 2.0
+}
+
+TEST_CASE("PDHelpers::missDuration - long gap configuration",
+          "[pd_helpers][misstest][timeratio]")
+{
+    // ED-129C REQ 18 setup for the 3NM service: UI 5s,
+    // min gap length 3 x UI x 1.1 = 16.5s; contribution G - UI
+    // for long gaps only (Appendix C Equation 4-2)
+    MissTestParams p;
+    p.update_interval_s  = 5.0f;
+    p.use_min_gap_length = true;
+    p.min_gap_length_s   = 16.5f;
+
+    REQUIRE(missDuration(10.0f, p) == Approx(0.0f));          // miss, but not a long gap
+    REQUIRE(missDuration(16.4f, p) == Approx(0.0f));          // just below long gap threshold
+    REQUIRE(missDuration(20.0f, p) == Approx(15.0f));         // long gap: 20 - 5
+}
+
+TEST_CASE("PDHelpers::missDuration - max gap length suppresses out-of-coverage gaps",
+          "[pd_helpers][misstest][timeratio]")
+{
+    MissTestParams p;
+    p.update_interval_s  = 1.0f;
+    p.use_max_gap_length = true;
+    p.max_gap_length_s   = 5.0f;
+
+    REQUIRE(missDuration(3.0f,   p) == Approx(2.0f));
+    REQUIRE(missDuration(100.0f, p) == Approx(0.0f));         // suppressed by max gap
 }
 
 TEST_CASE("PDHelpers::buildReferencePeriods - empty input",
@@ -241,4 +314,65 @@ TEST_CASE("PDHelpers::buildReferencePeriods - multiple periods all kept",
     REQUIRE(periods[0].end - periods[0].begin == seconds(3));
     REQUIRE(periods[1].end - periods[1].begin == seconds(3));
     REQUIRE(periods[2].end - periods[2].begin == seconds(3));
+}
+
+TEST_CASE("PDHelpers::buildReferencePeriods - split at a break shorter than the max gap",
+          "[pd_helpers][periods]")
+{
+    // updates every second over 0-19 s, the updates at 8 s and 9 s were removed
+    // (excluded time window), the remaining 2 s gap is below the max gap
+    std::set<ptime> ts;
+    std::set<ptime> breaks;
+    for (int i = 0; i < 20; ++i)
+    {
+        if (i == 8 || i == 9)
+            breaks.insert(t0() + seconds(i));
+        else
+            ts.insert(t0() + seconds(i));
+    }
+
+    // without the breaks the gap is bridged
+    auto bridged = buildReferencePeriods(ts, seconds(4), seconds(1));
+    REQUIRE(bridged.size() == 1);
+
+    // with the breaks the period ends before and starts after the removed updates
+    auto periods = buildReferencePeriods(ts, seconds(4), seconds(1), &breaks);
+    REQUIRE(periods.size() == 2);
+    REQUIRE(periods[0].begin == t0());
+    REQUIRE(periods[0].end   == t0() + seconds(7));
+    REQUIRE(periods[1].begin == t0() + seconds(10));
+    REQUIRE(periods[1].end   == t0() + seconds(19));
+}
+
+TEST_CASE("PDHelpers::buildReferencePeriods - breaks outside the data change nothing",
+          "[pd_helpers][periods]")
+{
+    std::set<ptime> ts;
+    for (int i = 0; i < 10; ++i)
+        ts.insert(t0() + seconds(i));
+
+    // before the first and after the last update, and exactly on an update
+    std::set<ptime> breaks{t0() - seconds(5), t0() + seconds(20), t0() + seconds(3)};
+
+    auto periods = buildReferencePeriods(ts, seconds(4), seconds(1), &breaks);
+    REQUIRE(periods.size() == 1);
+    REQUIRE(periods[0].begin == t0());
+    REQUIRE(periods[0].end   == t0() + seconds(9));
+
+    std::set<ptime> no_breaks;
+    auto periods_empty = buildReferencePeriods(ts, seconds(4), seconds(1), &no_breaks);
+    REQUIRE(periods_empty.size() == 1);
+}
+
+TEST_CASE("PDHelpers::buildReferencePeriods - break plus min duration",
+          "[pd_helpers][periods]")
+{
+    // a break right after the first update leaves a degenerate first period
+    std::set<ptime> ts{t0(), t0() + seconds(2), t0() + seconds(3), t0() + seconds(4)};
+    std::set<ptime> breaks{t0() + seconds(1)};
+
+    auto periods = buildReferencePeriods(ts, seconds(4), seconds(1), &breaks);
+    REQUIRE(periods.size() == 1);   // [0, 0] dropped by the min duration
+    REQUIRE(periods[0].begin == t0() + seconds(2));
+    REQUIRE(periods[0].end   == t0() + seconds(4));
 }

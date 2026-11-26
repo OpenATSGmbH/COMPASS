@@ -3,14 +3,20 @@
 \subsection{Reset Views}
 \label{sec:ui_reset_views}
 
-Using this feature, unsaved configuration changes can be reverted in the existing views. It can be used to restore a "default" state as existing at application startup (for the most important UI functions). \\
+Using this feature, the Views and windows are set back to the state at application startup, without a restart of the application (e.g. in live mode). \\
 
 This function performs the following functions:
 \begin{itemize}
  \item Enables all data sources
  \item Disables all filters
- \item Resets all Views to their startup configuration
+ \item Resets all Views to their startup configuration:
+ \begin{itemize}
+  \item Views and windows added after the startup are closed
+  \item Views and windows closed after the startup are opened again
+  \item All View settings (e.g. the variables of a Table View) get their startup values
+  \item The label settings of the Geographic Views get their startup values
+ \end{itemize}
 \end{itemize}
 \  \\
 
-Please note that newly created Views are not deleted in this function, although deleted ones are restored.
+Please note that the startup configuration is read at application startup. Later changes (e.g. a saved View preset) do not change it.

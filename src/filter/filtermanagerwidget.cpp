@@ -23,7 +23,7 @@
 #include "filtermanager.h"
 #include "global.h"
 #include "logger.h"
-#include "util/files.h"
+#include "files.h"
 
 #include <QComboBox>
 #include <QHBoxLayout>
@@ -133,9 +133,9 @@ std::vector<std::string> FilterManagerWidget::toolLabels() const
 
 /**
  */
-toolbox::ScreenRatio FilterManagerWidget::defaultScreenRatio() const 
+int FilterManagerWidget::defaultWidthPercent() const
 {
-    return ToolBoxWidget::defaultScreenRatio();
+    return 30;
 }
 
 /**

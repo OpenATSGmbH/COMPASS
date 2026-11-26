@@ -15,7 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/mode_c/false.h"
+#include "results/mode_c/false.h"
 
 namespace EvaluationRequirementResult
 {

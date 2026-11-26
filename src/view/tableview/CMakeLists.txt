@@ -9,11 +9,11 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/basetablewidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/allbuffertablemodel.h"
         "${CMAKE_CURRENT_LIST_DIR}/allbuffertablewidget.h"
-        "${CMAKE_CURRENT_LIST_DIR}/tableleafpayload.h"
         "${CMAKE_CURRENT_LIST_DIR}/tableviewdatasource.h"
         "${CMAKE_CURRENT_LIST_DIR}/tableview.h"
         "${CMAKE_CURRENT_LIST_DIR}/tableviewconfigwidget.h"
-        "${CMAKE_CURRENT_LIST_DIR}/tableviewdatawidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/tableviewmodel.h"
+        "${CMAKE_CURRENT_LIST_DIR}/tableviewrenderwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/tableviewwidget.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/basetablemodel.cpp"
@@ -23,6 +23,7 @@ target_sources(compass_view
         "${CMAKE_CURRENT_LIST_DIR}/tableview.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/tableviewdatasource.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/tableviewconfigwidget.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/tableviewdatawidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/tableviewmodel.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/tableviewrenderwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/tableviewwidget.cpp"
 )

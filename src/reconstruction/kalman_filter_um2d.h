@@ -37,6 +37,8 @@ public:
     double xyCov(const kalman::Matrix& P) const override final;
     boost::optional<double> xVel(const kalman::Vector& x_vec) const override final;
     boost::optional<double> yVel(const kalman::Vector& x_vec) const override final;
+    boost::optional<double> vxVar(const kalman::Matrix& P) const override final;
+    boost::optional<double> vyVar(const kalman::Matrix& P) const override final;
 
 protected:
     void configureFMat(Matrix& F, double dt) const;

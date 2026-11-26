@@ -28,6 +28,12 @@ namespace ui_test
 {
 
 /**
+ * Item data role for the name of an item in UI test paths, for models whose display text adds
+ * more (e.g. a section number). Tree paths match it if the display text does not match.
+ */
+const int ItemNameRole = Qt::UserRole + 1000;
+
+/**
  * Event hint, e.g. where an injected click should happen.
  */
 struct SetUIHint
@@ -99,7 +105,8 @@ inline QString normalizedActionName(const QString& text)
     QString txt = strippedMnemonics(text).trimmed();
     txt.remove(QRegularExpression("[.]+$"));
 
-    return txt;
+    //"Filter Usage ..." => "Filter Usage"
+    return txt.trimmed();
 }
 
 } // namespace ui_test

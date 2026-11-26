@@ -19,6 +19,7 @@
 
 #include <QWidget>
 
+#include <functional>
 #include <memory>
 #include <set>
 #include <string>
@@ -28,6 +29,9 @@ class LayerTreeModel;
 class LayerTreeItemDelegate;
 class LayerColumnSpec;
 
+class QItemSelection;
+class QModelIndex;
+class QTimer;
 class QTreeView;
 
 /**
@@ -41,12 +45,19 @@ class QTreeView;
  * Context menu: clicked items contribute their own section via
  * LayerTreeItem::buildContextMenu(); the panel appends a global "All" section
  * (Select All, Deselect All, Expand All, Collapse All).
+ *
+ * View state: kept rows keep expansion and selection natively (the model updates in place), new rows
+ * get the default expansion policy, vanished rows are forgotten. A destroyed panel leaves its view
+ * state on the items (LayerTreeItem::ViewHandover) for the next panel on the same model.
  */
 class LayerPanelWidget : public QWidget
 {
     Q_OBJECT
 
 public:
+    /// decides if a new item starts expanded (depth 0 = top level)
+    typedef std::function<bool(const LayerTreeItem& item, int depth)> DefaultExpansionFunc;
+
     /// If `delegate` is null, a default LayerTreeItemDelegate is used.
     /// The panel takes ownership of a non-null delegate.
     explicit LayerPanelWidget(QWidget* parent = nullptr,
@@ -63,26 +74,57 @@ public:
     /// Convenience: append a top-level item to the model's invisible root.
     LayerTreeItem* addRootItem(std::unique_ptr<LayerTreeItem> item);
 
-    /// Persistence helpers routed through the model.
-    std::set<std::string> persistedHiddenIds() const;
-    void applyPersistedHiddenIds(const std::set<std::string>& ids);
-
-    void enableAutoExpand(int max_depth = -1);
     void expandLayers(int max_depth = -1);
+
+    /// rows following the previous default switch to the new one, rows expanded or collapsed by the
+    /// user (and rows handed over from a previous panel) keep their expansion
+    virtual void setDefaultExpansion(const DefaultExpansionFunc& func);
+
+    /// display of stale items, combination of LayerTreeItemDelegate::StaleIndication flags (default: all)
+    void setStaleIndication(int flags);
+    /// the wait icon animates (model has stale items, icon enabled)
+    bool isSpinnerActive() const;
 
 private slots:
     void onContextMenuRequested(const QPoint& pos);
 
+protected:
+    /// a policy input changed: rows that followed old_default follow the current policy, the others
+    /// (user deviations, handed over rows) keep their expansion
+    void defaultExpansionChanged(const DefaultExpansionFunc& old_default);
+    /// the row and its descendants get the default expansion
+    void applyDefaultExpansion(const QModelIndex& index);
+
 private:
+    typedef std::function<void(const QModelIndex&, LayerTreeItem*, int)> VisitFunc;
+
     void init(LayerTreeItemDelegate* delegate);
 
-    void autoExpand();
+    void visitRows(const QModelIndex& parent, int first, int last, int depth, const VisitFunc& func) const;
+    void visitAllRows(const VisitFunc& func) const;
+    int depthOf(const QModelIndex& index) const;
+    bool defaultExpanded(const LayerTreeItem& item, int depth, const DefaultExpansionFunc& policy) const;
+    void setExpanded(const QModelIndex& index, bool expanded);
+
+    /// new rows (insert, reset) get the default expansion
+    void applyDefaultExpansionToRows(const QModelIndex& parent, int first, int last);
+    void applyDefaultExpansionToAll();
+
+    /// leaves expansion, selection and current row on the items (destructor)
+    void handOverViewState();
+    /// applies the view state left on the items, default_others => the rows without one get the default
+    void takeOverViewState(bool default_others);
+    void clearViewHandover();
+
+    void updateSpinner();
+    void spinnerTick();
 
     LayerTreeModel*                 model_    {nullptr};
     LayerTreeItemDelegate*          delegate_ {nullptr};
     QTreeView*                      tree_view_{nullptr};
+    QTimer*                         spinner_timer_{nullptr}; // animates the wait icon of stale items
 
-    bool model_is_external_     = false;
-    bool auto_expand_           = false;
-    int  auto_expand_max_depth_ = -1;
+    bool model_is_external_ = false;
+
+    DefaultExpansionFunc expansion_policy_; // effective default policy, see setDefaultExpansion()
 };

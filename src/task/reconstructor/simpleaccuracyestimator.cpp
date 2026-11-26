@@ -21,7 +21,6 @@
 #include "reconstructortask.h"
 #include "reconstructortarget.h"
 #include "targetreportaccessor.h"
-#include "compass.h"
 #include "db_context_manager.h"
 #include "data_source.h"
 #include "datasourcebase.h"
@@ -47,7 +46,7 @@ void SimpleAccuracyEstimator::init(ReconstructorBase* reconstructor_ptr)
 
     radar_sources_.clear();
 
-    auto& ctx_man = reconstructor_->task().manager().compass().dbContextManager();
+    auto& ctx_man = reconstructor_->task().manager().dbContextManager();
 
     for (const auto& [ds_id, type_str] : ctx_man.dsTypes())
     {
@@ -194,7 +193,10 @@ void SimpleAccuracyEstimator::validate (
     traced_assert(reconstructor_);
 
     if (tr.isRiskyADSB())
+    {
         tr.invalidated_pos_ = true;
+        tr.pos_invalidation_reason_ = dbContent::targetReport::PosInvalidationReason::RiskyEquipage;
+    }
 }
 
 bool SimpleAccuracyEstimator::canCorrectPosition(
@@ -217,7 +219,7 @@ void SimpleAccuracyEstimator::correctPosition(
 
     auto [alt_given, alt_ft] = radar_bias::getBaroAltitude(tr, src.ground_only, src.ground_altitude_m);
 
-    Projection& projection = reconstructor_->task().manager().compass().projectionManager().currentProjection();
+    Projection& projection = reconstructor_->task().manager().projectionManager().currentProjection();
 
     auto corrected = radar_bias::correctPosition(
         tr, reconstructor_->accessor(tr), projection, tr.ds_id_,

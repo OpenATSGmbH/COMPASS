@@ -2,14 +2,26 @@
 
 After an \nameref{sec:installation}, simply run the application.
 
-For an AppImage, use e.g.:
+For the Linux AppImage, use e.g.:
 \begin{lstlisting}
-./COMPASS-release_x86_64.AppImage
+./COMPASS_1.1.0-x86_64.AppImage
 \end{lstlisting}
+
+For the Windows package, start \texttt{compass\_handler.exe} in the unpacked folder, e.g. with a double-click or from a command prompt:
+\begin{lstlisting}
+compass_handler.exe
+\end{lstlisting}
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} \texttt{compass\_handler.exe} starts the application \texttt{compass\_client.exe} with the same command line options and shows a message with the log file if the application crashes. The AppImage starts the application in the same way. \texttt{compass\_client.exe} can also be started directly, then without this message. \\
 
 For a self-built application, use e.g.:
 \begin{lstlisting}
 ./build/bin/compass_client
 \end{lstlisting}
 
-It is recommended to run the application from a console terminal (for analysis of potential issues in the log text), but that is not mandatory.
+The application log helps in the analysis of potential issues:
+
+\begin{itemize}
+\item Linux: it is recommended to run the application from a terminal, which shows the log. This is not mandatory.
+\item Windows: the console window that opens together with the application shows the log.
+\end{itemize}

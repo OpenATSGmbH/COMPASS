@@ -17,7 +17,6 @@
 
 #include "viewmanagerwidget.h"
 //#include "global.h"
-#include "compass.h"
 #include "jobmanager.h"
 #include "logger.h"
 //#include "viewcontainer.h"
@@ -60,8 +59,8 @@ ViewManagerWidget::ViewManagerWidget(ViewManager& view_manager)
 
     setLayout(layout_);
 
-    connect(&view_manager_.compass().jobManager(), SIGNAL(databaseBusy()), this, SLOT(databaseBusy()));
-    connect(&view_manager_.compass().jobManager(), SIGNAL(databaseIdle()), this, SLOT(databaseIdle()));
+    connect(&view_manager_.jobManager(), SIGNAL(databaseBusy()), this, SLOT(databaseBusy()));
+    connect(&view_manager_.jobManager(), SIGNAL(databaseIdle()), this, SLOT(databaseIdle()));
 
     update();
 

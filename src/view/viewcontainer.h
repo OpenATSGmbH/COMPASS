@@ -17,17 +17,20 @@
 
 #pragma once
 
+#include <cstdint>
 #include <QMenu>
 #include <QObject>
 
 #include "configurable.h"
+#include "subconfigurablefactory.h"
 
 class MainLoadWidget;
 class View;
+class ViewDeck;
 class ViewManager;
 class QHBoxLayout;
 class QPushButton;
-class QTabWidget;
+class QWidget;
 
 class ViewManager;
 
@@ -37,52 +40,58 @@ class ViewContainer : public QObject, public Configurable
 
   public slots:
     void showAddViewMenuSlot();
-    void showViewMenuSlot();
     // void saveViewTemplate ();
-    void deleteViewSlot();
+    void closeViewSlot(QWidget* view_widget);
     void addNewViewSlot();
 
   public:
+    // views by class name, display name shown in the add view menus; further views are added by their libraries
+    DECLARE_SUBCONFIGURABLE_FACTORY(viewFactory, View, ViewContainer, None)
+
     ViewContainer(nlohmann::json& config, ViewManager& view_manager,
-                  Configurable* parent, QTabWidget* tab_widget, int window_cnt);
+                  Configurable* parent, ViewDeck* view_deck, int window_cnt);
     virtual ~ViewContainer();
 
     const std::vector<std::unique_ptr<View>>& getViews() const;
 
     ViewManager& viewManager() { return view_manager_; }
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
-
     virtual std::string getWindowName();
     //static unsigned int getViewCount() { return view_count_; }
 
     void addView(const std::string& class_name);
-    void enableViewTab(QWidget* widget, bool value);
+    void enableView(QWidget* widget, bool value);
+    /// selects the view in the View Deck and opens the deck if it is collapsed
     void showView(QWidget* widget);
 
-    /// View whose central widget is the currently-selected tab in this
-    /// container; nullptr if the container is empty or the current tab does
-    /// not correspond to any owned view.
+    /// View selected in the View Deck of this container (also while the deck
+    /// is collapsed), nullptr if the container is empty.
     View* currentView() const;
 
-    void resetToStartupConfiguration();
+    /// true if the View Deck shows only its icon bar, so no view is visible
+    bool viewDeckCollapsed() const;
 
-    time_t created() const { return creation_time_; }
+    /// Replaces the views by the views of the given container config entry.
+    void resetToConfig(const nlohmann::json& container_config);
+
+    /// creation sequence number, a higher number means created later
+    std::uint64_t created() const { return creation_index_; }
 
   protected:
     ViewManager& view_manager_;
 
-    QTabWidget* tab_widget_{nullptr};
+    ViewDeck* view_deck_{nullptr};
 
     int window_cnt_{0};
     bool disable_add_remove_views_ {false};
 
     std::vector<std::unique_ptr<View>> views_;
 
-    time_t creation_time_;
+    std::uint64_t creation_index_ = 0;
 
     //static unsigned int view_count_;
 
     virtual void checkSubConfigurables();
+    virtual void childCreated(Configurable* child) override;
     void addView(View* view);
 };

@@ -26,7 +26,6 @@
 #include "taskmanager.h"
 #include "dbcontentmanager.h"
 #include "db_context_manager.h"
-#include "compass.h"
 
 #include "number.h"
 #include "logger.h"
@@ -342,22 +341,22 @@ void ReferenceCalculatorAnnotations::addAnnotationData(const std::string& name,
 
             //dbcontent info
             auto dbc_id = Utils::Number::recNumGetDBContId(mm.source_id.value());
-            if (reconstructor_->task().manager().compass().dbContentManager().existsDBContentWithId(dbc_id))
-                dbc_info = reconstructor_->task().manager().compass().dbContentManager().dbContentWithId(dbc_id);
+            if (reconstructor_->task().manager().dbContentManager().existsDBContentWithId(dbc_id))
+                dbc_info = reconstructor_->task().manager().dbContentManager().dbContentWithId(dbc_id);
         
             //sensor info
             auto rec_info = reconstructor_->getInfo(mm.source_id.value());
             if (rec_info)
             {
-                if (reconstructor_->task().manager().compass().dbContextManager().hasDataSource(rec_info->ds_id_))
+                if (reconstructor_->task().manager().dbContextManager().hasDataSource(rec_info->ds_id_))
                 {
-                    const auto* ds = reconstructor_->task().manager().compass().dbContextManager().dataSource(rec_info->ds_id_);
+                    const auto* ds = reconstructor_->task().manager().dbContextManager().dataSource(rec_info->ds_id_);
                     sensor_info = ds->hasShortName() ? ds->shortName() : ds->name();
                 }
 
                 //get dbcontent string if not yet recovered from record number
                 if (dbc_info.empty())
-                    dbc_info = reconstructor_->task().manager().compass().dbContentManager().dbContentWithId(rec_info->dbcont_id_);
+                    dbc_info = reconstructor_->task().manager().dbContentManager().dbContentWithId(rec_info->dbcont_id_);
             }
         }
 
@@ -679,11 +678,10 @@ void ReferenceCalculatorAnnotations::createAnnotations(ViewPointGenAnnotation* a
                 rsettings.max_value       = 10.0;
 
                 rsettings.color_map.create(ColorMap::ColorScale::Green2Red, 10);
-                
-                auto result = Grid2DLayerRenderer::render(layers.layer(0), rsettings);
 
-                auto f = new ViewPointGenFeatureGeoImage(result.first, result.second);
-                anno->addFeature(f);
+                anno->addFeature(new ViewPointGenFeatureGrid(
+                    layers.layer(0), rsettings,
+                    PlotMetadata("Reconstruction", "Accuracy Grid", "Longitude (deg)", "Latitude (deg)")));
 #endif
             }
         }

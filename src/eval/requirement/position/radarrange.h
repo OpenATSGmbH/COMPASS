@@ -17,26 +17,36 @@
 
 #pragma once
 
-#include "eval/requirement/base/positionbase.h"
+#include "requirement/base/positionbase.h"
+#include "requirement/position/radar_helpers.h"
 
 namespace EvaluationRequirement
 {
 
 /**
 */
-class PositionRadarRange : public PositionBaseProb
+class PositionRadarRange : public PositionBaseValue
 {
 public:
     PositionRadarRange(
             const std::string& name, const std::string& short_name, const std::string& group_name, float ref_min_accuracy,
-            EvaluationCalculator& calculator, double threshold_value);
+            EvaluationCalculator& calculator, double threshold_value,
+            RadarHelpers::Statistic statistic);
 
     virtual std::shared_ptr<EvaluationRequirementResult::Single> evaluate (
             const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
             const SectorLayer& sector_layer) override;
 
-    std::string probabilityNameShort() const override final { return "PosRngMean"; }
-    std::string probabilityName() const override final { return "Position Range Mean"; }
+    RadarHelpers::Statistic statistic() const { return statistic_; }
+    const RadarHelpers::StatisticInfo& statisticInfo() const
+    { return RadarHelpers::statisticInfo(RadarHelpers::rangeStatistics(), statistic_); }
+
+    std::string getConditionResultNameShort() const override final { return statisticInfo().short_name; }
+    std::string getConditionResultName() const override final { return statisticInfo().name; }
+    std::string getConditionUnits() const override final { return statisticInfo().units; }
+
+protected:
+    RadarHelpers::Statistic statistic_;
 };
 
 }

@@ -22,7 +22,9 @@
 #include "dbcontent/dbcontentdataengine.h"
 #include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
+
+#include <algorithm>
 
 using namespace std;
 using namespace Utils;
@@ -122,10 +124,17 @@ void TimestampFilter::reset()
         widget_->update();
 }
 
-void TimestampFilter::reset(boost::posix_time::ptime min, boost::posix_time::ptime max)
+void TimestampFilter::fitToTimeRange(boost::posix_time::ptime min, boost::posix_time::ptime max)
 {
-    minValue(min);
-    maxValue(max);
+    // the stored range survives a restart, but a range of another database must not hide all data
+    bool overlaps = !min_value_.is_not_a_date_time() && !max_value_.is_not_a_date_time()
+                    && min_value_ <= max && max_value_ >= min;
+
+    boost::posix_time::ptime new_min = overlaps ? std::max(min_value_, min) : min;
+    boost::posix_time::ptime new_max = overlaps ? std::min(max_value_, max) : max;
+
+    minValue(new_min);
+    maxValue(new_max);
 
     if (widget_)
         widget_->update();

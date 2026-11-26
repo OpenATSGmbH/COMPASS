@@ -17,7 +17,10 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "layertreedefs.h"
+#include "layertreestate.h"
 
 #include <QAbstractItemModel>
 #include <QHeaderView>
@@ -47,8 +50,13 @@ class QMenu;
  *
  * Signals emitted by items (via model_ pointer) are re-emitted here so panel
  * / view code can subscribe.
+ *
+ * The items hold their checked state, the tree view their expansion and selection; producers
+ * update the tree in place (LayerTreeItem::update()), vanished items are forgotten. The item config
+ * and the effective-hidden ids live in state(), the model applies the config on attach and on
+ * config changes.
  */
-class LayerTreeModel : public QAbstractItemModel
+class COMPASS_VIEW_API LayerTreeModel : public QAbstractItemModel
 {
     Q_OBJECT
 
@@ -56,10 +64,10 @@ signals:
     void hiddenChangedSignal();
     void colorChangedSignal();
     void modelChangedSignal();
-    /// Emitted at the end of refreshSubtree() with the parent whose children
-    /// were just rebuilt. Lets panel-level code (re-)apply expansion or other
-    /// view state without having to subscribe to begin/endInsertRows manually.
-    void subtreeRefreshedSignal(LayerTreeItem* parent);
+    /// a destroyed panel left its view state on the items, e.g. for its successor
+    void viewStateHandedOverSignal();
+    /// items became stale or current again, see hasStaleItems()
+    void staleChangedSignal();
 
 public:
     enum DataRole
@@ -83,6 +91,9 @@ public:
 
     LayerTreeItem* invisibleRootItem() const { return root_item_.get(); }
 
+    /// true while items show outdated content (LayerTreeItem::isStale()), see staleChangedSignal()
+    virtual bool hasStaleItems() const { return false; }
+
     // ---- columns -----------------------------------------------------------
 
     /// Register a custom column (appended after Name, Count).
@@ -94,14 +105,31 @@ public:
     /// Apply each column's resize/width/alignment to the given header.
     void applyHeaderSettings(QHeaderView* header) const;
 
-    // ---- scoped refresh ---------------------------------------------------
+    // ---- structural changes ------------------------------------------------
 
-    /// Scoped refill of a subtree without nuking expansion/selection elsewhere.
-    /// build_children must return the new children detached (not yet attached
-    /// to parent); the model performs begin/endRemoveRows and
-    /// begin/endInsertRows around the mutation.
-    void refreshSubtree(LayerTreeItem* parent,
-                        const std::function<std::vector<std::unique_ptr<LayerTreeItem>>()>& build_children);
+    /// appends a child to an attached parent, with insert notification
+    LayerTreeItem* appendChildItem(LayerTreeItem* parent, std::unique_ptr<LayerTreeItem> item);
+    /// inserts a child into an attached parent at the given row, with insert notification
+    LayerTreeItem* insertChildItem(LayerTreeItem* parent, int row, std::unique_ptr<LayerTreeItem> item);
+    /// inserts consecutive children at the given row, one insert notification
+    void insertChildItems(LayerTreeItem* parent, int row, std::vector<std::unique_ptr<LayerTreeItem>> items);
+    /// moves a child of an attached parent to the row to (its final row), with move notification
+    void moveChildItem(LayerTreeItem* parent, int from, int to);
+    /// removes a child of an attached parent, with remove notification
+    void removeChildItem(LayerTreeItem* parent, int row);
+    /// as removeChildItem() for the row range [first, last], one remove notification
+    void removeChildItems(LayerTreeItem* parent, int first, int last);
+    /// notifies a changed display of an attached item (e.g. name)
+    void itemChanged(LayerTreeItem* item);
+    /// notifies a changed display of all children of an attached item (all columns)
+    void childItemsChanged(LayerTreeItem* parent);
+
+    // ---- update in place ----------------------------------------------------
+
+    /// updates the subtree of an attached item in place, see LayerTreeItem::update()
+    void updateSubtree(LayerTreeItem* item);
+    /// updates the whole tree in place
+    void updateAll();
 
     // ---- traversal ---------------------------------------------------------
 
@@ -133,27 +161,23 @@ public:
     int rowCount(const QModelIndex& parent = QModelIndex()) const override;
     int columnCount(const QModelIndex& parent = QModelIndex()) const override;
 
-    // ---- persistence helpers ---------------------------------------------
+    // ---- config and hidden ids ---------------------------------------------
 
-    /// Collect persistenceId() of every descendant leaf currently in an
-    /// effective-hidden state. Empty ids are skipped.
-    std::set<std::string> persistedHiddenIds() const;
+    /// item config root, effective-hidden ids (kept current on every hiddenChangedSignal and after
+    /// structural changes, cleared on database close via state().clear())
+    LayerTreeState& state() { return state_; }
+    const LayerTreeState& state() const { return state_; }
 
-    /// For every descendant item (group or leaf) whose persistenceId() is in
-    /// `ids`, set hidden=true.
-    void applyPersistedHiddenIds(const std::set<std::string>& ids);
+    /// the item with the given state key, nullptr if there is none
+    LayerTreeItem* findItem(const std::string& key) const;
 
-    // ---- hidden-state memory -----------------------------------------------
+    /// binds the view's item config (see LayerTreeState::bindConfig()) and applies it to the current items
+    void bindConfig(nlohmann::json* root);
+    /// re-applies the config to all items, e.g. after a preset was applied
+    void configChanged();
 
-    /// Remembered effective-hidden ids (item hidden itself or via an unchecked
-    /// ancestor group). Kept current on every hiddenChangedSignal and after
-    /// each refreshSubtree(); meant for data filtering (e.g. skip hidden
-    /// layers when aggregating). In-memory only - cleared on database close
-    /// via clearStoredHiddenState().
-    const std::set<std::string>& storedHiddenIds() const { return stored_hidden_ids_; }
-
-    /// Forget the remembered hidden state (called on database close).
-    void clearStoredHiddenState();
+    /// called by items when a subtree got attached to this model
+    void subtreeAttached(LayerTreeItem* subtree);
 
     // ---- icon-change re-queries ------------------------------------------
 
@@ -162,7 +186,13 @@ public:
     void notifyIconChanged(LayerTreeItem* item);
 
 private:
+    QModelIndex indexOfItem(const LayerTreeItem* item) const;
+
     void captureHiddenState();
+    void flushHiddenNotification();
+    void checkUniqueKeys(const LayerTreeItem* parent) const;
+    /// after a structural change, deferred to the end of an update
+    void structureChanged();
 
     QVariant aggregateColumnFor(LayerTreeItem* item, int column,
                                 const LayerColumnSpec& spec) const;
@@ -176,7 +206,7 @@ private:
     std::unique_ptr<LayerTreeItem>  root_item_;
     std::vector<LayerColumnSpec>    custom_columns_;
 
-    std::set<std::string> stored_hidden_ids_;        // effective-hidden ids, see storedHiddenIds()
-    std::set<std::string> stored_unchecked_ids_;     // own-hidden (unchecked checkbox) ids, restored in refreshSubtree()
-    bool applying_hidden_state_ = false;             // guards captureHiddenState() re-entry
+    LayerTreeState state_;
+    bool           hidden_notify_pending_ = false; // configured hidden states applied on attach, not signalled yet
+    int            update_depth_          = 0;     // running (nested) updateSubtree() calls
 };

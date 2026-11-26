@@ -16,6 +16,7 @@
  */
 
 #include "chartview.h"
+#include "chartseriesarena.h"
 #include <logger.h>
 
 #include <QApplication>
@@ -31,52 +32,43 @@
 #include <QLegendMarker>
 #include <QBarCategoryAxis>
 #include <QtCharts/QCategoryAxis>
+#include <QFontInfo>
 #include <QFontMetricsF>
+#include <QGraphicsLayout>
+#include <QGraphicsLayoutItem>
 #include <QtMath>
+
+#include <algorithm>
+#include <cmath>
 
 const QColor ChartView::SelectionColor = Qt::red;
 
-/**
- */
-QtCharts::QLineSeries* ChartView::allocateTopMostSeries(const QtCharts::QChart* chart)
+namespace
 {
-    const void* highest = nullptr;
-
-    for (auto s : chart->series())
-        if (!highest || (const void*)s > highest)
-            highest = (const void*)s;
-
-    //The loop is guaranteed to end. A rejected candidate is held, never freed,
-    //so the allocator cannot hand out that block again. Only finitely many free
-    //blocks sit below the current top, and once they are drained the heap has to
-    //grow upwards. The cap is generous because rebuilding a chart frees the
-    //series of the previous one first, which leaves a pile of blocks of exactly
-    //the right size below the top.
-    const int MaxTries = 4096;
-
-    std::vector<QtCharts::QLineSeries*> rejected;
-    QtCharts::QLineSeries*              series = nullptr;
-
-    for (int i = 0; i < MaxTries && !series; ++i)
+    /**
+     * Height of one entry of the legend. Qt Charts has no public value for it. Each entry is a layout
+     * item below the legend, all entries have the same font and so the same height.
+     */
+    qreal legendRowHeight(const QtCharts::QLegend* legend)
     {
-        auto candidate = new QtCharts::QLineSeries;
+        QList<QGraphicsItem*> items = legend->childItems();
 
-        if (!highest || (const void*)candidate > highest)
-            series = candidate;
-        else
-            rejected.push_back(candidate);
+        while (!items.isEmpty())
+        {
+            QGraphicsItem* item = items.takeFirst();
+
+            if (auto layout_item = dynamic_cast<QGraphicsLayoutItem*>(item))
+                return layout_item->effectiveSizeHint(Qt::PreferredSize).height();
+
+            items.append(item->childItems());
+        }
+
+        return 0.0;
     }
 
-    for (auto s : rejected)
-        delete s;
-
-    if (!series)
-    {
-        logwrn << "no free block above the existing series, selection may be covered";
-        series = new QtCharts::QLineSeries;
-    }
-
-    return series;
+    /// The lower limit of the chart margins, a property of the chart because the axes of the scatterplot and the
+    /// grid reserve their label margins on a range change, with the chart only.
+    const char* MinMarginProperty = "compass_min_margin";
 }
 
 /**
@@ -113,23 +105,62 @@ ChartView::ChartView(QtCharts::QChart* chart, SelectionStyle sel_style, QWidget*
 
     setRenderHint(QPainter::Antialiasing);
 
-    applyPaletteTheme();
+    applyPaletteTheme(themePalette());
 }
 
 /**
  */
-ChartView::~ChartView() = default;
+/**
+ * Drops the axis label item before the base class runs.
+ *
+ * The item is parented to the QChart, so Qt destroys it together with the chart - but
+ * the chart is destroyed by ~QChartView, i.e. AFTER this destructor body, and the raw
+ * pointer here is also deleted by hand in setXAxisLabel(). Removing it from the chart
+ * and deleting it here, once, keeps those two paths from meeting: leaving it to Qt left
+ * a dangling child behind and crashed during the chart's own teardown
+ * (QGraphicsScene::clear -> ~QChart -> deleteAllAxes).
+ */
+ChartView::~ChartView()
+{
+    if (x_axis_label_item_)
+    {
+        x_axis_label_item_->setParentItem(nullptr);
+
+        if (chart() && chart()->scene())
+            chart()->scene()->removeItem(x_axis_label_item_);
+
+        delete x_axis_label_item_;
+        x_axis_label_item_ = nullptr;
+    }
+}
 
 void ChartView::changeEvent(QEvent* event)
 {
     QChartView::changeEvent(event);
 
     if (event->type() == QEvent::PaletteChange || event->type() == QEvent::StyleChange)
-        applyPaletteTheme();
+        applyPaletteTheme(themePalette());
 }
 
 /**
- * Applies QApplication::palette()-derived colors to the chart chrome
+ * The palette the chart is drawn with: the fixed palette if set, else the application palette.
+ */
+QPalette ChartView::themePalette() const
+{
+    return fixed_palette_ ? *fixed_palette_ : QApplication::palette();
+}
+
+/**
+ */
+void ChartView::setFixedPalette(const QPalette& palette)
+{
+    fixed_palette_ = palette;
+
+    applyPaletteTheme(themePalette());
+}
+
+/**
+ * Applies palette-derived colors to the chart chrome
  * (background, axes, grid, legend, title) so charts follow the dark/light
  * palette automatically. Series colors are not touched - callers keep their
  * explicit per-data-source coloring.
@@ -137,13 +168,11 @@ void ChartView::changeEvent(QEvent* event)
  * Re-runs on QEvent::PaletteChange (delivered to all widgets when
  * QApplication::setPalette() is called), so live dark-mode toggle works.
  */
-void ChartView::applyPaletteTheme()
+void ChartView::applyPaletteTheme(const QPalette& pal)
 {
     auto* c = chart();
     if (!c)
         return;
-
-    QPalette pal = QApplication::palette();
 
     c->setBackgroundBrush(pal.window());
     c->setTitleBrush(pal.windowText());
@@ -206,12 +235,183 @@ void ChartView::setXAxisLabel(const QString& label)
         // use the same font as the axis title would
         QFont f = chart()->font();
         f.setBold(true);
-        x_axis_label_item_->setFont(f);
-        x_axis_label_item_->setBrush(QApplication::palette().text());
+        x_axis_label_item_->setFont(pixel_size_fonts_ ? pixelSizeFont(f) : f);
+        x_axis_label_item_->setBrush(themePalette().text());
     }
 
     x_axis_label_item_->setText(label);
     updateXAxisLabelPosition();
+}
+
+/**
+ */
+void ChartView::showLegendAtRightSide()
+{
+    auto* legend = chart()->legend();
+    if (!legend)
+        return;
+
+    legend->setAlignment(Qt::AlignRight);
+    legend->setVisible(true);
+
+    //the rectangle of a selection is no data
+    if (selectionSeries())
+        legend_excluded_.insert(selectionSeries());
+
+    if (!legend_more_series_)
+    {
+        legend_more_series_ = new QtCharts::QLineSeries;
+        legend_more_series_->setColor(Qt::transparent);
+
+        chart()->addSeries(legend_more_series_);
+    }
+
+    updateLegendOverflow();
+}
+
+/**
+ */
+void ChartView::excludeFromLegend(const QtCharts::QAbstractSeries* series)
+{
+    legend_excluded_.insert(series);
+}
+
+/**
+ * Hides the legend entries that do not fit in the height of the legend and tells their count in the
+ * last entry. Runs after each layout of the chart, the number of entries that fit follows the height.
+ */
+void ChartView::updateLegendOverflow()
+{
+    if (!legend_more_series_)
+        return;
+
+    auto* legend = chart()->legend();
+
+    QList<QtCharts::QLegendMarker*> entries;
+    QtCharts::QLegendMarker*        more_entry = nullptr;
+
+    for (auto* marker : legend->markers())
+    {
+        if (marker->series() == legend_more_series_)
+            more_entry = marker;
+        else if (legend_excluded_.count(marker->series()))
+            marker->setVisible(false);
+        else if (!marker->label().isEmpty())
+            entries << marker;
+    }
+
+    if (!more_entry)
+        return;
+
+    //the complete legend first, so the result does not depend on the state before
+    for (auto* marker : entries)
+        marker->setVisible(true);
+
+    more_entry->setVisible(false);
+
+    layoutLegendNow();
+
+    qreal margin_top    = 0.0;
+    qreal margin_bottom = 0.0;
+
+    if (legend->layout())
+        legend->layout()->getContentsMargins(nullptr, &margin_top, nullptr, &margin_bottom);
+
+    const qreal row_height = legendRowHeight(legend);
+    const qreal height     = legend->geometry().height() - margin_top - margin_bottom;
+
+    if (row_height <= 0.0 || height <= 0.0)
+        return;
+
+    const int num_fitting = std::max(1, (int)std::floor(height / row_height));
+
+    if (entries.size() <= num_fitting)
+        return;
+
+    //one row is for the entry with the count
+    const int num_shown = num_fitting - 1;
+
+    for (int i = num_shown; i < entries.size(); ++i)
+        entries[ i ]->setVisible(false);
+
+    legend_more_series_->setName(QString("... (%1 more)").arg(entries.size() - num_shown));
+
+    //text only: the shape of a line series is a line in its color, which is transparent
+    more_entry->setShape(QtCharts::QLegend::MarkerShapeFromSeries);
+    more_entry->setVisible(true);
+
+    layoutLegendNow();
+}
+
+/**
+ * Lays out the chart and its legend again, after a change of the legend entries. Qt Charts does this
+ * in the event loop, which is too late for an image that is rendered right away.
+ */
+void ChartView::layoutLegendNow()
+{
+    auto* legend_layout = chart()->legend() ? chart()->legend()->layout() : nullptr;
+    auto* chart_layout  = chart()->layout();
+
+    if (legend_layout)
+        legend_layout->invalidate();
+
+    //the width of the legend follows its entries, so the plot area can change too
+    if (chart_layout)
+    {
+        chart_layout->invalidate();
+        chart_layout->activate();
+    }
+
+    if (legend_layout)
+        legend_layout->activate();
+}
+
+/**
+ * The font with a pixel size of the same height, and with the hinting of the chart fonts.
+ */
+QFont ChartView::pixelSizeFont(const QFont& font) const
+{
+    QFont pixel_font = font;
+
+    if (font.pixelSize() <= 0)
+        pixel_font.setPixelSize(QFontInfo(font).pixelSize());
+
+    pixel_font.setHintingPreference(font_hinting_);
+
+    return pixel_font;
+}
+
+/**
+ * Measured on Wayland with Qt 5.15 (rotated axis title, image of 2400 x 1600 pixels, display scaling
+ * 1 against 2): fonts with a point size differ, fonts with a pixel size and the default hinting differ
+ * for most sizes, fonts with a pixel size and a fixed hinting are equal. Qt switches the default
+ * hinting off when the display is scaled.
+ */
+void ChartView::usePixelSizeFonts(QFont::HintingPreference hinting)
+{
+    pixel_size_fonts_ = true;
+    font_hinting_     = hinting;
+
+    auto* c = chart();
+    if (!c)
+        return;
+
+    c->setTitleFont(pixelSizeFont(c->titleFont()));
+
+    if (auto* legend = c->legend())
+        legend->setFont(pixelSizeFont(legend->font()));
+
+    for (auto* axis : c->axes())
+    {
+        axis->setLabelsFont(pixelSizeFont(axis->labelsFont()));
+        axis->setTitleFont(pixelSizeFont(axis->titleFont()));
+    }
+
+    if (x_axis_label_item_)
+    {
+        x_axis_label_item_->setFont(pixelSizeFont(x_axis_label_item_->font()));
+        updateXAxisLabelPosition();
+    }
 }
 
 /**
@@ -221,8 +421,9 @@ void ChartView::reserveHorizontalLabelMargins(QtCharts::QChart* chart)
     if (!chart)
         return;
 
-    //Qt's own default, the baseline this never falls below
-    const int MarginDefault = 20;
+    //Qt's own default or the narrow margin, the baseline this never falls below
+    const QVariant min_margin_property = chart->property(MinMarginProperty);
+    const int      min_margin          = min_margin_property.isValid() ? min_margin_property.toInt() : 20;
 
     //a little air so a glyph does not touch the edge
     const int Padding = 2;
@@ -254,8 +455,8 @@ void ChartView::reserveHorizontalLabelMargins(QtCharts::QChart* chart)
 
     //recompute both sides from scratch, otherwise a wide label would leave its
     //margin behind after zooming back out
-    margins.setLeft (std::max(MarginDefault, (int)std::ceil(needed_left ) + Padding));
-    margins.setRight(std::max(MarginDefault, (int)std::ceil(needed_right) + Padding));
+    margins.setLeft (std::max(min_margin, (int)std::ceil(needed_left ) + Padding));
+    margins.setRight(std::max(min_margin, (int)std::ceil(needed_right) + Padding));
 
     if (margins != chart->margins())
         chart->setMargins(margins);
@@ -263,10 +464,62 @@ void ChartView::reserveHorizontalLabelMargins(QtCharts::QChart* chart)
 
 /**
  */
+void ChartView::useNarrowMargins()
+{
+    auto* c = chart();
+    if (!c)
+        return;
+
+    c->setProperty(MinMarginProperty, NarrowMargin);
+    c->setMargins(QMargins(NarrowMargin, NarrowMargin, NarrowMargin, NarrowMargin));
+
+    //the chart margin is the space right of a legend at the right side
+    if (c->legend() && c->legend()->layout())
+        c->legend()->layout()->setContentsMargins(NarrowMargin, 0, 0, 0);
+
+    reserveHorizontalLabelMargins(c);
+}
+
+/**
+ */
+void ChartView::layoutForSize(const QSize& size)
+{
+    resize(size);
+
+    chart()->resize(size);
+
+    if (chart()->layout())
+        chart()->layout()->activate();
+
+    setSceneRect(chart()->geometry());
+
+    updateLegendOverflow();
+    updateXAxisLabelPosition();
+}
+
+/**
+ */
 void ChartView::resizeEvent(QResizeEvent* event)
 {
     QChartView::resizeEvent(event);
+
+    updateLegendOverflow();
     updateXAxisLabelPosition();
+}
+
+/**
+ * An ignored wheel event goes on to the parent widgets, so a scroll area around the chart scrolls.
+ * It does not reach the wheel handlers of the chart views, which can zoom the chart.
+ */
+bool ChartView::viewportEvent(QEvent* event)
+{
+    if (wheel_ignored_ && event->type() == QEvent::Wheel)
+    {
+        event->ignore();
+        return false;
+    }
+
+    return QChartView::viewportEvent(event);
 }
 
 /**
@@ -313,7 +566,7 @@ void ChartView::updateXAxisLabelPosition()
     qreal y = plot_area.bottom() + tick_label_height + 4;
 
     // clamp so it doesn't overlap the legend
-    if (chart()->legend() && chart()->legend()->isVisible())
+    if (chart()->legend() && chart()->legend()->isVisible() && (chart()->legend()->alignment() & Qt::AlignBottom))
     {
         qreal legend_top = chart()->legend()->geometry().top();
         if (y + label_rect.height() > legend_top)
@@ -393,10 +646,10 @@ void ChartView::createDisplayElements(QtCharts::QChart* chart)
         p.setStyle(Qt::PenStyle::DashLine);
         p.setWidth(2);
 
-        //the pointer decides the render order, so the selection has to be
-        //allocated above every series already in the chart, the pooled
-        //"Selected" overlay of the scatter plot included
-        selection_lines_ = allocateTopMostSeries(chart);
+        //the pointer decides the render order, so the selection comes from the
+        //upper region of the series arena, above every accelerated data series,
+        //the pooled "Selected" overlay of the scatter plot included
+        selection_lines_ = chart_series_arena::createSelectionLineSeries();
         selection_lines_->setUseOpenGL(true);
         selection_lines_->setPen(p);
 

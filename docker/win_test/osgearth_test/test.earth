@@ -1,0 +1,6 @@
+<!-- Local world image only, no network access needed -->
+<map>
+    <GDALImage name="World GeoTIFF">
+        <url>data/world.tif</url>
+    </GDALImage>
+</map>

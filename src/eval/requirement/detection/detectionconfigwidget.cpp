@@ -15,14 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/detection/detectionconfigwidget.h"
-#include "eval/requirement/detection/detectionconfig.h"
+#include "requirement/detection/detectionconfigwidget.h"
+#include "requirement/detection/detectionconfig.h"
 
 #include "logger.h"
 
 #include <QLineEdit>
 #include <QFormLayout>
 #include <QCheckBox>
+#include <QComboBox>
 #include <QDoubleValidator>
 
 using namespace std;
@@ -107,6 +108,78 @@ DetectionConfigWidget::DetectionConfigWidget(DetectionConfig& cfg)
 
     form_layout_->addRow("Miss Tolerance [s]", miss_tolerance_edit_);
 
+    // time-ratio calculation mode
+    use_time_ratio_check_ = new QCheckBox ();
+    use_time_ratio_check_->setChecked(config().useTimeRatio());
+    use_time_ratio_check_->setToolTip("Calculate the probability as missed time over reference"
+                                      " duration (ED-129C Appendix C Interarrivaltime method)"
+                                      " instead of missed update intervals over expected update"
+                                      " intervals");
+    connect(use_time_ratio_check_, &QCheckBox::clicked,
+            this, &DetectionConfigWidget::toggleUseTimeRatioSlot);
+
+    form_layout_->addRow("Use Time-Based Calculation", use_time_ratio_check_);
+
+    // gap count mode
+    use_gap_count_check_ = new QCheckBox ();
+    use_gap_count_check_->setChecked(config().useGapCount());
+    use_gap_count_check_->setToolTip("Calculate the probability as number of gaps over the"
+                                     " number of test reports (ED-117A Section 6.4.8, ED-87E"
+                                     " Section 5.3.14) instead of missed update intervals over"
+                                     " expected update intervals. Each gap counts once,"
+                                     " independent of its length");
+    connect(use_gap_count_check_, &QCheckBox::clicked,
+            this, &DetectionConfigWidget::toggleUseGapCountSlot);
+
+    form_layout_->addRow("Use Gap Count", use_gap_count_check_);
+
+    // track initiation time
+    use_trit_check_ = new QCheckBox ();
+    use_trit_check_->setChecked(config().useTRIT());
+    use_trit_check_->setToolTip("A gap from the reference period begin to a first test report"
+                                " that starts a track is not counted if it is at most the track"
+                                " initiation time (ED-87 TRIT). The track start comes from the"
+                                " track status: Track Begin, Track Confirmed, Track Number");
+    connect(use_trit_check_, &QCheckBox::clicked,
+            this, &DetectionConfigWidget::toggleUseTRITSlot);
+
+    form_layout_->addRow("Use Track Initiation Time", use_trit_check_);
+
+    trit_edit_ = new QLineEdit(QString::number(config().trit()));
+    trit_edit_->setValidator(new QDoubleValidator(0.0, 300.0, 2, this));
+    trit_edit_->setToolTip("Maximum gap before a track start that is not counted");
+    connect(trit_edit_, &QLineEdit::textEdited,
+            this, &DetectionConfigWidget::tritEditSlot);
+
+    form_layout_->addRow("Track Initiation Time [s]", trit_edit_);
+
+    // stationary update interval
+    use_stationary_ui_check_ = new QCheckBox ();
+    use_stationary_ui_check_->setChecked(config().useStationaryUI());
+    use_stationary_ui_check_->setToolTip("Speed-dependent update interval: below the speed"
+                                         " threshold the stationary update interval applies"
+                                         " (ED-129C ORQ 627, APT services)");
+    connect(use_stationary_ui_check_, &QCheckBox::clicked,
+            this, &DetectionConfigWidget::toggleUseStationaryUISlot);
+
+    form_layout_->addRow("Use Stationary Update Interval", use_stationary_ui_check_);
+
+    stationary_ui_edit_ = new QLineEdit(QString::number(config().stationaryUI()));
+    stationary_ui_edit_->setValidator(new QDoubleValidator(0.1, 60.0, 2, this));
+    stationary_ui_edit_->setToolTip("Update interval for stationary targets");
+    connect(stationary_ui_edit_, &QLineEdit::textEdited,
+            this, &DetectionConfigWidget::stationaryUIEditSlot);
+
+    form_layout_->addRow("Stationary Update Interval [s]", stationary_ui_edit_);
+
+    stationary_speed_threshold_edit_ = new QLineEdit(QString::number(config().stationarySpeedThreshold()));
+    stationary_speed_threshold_edit_->setValidator(new QDoubleValidator(0.0, 100.0, 2, this));
+    stationary_speed_threshold_edit_->setToolTip("Reference ground speed below this counts as stationary");
+    connect(stationary_speed_threshold_edit_, &QLineEdit::textEdited,
+            this, &DetectionConfigWidget::stationarySpeedThresholdEditSlot);
+
+    form_layout_->addRow("Stationary Speed Threshold [m/s]", stationary_speed_threshold_edit_);
+
     // hold_for_any_target_check_
     hold_for_any_target_check_ = new QCheckBox ();
     hold_for_any_target_check_->setChecked(config().holdForAnyTarget());
@@ -117,17 +190,27 @@ DetectionConfigWidget::DetectionConfigWidget(DetectionConfig& cfg)
     form_layout_->addRow("Hold for any target", hold_for_any_target_check_);
 
 
-    // ignore_primary_only
-    ignore_primary_only_check_ = new QCheckBox ();
-    ignore_primary_only_check_->setChecked(config().ignorePrimaryOnly());
-    ignore_primary_only_check_->setToolTip("Requirement result is ignored if target is primary only (has no"
-                                           " secondary attributes, also not in reference)");
-    connect(ignore_primary_only_check_, &QCheckBox::clicked,
-            this, &DetectionConfigWidget::toggleIgnorePrimaryOnlySlot);
+    // pd calculation method
+    pd_calculation_method_box_ = new QComboBox();
+    pd_calculation_method_box_->addItem("time_difference");
+    pd_calculation_method_box_->addItem("status_message");
+    pd_calculation_method_box_->setCurrentText(QString::fromStdString(config().pdCalculationMethod()));
+    pd_calculation_method_box_->setToolTip("Status message: expected periods from the update cycles"
+                                           " reported by the test data source. Time difference: gaps"
+                                           " between test reports against the configured update interval");
+    connect(pd_calculation_method_box_, &QComboBox::currentTextChanged,
+            this, &DetectionConfigWidget::changedPDCalculationMethodSlot);
 
-    form_layout_->addRow("Ignore Primary Only", ignore_primary_only_check_);
+    form_layout_->addRow("PD Calculation Method", pd_calculation_method_box_);
 
     updateActive();
+}
+
+void DetectionConfigWidget::changedPDCalculationMethodSlot(const QString& value)
+{
+    loginf << "value " << value.toStdString();
+
+    config().pdCalculationMethod(value.toStdString());
 }
 
 
@@ -224,6 +307,81 @@ void DetectionConfigWidget::missToleranceEditSlot(QString value)
         loginf << "invalid value";
 }
 
+void DetectionConfigWidget::toggleUseTimeRatioSlot()
+{
+    loginf;
+
+    traced_assert(use_time_ratio_check_);
+    config().useTimeRatio(use_time_ratio_check_->checkState() == Qt::Checked);
+}
+
+void DetectionConfigWidget::toggleUseGapCountSlot()
+{
+    loginf;
+
+    traced_assert(use_gap_count_check_);
+    config().useGapCount(use_gap_count_check_->checkState() == Qt::Checked);
+}
+
+void DetectionConfigWidget::toggleUseTRITSlot()
+{
+    loginf;
+
+    traced_assert(use_trit_check_);
+    config().useTRIT(use_trit_check_->checkState() == Qt::Checked);
+
+    updateActive();
+}
+
+void DetectionConfigWidget::tritEditSlot(QString value)
+{
+    loginf << "value " << value.toStdString();
+
+    bool ok;
+    float val = value.toFloat(&ok);
+
+    if (ok)
+        config().trit(val);
+    else
+        loginf << "invalid value";
+}
+
+void DetectionConfigWidget::toggleUseStationaryUISlot()
+{
+    loginf;
+
+    traced_assert(use_stationary_ui_check_);
+    config().useStationaryUI(use_stationary_ui_check_->checkState() == Qt::Checked);
+
+    updateActive();
+}
+
+void DetectionConfigWidget::stationaryUIEditSlot(QString value)
+{
+    loginf << "value " << value.toStdString();
+
+    bool ok;
+    float val = value.toFloat(&ok);
+
+    if (ok)
+        config().stationaryUI(val);
+    else
+        loginf << "invalid value";
+}
+
+void DetectionConfigWidget::stationarySpeedThresholdEditSlot(QString value)
+{
+    loginf << "value " << value.toStdString();
+
+    bool ok;
+    float val = value.toFloat(&ok);
+
+    if (ok)
+        config().stationarySpeedThreshold(val);
+    else
+        loginf << "invalid value";
+}
+
 void DetectionConfigWidget::toggleHoldForAnyTargetSlot()
 {
     loginf;
@@ -241,14 +399,6 @@ DetectionConfig& DetectionConfigWidget::config()
 }
 
 
-void DetectionConfigWidget::toggleIgnorePrimaryOnlySlot()
-{
-    loginf;
-
-    traced_assert(ignore_primary_only_check_);
-    config().ignorePrimaryOnly(ignore_primary_only_check_->checkState() == Qt::Checked);
-}
-
 void DetectionConfigWidget::updateActive()
 {
     traced_assert(min_gap_length_edit_);
@@ -259,6 +409,15 @@ void DetectionConfigWidget::updateActive()
 
     traced_assert(miss_tolerance_edit_);
     miss_tolerance_edit_->setEnabled(config().useMissTolerance());
+
+    traced_assert(trit_edit_);
+    trit_edit_->setEnabled(config().useTRIT());
+
+    traced_assert(stationary_ui_edit_);
+    stationary_ui_edit_->setEnabled(config().useStationaryUI());
+
+    traced_assert(stationary_speed_threshold_edit_);
+    stationary_speed_threshold_edit_->setEnabled(config().useStationaryUI());
 }
 
 }

@@ -17,21 +17,27 @@
 
 #pragma once
 
+#include "apphooks.h"
+
 #include <QApplication>
 #include <memory>
 
 class ConfigurationManager;
 class COMPASS;
+class CompassRoot;
 
 class Client : public QApplication
 {
 public:
-    Client(int& argc, char** argv);
+    Client(int& argc,
+           char** argv,
+           const AppHooks& app_hooks);
     virtual ~Client();
 
     virtual bool notify(QObject* receiver, QEvent* event);
 
     bool quitRequested() const;
+    bool stallWatchdogRequested() const { return stall_watchdog_; }
 
     bool run ();
 
@@ -42,8 +48,11 @@ public:
     static void applyDarkMode(bool dark);
 
 private:
+    AppHooks app_hooks_; // handed to the composition root
+
     std::unique_ptr<ConfigurationManager> config_manager_;
-    std::unique_ptr<COMPASS> compass_;
+    std::unique_ptr<CompassRoot> root_;
+    COMPASS* compass_ = nullptr; // owned by root_
 
     std::string system_install_path_;
     bool quit_requested_{false};
@@ -73,6 +82,10 @@ private:
     std::string import_asterix_network_time_offset_;
     int import_asterix_network_max_lines_ {-1};
     bool import_asterix_network_ignore_future_ts_ {false};
+    std::string import_asterix_network_replay_file_;
+    float import_asterix_network_replay_speed_ {1.0f};
+    std::string import_asterix_network_replay_line_;
+    bool import_asterix_network_replay_stop_at_end_ {false};
     std::string asterix_framing;
     std::string asterix_decoder_cfg;
     std::string import_asterix_parameters_;
@@ -110,6 +123,8 @@ private:
 
     bool no_config_save_ {false};
 
+    float bundled_font_size_ {0};
+
     bool open_rt_cmd_port_ {false};
     bool enable_event_log_ {false};
     bool quit_ {false};
@@ -121,6 +136,7 @@ private:
     bool do_numerical_crash_ {false};
     bool do_segfault_ {false};
     bool do_sensor_status_hack_ {false};
+    bool stall_watchdog_ {false};
 
     void checkAndSetupConfig();
 

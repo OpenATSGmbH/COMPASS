@@ -24,6 +24,15 @@
 #include <QWidget>
 #include <QApplication>
 #include <QFocusEvent>
+#include <QDragEnterEvent>
+#include <QDropEvent>
+#include <QMimeData>
+#include <QUrl>
+#include <QComboBox>
+#include <QAbstractItemView>
+#include <QTableView>
+#include <QTreeView>
+#include <QItemSelection>
 
 #include <map>
 
@@ -60,13 +69,30 @@ bool injectUIEvent(QWidget* parent,
         return true;
     };
 
+    //"<button>[+ctrl][+shift][+alt]", e.g. "left+ctrl"
+    Qt::KeyboardModifiers modifiers = Qt::NoModifier;
+
     auto mouseButtonFromString = [ & ] (const QString& str)
     {
-        if (str == "left")
+        QStringList parts = str.split("+");
+
+        for (int i = 1; i < parts.size(); ++i)
+        {
+            if (parts[ i ] == "ctrl")
+                modifiers |= Qt::ControlModifier;
+            else if (parts[ i ] == "shift")
+                modifiers |= Qt::ShiftModifier;
+            else if (parts[ i ] == "alt")
+                modifiers |= Qt::AltModifier;
+            else
+                return Qt::NoButton;
+        }
+
+        if (parts[ 0 ] == "left")
             return Qt::LeftButton;
-        else if (str == "middle")
+        else if (parts[ 0 ] == "middle")
             return Qt::MiddleButton;
-        else if (str == "right")
+        else if (parts[ 0 ] == "right")
             return Qt::RightButton;
         
         return Qt::NoButton;
@@ -76,16 +102,28 @@ bool injectUIEvent(QWidget* parent,
     {
         NoAction = 0,
         Click,
-        Rect
+        DblClick,
+        Rect,
+        Press,
+        Move,
+        Release
     };
 
     auto mouseActionFromString = [ & ] (const QString& str)
     {
         if (str == "click")
             return MouseAction::Click;
+        else if (str == "dblclick")
+            return MouseAction::DblClick;
         else if (str == "rect")
             return MouseAction::Rect;
-        
+        else if (str == "press")
+            return MouseAction::Press;
+        else if (str == "move")
+            return MouseAction::Move;
+        else if (str == "release")
+            return MouseAction::Release;
+
         return MouseAction::NoAction;
     };
 
@@ -143,8 +181,18 @@ bool injectUIEvent(QWidget* parent,
 
             auto xc = coordFromString(params[ 2 ]);
             auto yc = coordFromString(params[ 3 ]);
-            
-            return injectMouseClick(w.second, button, xc, yc, delay);
+
+            return injectMouseClick(w.second, button, xc, yc, delay, modifiers);
+        }
+        else if (action == MouseAction::DblClick)
+        {
+            if (params.size() != 4)
+                return false;
+
+            auto xc = coordFromString(params[ 2 ]);
+            auto yc = coordFromString(params[ 3 ]);
+
+            return injectMouseDblClick(w.second, button, xc, yc, delay);
         }
         else if (action == MouseAction::Rect)
         {
@@ -156,7 +204,27 @@ bool injectUIEvent(QWidget* parent,
             auto xc1 = coordFromString(params[ 4 ]);
             auto yc1 = coordFromString(params[ 5 ]);
 
-            return injectMouseRect(w.second, button, xc0, yc0, xc1, yc1, delay);
+            return injectMouseRect(w.second, button, xc0, yc0, xc1, yc1, delay, modifiers);
+        }
+        else if (action == MouseAction::Press || action == MouseAction::Move || action == MouseAction::Release)
+        {
+            //single steps of a drag, e.g. press + move without release keeps a rubber band shown
+            if (params.size() != 4)
+                return false;
+
+            auto xc = coordFromString(params[ 2 ]);
+            auto yc = coordFromString(params[ 3 ]);
+            if (!xc.valid() || !yc.valid())
+                return false;
+
+            QEvent::Type type = action == MouseAction::Press ? QEvent::MouseButtonPress :
+                                action == MouseAction::Move  ? QEvent::MouseMove :
+                                                               QEvent::MouseButtonRelease;
+            QRect r = w.second->rect();
+
+            return injectMouseStepEvent(w.second, "", type,
+                                        xc.getValue(0.0, r.width()), yc.getValue(0.0, r.height()),
+                                        button, modifiers);
         }
         else
         {
@@ -166,8 +234,35 @@ bool injectUIEvent(QWidget* parent,
     }
     else if (evt_type == "wheel")
     {
-        //@TODO
-        return false;
+        //wheel(<delta>) or wheel(<delta>,<x>,<y>), delta in eighths of a degree
+        //(one notch = 120), position defaults to the widget center
+        if (params.size() != 1 && params.size() != 3)
+            return false;
+
+        bool ok;
+        int delta = params[ 0 ].toInt(&ok);
+        if (!ok || delta == 0)
+            return false;
+
+        Coord xc, yc;
+
+        if (params.size() == 3)
+        {
+            xc = coordFromString(params[ 1 ]);
+            yc = coordFromString(params[ 2 ]);
+
+            if (!xc.valid() || !yc.valid())
+                return false;
+        }
+        else
+        {
+            xc.coord_system = Coord::CoordSystem::Percent;
+            xc.value        = 0.5;
+            yc.coord_system = Coord::CoordSystem::Percent;
+            yc.value        = 0.5;
+        }
+
+        return injectMouseWheel(w.second, delta, xc, yc);
     }
     else if (evt_type == "keys")
     {
@@ -188,9 +283,150 @@ bool injectUIEvent(QWidget* parent,
     }
     else if (evt_type == "contextmenu")
     {
-        //no parameters - posts a context menu event to the widget
-        //(at the current item for item views)
-        return injectContextMenuEvent(w.second, "", delay);
+        //optional parameter: item path (A|B|C) for tree views, else the event is
+        //posted at the current item for item views
+        if (params.size() > 1)
+            return false;
+
+        //"contextmenu()" gives one empty parameter: no item path
+        QStringList path_to_item;
+        if (params.size() == 1 && !params[ 0 ].trimmed().isEmpty())
+            path_to_item = params[ 0 ].split("|");
+
+        return injectContextMenuEvent(w.second, "", path_to_item, delay);
+    }
+    else if (evt_type == "openmenu")
+    {
+        //menu path (A|B|C) of a menu bar or a popup menu, opened without triggering an action
+        if (params.size() != 1 || params[ 0 ].trimmed().isEmpty())
+            return false;
+
+        return injectOpenMenuEvent(w.second, "", params[ 0 ].split("|"));
+    }
+    else if (evt_type == "showpopup")
+    {
+        //opens the drop-down list of a combo box without selecting an entry
+        auto combo = dynamic_cast<QComboBox*>(w.second);
+        if (!combo)
+            return false;
+
+        combo->showPopup();
+        return true;
+    }
+    else if (evt_type == "selectrows" || evt_type == "sortby" || evt_type == "scrollto")
+    {
+        auto view = dynamic_cast<QAbstractItemView*>(w.second);
+        if (!view || !view->model() || params.empty())
+            return false;
+
+        QAbstractItemModel* model = view->model();
+
+        //column by header text
+        auto columnOf = [ & ] (const QString& header)
+        {
+            for (int c = 0; c < model->columnCount(); ++c)
+                if (model->headerData(c, Qt::Horizontal).toString().trimmed() == header.trimmed())
+                    return c;
+            return -1;
+        };
+
+        if (evt_type == "selectrows")
+        {
+            //rows and row ranges, e.g. selectrows(4,8-14), or the rows containing a text, e.g. selectrows(=060.Mode-3/A)
+            QItemSelection selection;
+            for (const QString& p : params)
+            {
+                if (p.trimmed().startsWith("="))
+                {
+                    const QString text = p.trimmed().mid(1);
+                    for (int r = 0; r < model->rowCount(); ++r)
+                        for (int c = 0; c < model->columnCount(); ++c)
+                            if (model->index(r, c).data().toString().contains(text))
+                            {
+                                selection.select(model->index(r, 0), model->index(r, model->columnCount() - 1));
+                                break;
+                            }
+                    continue;
+                }
+
+                QStringList range = p.trimmed().split("-");
+                bool ok0, ok1 = true;
+                int r0 = range[ 0 ].toInt(&ok0);
+                int r1 = range.size() > 1 ? range[ 1 ].toInt(&ok1) : r0;
+                if (!ok0 || !ok1 || r0 < 0 || r1 >= model->rowCount())
+                    return false;
+
+                selection.select(model->index(r0, 0), model->index(r1, model->columnCount() - 1));
+            }
+
+            if (selection.isEmpty())
+                return false;
+
+            view->selectionModel()->select(selection, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+            view->selectionModel()->setCurrentIndex(selection.first().topLeft(), QItemSelectionModel::NoUpdate);
+            view->scrollTo(selection.first().topLeft());
+            return true;
+        }
+        else if (evt_type == "sortby")
+        {
+            //sortby(<header text>[,asc|desc])
+            int col = columnOf(params[ 0 ]);
+            if (col < 0)
+                return false;
+
+            Qt::SortOrder order = params.size() > 1 && params[ 1 ].trimmed() == "desc" ? Qt::DescendingOrder : Qt::AscendingOrder;
+            if (auto table = dynamic_cast<QTableView*>(view))
+                table->sortByColumn(col, order);
+            else if (auto tree = dynamic_cast<QTreeView*>(view))
+                tree->sortByColumn(col, order);
+            else
+                return false;
+            return true;
+        }
+        else
+        {
+            //scrollto(<row>[,<header text>]): the row (and column) at the top
+            bool ok;
+            int row = params[ 0 ].toInt(&ok);
+            int col = params.size() > 1 ? columnOf(params[ 1 ]) : 0;
+            if (!ok || row < 0 || row >= model->rowCount() || col < 0)
+                return false;
+
+            view->scrollTo(model->index(row, col), QAbstractItemView::PositionAtTop);
+            return true;
+        }
+    }
+    else if (evt_type == "drop")
+    {
+        //drop(<file>[;<file>...]): drops local files on the widget center, like a drag from a file manager
+        if (params.size() != 1 || params[ 0 ].trimmed().isEmpty())
+            return false;
+
+        QList<QUrl> urls;
+        for (const QString& f : params[ 0 ].split(";"))
+            urls.append(QUrl::fromLocalFile(f.trimmed()));
+
+        QMimeData mime;
+        mime.setUrls(urls);
+
+        QPoint pos = w.second->rect().center();
+
+        QDragEnterEvent enter(pos, Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+        QApplication::sendEvent(w.second, &enter);
+        if (!enter.isAccepted())
+            return false;
+
+        QDropEvent drop(pos, Qt::CopyAction, &mime, Qt::LeftButton, Qt::NoModifier);
+        QApplication::sendEvent(w.second, &drop);
+        return true;
+    }
+    else if (evt_type == "checkclick")
+    {
+        //tree item path (A|B|C): click on the check box drawn at the start of the item
+        if (params.size() != 1 || params[ 0 ].trimmed().isEmpty())
+            return false;
+
+        return injectTreeItemCheckClickEvent(w.second, "", params[ 0 ].split("|"), delay);
     }
     else if (evt_type == "focusout")
     {
@@ -246,7 +482,8 @@ bool injectMouseClick(QWidget* w,
                       Qt::MouseButton button,
                       const Coord& xcoord,
                       const Coord& ycoord,
-                      int delay)
+                      int delay,
+                      Qt::KeyboardModifiers modifiers)
 {
     if (!xcoord.valid() || !ycoord.valid())
         return false;
@@ -258,7 +495,48 @@ bool injectMouseClick(QWidget* w,
                             xcoord.getValue(0.0, r.width()), 
                             ycoord.getValue(0.0, r.height()), 
                             button, 
-                            delay);
+                            delay,
+                            modifiers);
+}
+
+/**
+*/
+bool injectMouseDblClick(QWidget* w,
+                         Qt::MouseButton button,
+                         const Coord& xcoord,
+                         const Coord& ycoord,
+                         int delay)
+{
+    if (!xcoord.valid() || !ycoord.valid())
+        return false;
+
+    QRect r = w->rect();
+
+    return injectDblClickEvent(w,
+                               "",
+                               xcoord.getValue(0.0, r.width()),
+                               ycoord.getValue(0.0, r.height()),
+                               button,
+                               delay);
+}
+
+/**
+*/
+bool injectMouseWheel(QWidget* w,
+                      int delta,
+                      const Coord& xcoord,
+                      const Coord& ycoord)
+{
+    if (!xcoord.valid() || !ycoord.valid())
+        return false;
+
+    QRect r = w->rect();
+
+    return injectWheelEvent(w,
+                            "",
+                            xcoord.getValue(0.0, r.width()),
+                            ycoord.getValue(0.0, r.height()),
+                            delta);
 }
 
 /**
@@ -269,7 +547,8 @@ bool injectMouseRect(QWidget* w,
                      const Coord& ycoord0,
                      const Coord& xcoord1,
                      const Coord& ycoord1,
-                     int delay)
+                     int delay,
+                     Qt::KeyboardModifiers modifiers)
 {
     if (!xcoord0.valid() || !ycoord0.valid() || !xcoord1.valid() || !ycoord1.valid())
         return false;
@@ -283,7 +562,8 @@ bool injectMouseRect(QWidget* w,
                            xcoord1.getValue(0.0, r.width()), 
                            ycoord1.getValue(0.0, r.height()), 
                            button, 
-                           delay);
+                           delay,
+                           modifiers);
 }
 
 } // namespace ui_test

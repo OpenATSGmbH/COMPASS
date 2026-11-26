@@ -17,7 +17,6 @@
 
 #include "filtermanager.h"
 
-#include "compass.h"
 #include "dbfilter.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -25,7 +24,8 @@
 #include "db_context_manager.h"
 #include "filtermanagerwidget.h"
 #include "logger.h"
-#include "viewpoint.h"
+#include "viewabledataconfig.h"
+#include "viewpointkeys.h"
 #include "utnfilter.h"
 #include "adsbqualityfilter.h"
 #include "acadfilter.h"
@@ -38,6 +38,7 @@
 #include "reftrajaccuracyfilter.h"
 #include "mlatrufilter.h"
 #include "excludedtimewindowsfilter.h"
+#include "sectorsfilter.h"
 
 #include "json.hpp"
 
@@ -48,10 +49,11 @@ using namespace nlohmann;
 //                              COMPASS* compass)
 //     : Configurable(class_name, instance_name, compass, "filter.json") ...
 
-FilterManager::FilterManager(nlohmann::json& config, COMPASS& compass)
-    : Configurable(config, &compass),
-      compass_(compass),
-      dbcontent_man_(compass.dbContentManager()),
+FilterManager::FilterManager(nlohmann::json& config,
+                             Configurable& parent,
+                             DBContentManager& dbcont_man)
+    : Configurable(config, &parent),
+      dbcontent_man_(dbcont_man),
       var_resolver_(dbcontent_man_)
 {
     logdbg;
@@ -64,9 +66,35 @@ FilterManager::FilterManager(nlohmann::json& config, COMPASS& compass)
     sortFilters();
 }
 
+/**
+ * Sets the peer managers, called by the composition root right after all managers were created.
+ */
+void FilterManager::setManagers(context::DBContextManager& ctx_man,
+                                DBInterface& db_interface)
+{
+    ctx_man_      = &ctx_man;
+    db_interface_ = &db_interface;
+}
+
+/**
+ */
+bool FilterManager::checkWired() const
+{
+    return ctx_man_ && db_interface_;
+}
+
 context::DBContextManager& FilterManager::dbContextManager()
 {
-    return compass_.dbContextManager();
+    traced_assert(ctx_man_);
+    return *ctx_man_;
+}
+
+/**
+ */
+DBInterface& FilterManager::dbInterface()
+{
+    traced_assert(db_interface_);
+    return *db_interface_;
 }
 
 FilterManager::~FilterManager()
@@ -94,7 +122,7 @@ void FilterManager::useFilters(bool use_filters)
         widget_->updateUseFilters();
 }
 
-void FilterManager::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult FilterManager::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
     const auto& instance_name = Configuration::getInstanceName(child_json);
@@ -103,7 +131,7 @@ void FilterManager::generateSubConfigurable(nlohmann::json& child_json)
     {
         logerr << "filter " << instance_name
                << " already present";
-        return;
+        return GenerateResult::Skipped;
     }
 
     logdbg << "filter class_name " << class_name << " instance_name " << instance_name;
@@ -169,14 +197,20 @@ void FilterManager::generateSubConfigurable(nlohmann::json& child_json)
         MLATRUFilter* filter = new MLATRUFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
+    else if (class_name == "SectorsFilter")
+    {
+        SectorsFilter* filter = new SectorsFilter(child_json, this, var_resolver_);
+        filters_.emplace_back(filter);
+    }
     else if (class_name == "ExcludedTimeWindowsFilter")
     {
         ExcludedTimeWindowsFilter* filter = new ExcludedTimeWindowsFilter(child_json, this, var_resolver_);
         filters_.emplace_back(filter);
     }
     else
-        throw std::runtime_error("FilterManager: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 bool FilterManager::checkDBContent (const std::string& dbcontent_name)
@@ -206,7 +240,7 @@ void FilterManager::checkSubConfigurables()
                          [&classid](const unique_ptr<DBFilter>& x) { return x->className() == classid;}) == filters_.end())
         {
             auto& child_json = addNewSubConfiguration(classid, classid+"0");
-            generateSubConfigurable(child_json);
+            createSubConfigurable(child_json);
         }
     };
 
@@ -216,6 +250,7 @@ void FilterManager::checkSubConfigurables()
     ensureFilter("RefTrajAccuracyFilter");
     ensureFilter("MLATRUFilter");
     ensureFilter("ExcludedTimeWindowsFilter");
+    ensureFilter("SectorsFilter");
 }
 
 std::string FilterManager::getSQLCondition(const std::string& dbcontent_name, dbContent::VariableSet& read_set)
@@ -341,42 +376,59 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
     loginf;
     traced_assert(vp);
 
-    const json& data = vp->data();
+    const json* load_data = view_point_load::loadData(vp->data());
 
-    auto& ctx_man = compass_.dbContextManager();
-
-    // add all data source types that need loading
-    if (data.contains(ViewPoint::VP_DS_TYPES_KEY)) // the listed ones should be loaded
+    if (load_data)
     {
-        const json& data_source_types  = data.at(ViewPoint::VP_DS_TYPES_KEY);
+        std::string error = view_point_load::checkLoadData(*load_data);
 
+        if (!error.empty())
+        {
+            logerr << "view point data not loaded: " << error;
+            load_data = nullptr;
+        }
+    }
+
+    if (!load_data)
+    {
+        logdbg << "load no data";
+
+        loadNoData();
+        return;
+    }
+
+    auto& ctx_man = dbContextManager();
+
+    const json& data_source_types = load_data->at(ViewPointKeys::VP_DS_TYPES_KEY);
+
+    if (data_source_types.is_array())
+    {
         std::set<std::string> ds_types = data_source_types.get<std::set<std::string>>();
 
         logdbg << "load " << ds_types.size() << " ds_types";
 
         ctx_man.setLoadOnlyDSTypes(ds_types);
     }
-    else // all should be loaded
+    else
     {
         logdbg << "load all ds_types";
 
         ctx_man.setLoadDSTypes(true);
     }
 
-    if (data.contains(ViewPoint::VP_SELECTED_RECNUMS_KEY))
+    if (load_data->contains(ViewPointKeys::VP_SELECTED_RECNUMS_KEY))
     {
-        auto& selected = data.at(ViewPoint::VP_SELECTED_RECNUMS_KEY);
+        auto& selected = load_data->at(ViewPointKeys::VP_SELECTED_RECNUMS_KEY);
         traced_assert(selected.is_array());
-        std::vector<unsigned long> vec = selected.get<std::vector<unsigned long>>();
+        std::vector<std::uint64_t> vec = selected.get<std::vector<std::uint64_t>>();
 
         dbcontent_man_.storeSelectedRecNums(vec);
     }
 
-    // add all data sources that need loading
-    if (data.contains(ViewPoint::VP_DS_KEY)) // the listed ones should be loaded
-    {
-        const json& data_sources  = data.at(ViewPoint::VP_DS_KEY);
+    const json& data_sources = load_data->at(ViewPointKeys::VP_DS_KEY);
 
+    if (!data_sources.is_string())
+    {
         std::map<unsigned int, std::set<unsigned int>> ds_ids
                 = data_sources.get<std::map<unsigned int, std::set<unsigned int>>>(); // ds_id + line strs
 
@@ -384,7 +436,7 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
 
         ctx_man.setLoadOnlyDataSources(ds_ids);
     }
-    else // all should be loaded
+    else
     {
         logdbg << "load all ds_ids";
 
@@ -393,13 +445,13 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
     }
 
     // add filters
-    use_filters_ = data.contains(ViewPoint::VP_FILTERS_KEY);
+    use_filters_ = load_data->contains(ViewPointKeys::VP_FILTERS_KEY);
 
     disableAllFilters();
 
-    if (data.contains(ViewPoint::VP_FILTERS_KEY))
+    if (use_filters_)
     {
-        const json& filters = data.at(ViewPoint::VP_FILTERS_KEY);
+        const json& filters = load_data->at(ViewPointKeys::VP_FILTERS_KEY);
 
         logdbg << "filter data '" << filters.dump(4) << "'";
 
@@ -418,6 +470,12 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
                 continue;
             }
 
+            if ((*it)->unusable())
+            {
+                logwrn << "filter '" << filter_name << "' is unusable, view point conditions ignored";
+                continue;
+            }
+
             (*it)->setActive(true);
             (*it)->loadViewPointConditions(filters);
         }
@@ -427,23 +485,42 @@ void FilterManager::showViewPointSlot (const ViewableDataConfig* vp)
         widget_->updateUseFilters();
 }
 
+void FilterManager::loadNoData()
+{
+    // no data source types loads nothing, the data source selection of the user stays unchanged
+    dbContextManager().setLoadOnlyDSTypes({});
+
+    use_filters_ = false;
+    disableAllFilters();
+
+    if (widget_)
+        widget_->updateUseFilters();
+}
+
 void FilterManager::setConfigInViewPoint (nlohmann::json& data)
 {
     loginf;
 
-    auto& ctx_man = compass_.dbContextManager();
+    auto& ctx_man = dbContextManager();
 
-    if (ctx_man.dsTypeFiltered()) // ds types filters active
-        data[ViewPoint::VP_DS_TYPES_KEY] = ctx_man.wantedDSTypes(); // add all data sources that need loading
+    json& load_data = data[ViewPointKeys::VP_LOAD_DATA_KEY];
+    load_data = json::object();
 
-    if (ctx_man.loadDataSourcesFiltered()) // ds filters active
-        data[ViewPoint::VP_DS_KEY] = ctx_man.getLoadDataSources(); // add all data sources that need loading
+    if (ctx_man.dsTypeFiltered())
+        load_data[ViewPointKeys::VP_DS_TYPES_KEY] = ctx_man.wantedDSTypes();
+    else
+        load_data[ViewPointKeys::VP_DS_TYPES_KEY] = ViewPointKeys::VP_LOAD_ALL;
+
+    if (ctx_man.loadDataSourcesFiltered())
+        load_data[ViewPointKeys::VP_DS_KEY] = ctx_man.getLoadDataSources();
+    else
+        load_data[ViewPointKeys::VP_DS_KEY] = ViewPointKeys::VP_LOAD_ALL;
 
     // add filters
     if (use_filters_)
     {
-        data[ViewPoint::VP_FILTERS_KEY] = json::object();
-        json& filters = data.at(ViewPoint::VP_FILTERS_KEY);
+        load_data[ViewPointKeys::VP_FILTERS_KEY] = json::object();
+        json& filters = load_data.at(ViewPointKeys::VP_FILTERS_KEY);
 
         for (auto& fil_it : filters_)
         {
@@ -482,7 +559,7 @@ void FilterManager::databaseOpenedSlot()
 
         TimestampFilter* ts_filter = dynamic_cast<TimestampFilter*>(getFilter("Timestamp"));
         traced_assert(ts_filter);
-        ts_filter->reset(minmax_ts.first, minmax_ts.second);
+        ts_filter->fitToTimeRange(minmax_ts.first, minmax_ts.second);
 
         if (hasFilter("Excluded Time Windows"))
         {
@@ -499,6 +576,19 @@ void FilterManager::databaseOpenedSlot()
 
     if (hasFilter("Time of Day"))
         getFilter("Time of Day")->widget()->update();
+
+    //the context of the database is active now, drop sector layers of a previous context
+    if (hasFilter("Sectors"))
+    {
+        SectorsFilter* sectors_filter = dynamic_cast<SectorsFilter*>(getFilter("Sectors"));
+        traced_assert(sectors_filter);
+
+        bool was_unusable = sectors_filter->unusable();
+        sectors_filter->removeLayersNotInContext();
+
+        if (was_unusable != sectors_filter->unusable())
+            emit changedFiltersSignal();
+    }
 }
 
 void FilterManager::databaseClosedSlot()
@@ -507,6 +597,24 @@ void FilterManager::databaseClosedSlot()
 
     if (widget_)
         widget_->setDisabled(true);
+}
+
+void FilterManager::sectorsChangedSlot()
+{
+    loginf;
+
+    if (!hasFilter("Sectors"))
+        return;
+
+    SectorsFilter* filter = dynamic_cast<SectorsFilter*>(getFilter("Sectors"));
+    traced_assert(filter);
+
+    //only the layers of the active context count, drop all others
+    bool was_unusable = filter->unusable();
+    unsigned int num_removed = filter->removeLayersNotInContext();
+
+    if (num_removed || was_unusable != filter->unusable())
+        emit changedFiltersSignal();
 }
 
 void FilterManager::dataSourcesChangedSlot()

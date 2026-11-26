@@ -19,6 +19,8 @@
 
 #include "layertreeitem.h"
 
+class AnnotationsRootItem;
+
 /**
  * Plot-group container under AnnotationsRootItem.
  *
@@ -29,12 +31,25 @@
  * Non-checkable: selection lives on the leaves (radio-style). Mirrors the
  * "Plot Group" combo's role in the previous variableviewannotationwidget
  * UI, which was display-only.
+ *
+ * Its leaves are updated in place from the root (AnnotationsRootItem::updateFrom()).
  */
 class AnnotationGroupItem : public LayerTreeItem
 {
 public:
-    explicit AnnotationGroupItem(const std::string& name);
+    AnnotationGroupItem(const std::string& name,
+                        const std::string& update_key,
+                        const AnnotationsRootItem* root);
     ~AnnotationGroupItem() override = default;
 
     bool canHide() const override { return false; }
+    std::string updateKey() const override { return update_key_; }
+
+    std::optional<std::vector<std::string>> childKeys() const override;
+    std::unique_ptr<LayerTreeItem> createChild(const std::string& key) override;
+    bool updateChild(LayerTreeItem& child) override;
+
+private:
+    std::string                update_key_;
+    const AnnotationsRootItem* root_ = nullptr; // holds the annotations during an update
 };

@@ -17,8 +17,6 @@
 
 #pragma once
 
-class COMPASS;
-
 #include "rtcommand_result.h"
 
 #include <memory>
@@ -27,6 +25,8 @@ class COMPASS;
 
 namespace rtcommand
 {
+
+class IRTCommandHost;
 
 struct RTCommand;
 class  RTCommandChain;
@@ -42,7 +42,7 @@ class RTCommandRunner
 public:
     typedef std::vector<RTCommandResult> Results;
 
-    explicit RTCommandRunner(COMPASS& compass);
+    explicit RTCommandRunner(IRTCommandHost& host);
     virtual ~RTCommandRunner();
 
     std::future<Results> runCommand(std::unique_ptr<RTCommand>&& cmd);

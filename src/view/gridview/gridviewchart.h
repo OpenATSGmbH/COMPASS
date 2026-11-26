@@ -17,43 +17,27 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "chartview.h"
 
-#include <QLabel>
-#include <QPixmap>
+#include <QPointer>
 
-class GridViewDataWidget;
-
-/**
- */
-class SimpleGridViewChart : public QLabel
-{
-public:
-    SimpleGridViewChart(QWidget* parent = nullptr);
-    virtual ~SimpleGridViewChart();
-
-    void setGrid(const QImage& grid_rendering);
-
-protected:
-    virtual void resizeEvent(QResizeEvent* evt) override;
-
-private:
-    void updateChart();
-
-    QPixmap grid_rendering_;
-};
+class GridViewRenderWidget;
 
 namespace QtCharts
 {
 
 /**
+ * Chart view of the grid render widget. Paints the background, the grid image and the sectors above
+ * the chart, and handles the mouse for the tools of the render widget.
  */
-class GridViewChart : public ChartView
+class COMPASS_VIEW_API GridViewChart : public ChartView
 {
     Q_OBJECT
 public:
-    GridViewChart (GridViewDataWidget* data_widget,
-                   QChart* chart, 
+    GridViewChart (GridViewRenderWidget* render_widget,
+                   QChart* chart,
                    QWidget* parent = nullptr);
     virtual ~GridViewChart();
 
@@ -62,8 +46,12 @@ public:
     void resetZoom();
     void zoom(const QPointF& p1, const QPointF& p2);
 
-signals:
-    void rectangleSelectedSignal (QPointF p1, QPointF p2);
+    /// current axis ranges (x = first axis, y = second axis), empty without axes
+    QRectF viewLonLat() const;
+    /// with an active background: aspect ratio of the plot and zoom / pan limits applied to the axis ranges
+    void applyViewLimits();
+    /// sets the axis ranges (x = first axis, y = second axis), limits applied
+    void setView(const QRectF& r);
 
 protected:
     void sendSelectedRegion();
@@ -76,7 +64,16 @@ protected:
 
     virtual void paintCustomItems(QPaintEvent* e, QPainter& painter) override;
 
-    GridViewDataWidget* data_widget_ {nullptr};
+    void paintGrid(QPainter& painter, const QRectF& plot_area);
+    void setAxisRanges(const QRectF& r);
+    /// the user changed zoom or position => kept by the render widget (e.g. across a load)
+    void userViewChanged();
+
+    // a released chart view is deleted later, it can outlive its render widget
+    QPointer<GridViewRenderWidget> render_widget_;
+
+    bool applying_limits_ = false;
+    bool limits_pending_  = false; // applyViewLimits() scheduled after a plot area change
 
     QPoint  p1_;
     QPointF p1_data_;

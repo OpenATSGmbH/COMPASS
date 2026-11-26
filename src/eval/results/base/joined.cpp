@@ -15,28 +15,29 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/base/joined.h"
-#include "eval/results/base/single.h"
-#include "eval/results/base/result_t.h"
+#include "results/base/joined.h"
+#include "results/base/single.h"
+#include "results/base/result_t.h"
+#include "results/base/featuredefinition.h"
 
-#include "task/result/report/sectioncontenttable.h"
-#include "task/result/report/section.h"
+#include "report/sectioncontenttable.h"
+#include "report/section.h"
 
-#include "eval/results/evalsectionid.h"
+#include "results/evalsectionid.h"
 
-#include "eval/requirement/base/base.h"
+#include "requirement/base/base.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
+#include "appstate.h"
 
-#include "view/points/viewpointgenerator.h"
-#include "view/points/viewpoint.h"
+#include "points/viewpointgenerator.h"
+#include "points/viewpoint.h"
 
-#include "view/gridview/grid2d.h"
-#include "view/gridview/grid2dlayer.h"
-#include "view/gridview/grid2d_defs.h"
+#include "gridview/grid2d.h"
+#include "gridview/grid2dlayer.h"
+#include "gridview/grid2d_defs.h"
 
-#include "compass.h"
 #include "tbbhack.h"
 
 #include <QApplication>
@@ -49,7 +50,6 @@ namespace EvaluationRequirementResult
 const std::string Joined::SectorTargetsTableName        = "Targets";
 const std::string Joined::SectorOverviewTableName       = "Sector Overview";
 const std::string Joined::SectorOverviewID              = "Sector Overview";
-const int         Joined::SectorOverviewRenderDelayMSec = 100;
 
 /**
 */
@@ -192,7 +192,8 @@ void Joined::addSectorToOverviewTable(std::shared_ptr<ResultReport::Report> repo
 
     auto ref = getRequirementSectionID(); // this gives the associated requirement section link 
                                           // needed to retrieve the correct section from the report
-    auto fig = SectorOverviewID;          // overview figure added in addSectorDetailsToReport()
+    auto fig = hasOverviewData() ? SectorOverviewID     // overview figure added in addSectorDetailsToReport()
+                                 : std::string();       // no overview figure, no link
 
     if (must_hold_for_any_target.has_value() && must_hold_for_any_target.value())
     {
@@ -338,8 +339,9 @@ void Joined::addSectorDetailsToReport(std::shared_ptr<ResultReport::Report> repo
     for (const auto& info : infos_condition)
         sec_det_table.addRow({ info.info_name, info.info_comment, info.info_value });
 
-    // figure
-    addOverview(sector_section);
+    // figure, left out if it would show nothing
+    if (hasOverviewData())
+        addOverview(sector_section);
 }
 
 /**
@@ -353,7 +355,7 @@ bool Joined::exportAsCSV() const
 
     QFileDialog dialog(QApplication::activeWindow());
     dialog.setFileMode(QFileDialog::AnyFile);
-    dialog.setDirectory(calculator_.manager().compass().lastUsedPath().c_str());
+    dialog.setDirectory(calculator_.manager().appState().lastUsedPath().c_str());
     dialog.setNameFilter("CSV Files (*.csv)");
     dialog.setDefaultSuffix("csv");
     dialog.setAcceptMode(QFileDialog::AcceptMode::AcceptSave);
@@ -380,12 +382,21 @@ bool Joined::exportAsCSV() const
 
 /**
 */
+bool Joined::hasOverviewData() const
+{
+    //the overview holds the custom annotations only (createAnnotations()). Their data are the details of the
+    //assessed updates, without any the result has no value and the grids and histograms stay empty.
+    return !getCustomAnnotationDefinitions().definitions().empty() && result().has_value();
+}
+
+/**
+*/
 void Joined::addOverview (ResultReport::Section& section,
                           const std::string& name)
 {
     section.addFigure(SectorOverviewID, 
                       ResultReport::SectionContentViewable([this]() { return this->viewableOverviewData(); })
-                        .setCaption(name).setRenderDelayMS(SectorOverviewRenderDelayMSec));
+                        .setCaption(name));
 }
 
 /**
@@ -562,17 +573,17 @@ std::shared_ptr<nlohmann::json::object_t> Joined::getOrCreateCachedViewable() co
                << "requirement '" << requirement_->name() << "' " 
                << "sector '" << sector_layer_.name() << "'..."; 
 
-        //cache all needed single details in parallel
+        //cache all needed single details
+        //serial by design: the details are read from the report table through the single
+        //database connection, see readme_dynamic_dbcontent.md decision 12
         auto used_results = usedSingleResults();
 
         unsigned int n = used_results.size();
 
         std::vector<Single::TemporaryDetails> temp_details(n);
 
-        tbb::parallel_for(uint(0), n, [ & ] (unsigned int idx)
-        {
+        for (unsigned int idx = 0; idx < n; ++idx)
             temp_details[ idx ] = used_results[ idx ]->temporaryDetails();
-        });
 
         //create new viewable
         viewable_ = createViewable(AnnotationOptions().overview());

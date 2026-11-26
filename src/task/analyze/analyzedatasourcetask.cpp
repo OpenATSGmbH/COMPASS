@@ -19,6 +19,7 @@
 #include "dialogs.h"
 #include "analyzedatasourcedialog.h"
 #include "analyze_commands.h"
+#include "rtcommand_registry.h"
 #include "analysisdataset.h"
 #include "datasourceinspectorbase.h"
 #include "inspectorsettingsbase.h"
@@ -26,20 +27,16 @@
 #include "mlatcoverageinspector.h"
 #include "adsbdataiteminspector.h"
 #include "adsbcoverageinspector.h"
+#include "smrdataiteminspector.h"
+#include "smrcoverageinspector.h"
 
 #include <array>
 #include <cmath>
 
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "mlataccuracyinspector.h"
-#include "mlatrucoverageinspector.h"
-#include "mlatrueffectinspector.h"
-#include "adsbaccuracyinspector.h"
-#endif
-
-#include "compass.h"
-#include "mainwindow.h"
+#include "imainwindow.h"
 #include "taskmanager.h"
+#include "evaluationmanager.h"
+#include "evaluationconstraints.h"
 #include "db_context_manager.h"
 #include "sectorlayer.h"
 #include "data_source.h"
@@ -54,6 +51,10 @@
 #include "stringconv.h"
 #include "system.h"
 #include "taskresult.h"
+#include "sectioncontentfigure.h"
+#include "reportfigure.h"
+#include "viewpointgenerator.h"
+#include "viewpointkeys.h"
 #include "traced_assert.h"
 
 #include "json.hpp"
@@ -66,9 +67,103 @@
 #include <QProgressDialog>
 #include <QThread>
 
-#include <atomic>
 #include <chrono>
 #include <future>
+
+/**
+ * Notice: the settings of the plugin inspectors (ExtraAnalysis) are listed without creator, so a build without the
+ * plugin skips them when reading a config. Out of line: one factory per process.
+*/
+AnalyzeDataSourceTask::inspectorSettingsFactoryType& AnalyzeDataSourceTask::inspectorSettingsFactory()
+{
+    typedef inspectorSettingsFactoryType Factory;
+
+    static Factory factory = {
+        { "MLATDataItemInspectorSettings",    &Factory::createDefault<MLATDataItemInspectorSettings> },
+        { "MLATCoverageInspectorSettings",    &Factory::createDefault<MLATCoverageInspectorSettings> },
+        { "ADSBDataItemInspectorSettings",    &Factory::createDefault<ADSBDataItemInspectorSettings> },
+        { "ADSBCoverageInspectorSettings",    &Factory::createDefault<ADSBCoverageInspectorSettings> },
+        { "SMRDataItemInspectorSettings",     &Factory::createDefault<SMRDataItemInspectorSettings>  },
+        { "SMRCoverageInspectorSettings",     &Factory::createDefault<SMRCoverageInspectorSettings>  },
+
+        { "MLATAccuracyInspectorSettings",    nullptr, "", "", CreationSource::Plugin },
+        { "MLATRUCoverageInspectorSettings",  nullptr, "", "", CreationSource::Plugin },
+        { "MLATRUEffectInspectorSettings",    nullptr, "", "", CreationSource::Plugin },
+        { "ADSBAccuracyInspectorSettings",    nullptr, "", "", CreationSource::Plugin },
+        { "SMRAccuracyInspectorSettings",     nullptr, "", "", CreationSource::Plugin },
+        { "SMRUnassociatedInspectorSettings", nullptr, "", "", CreationSource::Plugin } };
+
+    return factory;
+}
+
+/**
+ * Notice: holds the built-in inspectors from the start, plugins add theirs at the plugin slots (pluginSlot()).
+ * Out of line: one registry per process.
+*/
+AnalyzeDataSourceTask::inspectorRegistryType& AnalyzeDataSourceTask::inspectorRegistry()
+{
+    auto createBuiltIns = [ ] ()
+    {
+        inspectorRegistryType registry;
+
+        registry.add(InspectorSlot::MLATDataItem,
+                     { "MLATDataItemInspectorSettings",
+                       &createInspector<MLATDataItemInspector, MLATDataItemInspectorSettings> });
+        registry.add(InspectorSlot::MLATCoverage,
+                     { "MLATCoverageInspectorSettings",
+                       &createInspector<MLATCoverageInspector, MLATCoverageInspectorSettings> });
+
+        registry.add(InspectorSlot::ADSBDataItem,
+                     { "ADSBDataItemInspectorSettings",
+                       &createInspector<ADSBDataItemInspector, ADSBDataItemInspectorSettings> });
+        registry.add(InspectorSlot::ADSBCoverage,
+                     { "ADSBCoverageInspectorSettings",
+                       &createInspector<ADSBCoverageInspector, ADSBCoverageInspectorSettings> });
+
+        registry.add(InspectorSlot::SMRDataItem,
+                     { "SMRDataItemInspectorSettings",
+                       &createInspector<SMRDataItemInspector, SMRDataItemInspectorSettings> });
+        registry.add(InspectorSlot::SMRCoverage,
+                     { "SMRCoverageInspectorSettings",
+                       &createInspector<SMRCoverageInspector, SMRCoverageInspectorSettings> });
+
+        return registry;
+    };
+
+    static inspectorRegistryType registry = createBuiltIns();
+    return registry;
+}
+
+/**
+ * Notice: asserts that the slot stays in the DS type's range (below the next hundred).
+*/
+AnalyzeDataSourceTask::InspectorSlot AnalyzeDataSourceTask::pluginSlot(InspectorSlot plugin_slot, unsigned int index)
+{
+    traced_assert(plugin_slot == InspectorSlot::MLATPlugin ||
+                  plugin_slot == InspectorSlot::ADSBPlugin ||
+                  plugin_slot == InspectorSlot::SMRPlugin);
+
+    const unsigned int base  = static_cast<unsigned int>(plugin_slot);
+    const unsigned int value = base + index;
+    traced_assert(value / 100 == base / 100);
+
+    return static_cast<InspectorSlot>(value);
+}
+
+/**
+*/
+std::string AnalyzeDataSourceTask::slotDSType(InspectorSlot slot)
+{
+    switch (static_cast<unsigned int>(slot) / 100)
+    {
+        case 1: return "MLAT";
+        case 2: return "ADSB";
+        case 3: return "SMR";
+    }
+
+    traced_assert_msg(false, "inspector slot outside the DS type ranges");
+    return {};
+}
 
 AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager* parent,
                                              const std::string& ds_type_default,
@@ -95,8 +190,13 @@ AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager
     registerParameter("use_max_fl",                 &use_max_fl_,                 use_max_fl_);
     registerParameter("max_fl",                     &max_fl_,                     max_fl_);
 
+    registerParameter("use_eval_exclusions",        &use_eval_exclusions_,        use_eval_exclusions_);
+
     registerParameter("limit_by_sectors",           &limit_by_sectors_,           limit_by_sectors_);
     registerParameter("used_sectors",               &used_sectors_,               nlohmann::json::object());
+
+    registerParameter(ReportFigureBackground::ParameterName, &report_figure_background_, nlohmann::json::object());
+    registerParameter(ReportFigureOptions::ParameterName, &report_figure_options_, nlohmann::json::object());
 
     tooltip_ = "Analyze a chosen data source from multiple angles "
                "(data items, sensor coverage / PD, position accuracy).";
@@ -106,124 +206,41 @@ AnalyzeDataSourceTask::AnalyzeDataSourceTask(nlohmann::json& config, TaskManager
     // The runtime-command registry is process-global; initialize it once from
     // the primary (MLAT) instance to avoid a double registration.
     if (ds_type_ == "MLAT")
-        init_analyze_commands(compass());
+        init_analyze_commands(rtcommand::RTCommandRegistry::instance(), manager());
 }
 
 AnalyzeDataSourceTask::~AnalyzeDataSourceTask() = default;
 
-void AnalyzeDataSourceTask::generateSubConfigurable(nlohmann::json& child_json)
+/**
+ * Takes over the inspector settings created by inspectorSettingsFactory(), by class name.
+*/
+void AnalyzeDataSourceTask::childCreated(Configurable* child)
 {
-    const auto& class_name = Configuration::getClassName(child_json);
+    auto settings = dynamic_cast<InspectorSettingsBase*>(child);
+    traced_assert(settings);
+    traced_assert(!inspector_settings_.count(settings->className()));
 
-    if (class_name == "MLATDataItemInspectorSettings")
-    {
-        traced_assert(!data_item_settings_);
-        data_item_settings_.reset(new MLATDataItemInspectorSettings(child_json, this));
-        traced_assert(data_item_settings_);
-    }
-    else if (class_name == "MLATCoverageInspectorSettings")
-    {
-        traced_assert(!coverage_settings_);
-        coverage_settings_.reset(new MLATCoverageInspectorSettings(child_json, this));
-        traced_assert(coverage_settings_);
-    }
-    else if (class_name == "ADSBDataItemInspectorSettings")
-    {
-        traced_assert(!adsb_data_item_settings_);
-        adsb_data_item_settings_.reset(new ADSBDataItemInspectorSettings(child_json, this));
-        traced_assert(adsb_data_item_settings_);
-    }
-    else if (class_name == "ADSBCoverageInspectorSettings")
-    {
-        traced_assert(!adsb_coverage_settings_);
-        adsb_coverage_settings_.reset(new ADSBCoverageInspectorSettings(child_json, this));
-        traced_assert(adsb_coverage_settings_);
-    }
-#if USE_EXPERIMENTAL_SOURCE == true
-    else if (class_name == "MLATAccuracyInspectorSettings")
-    {
-        traced_assert(!accuracy_settings_);
-        accuracy_settings_.reset(new MLATAccuracyInspectorSettings(child_json, this));
-        traced_assert(accuracy_settings_);
-    }
-    else if (class_name == "MLATRUCoverageInspectorSettings")
-    {
-        traced_assert(!ru_coverage_settings_);
-        ru_coverage_settings_.reset(new MLATRUCoverageInspectorSettings(child_json, this));
-        traced_assert(ru_coverage_settings_);
-    }
-    else if (class_name == "MLATRUEffectInspectorSettings")
-    {
-        traced_assert(!ru_effect_settings_);
-        ru_effect_settings_.reset(new MLATRUEffectInspectorSettings(child_json, this));
-        traced_assert(ru_effect_settings_);
-    }
-    else if (class_name == "ADSBAccuracyInspectorSettings")
-    {
-        traced_assert(!adsb_accuracy_settings_);
-        adsb_accuracy_settings_.reset(new ADSBAccuracyInspectorSettings(child_json, this));
-        traced_assert(adsb_accuracy_settings_);
-    }
-#endif
-    else
-    {
-        throw std::runtime_error("AnalyzeDataSourceTask: generateSubConfigurable: "
-                                 "unknown class_name " + class_name);
-    }
+    inspector_settings_[ settings->className() ].reset(settings);
 }
 
+/**
+ * Each task instance is bound to one DS type and only creates the settings of that type's inspectors (the
+ * factory still accepts every known settings class, so a persisted child of another type loads).
+*/
 void AnalyzeDataSourceTask::checkSubConfigurables()
 {
-    // Each task instance is bound to one DSType and only creates that DSType's
-    // inspector-settings sub-configs. generateSubConfigurable() above still
-    // accepts any known class name so a persisted child of either set loads.
-    if (ds_type_ == "ADSB")
+    for (const auto& slot : inspectorRegistry().keys())
     {
-        if (!adsb_data_item_settings_)
-            generateSubConfigurableFromConfig("ADSBDataItemInspectorSettings",
-                                              "ADSBDataItemInspectorSettings0");
-        traced_assert(adsb_data_item_settings_);
+        if (slotDSType(slot) != ds_type_)
+            continue;
 
-        if (!adsb_coverage_settings_)
-            generateSubConfigurableFromConfig("ADSBCoverageInspectorSettings",
-                                              "ADSBCoverageInspectorSettings0");
-        traced_assert(adsb_coverage_settings_);
+        const std::string& settings_class = inspectorRegistry().creator(slot).settings_class;
+        if (inspector_settings_.count(settings_class))
+            continue;
 
-#if USE_EXPERIMENTAL_SOURCE == true
-        if (!adsb_accuracy_settings_)
-            generateSubConfigurableFromConfig("ADSBAccuracyInspectorSettings",
-                                              "ADSBAccuracyInspectorSettings0");
-        traced_assert(adsb_accuracy_settings_);
-#endif
-        return;
+        createSubConfigurableFromConfig(settings_class, settings_class + "0");
+        traced_assert(inspector_settings_.count(settings_class));
     }
-
-    if (!data_item_settings_)
-        generateSubConfigurableFromConfig("MLATDataItemInspectorSettings",
-                                          "MLATDataItemInspectorSettings0");
-    traced_assert(data_item_settings_);
-
-    if (!coverage_settings_)
-        generateSubConfigurableFromConfig("MLATCoverageInspectorSettings",
-                                          "MLATCoverageInspectorSettings0");
-    traced_assert(coverage_settings_);
-
-#if USE_EXPERIMENTAL_SOURCE == true
-    if (!accuracy_settings_)
-        generateSubConfigurableFromConfig("MLATAccuracyInspectorSettings",
-                                          "MLATAccuracyInspectorSettings0");
-    traced_assert(accuracy_settings_);
-
-    if (!ru_coverage_settings_)
-        generateSubConfigurableFromConfig("MLATRUCoverageInspectorSettings",
-                                          "MLATRUCoverageInspectorSettings0");
-    traced_assert(ru_coverage_settings_);
-
-    if (!ru_effect_settings_)
-        generateSubConfigurableFromConfig("MLATRUEffectInspectorSettings",
-                                          "MLATRUEffectInspectorSettings0");
-    traced_assert(ru_effect_settings_);
-#endif
 }
 
 void AnalyzeDataSourceTask::initTask()
@@ -232,7 +249,7 @@ void AnalyzeDataSourceTask::initTask()
 
     // A new active context exposes a different data-source set, so any
     // previously-saved custom report name will no longer match - drop it.
-    connect(&compass().dbContextManager(),
+    connect(&manager().dbContextManager(),
             &context::DBContextManager::activeContextChangedSignal,
             this, [this]() { resetCustomReportName(); });
 }
@@ -243,6 +260,11 @@ Result AnalyzeDataSourceTask::applyJSONParameters(const nlohmann::json& params_j
 
     if (!params_json.is_object())
         return Configurable::applyJSONParameters(params_json);
+
+    for (const std::string& error : { ReportFigureBackground::checkParameter(params_json),
+                                      ReportFigureOptions::checkParameter(params_json) })
+        if (!error.empty())
+            return Result::failed(error);
 
     if (!params_json.contains(kInspectorSettingsKey))
         return Configurable::applyJSONParameters(params_json);
@@ -274,29 +296,68 @@ Result AnalyzeDataSourceTask::applyJSONParameters(const nlohmann::json& params_j
     return Configurable::applyJSONParameters(rest);
 }
 
+Result AnalyzeDataSourceTask::applyStoredConfiguration(const nlohmann::json& config)
+{
+    if (!config.is_object()
+        || !config.contains(Configuration::ParameterSection)
+        || !config.at(Configuration::ParameterSection).is_object())
+        return Result::failed("Stored configuration has no parameters");
+
+    auto res = applyJSONParameters(config.at(Configuration::ParameterSection));
+    if (!res.ok())
+        return res;
+
+    if (!config.contains("sub_configs") || !config.at("sub_configs").is_array())
+        return Result::succeeded();
+
+    // inspector settings are the sub-configurations named "<InspectorClassName>Settings"
+    static const std::string kSettingsSuffix = "Settings";
+
+    for (const auto& sub : config.at("sub_configs"))
+    {
+        if (!sub.is_object()
+            || !sub.contains("class_name")
+            || !sub.contains(Configuration::ParameterSection)
+            || !sub.at(Configuration::ParameterSection).is_object())
+            continue;
+
+        const std::string class_name = sub.at("class_name");
+        if (class_name.size() <= kSettingsSuffix.size()
+            || class_name.compare(class_name.size() - kSettingsSuffix.size(), kSettingsSuffix.size(), kSettingsSuffix) != 0)
+            continue;
+
+        const std::string inspector_class = class_name.substr(0, class_name.size() - kSettingsSuffix.size());
+
+        DataSourceInspectorBase* ins = inspector(inspector_class);
+        if (!ins)
+        {
+            logwrn << "stored configuration names unknown inspector '" << inspector_class << "'";
+            continue;
+        }
+
+        res = ins->settings().applyJSONParameters(sub.at(Configuration::ParameterSection));
+        if (!res.ok())
+            return Result::failed("inspector '" + inspector_class + "': " + res.error());
+    }
+
+    return Result::succeeded();
+}
+
 void AnalyzeDataSourceTask::registerInspectors()
 {
     inspectors_.clear();
 
-    if (ds_type_ == "ADSB")
+    // registry order = slot order => the inspectors of this DS type in dialog / report order
+    for (const auto& slot : inspectorRegistry().keys())
     {
-        inspectors_.emplace_back(new ADSBDataItemInspector(*this, *adsb_data_item_settings_));
-        inspectors_.emplace_back(new ADSBCoverageInspector(*this, *adsb_coverage_settings_));
+        if (slotDSType(slot) != ds_type_)
+            continue;
 
-#if USE_EXPERIMENTAL_SOURCE == true
-        inspectors_.emplace_back(new ADSBAccuracyInspector(*this, *adsb_accuracy_settings_));
-#endif
-        return;
+        const auto& entry = inspectorRegistry().creator(slot);
+        traced_assert(inspector_settings_.count(entry.settings_class));
+
+        inspectors_.push_back(entry.creator(*this, *inspector_settings_.at(entry.settings_class)));
     }
-
-    inspectors_.emplace_back(new MLATDataItemInspector(*this, *data_item_settings_));
-    inspectors_.emplace_back(new MLATCoverageInspector(*this, *coverage_settings_));
-
-#if USE_EXPERIMENTAL_SOURCE == true
-    inspectors_.emplace_back(new MLATAccuracyInspector(*this, *accuracy_settings_));
-    inspectors_.emplace_back(new MLATRUCoverageInspector(*this, *ru_coverage_settings_));
-    inspectors_.emplace_back(new MLATRUEffectInspector(*this, *ru_effect_settings_));
-#endif
 }
 
 bool AnalyzeDataSourceTask::useDataSource(unsigned int ds_id) const
@@ -333,19 +394,55 @@ void AnalyzeDataSourceTask::useDataSourceLine(unsigned int ds_id, unsigned int l
 std::set<unsigned int> AnalyzeDataSourceTask::selectedDataSourceIDs() const
 {
     std::set<unsigned int> ids;
-    auto& ctx = compass().dbContextManager();
-    auto types = ctx.dsTypes();
-
-    for (auto ds_id : ctx.allDataSourceIds())
+    for (auto ds_id : testDataSourceCandidateIDs())
     {
-        auto it = types.find(ds_id);
-        if (it == types.end() || it->second != ds_type_)
-            continue;
-        if (!useDataSource(ds_id))
-            continue;
-        ids.insert(ds_id);
+        if (useDataSource(ds_id))
+            ids.insert(ds_id);
     }
     return ids;
+}
+
+bool AnalyzeDataSourceTask::dataSourceHasCategory(unsigned int ds_id, unsigned int cat) const
+{
+    const auto& info_map = manager().dbContextManager().asterixInfo();
+    auto it = info_map.find(ds_id);
+    if (it == info_map.end())
+        return false;
+    return it->second.count(cat) > 0;
+}
+
+bool AnalyzeDataSourceTask::dataSourceMatches(unsigned int ds_id) const
+{
+    auto& ctx = manager().dbContextManager();
+    const auto* ds = ctx.dataSource(ds_id);
+    if (!ds)
+        return false;
+
+    // An SMR is always a Radar data source in the Data Context. There is no
+    // "SMR" DSType string, so the rule is DSType Radar with CAT010 data.
+    if (ds_type_ == "SMR")
+        return ds->dsType() == "Radar" && dataSourceHasCategory(ds_id, 10);
+
+    return ds->dsType() == ds_type_;
+}
+
+std::set<unsigned int> AnalyzeDataSourceTask::testDataSourceCandidateIDs() const
+{
+    std::set<unsigned int> ids;
+    auto& ctx = manager().dbContextManager();
+    for (auto ds_id : ctx.allDataSourceIds())
+    {
+        if (dataSourceMatches(ds_id))
+            ids.insert(ds_id);
+    }
+    return ids;
+}
+
+std::string AnalyzeDataSourceTask::testDataSourceRequirementText() const
+{
+    if (ds_type_ == "SMR")
+        return "Radar data sources with CAT010 data";
+    return "data sources of type " + ds_type_;
 }
 
 void AnalyzeDataSourceTask::setLineIDTst(unsigned int line_id)
@@ -385,7 +482,7 @@ std::set<unsigned int> AnalyzeDataSourceTask::selectedReferenceDataSourceIDs() c
 std::set<unsigned int> AnalyzeDataSourceTask::referenceDataSourceCandidateIDs() const
 {
     std::set<unsigned int> ids;
-    auto& ctx = compass().dbContextManager();
+    auto& ctx = manager().dbContextManager();
     auto types = ctx.dsTypes();
 
     for (auto ds_id : ctx.allDataSourceIds())
@@ -410,7 +507,7 @@ std::string AnalyzeDataSourceTask::suggestReportName() const
     if (ids.empty())
         return "Analyze " + ds_type_ + " Data Source";
 
-    auto& ctx = compass().dbContextManager();
+    auto& ctx = manager().dbContextManager();
     const auto* ds = ctx.dataSource(*ids.begin());
     std::string name = ds ? ds->name() : std::to_string(*ids.begin());
 
@@ -529,7 +626,7 @@ AnalyzeDataSourceTask::clampedCellSizes(const AnalysisDataset& dataset) const
 
 bool AnalyzeDataSourceTask::selectionContainsCAT020() const
 {
-    auto& ctx = compass().dbContextManager();
+    auto& ctx = manager().dbContextManager();
     const auto& info_map = ctx.asterixInfo();
 
     for (auto ds_id : selectedDataSourceIDs())
@@ -563,59 +660,9 @@ DataSourceInspectorBase* AnalyzeDataSourceTask::inspector(const std::string& cla
     return nullptr;
 }
 
-MLATDataItemInspectorSettings& AnalyzeDataSourceTask::dataItemSettings() const
-{
-    traced_assert(data_item_settings_);
-    return *data_item_settings_;
-}
-
-MLATCoverageInspectorSettings& AnalyzeDataSourceTask::coverageSettings() const
-{
-    traced_assert(coverage_settings_);
-    return *coverage_settings_;
-}
-
-ADSBDataItemInspectorSettings& AnalyzeDataSourceTask::adsbDataItemSettings() const
-{
-    traced_assert(adsb_data_item_settings_);
-    return *adsb_data_item_settings_;
-}
-
-ADSBCoverageInspectorSettings& AnalyzeDataSourceTask::adsbCoverageSettings() const
-{
-    traced_assert(adsb_coverage_settings_);
-    return *adsb_coverage_settings_;
-}
-
-#if USE_EXPERIMENTAL_SOURCE == true
-MLATAccuracyInspectorSettings& AnalyzeDataSourceTask::accuracySettings() const
-{
-    traced_assert(accuracy_settings_);
-    return *accuracy_settings_;
-}
-
-MLATRUCoverageInspectorSettings& AnalyzeDataSourceTask::ruCoverageSettings() const
-{
-    traced_assert(ru_coverage_settings_);
-    return *ru_coverage_settings_;
-}
-
-MLATRUEffectInspectorSettings& AnalyzeDataSourceTask::ruEffectSettings() const
-{
-    traced_assert(ru_effect_settings_);
-    return *ru_effect_settings_;
-}
-
-ADSBAccuracyInspectorSettings& AnalyzeDataSourceTask::adsbAccuracySettings() const
-{
-    traced_assert(adsb_accuracy_settings_);
-    return *adsb_accuracy_settings_;
-}
-#endif
-
 bool AnalyzeDataSourceTask::professionalLicenseEnabled() const
 {
-    return compass().licenseManager().componentEnabled(
+    return manager().licenseManager().componentEnabled(
         license::License::Component::ComponentProbIMMReconstructor);
 }
 
@@ -634,7 +681,7 @@ void AnalyzeDataSourceTask::setUseSector(const std::string& layer_name, bool val
 std::vector<std::string> AnalyzeDataSourceTask::selectedSectorLayers() const
 {
     std::vector<std::string> out;
-    auto& ctx = compass().dbContextManager();
+    auto& ctx = manager().dbContextManager();
     for (const auto& layer : ctx.sectorLayers())
     {
         if (layer && useSector(layer->name()))
@@ -646,7 +693,7 @@ std::vector<std::string> AnalyzeDataSourceTask::selectedSectorLayers() const
 std::vector<std::shared_ptr<SectorLayer>> AnalyzeDataSourceTask::scopeSectorLayers() const
 {
     std::vector<std::shared_ptr<SectorLayer>> out;
-    auto& ctx = compass().dbContextManager();
+    auto& ctx = manager().dbContextManager();
     for (const auto& layer : ctx.sectorLayers())
     {
         if (layer && useSector(layer->name()))
@@ -655,64 +702,85 @@ std::vector<std::shared_ptr<SectorLayer>> AnalyzeDataSourceTask::scopeSectorLaye
     return out;
 }
 
-COMPASS& AnalyzeDataSourceTask::compass() const
-{
-    return task_manager_.compass();
-}
-
 void AnalyzeDataSourceTask::showDialog()
 {
     AnalyzeDataSourceDialog dlg(*this, QApplication::activeWindow());
     if (dlg.exec() == QDialog::Rejected)
         return;
 
-    if (!canRun())
+    std::string reason;
+    if (!canRunConfiguration(&reason))
     {
         QMessageBox::warning(QApplication::activeWindow(), "Analyze Data Source",
-                             "The task cannot run with the current selection.");
+                             QString::fromStdString("The task cannot run with the current selection: "
+                                                    + reason));
         return;
     }
 
     run();
 }
 
-bool AnalyzeDataSourceTask::canRun()
+bool AnalyzeDataSourceTask::inspectorActive(const DataSourceInspectorBase& inspector,
+                                            std::string* reason_out) const
 {
-    if (selectedDataSourceIDs().empty())
+    if (reason_out)
+        reason_out->clear();
+
+    if (!inspectorEnabled(inspector.className()))
     {
-        loginf << "no test data source selected";
+        if (reason_out)
+            *reason_out = "Not enabled.";
         return false;
     }
 
-    if (selectedReferenceDataSourceIDs().empty())
+    std::string reason;
+    bool ok = inspector.prerequisitesMet(reason);
+    if (reason_out)
+        *reason_out = reason;
+    return ok;
+}
+
+bool AnalyzeDataSourceTask::canRunConfiguration(std::string* reason_out) const
+{
+    if (reason_out)
+        reason_out->clear();
+
+    if (limit_by_sectors_ && selectedSectorLayers().empty())
     {
-        loginf << "no reference data source selected";
+        if (reason_out)
+            *reason_out = "Limit by sectors is set, but no sector layer is selected.";
         return false;
     }
 
-    bool any_enabled = false;
     for (const auto& ins : inspectors_)
     {
-        if (!inspectorEnabled(ins->className()))
-        {
-            loginf << "inspector '" << ins->className() << "' not enabled";
-            continue;
-        }
-
-        std::string reason;
-        if (!ins->prerequisitesMet(reason))
-        {
-            loginf << "inspector '" << ins->className()
-                   << "' prerequisites not met: " << reason;
-            return false;
-        }
-
-        loginf << "inspector '" << ins->className() << "' OK";
-        any_enabled = true;
+        if (inspectorActive(*ins))
+            return true;
     }
-    if (!any_enabled)
-        loginf << "no inspector enabled";
-    return any_enabled;
+
+    if (reason_out)
+        *reason_out = "No enabled inspector has its prerequisites met.";
+    return false;
+}
+
+bool AnalyzeDataSourceTask::canRun()
+{
+    std::string reason;
+    bool ok = canRunConfiguration(&reason);
+
+    for (const auto& ins : inspectors_)
+    {
+        std::string ins_reason;
+        if (inspectorActive(*ins, &ins_reason))
+            loginf << "inspector '" << ins->className() << "' active";
+        else
+            loginf << "inspector '" << ins->className() << "' not active: " << ins_reason;
+    }
+
+    if (!ok)
+        logwrn << "cannot run: " << reason;
+
+    return ok;
 }
 
 void AnalyzeDataSourceTask::run()
@@ -720,7 +788,7 @@ void AnalyzeDataSourceTask::run()
     loginf << "running with ds_type " << ds_type_
            << " selected " << selectedDataSourceIDs().size() << " data sources";
 
-    auto& tm = compass().taskManager();
+    auto& tm = manager();
 
     const std::string window_title = "Analyze " + ds_type_ + " Data Source";
     const std::string result_name  = reportName();
@@ -728,7 +796,8 @@ void AnalyzeDataSourceTask::run()
     // Determine which inspectors will actually run, and what test dbcontents they need.
     std::vector<DataSourceInspectorBase*> active_inspectors;
     std::set<std::string> tst_dbcontents;
-    bool any_needs_dataset = false;
+    bool any_needs_dataset   = false;
+    bool any_needs_reference = false;
 
     for (const auto& ins : inspectors_)
     {
@@ -736,10 +805,10 @@ void AnalyzeDataSourceTask::run()
             continue;
 
         std::string reason;
-        if (!ins->prerequisitesMet(reason))
+        if (!inspectorActive(*ins, &reason))
         {
             logwrn << "skipping inspector " << ins->name()
-                   << " (prerequisites not met " << reason << ")";
+                   << " (prerequisites not met: " << reason << ")";
             continue;
         }
 
@@ -748,6 +817,8 @@ void AnalyzeDataSourceTask::run()
         if (ins->requiresLoadedDataset())
         {
             any_needs_dataset = true;
+            if (ins->requiresReferenceTrajectory())
+                any_needs_reference = true;
             for (const auto& dbc : ins->testDBContentNames())
                 tst_dbcontents.insert(dbc);
         }
@@ -792,8 +863,6 @@ void AnalyzeDataSourceTask::run()
     {
         status_label->setText(QString::fromStdString(msg));
         status_dialog->setValue(step);
-        status_dialog->show();
-        status_dialog->raise();
         QCoreApplication::processEvents();
     };
 
@@ -807,6 +876,15 @@ void AnalyzeDataSourceTask::run()
 
     tm.beginTaskResultWriting(result_name, task::TaskResultType::DataSourceAnalysis);
 
+    //store the task configuration in the result, so the report can be recomputed
+    {
+        writeBackConfigRecursive();
+
+        nlohmann::json config;
+        generateJSON(config, Configurable::JSONExportType::General);
+        tm.currentResult()->setJSONConfiguration(config);
+    }
+
     auto& report = tm.currentReport();
     auto& root   = *report->rootSection();
     auto& overview = root.addSubSection("Overview");
@@ -817,7 +895,7 @@ void AnalyzeDataSourceTask::run()
         std::string out;
         for (auto ds_id : ids)
         {
-            const auto* ds = compass().dbContextManager().dataSource(ds_id);
+            const auto* ds = manager().dbContextManager().dataSource(ds_id);
             if (!ds)
                 continue;
             if (!out.empty()) out += "\n";
@@ -866,6 +944,18 @@ void AnalyzeDataSourceTask::run()
         }
         info.addRow({"Limit by sectors", sec});
     }
+    info.addRow({"Use evaluation exclusions", use_eval_exclusions_ ? "yes" : "no"});
+
+    // snapshot of the evaluation exclusions at run start, see EvaluationConstraints
+    std::shared_ptr<EvaluationConstraints> eval_exclusions;
+    if (use_eval_exclusions_)
+    {
+        eval_exclusions = std::make_shared<EvaluationConstraints>();
+        eval_exclusions->update(manager().evaluationManager());
+
+        auto& excl_section = overview.addSubSection(EvaluationConstraints::ExcludedDataSectionHeading);
+        eval_exclusions->addReportSection(excl_section, nullptr, false);
+    }
 
     advanceStep("Preparing result...");
 
@@ -875,7 +965,7 @@ void AnalyzeDataSourceTask::run()
     {
         advanceStep("Loading combined dataset...");
 
-        dataset.reset(new AnalysisDataset(compass()));
+        dataset.reset(new AnalysisDataset(manager().dbContentManager(), manager().dbContextManager()));
 
         AnalysisDataset::ScopeFilter scope_filter;
         scope_filter.ground_only = use_ground_only_;
@@ -884,14 +974,32 @@ void AnalyzeDataSourceTask::run()
         scope_filter.use_max_fl  = use_max_fl_;
         scope_filter.max_fl      = max_fl_;
         scope_filter.limit_by_sectors = limit_by_sectors_;
-        if (limit_by_sectors_)
         {
-            auto& ctx = compass().dbContextManager();
-            for (const auto& name : selectedSectorLayers())
-                if (ctx.hasSectorLayer(name))
-                    scope_filter.sectors.push_back(ctx.sectorLayer(name));
+            auto& ctx = manager().dbContextManager();
+
+            if (limit_by_sectors_)
+            {
+                for (const auto& name : selectedSectorLayers())
+                    if (ctx.hasSectorLayer(name))
+                        scope_filter.sectors.push_back(ctx.sectorLayer(name));
+            }
+
+            // Reports of ground-only data sources (SMR) carry no ground bit
+            // and count as on ground.
+            for (auto ds_id : selectedDataSourceIDs())
+            {
+                const auto* ds = ctx.dataSource(ds_id);
+                if (ds && ds->groundOnly())
+                    scope_filter.ground_only_ds_ids.insert(ds_id);
+            }
         }
+        // SMR: keep only PSR reports of CAT010 sources that also carry MLAT reports.
+        scope_filter.smr_only = (ds_type_ == "SMR");
+
+        scope_filter.eval_exclusions = eval_exclusions;
+
         dataset->setScopeFilter(scope_filter);
+        dataset->setRequireReference(any_needs_reference);
 
         std::string error;
         if (!dataset->load(selectedDataSourceIDs(), line_id_tst_,
@@ -920,6 +1028,32 @@ void AnalyzeDataSourceTask::run()
                 dbcs += dbc;
             }
             info.addRow({"Test dbcontents present", dbcs});
+            info.addRow({"Unassociated test records",
+                         std::to_string(dataset->numUnassociatedRecordsTotal())});
+            if (dataset->numNonPSRRecordsSkipped() > 0)
+                info.addRow({"Non-PSR CAT010 records skipped",
+                             std::to_string(dataset->numNonPSRRecordsSkipped())});
+            if (eval_exclusions)
+            {
+                info.addRow({"Excluded targets",
+                             std::to_string(dataset->numExcludedTargets())});
+                info.addRow({"Excluded reference records",
+                             std::to_string(dataset->numReferenceRecordsExcluded())});
+                info.addRow({"Excluded test records",
+                             std::to_string(dataset->numTestRecordsExcluded())});
+            }
+            if (!dataset->statusCyclesByDS().empty())
+            {
+                std::string cycles;
+                for (const auto& kv : dataset->statusCyclesByDS())
+                {
+                    const auto* ds = manager().dbContextManager().dataSource(kv.first);
+                    if (!cycles.empty()) cycles += "\n";
+                    cycles += (ds ? ds->name() : std::to_string(kv.first))
+                              + ": " + std::to_string(kv.second.size());
+                }
+                info.addRow({"Scan cycles per source", cycles});
+            }
         }
     }
 
@@ -940,19 +1074,31 @@ void AnalyzeDataSourceTask::run()
         advanceStep("Running inspector: " + ins->name() + "...");
         AnalysisDataset* ds = ins->requiresLoadedDataset() ? dataset.get() : nullptr;
 
+        // Check after the load: an inspector that cannot work on the loaded
+        // data gets a note in its section instead of results.
+        std::string reason;
+        if (!ins->canCompute(ds, reason))
+        {
+            logwrn << "not running inspector " << ins->name() << ": " << reason;
+
+            auto& section = root.addSubSection(ins->name());
+            section.addText("Note").addText("The inspector was not run. " + reason);
+            continue;
+        }
+
         if (ins->requiresLoadedDataset())
         {
             // Heavy compute on a worker thread; keep the Qt event loop free on
             // the main thread so the status dialog paints. Mirrors
             // EvaluationResultsGenerator's std::async + polling pattern.
-            std::atomic<bool> done{false};
-            auto fut = std::async(std::launch::async, [ins, ds, &done]() {
+            // Poll the future itself: it is also ready when compute() throws,
+            // and get() passes the exception on.
+            auto fut = std::async(std::launch::async, [ins, ds]() {
                 ins->compute(ds);
-                done.store(true, std::memory_order_release);
             });
 
             using namespace std::chrono_literals;
-            while (!done.load(std::memory_order_acquire))
+            while (fut.wait_for(0ms) != std::future_status::ready)
             {
                 QCoreApplication::processEvents();
                 QThread::msleep(50);
@@ -969,8 +1115,17 @@ void AnalyzeDataSourceTask::run()
         // Report writing is always on the main thread.
         ins->writeReport(root);
 
+        if (ds)
+        {
+            auto notes = ins->missingOptionalVariableNotes(*ds);
+            if (!notes.empty() && root.hasSubSection(ins->name()))
+                root.getSubSection(ins->name()).addText("Variables Without Values").addList(notes);
+        }
+
         logRAM("inspector " + ins->name() + " after writeReport");
     }
+
+    addReportFigureSettings(root);
 
     advanceStep("Saving result...");
     tm.endTaskResultWriting(true, false);
@@ -987,5 +1142,91 @@ void AnalyzeDataSourceTask::run()
     // Mirror the evaluation flow: switch to the Task Results tool and show
     // the freshly written report so the user lands on it without an extra
     // click. See MainWindow::showResult / showEvaluationResult.
-    compass().mainWindow().showResult(result_name);
+    manager().mainWindow().showResult(result_name);
+}
+
+/**
+ */
+ReportFigureBackground AnalyzeDataSourceTask::reportFigureBackgroundConfig() const
+{
+    ReportFigureBackground background;
+    if (!background.fromJSON(report_figure_background_))
+        logerr << "stored report figure background not readable, using the defaults";
+
+    return background;
+}
+
+/**
+ */
+void AnalyzeDataSourceTask::reportFigureBackgroundConfig(const ReportFigureBackground& background)
+{
+    report_figure_background_ = background.toJSON();
+}
+
+/**
+ */
+ReportFigureOptions AnalyzeDataSourceTask::reportFigureOptionsConfig() const
+{
+    ReportFigureOptions options;
+    if (!options.fromJSON(report_figure_options_))
+        logerr << "stored report figure options not readable, using the defaults";
+
+    return options;
+}
+
+/**
+ */
+void AnalyzeDataSourceTask::reportFigureOptionsConfig(const ReportFigureOptions& options)
+{
+    report_figure_options_ = options.toJSON();
+}
+
+/**
+ */
+std::set<std::string> AnalyzeDataSourceTask::reportFigureDefaultHiddenLayers() const
+{
+    std::set<std::string> hidden;
+
+    for (const auto& layer : manager().dbContextManager().sectorLayers())
+        hidden.insert(layer->name());
+
+    return hidden;
+}
+
+/**
+ * The inspectors write their figures as view points with annotations, the export layout size and the background
+ * set are added here for all of them. The report GUI and the export draw the figures with them.
+ */
+void AnalyzeDataSourceTask::addReportFigureSettings(ResultReport::Section& section) const
+{
+    const nlohmann::json background =
+        reportFigureBackgroundConfig().resolve(reportFigureDefaultHiddenLayers()).toJSON();
+    const nlohmann::json export_layout_size = reportFigureOptionsConfig().exportLayoutSizeJSON();
+
+    unsigned int num_figures     = 0;
+    unsigned int num_geo_figures = 0;
+
+    for (const auto& content : section.recursiveContent(true))
+    {
+        auto figure = std::dynamic_pointer_cast<ResultReport::SectionContentFigure>(content);
+        if (!figure || figure->isOnDemand())
+            continue;
+
+        auto view_point = figure->viewableContent();
+        if (!view_point)
+            continue;
+
+        (*view_point)[ ReportFigureOptions::ViewPointFieldExportLayoutSize ] = export_layout_size;
+        ++num_figures;
+
+        auto annotations_it = view_point->find(ViewPointKeys::VP_ANNOTATION_KEY);
+        if (annotations_it == view_point->end() || !report_figure::hasGeographicGrid(annotations_it->second))
+            continue;
+
+        (*view_point)[ ViewPointGenFeatureGrid::ViewPointFieldNameBackground ] = background;
+        ++num_geo_figures;
+    }
+
+    loginf << "export layout size written into " << num_figures << " figures, background set into "
+           << num_geo_figures << " figures";
 }

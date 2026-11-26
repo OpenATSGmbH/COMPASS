@@ -31,7 +31,7 @@ namespace PDHelpers
 {
 
 // Parameters of the time-difference miss test, as documented in
-// src/eval/requirement/detection/readme_detection.md, section 3.4.
+// experimental_src/evaluation/readme_eval_requirements.md, section Detection 3.4.
 struct MissTestParams
 {
     float update_interval_s = 1.0f;
@@ -55,18 +55,19 @@ inline float adjustedGap(float gap_s, const MissTestParams& p)
     return adj;
 }
 
-// True iff `gap_s` counts as a miss under `p`. Matches the four-filter rule
-// from readme_detection.md section 3.4 (tolerance, min, max, > UI).
+// True iff `gap_s` counts as a miss under `p`. Matches the filter rule from
+// readme_eval_requirements.md section Detection 3.4: the minimum and maximum gap length select
+// on the raw gap, the tolerance applies only to the update interval test.
+// The standards state the gap length thresholds on the measured gap, so the
+// tolerance must not shift them.
 inline bool isMiss(float gap_s, const MissTestParams& p)
 {
-    const float adj = adjustedGap(gap_s, p);
-
-    if (p.use_min_gap_length && adj < p.min_gap_length_s)
+    if (p.use_min_gap_length && gap_s < p.min_gap_length_s)
         return false;
-    if (p.use_max_gap_length && adj > p.max_gap_length_s)
+    if (p.use_max_gap_length && gap_s > p.max_gap_length_s)
         return false;
 
-    return adj > p.update_interval_s;
+    return adjustedGap(gap_s, p) > p.update_interval_s;
 }
 
 // Number of missed update intervals attributed to `gap_s`. Caller must have
@@ -84,6 +85,18 @@ inline unsigned int numMisses(float gap_s, const MissTestParams& p)
     return static_cast<unsigned int>(std::floor(adj / p.update_interval_s));
 }
 
+// Missed time in seconds attributed to `gap_s` in the time-ratio calculation
+// mode (EUROCAE ED-129C Appendix C "Interarrivaltime" method, Equation 2-2):
+// max(adjusted_gap - UI, 0) for gaps that pass the miss test, 0 otherwise.
+inline float missDuration(float gap_s, const MissTestParams& p)
+{
+    if (!isMiss(gap_s, p))
+        return 0.0f;
+
+    const float adj = adjustedGap(gap_s, p);
+    return std::max(adj - p.update_interval_s, 0.0f);
+}
+
 // Contiguous reference-coverage window, as built by `buildReferencePeriods()`.
 struct RefPeriod
 {
@@ -99,18 +112,29 @@ struct RefPeriod
 // dropped (matches detection.cpp's hardcoded 1 s floor; the caller chooses
 // the threshold).
 //
+// `breaks` are timestamps of removed reference updates (for example in an
+// excluded time window). A period also ends at the last timestamp before a
+// break, and the next one starts at the first timestamp after it, whatever the
+// length of the removed part. This is how the evaluation ends a period at an
+// excluded reference update (TimePeriodCollection::createFromReference()).
+//
 // Mirrors the reference-period construction in
-// `Detection::evaluate()` (readme_detection.md section 3.2), minus the
-// sector / exclusion-interval filter, which are evaluation-specific.
+// `Detection::evaluate()` (readme_eval_requirements.md section Detection 3.2), minus the
+// sector filter, which is evaluation-specific. The exclusion-interval filter
+// is applied by the caller, which removes the excluded timestamps and passes
+// them as breaks.
 inline std::vector<RefPeriod> buildReferencePeriods(
     const std::set<boost::posix_time::ptime>& timestamps,
     boost::posix_time::time_duration          max_gap,
-    boost::posix_time::time_duration          min_duration)
+    boost::posix_time::time_duration          min_duration,
+    const std::set<boost::posix_time::ptime>* breaks = nullptr)
 {
     std::vector<RefPeriod> periods;
 
     if (timestamps.empty())
         return periods;
+
+    const bool use_breaks = breaks && !breaks->empty();
 
     auto it = timestamps.begin();
     RefPeriod current{*it, *it};
@@ -119,7 +143,16 @@ inline std::vector<RefPeriod> buildReferencePeriods(
     for (; it != timestamps.end(); ++it)
     {
         const auto ts = *it;
-        if (ts - current.end > max_gap)
+
+        // a removed update between the period end and this timestamp
+        bool has_break = false;
+        if (use_breaks)
+        {
+            auto br = breaks->upper_bound(current.end);
+            has_break = br != breaks->end() && *br < ts;
+        }
+
+        if (has_break || ts - current.end > max_gap)
         {
             periods.push_back(current);
             current = RefPeriod{ts, ts};

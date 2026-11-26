@@ -1,0 +1,53 @@
+{
+    "description": "Stands TCA (<= 30 deg): the difference is the smallest angle across north. 350 to 10 deg is +20 deg, 10 to 350 deg is -20 deg, 359 to 1 deg is +2 deg. Opposite directions (0 and 180 deg) give -180 deg and fail. Probability 3 / 5.",
+    "params": {
+        "threshold": 30.0,
+        "use_minimum_speed": true,
+        "minimum_speed": 3.0,
+        "check_type": "<="
+    },
+    "reports": [
+        {
+            "ref_speed": 10,
+            "ref": 350,
+            "tst": 10,
+            "outcome": "passed",
+            "diff": 20
+        },
+        {
+            "ref_speed": 10,
+            "ref": 10,
+            "tst": 350,
+            "outcome": "passed",
+            "diff": -20
+        },
+        {
+            "ref_speed": 10,
+            "ref": 359,
+            "tst": 1,
+            "outcome": "passed",
+            "diff": 2
+        },
+        {
+            "ref_speed": 10,
+            "ref": 0,
+            "tst": 180,
+            "outcome": "failed",
+            "diff": -180
+        },
+        {
+            "ref_speed": 10,
+            "ref": 180,
+            "tst": 0,
+            "outcome": "failed",
+            "diff": -180
+        }
+    ],
+    "expected": {
+        "passed": 3,
+        "failed": 2,
+        "no_tst": 0,
+        "ref_speed_low": 0,
+        "probability": 0.6
+    }
+}

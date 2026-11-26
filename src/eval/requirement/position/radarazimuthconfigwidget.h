@@ -17,11 +17,13 @@
 
 #pragma once
 
-#include "eval/requirement/base/positionbaseconfigwidget.h"
+#include "requirement/base/positionbaseconfigwidget.h"
 
 class ComparisonTypeComboBox;
 
 class QLineEdit;
+class QComboBox;
+class QLabel;
 class QCheckBox;
 
 class QFormLayout;
@@ -30,18 +32,23 @@ namespace EvaluationRequirement
 {
 class PositionRadarAzimuthConfig;
 
-class PositionRadarAzimuthConfigWidget : public PositionBaseProbConfigWidget
+class PositionRadarAzimuthConfigWidget : public PositionBaseValueConfigWidget
 {
     Q_OBJECT
 
 public slots:
     void thresholdValueEditSlot(QString value);
+    void statisticChangedSlot(int index);
 
 public:
     PositionRadarAzimuthConfigWidget(PositionRadarAzimuthConfig& cfg);
 
 protected:
     QLineEdit* threshold_value_edit_{nullptr};
+    QComboBox* statistic_box_{nullptr};
+    QLabel* threshold_label_{nullptr};
+
+    void updateThresholdTexts();
 
     PositionRadarAzimuthConfig& config();
 };

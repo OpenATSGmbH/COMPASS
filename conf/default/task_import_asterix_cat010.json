@@ -1107,24 +1107,6 @@
         },
         {
             "class_name": "JSONDataMapping",
-            "instance_name": "JSONDataMapping64",
-            "parameters": {
-                "active": true,
-                "append_value": false,
-                "comment": "Type number, value 12870",
-                "db_content_name": "CAT010",
-                "db_content_variable_name": "DS ID",
-                "dimension": "",
-                "format_data_type": "",
-                "in_array": false,
-                "json_key": "ds_id",
-                "json_value_format": "",
-                "mandatory": false,
-                "unit": ""
-            }
-        },
-        {
-            "class_name": "JSONDataMapping",
             "instance_name": "JSONDataMapping65",
             "parameters": {
                 "active": true,
@@ -1136,6 +1118,24 @@
                 "format_data_type": "",
                 "in_array": false,
                 "json_key": "artas_md5",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingRecordData",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type string, original record data in hex",
+                "db_content_name": "CAT010",
+                "db_content_variable_name": "Record Data",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "record_data",
                 "json_value_format": "",
                 "mandatory": false,
                 "unit": ""
@@ -1226,6 +1226,96 @@
                 "format_data_type": "",
                 "in_array": false,
                 "json_key": "020.SIM",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd1",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT010",
+                "db_content_variable_name": "Presence DRHO",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "280.Presence.DRHO",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd2",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT010",
+                "db_content_variable_name": "Presence DTHETA",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "280.Presence.DTHETA",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingRecordingTime",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, recording time of the record's frame or packet in seconds since midnight",
+                "db_content_name": "CAT010",
+                "db_content_variable_name": "Recording Time",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "recording_time",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingRecordingDay",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, recording day counter of the record's frame, 0 at the start of the recording",
+                "db_content_name": "CAT010",
+                "db_content_variable_name": "Recording Day",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "recording_day",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingRecordingDate",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, uTC date of the record's frame or packet as YYYYMMDD",
+                "db_content_name": "CAT010",
+                "db_content_variable_name": "Recording Date",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "recording_date",
                 "json_value_format": "",
                 "mandatory": false,
                 "unit": ""

@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include "job.h"
 #include "asterixdecoderbase.h"
 
@@ -33,7 +35,7 @@ class ASTERIXImportSource;
 /**
  * is a job, creates specifc reader/decoder, does post-processing
  */ 
-class ASTERIXDecodeJob : public Job
+class COMPASS_TASK_API ASTERIXDecodeJob : public Job
 {
     Q_OBJECT
 
@@ -61,8 +63,7 @@ public:
     std::vector<std::unique_ptr<nlohmann::json>> extractedData();
 
     bool hasStatusInfo();
-    std::string statusInfoString();
-    float statusInfoProgress(); // percent
+    ASTERIXDecodeStatus statusInfo();
     std::string currentDataSourceName(); // used to distinguish file switches
 
     void forceBlockingDataProcessing();

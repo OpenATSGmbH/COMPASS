@@ -19,6 +19,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include <QWidget>
 
 class ReconstructorBase;
@@ -26,7 +28,7 @@ class ReconstructorBase;
 class QTextEdit;
 class QSpinBox;
 
-class ReconstructorTaskClassificationWidget : public QWidget
+class COMPASS_TASK_API ReconstructorTaskClassificationWidget : public QWidget
 {
     Q_OBJECT
 

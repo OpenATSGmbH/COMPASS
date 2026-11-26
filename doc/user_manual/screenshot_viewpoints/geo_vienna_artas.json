@@ -1,0 +1,22 @@
+{
+    "id": 1,
+    "name": "ARTAS Vienna",
+    "type": "Saved",
+    "status": "open",
+    "position_latitude": 48.15,
+    "position_longitude": 16.55,
+    "position_window_latitude": 0.8,
+    "position_window_longitude": 1.2000000000000002,
+    "load_data": {
+        "data_source_types": [
+            "Tracker"
+        ],
+        "data_sources": "all",
+        "filters": {
+            "Timestamp": {
+                "Timestamp Minimum": "2023-04-22 10:20:00.000",
+                "Timestamp Maximum": "2023-04-22 10:20:20.000"
+            }
+        }
+    }
+}

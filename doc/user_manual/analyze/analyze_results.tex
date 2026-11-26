@@ -6,7 +6,10 @@ When a run completes, the Analyze task produces a result report similar in shape
 The result tree is structured as:
 
 \begin{itemize}
-\item Overview: combined dataset summary, selected Data Sources, RefTraj reference, license tier
+\item Overview: combined dataset summary, selected Data Sources, RefTraj reference, license tier, Scope Filter settings
+\begin{itemize}
+\item With 'Use Evaluation Exclusions': the number of excluded targets and target reports, and an 'Excluded Data' section with the excluded time windows (as in \nameref{sec:eval_report_excl_data}, without the excluded requirements)
+\end{itemize}
 \item One top-level section per executed inspector
 \begin{itemize}
 \item Data Item Inspection: per-DS, per-CAT cumulative tables
@@ -20,8 +23,13 @@ The result tree is structured as:
 
 \begin{figure}[H]
   \centering
-  \hspace*{-2.5cm}
-    \includegraphics[width=19cm,frame]{figures/analyze_mlat_report.png}
+  \hspace*{-2.4cm}
+    \includegraphics[width=18.9cm,frame]{figures/analyze_mlat_report.png}
   \caption{Analyze result report tree}
 \end{figure}
 
+In addition to the report, the inspectors write Report Tables into the database (see \nameref{sec:report_tables}): 
+the position accuracy inspectors one row per test target report with its offsets against the Reference Trajectory, 
+the coverage inspectors one row per detection gap, the RU Effect inspector one row per target report with its contributing receivers, 
+and the SMR unassociated inspector one row per unassociated target report. 
+Their columns are available as Report Variables in all Views. \\

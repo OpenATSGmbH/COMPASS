@@ -57,7 +57,7 @@ struct RTCommandUISet : public RTCommandUIInjection
 protected:
     virtual bool run_impl() override;
 
-    DECLARE_RTCOMMAND(uiset, "sets an ui element to the given value")
+    DECLARE_RTCOMMAND(uiset, "sets a UI element to the given value")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -72,7 +72,7 @@ struct RTCommandUIGet : public RTCommandUIObject
 protected:
     virtual bool run_impl() override;
 
-    DECLARE_RTCOMMAND(uiget, "retrieves the value of the given ui element")
+    DECLARE_RTCOMMAND(uiget, "retrieves the value of the given UI element")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -85,7 +85,7 @@ struct RTCommandUIGetJSON : public RTCommandUIObject
 protected:
     virtual bool run_impl() override;
 
-    DECLARE_RTCOMMAND(uiget_json, "retrieves the value of the given ui element as json")
+    DECLARE_RTCOMMAND(uiget_json, "retrieves the value of the given UI element as JSON")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -97,7 +97,7 @@ struct RTCommandUIInject : public RTCommandUIInjection
 protected:
     virtual bool run_impl() override;
 
-    DECLARE_RTCOMMAND(uiinject, "injects an event into the given ui element")
+    DECLARE_RTCOMMAND(uiinject, "injects an event into the given UI element")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -108,7 +108,7 @@ struct RTCommandUIRefresh : public RTCommandUIObject
 protected:
     virtual bool run_impl() override;
 
-    DECLARE_RTCOMMAND(uirefresh, "refreshes the given ui element")
+    DECLARE_RTCOMMAND(uirefresh, "refreshes the given UI element")
 };
 
 /**
@@ -133,16 +133,7 @@ protected:
     DECLARE_RTCOMMAND_OPTIONS
 };
 
-/**
-*/
-inline void initUITestCommands()
-{
-    RTCommandUISet::init();
-    RTCommandUIGet::init();
-    RTCommandUIGetJSON::init();
-    RTCommandUIInject::init();
-    RTCommandUIRefresh::init();
-    RTCommandUIFileDialog::init();
-}
+/// registers the UI test commands
+void initUITestCommands(rtcommand::RTCommandRegistry& registry);
 
 } // namespace ui_test

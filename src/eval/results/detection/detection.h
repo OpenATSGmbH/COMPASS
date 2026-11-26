@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/results/base/probabilitybase.h"
+#include "results/base/probabilitybase.h"
 
 #include "timeperiod.h"
 
@@ -32,15 +32,21 @@ class DetectionBase
 {
 public:
     DetectionBase();
-    DetectionBase(int sum_uis, 
-                  int missed_uis);
+    DetectionBase(double sum_expected,
+                  double sum_missed,
+                  unsigned int num_initiations);
 
-    unsigned int sumUIs() const;
-    unsigned int missedUIs() const;
+    double sumExpected() const;
+    double sumMissed() const;
+    unsigned int numInitiations() const;
 
 protected:
-    unsigned int sum_uis_    {0};
-    unsigned int missed_uis_ {0};
+    // number of update intervals (counting mode) or seconds (time-ratio mode)
+    double sum_expected_ {0};
+    double sum_missed_   {0};
+
+    // leading gaps not counted because of the track initiation time exception (ED-87 TRIT)
+    unsigned int num_initiations_ {0};
 };
 
 /**
@@ -55,8 +61,9 @@ public:
                     const EvaluationTargetData* target,
                     EvaluationCalculator& calculator,
                     const EvaluationDetails& details,
-                    int sum_uis, 
-                    int missed_uis, 
+                    double sum_expected,
+                    double sum_missed,
+                    unsigned int num_initiations,
                     TimePeriodCollection ref_periods);
 
     virtual std::shared_ptr<Joined> createEmptyJoined(const std::string& result_id) override;
@@ -67,10 +74,7 @@ public:
     {
         MissOccurred,        //bool
         DiffTOD,             //float
-        RefExists,           //bool
-        MissedUIs,           //unsigned int
-        MaxGapUIs,           //unsigned int
-        NoRefUIs,            //unsigned int
+        MissedUIs,           //unsigned int (counting mode) or double seconds (time-ratio mode), cumulative
     };
 
 protected:
@@ -80,17 +84,28 @@ protected:
     virtual std::vector<std::string> targetTableHeadersCustom() const override;
     virtual nlohmann::json::array_t targetTableValuesCustom() const override;
     virtual std::vector<TargetInfo> targetInfos() const override;
-    virtual std::vector<std::string> detailHeaders() const override;
-    virtual nlohmann::json::array_t detailValues(const EvaluationDetail& detail,
-                                                 const EvaluationDetail* parent_detail) const override;
 
     virtual bool detailIsOk(const EvaluationDetail& detail) const override;
+    void addReportTableColumns(ReportTableDefinition& def) const override;
+    void fillReportTableRow(ReportTableRows& rows,
+                            const EvaluationDetail& detail,
+                            const EvaluationDetail* parent_detail,
+                            const EvaluationDetail* prev_detail) const override;
+    void fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                      const Buffer& buffer,
+                                      unsigned int row,
+                                      const EvaluationDetail* prev_detail) const override;
+    ReportTableKeyKind reportTableKeyKind() const override { return ReportTableKeyKind::ReferenceGap; }
+    bool reportTableRowWanted(const EvaluationDetail& detail,
+                              const EvaluationDetail* parent_detail) const override;
+    boost::optional<std::pair<boost::posix_time::ptime, boost::posix_time::ptime>>
+        reportTableGapBounds(const EvaluationDetail& detail) const override;
     virtual void addAnnotationForDetail(nlohmann::json& annotations_json, 
                                         const EvaluationDetail& detail, 
                                         TargetAnnotationType type,
                                         bool is_ok) const override;
 
-    virtual std::string targetTableCustomSortColumn() const override { return "#MUIs";};
+    virtual std::string targetTableCustomSortColumn() const override;
     virtual Qt::SortOrder targetTableSortOrder() const override  { return  Qt::SortOrder::DescendingOrder; }
 
 
@@ -109,6 +124,10 @@ public:
 protected:
     virtual unsigned int numIssues() const override;
     virtual unsigned int numUpdates() const override;
+
+    // in gap count mode a target whose reports all fall outside the sector has no
+    // value of its own, but the gaps of its reference periods count for the sector
+    virtual bool resultUsed(const std::shared_ptr<Single>& result) const override;
 
     virtual void clearResults_impl() override;
     virtual void accumulateSingleResult(const std::shared_ptr<Single>& single_result, bool first, bool last) override;

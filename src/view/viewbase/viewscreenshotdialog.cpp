@@ -16,11 +16,11 @@
  */
 
 #include "viewscreenshotdialog.h"
+#include "appstate.h"
 #include "view.h"
 #include "viewmanager.h"
 #include "viewwidget.h"
 #include "timeconv.h"
-#include "compass.h"
 #include "files.h"
 
 #include <QHBoxLayout>
@@ -253,9 +253,10 @@ void ViewScreenshotDialog::generateScreenshots()
         preview = preview_img;
     };
 
-    //obtain screenshots
-    screener_data_ = view_->renderData();
-    screener_view_ = view_->renderView();
+    //obtain screenshots, opaque: an OpenGL framebuffer keeps the alpha of blended drawables,
+    //viewers would show such pixels faded over their background instead of as on screen
+    screener_data_ = view_->renderData().convertToFormat(QImage::Format_RGB32);
+    screener_view_ = view_->renderView().convertToFormat(QImage::Format_RGB32);
 
     //create preview versions
     createPreview(preview_data_, screener_data_);
@@ -277,7 +278,7 @@ void ViewScreenshotDialog::save()
     auto timestamp = Utils::Time::toString(Utils::Time::currentUTCTime());
 
     std::string fn_init = view_->className() + "_" + timestamp + ".png";
-    std::string path    = view_->viewManager().compass().lastUsedPath() + "/" + fn_init;
+    std::string path    = view_->viewManager().appState().lastUsedPath() + "/" + fn_init;
 
     QString fn = QFileDialog::getSaveFileName(this, "Select Screenshot File", QString::fromStdString(path), "*.png");
     if (fn.isEmpty())
@@ -290,7 +291,7 @@ void ViewScreenshotDialog::save()
     QApplication::restoreOverrideCursor();
 
     if (ok)
-        view_->viewManager().compass().lastUsedPath(Files::getDirectoryFromPath(fn.toStdString().c_str()));
+        view_->viewManager().appState().lastUsedPath(Files::getDirectoryFromPath(fn.toStdString().c_str()));
     else
         QMessageBox::critical(this, "Error", "Screenshot could not be written.");
 

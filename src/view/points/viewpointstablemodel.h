@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "viewpoint.h"
 
 #include <QAbstractItemModel>
@@ -45,7 +47,7 @@ typedef boost::multi_index_container<
         > >
     ViewPointCache;
 
-class ViewPointsTableModel : public QAbstractItemModel
+class COMPASS_VIEW_API ViewPointsTableModel : public QAbstractItemModel
 {
     Q_OBJECT
 
@@ -91,9 +93,9 @@ public:
 
     void setStatus (const QModelIndex &row_index, const std::string& value);
 
-    int typeColumn () { return table_columns_.indexOf(ViewPoint::VP_TYPE_KEY.c_str()); }
-    int statusColumn () { return table_columns_.indexOf(ViewPoint::VP_STATUS_KEY.c_str()); }
-    int commentColumn () { return table_columns_.indexOf(ViewPoint::VP_COMMENT_KEY.c_str()); }
+    int typeColumn () { return table_columns_.indexOf(ViewPointKeys::VP_TYPE_KEY.c_str()); }
+    int statusColumn () { return table_columns_.indexOf(ViewPointKeys::VP_STATUS_KEY.c_str()); }
+    int commentColumn () { return table_columns_.indexOf(ViewPointKeys::VP_COMMENT_KEY.c_str()); }
     //int columnIndex (QString name);
 
     bool updateTableColumns(); // true if changed
@@ -111,8 +113,8 @@ public:
 private:
     ViewManager& view_manager_;
 
-    QStringList default_table_columns_ {ViewPoint::VP_ID_KEY.c_str(), ViewPoint::VP_NAME_KEY.c_str(),
-                ViewPoint::VP_TYPE_KEY.c_str(), ViewPoint::VP_STATUS_KEY.c_str(), ViewPoint::VP_COMMENT_KEY.c_str()};
+    QStringList default_table_columns_ {ViewPointKeys::VP_ID_KEY.c_str(), ViewPointKeys::VP_NAME_KEY.c_str(),
+                ViewPointKeys::VP_TYPE_KEY.c_str(), ViewPointKeys::VP_STATUS_KEY.c_str(), ViewPointKeys::VP_COMMENT_KEY.c_str()};
     QStringList table_columns_;
 
     QStringList types_;

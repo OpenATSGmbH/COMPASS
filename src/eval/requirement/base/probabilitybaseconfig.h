@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include "eval/requirement/base/baseconfig.h"
-#include "eval/requirement/base/comparisontype.h"
+#include "requirement/base/baseconfig.h"
+#include "requirement/base/comparisontype.h"
 
 namespace EvaluationRequirement {
 

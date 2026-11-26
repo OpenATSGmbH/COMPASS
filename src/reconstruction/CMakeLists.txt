@@ -1,4 +1,10 @@
-add_library(compass_reconstruction "")
+add_library(compass_reconstruction SHARED "")
+
+# COMPASS_RECONSTRUCTION_API for the classes with signals (top-level CMakeLists.txt)
+generate_export_header(compass_reconstruction
+    EXPORT_MACRO_NAME COMPASS_RECONSTRUCTION_API
+    EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/compass_reconstruction_export.h")
+target_include_directories(compass_reconstruction PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 
 target_sources(compass_reconstruction
     PUBLIC
@@ -17,6 +23,7 @@ target_sources(compass_reconstruction
         "${CMAKE_CURRENT_LIST_DIR}/reconstruction_defs.h"
         "${CMAKE_CURRENT_LIST_DIR}/spline_interpolator.h"
         "${CMAKE_CURRENT_LIST_DIR}/gaussian_pdf.h"
+        "${CMAKE_CURRENT_LIST_DIR}/test_target.h"
 
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/kalman_defs.cpp"
@@ -33,15 +40,10 @@ target_sources(compass_reconstruction
         "${CMAKE_CURRENT_LIST_DIR}/kalman_chain.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/spline_interpolator.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/gaussian_pdf.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/test_target.cpp"
 )
 
 target_include_directories(compass_reconstruction PUBLIC "${CMAKE_CURRENT_LIST_DIR}")
-
-if(EXPERIMENTAL_SRC)
-    target_include_directories(compass_reconstruction PRIVATE
-        "${CMAKE_SOURCE_DIR}/experimental_src/reconstruction/kalman"
-    )
-endif()
 
 target_link_libraries(compass_reconstruction
     PUBLIC

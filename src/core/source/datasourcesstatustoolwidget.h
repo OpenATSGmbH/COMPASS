@@ -20,6 +20,7 @@
 #include "toolboxwidget.h"
 
 class DataSourcesStatusWidget;
+class SensorStatusTracker;
 namespace context { class DBContextManager; }
 
 class QComboBox;
@@ -30,6 +31,7 @@ class QLabel;
 class QSplitter;
 
 /**
+ * Sensor Status tool: shows and selects the tracker line of the SensorStatusTracker, with its events.
  */
 class DataSourcesStatusToolWidget : public ToolBoxWidget
 {
@@ -38,7 +40,8 @@ class DataSourcesStatusToolWidget : public ToolBoxWidget
 public:
     typedef std::map<unsigned int, std::vector<unsigned int>> ActiveTrackerLines;
 
-    DataSourcesStatusToolWidget(context::DBContextManager& ctx_man);
+    DataSourcesStatusToolWidget(context::DBContextManager& ctx_man,
+                                SensorStatusTracker& tracker);
     virtual ~DataSourcesStatusToolWidget();
 
     //ToolBoxWidget
@@ -46,7 +49,7 @@ public:
     std::string toolName() const override final;
     std::string toolInfo() const override final;
     std::vector<std::string> toolLabels() const override final;
-    toolbox::ScreenRatio defaultScreenRatio() const override final;
+    int defaultWidthPercent() const override final;
     void addToConfigMenu(QMenu* menu) override final; 
     void addToToolBar(QToolBar* tool_bar) override final; 
     void loadingStarted() override final;
@@ -55,6 +58,9 @@ public:
     void updateContent(bool recreate_required = false);
     void resetStatus();
     void resetEvents();
+
+    DataSourcesStatusWidget* statusWidget() { return ds_widget_; }
+    const DataSourcesStatusWidget* statusWidget() const { return ds_widget_; }
 
     static const int DefaultStretchDataSources;
     static const int DefaultStretchEvents;
@@ -79,6 +85,7 @@ private:
     void eventFollowBoxToggled(bool ok);
 
     context::DBContextManager& ctx_man_;
+    SensorStatusTracker&       tracker_;
     DataSourcesStatusWidget* ds_widget_{nullptr};
 
     QSplitter*   main_splitter_          = nullptr;

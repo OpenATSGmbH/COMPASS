@@ -16,59 +16,89 @@
  */
 
 #include "client.h"
+#include "compassroot.h"
 #include "crashbreadcrumbs.h"
 #include "cxa_throw_hook.h"
+#include "exit_hooks.h"
+#include "stacktrace_format.h"
+#include "files.h"
+#include "global.h"
 #include "logger.h"
 #include "msghandler.h"
-#include "util/system.h"
+#include "plugin/pluginmanager.h"
+#include "stringconv.h"
+#include "system.h"
+
+#if USE_EXPERIMENTAL_SOURCE == true
+#include "extra_commands.h"
+#include "test_lab.h"
+#endif
 
 #include <QThread>
 #include <QTimer>
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
+#include <atomic>
+#include <chrono>
+#include <cstdio>
 #include <cstring>
-#include <dlfcn.h>
+#include <fcntl.h>
+#include <fstream>
+#include <sstream>
+#include <thread>
 #include <iostream>
 #include <signal.h>
 #include <unistd.h>
-#include <execinfo.h>
-#include <fcntl.h>
 #include <stdlib.h>
-#include <sys/resource.h>
-#include <sys/stat.h>
 #include <limits.h>
 #include <time.h>
+
+#ifdef _WIN32
+#include <windows.h>
+#else
+#include <dlfcn.h>
+#include <pthread.h>
+#include <execinfo.h>
+#include <fcntl.h>
+#include <sys/resource.h>
+#include <sys/stat.h>
 #include <ucontext.h>
+#endif
 
 using namespace std;
 
-// Path where safeSignalHandler writes a crash backtrace on fatal signals.
-// Populated at startup (initCrashLogPath) from the APPIMAGE env var; empty
-// when not running from an AppImage, in which case file dump is skipped and
-// stderr stays the only channel. Accessed from a signal handler, so mutated
-// once at startup and read-only afterwards.
+// Path of the log file of this start (Logger::logFilePath), the crash handlers append their reports to it, directly and
+// not through the logger: the crashing thread may hold the lock of the logger. Set once at startup
+// (initCrashLogPath) and read-only afterwards, as it is read from signal handlers.
 static char crash_log_path[PATH_MAX] = {0};
 
-// Compute "<dirname(APPIMAGE)>/compass_crash_<pid>.log". Called once from
-// main() before any signal could fire - uses getenv/snprintf which are NOT
-// async-signal-safe and must not be reached from a handler.
+// Called once from main() before any signal could fire - not async-signal-safe.
 static void initCrashLogPath()
 {
-    const char* appimage = getenv("APPIMAGE");
-    if (!appimage) return;
+    const std::string& path = Logger::logFilePath(HOME_LOG_DIRECTORY);
 
-    const char* last_slash = strrchr(appimage, '/');
-    if (!last_slash) return;
+    if (path.size() + 1 > sizeof(crash_log_path))
+        return;
 
-    size_t dir_len = static_cast<size_t>(last_slash - appimage);
-    //reserve room for "/compass_crash_<pid>.log\0"
-    if (dir_len + 32 >= sizeof(crash_log_path)) return;
+    memcpy(crash_log_path, path.c_str(), path.size() + 1);
+}
 
-    memcpy(crash_log_path, appimage, dir_len);
-    snprintf(crash_log_path + dir_len,
-             sizeof(crash_log_path) - dir_len,
-             "/compass_crash_%d.log", static_cast<int>(getpid()));
+// Writes a crash report to stderr and appends it to the log file. Allocates, so not for the
+// async-signal-safe handler (writeCrashInfo).
+static void writeCrashText(const std::string& text)
+{
+    std::cerr << text << std::flush;
+
+    if (crash_log_path[ 0 ] != '\0')
+    {
+        std::ofstream file(crash_log_path, std::ios::app);
+        if (file)
+            file << text << std::flush;
+
+        // where the report is kept, for the user (the console is gone with the process)
+        std::cerr << "\nLog file: " << crash_log_path << std::endl;
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -80,16 +110,11 @@ static void initCrashLogPath()
 
 void terminateHandler()
 {
-    std::cerr << "\n=== std::terminate called ===" << std::endl;
+    std::ostringstream ss;
 
-    // print the throw-site stacktrace (captured by __cxa_throw hook)
-    if (!last_throw_trace.empty())
-    {
-        std::cerr << "\nStacktrace at throw site:\n"
-                  << last_throw_trace << std::endl;
-    }
+    ss << "\n=== std::terminate called ===" << std::endl;
 
-    // try to print the exception message
+    // the exception message and the throw site (captured by the throw hook, if it is this exception)
     if (auto eptr = std::current_exception())
     {
         try
@@ -98,16 +123,27 @@ void terminateHandler()
         }
         catch (const std::exception& e)
         {
-            std::cerr << "Exception: " << e.what() << std::endl;
+            ss << "Exception: " << e.what() << std::endl;
+
+            const std::string site = throwSiteOf(dynamic_cast<const void*>(&e));
+            if (!site.empty())
+                ss << "\nStacktrace at throw site:\n" << site << std::endl;
         }
         catch (...)
         {
-            std::cerr << "Unknown exception type" << std::endl;
+            ss << "Unknown exception type" << std::endl;
         }
     }
 
-    std::cerr << "\nStacktrace at terminate:\n"
-              << boost::stacktrace::stacktrace() << std::endl;
+    ss << "\nStacktrace at terminate:\n"
+       << stacktrace_format::current() << std::endl;
+
+    writeCrashText(ss.str());
+
+#ifdef _WIN32
+    // abort() unloads the DLLs on Windows (exit_hooks.h), not on Linux
+    exit_hooks::run();
+#endif
 
     // reset SIGABRT to default so abort() doesn't trigger our signal handler
     // (we already printed everything useful above)
@@ -119,12 +155,63 @@ void terminateHandler()
 // Signal handlers
 // ---------------------------------------------------------------------------
 
+#ifdef _WIN32
+
+// Windows: unhandled structured exceptions (access violation etc.): exception code, address,
+// breadcrumbs and a stack trace to stderr and the log file. The stack trace allocates, so it is
+// a best effort after heap corruption. No register dump yet.
+static LONG WINAPI unhandledExceptionHandler(EXCEPTION_POINTERS* info)
+{
+    using crash_breadcrumbs::writeHex;
+    using crash_breadcrumbs::writeStr;
+
+    auto writeHeader = [ & ] (int fd)
+    {
+        writeStr(fd, "\nUnhandled exception, code: ");
+        writeHex(fd, info && info->ExceptionRecord ? info->ExceptionRecord->ExceptionCode : 0);
+        writeStr(fd, "\nException address: ");
+        writeHex(fd, info && info->ExceptionRecord
+                     ? reinterpret_cast<unsigned long long>(info->ExceptionRecord->ExceptionAddress) : 0);
+        writeStr(fd, "\n");
+
+        crash_breadcrumbs::dumpTo(fd);
+    };
+
+    writeHeader(2); // stderr
+
+    if (crash_log_path[ 0 ] != '\0')
+    {
+        int fd = open(crash_log_path, O_WRONLY | O_CREAT | O_APPEND, 0644);
+        if (fd >= 0)
+        {
+            writeHeader(fd);
+            close(fd);
+        }
+    }
+
+    writeCrashText("\nStacktrace at exception:\n" + stacktrace_format::current() + "\n");
+
+    return EXCEPTION_CONTINUE_SEARCH; // default handling: process terminates
+}
+
+// Windows: Ctrl+C, Ctrl+Break and closing the console window end the process with ExitProcess,
+// which unloads the DLLs => run the exit hooks first (exit_hooks.h). Runs in its own thread.
+static BOOL WINAPI consoleCtrlHandler(DWORD ctrl_type)
+{
+    (void)ctrl_type;
+
+    exit_hooks::run();
+
+    return FALSE; // default handling: process terminates
+}
+
+#else
+
 // async-signal-safe crash report for signals where allocation cannot be
 // trusted (e.g. SIGABRT from a glibc heap-corruption check - the allocator
-// is exactly the subsystem that just failed). Writes to stderr and, when
-// running as an AppImage, to <dirname(APPIMAGE)>/compass_crash_<pid>.log so
-// the report is preserved even if the stdout/stderr pipe is lost on process
-// teardown. Besides the backtrace, the report contains the fault address and
+// is exactly the subsystem that just failed). Writes to stderr and appends to
+// the log file (crash_log_path), so the report is preserved even if the
+// stdout/stderr pipe is lost on process teardown. Besides the backtrace, the report contains the fault address and
 // registers (to identify e.g. a dangling receiver pointer), the recent event
 // breadcrumbs recorded by Client::notify, and a copy of /proc/self/maps (to
 // classify addresses as heap / mapped file / unmapped).
@@ -135,11 +222,35 @@ void terminateHandler()
 
 // copy /proc/self/maps to fd, capped so a degenerate mapping list cannot
 // bloat the crash log indefinitely
-static void writeMemoryMaps(int fd)
+// parses a hex number at p (up to the first non-hex character), returns the position after it
+static const char* parseHex(const char* p, const char* end, unsigned long long& value)
 {
+    value = 0;
+    for (; p < end; ++p)
+    {
+        char c = *p;
+        int digit = (c >= '0' && c <= '9') ? c - '0' :
+                    (c >= 'a' && c <= 'f') ? c - 'a' + 10 :
+                    (c >= 'A' && c <= 'F') ? c - 'A' + 10 : -1;
+        if (digit < 0)
+            break;
+        value = value * 16 + static_cast<unsigned long long>(digit);
+    }
+    return p;
+}
+
+// Writes the mappings of /proc/self/maps which contain one of the addresses (fault address, registers,
+// backtrace frames), at most MaxMappingLines: the complete map has about 2000 lines, the report needs
+// only the classification of its addresses (heap, mapped file, unmapped). An address in no listed
+// mapping is unmapped. Async-signal-safe: read/write only, no allocation.
+static void writeMemoryMaps(int fd, const unsigned long long* addresses, int num_addresses)
+{
+    using crash_breadcrumbs::writeDec;
     using crash_breadcrumbs::writeStr;
 
-    writeStr(fd, "\nMemory mappings (/proc/self/maps):\n");
+    constexpr int MaxMappingLines = 200;
+
+    writeStr(fd, "\nMemory mappings containing a reported address (/proc/self/maps):\n");
 
     int maps_fd = open("/proc/self/maps", O_RDONLY);
     if (maps_fd < 0)
@@ -148,22 +259,59 @@ static void writeMemoryMaps(int fd)
         return;
     }
 
-    constexpr size_t max_bytes = 1024 * 1024;
-    size_t total = 0;
+    char line[1024];
+    size_t line_len = 0;
+    int written = 0;
+    unsigned long long total = 0;
+
+    auto processLine = [ & ] ()
+    {
+        ++total;
+
+        unsigned long long start = 0, end = 0;
+        const char* p = parseHex(line, line + line_len, start);
+        if (p < line + line_len && *p == '-')
+            parseHex(p + 1, line + line_len, end);
+
+        bool match = false;
+        for (int i = 0; i < num_addresses && !match; ++i)
+            match = addresses[ i ] >= start && addresses[ i ] < end;
+
+        if (match && written < MaxMappingLines)
+        {
+            ssize_t unused = write(fd, line, line_len);
+            (void)unused;
+            writeStr(fd, "\n");
+            ++written;
+        }
+    };
 
     char buf[4096];
     ssize_t n;
-    while (total < max_bytes && (n = read(maps_fd, buf, sizeof(buf))) > 0)
+    while ((n = read(maps_fd, buf, sizeof(buf))) > 0)
     {
-        ssize_t unused = write(fd, buf, static_cast<size_t>(n));
-        (void)unused;
-        total += static_cast<size_t>(n);
+        for (ssize_t i = 0; i < n; ++i)
+        {
+            if (buf[ i ] == '\n')
+            {
+                processLine();
+                line_len = 0;
+            }
+            else if (line_len < sizeof(line))
+            {
+                line[ line_len++ ] = buf[ i ];
+            }
+        }
     }
-
-    if (total >= max_bytes)
-        writeStr(fd, "\n<truncated>\n");
+    if (line_len > 0)
+        processLine();
 
     close(maps_fd);
+
+    writeDec(fd, static_cast<unsigned long long>(written));
+    writeStr(fd, " of ");
+    writeDec(fd, total);
+    writeStr(fd, " mappings\n");
 }
 
 static void writeCrashInfo(int fd, int signum, const siginfo_t* info, const ucontext_t* uc,
@@ -229,7 +377,23 @@ static void writeCrashInfo(int fd, int signum, const siginfo_t* info, const ucon
 
     crash_breadcrumbs::dumpTo(fd);
 
-    writeMemoryMaps(fd);
+    // the addresses of the report, whose mappings are listed
+    unsigned long long addresses[ 160 ];
+    int num_addresses = 0;
+
+    if (info && (signum == SIGSEGV || signum == SIGBUS || signum == SIGFPE))
+        addresses[ num_addresses++ ] = reinterpret_cast<unsigned long long>(info->si_addr);
+
+#if defined(__x86_64__)
+    if (uc)
+        for (int r = 0; r < NGREG && num_addresses < 40; ++r)
+            addresses[ num_addresses++ ] = static_cast<unsigned long long>(uc->uc_mcontext.gregs[ r ]);
+#endif
+
+    for (int i = 0; i < frame_count && num_addresses < 160; ++i)
+        addresses[ num_addresses++ ] = reinterpret_cast<unsigned long long>(frames[ i ]);
+
+    writeMemoryMaps(fd, addresses, num_addresses);
 }
 
 void safeSignalHandler(int signum, siginfo_t* info, void* context)
@@ -242,7 +406,14 @@ void safeSignalHandler(int signum, siginfo_t* info, void* context)
     // --- stderr (captured in log.txt when redirected) ---
     writeCrashInfo(STDERR_FILENO, signum, info, uc, frames, count);
 
-    // --- crash file (only if initCrashLogPath found an AppImage at startup) ---
+    if (crash_log_path[0] != '\0')
+    {
+        crash_breadcrumbs::writeStr(STDERR_FILENO, "\nLog file: ");
+        crash_breadcrumbs::writeStr(STDERR_FILENO, crash_log_path);
+        crash_breadcrumbs::writeStr(STDERR_FILENO, "\n");
+    }
+
+    // --- log file ---
     if (crash_log_path[0] != '\0')
     {
         int fd = open(crash_log_path, O_WRONLY | O_CREAT | O_APPEND, 0644);
@@ -307,36 +478,231 @@ static void logCoreDumpLimit()
                   << std::endl;
 }
 
+#endif
+
+// ---------------------------------------------------------------------------
+// Main-thread stall watchdog: a heartbeat timer on the main thread bumps an atomic
+// timestamp; a watchdog thread signals the main thread (SIGUSR2) when the heartbeat
+// stops for longer than the threshold, and the async-signal-safe handler dumps the
+// main thread's LIVE backtrace to stderr. A "not responding" episode thereby
+// documents itself, with a stack, in whatever captures stderr (the test framework's
+// per-test logs included); the episode's end is logged with its duration. Long
+// stalls re-dump periodically, so a moving stall (several long stretches) shows its
+// progression.
+
+namespace main_thread_stall
+{
+
+static std::atomic<bool>      watchdog_run { false };
+static std::thread            watchdog;
+
+#ifdef _WIN32
+
+// the live backtrace of the stalled main thread needs a signal to the main thread,
+// not available on Windows yet
+static void start(QObject*)
+{
+    logwrn << "stall watchdog not supported on Windows";
+}
+
+#else
+
+static std::atomic<long long> last_beat_ms { 0 };
+static pthread_t              main_thread;
+
+static long long nowMs()
+{
+    return std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
+// runs on the main thread, interrupting whatever it is stuck in - only
+// async-signal-safe calls allowed
+static void stallSignalHandler(int, siginfo_t*, void*)
+{
+    using crash_breadcrumbs::writeStr;
+
+    void* frames[128];
+    int count = backtrace(frames, 128);
+
+    writeStr(STDERR_FILENO, "\n=== MAIN THREAD STALL: heartbeat stopped, live backtrace ===\n");
+    backtrace_symbols_fd(frames, count, STDERR_FILENO);
+    writeStr(STDERR_FILENO, "=== MAIN THREAD STALL: end of backtrace ===\n");
+}
+
+static void start(QObject* heartbeat_parent)
+{
+    const long long threshold_ms = 3000;  // below the window manager's patience
+    const long long redump_ms    = 10000; // progression dumps during long stalls
+
+    main_thread  = pthread_self();
+    last_beat_ms = nowMs();
+
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sigemptyset(&sa.sa_mask);
+    sa.sa_sigaction = stallSignalHandler;
+    sa.sa_flags = SA_SIGINFO | SA_ONSTACK | SA_RESTART;
+    sigaction(SIGUSR2, &sa, nullptr);
+
+    auto* timer = new QTimer(heartbeat_parent);
+    QObject::connect(timer, &QTimer::timeout, [] () { last_beat_ms = nowMs(); });
+    timer->start(100);
+
+    watchdog_run = true;
+    watchdog = std::thread([ threshold_ms, redump_ms ] ()
+    {
+        long long stall_begin = 0;
+        long long last_dump   = 0;
+
+        while (watchdog_run)
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(200));
+
+            long long now = nowMs();
+            long long gap = now - last_beat_ms;
+
+            if (gap > threshold_ms)
+            {
+                if (!stall_begin)
+                {
+                    stall_begin = now - gap;
+                    last_dump   = 0;
+                }
+
+                if (!last_dump || now - last_dump > redump_ms)
+                {
+                    last_dump = now;
+                    pthread_kill(main_thread, SIGUSR2);
+                }
+            }
+            else if (stall_begin)
+            {
+                logwrn << "main thread was stalled for "
+                       << (now - stall_begin) / 1000.0 << " s";
+
+                stall_begin = 0;
+            }
+        }
+    });
+}
+
+#endif
+
+static void stop()
+{
+    watchdog_run = false;
+
+    if (watchdog.joinable())
+        watchdog.join();
+}
+
+// scope guard, so every return path out of main stops the watchdog thread
+struct Scope
+{
+    ~Scope() { stop(); }
+};
+
+} // namespace main_thread_stall
+
 // boost::stacktrace handler for signals where the stack is likely intact
 void signalHandler(int signum)
 {
-    std::cerr << "\nCaught signal: " << signum << std::endl;
+    std::ostringstream ss;
 
-    if (!last_throw_trace.empty())
-    {
-        std::cerr << "\nStacktrace at throw site:\n"
-                  << last_throw_trace << std::endl;
-    }
-    else
-        std::cerr << "\nStacktrace at signal:\n"
-                << boost::stacktrace::stacktrace() << std::endl;
+    ss << "\nCaught signal: " << signum << std::endl;
+
+    // not the last throw site: it belongs to an exception which was probably caught long ago
+    ss << "\nStacktrace at signal:\n"
+       << stacktrace_format::current() << std::endl;
+
+    writeCrashText(ss.str());
+
+#ifdef _WIN32
+    // the default action ends the process with ExitProcess, which unloads the DLLs (exit_hooks.h)
+    exit_hooks::run();
+#endif
 
     signal(signum, SIG_DFL);
     raise(signum);
 }
 
+/**
+ * Directory of the plugin modules, derived from the executable.
+ */
+static std::string pluginDirectory()
+{
+#ifdef _WIN32
+    return Utils::System::executableDir() + "/plugins";
+#else
+    return Utils::System::executableDir() + "/../lib/compass_plugins";
+#endif
+}
+
+/**
+ * Plugins expected as modules (all or none), declared with compass_add_plugin()
+ * in experimental_src/CMakeLists.txt and passed as COMPASS_EXPECTED_PLUGINS (comma-separated, empty without
+ * experimental source).
+ */
+static std::vector<std::string> expectedPlugins()
+{
+    const std::string names = COMPASS_EXPECTED_PLUGINS;
+    if (names.empty())
+        return {};
+
+    return Utils::String::split(names, ',');
+}
+
+/**
+ * Hooks for the libraries that depend on compass_app (extra commands, test labs), which compass_app cannot name.
+ * Notice: loads the plugin modules, asserts if one of the expected plugins fails to load.
+ */
+static AppHooks createAppHooks()
+{
+    AppHooks hooks;
+
+    hooks.plugins = plugin_manager::loadPlugins(pluginDirectory(), expectedPlugins(), true);
+
+#if USE_EXPERIMENTAL_SOURCE == true
+    hooks.register_commands = &extra::init_extra_commands;
+
+    hooks.add_debug_menu_entries = [ ] (QMenu* menu, CompassRoot& root)
+    {
+        TestLabCollection().appendTestLabs(menu, root.compass(), root.taskManager(), root.viewManager());
+    };
+#endif
+
+    return hooks;
+}
+
 int main(int argc, char** argv)
 {
+    // line buffer stdout before the first output: the logger writes through std::cout, which
+    // is fully buffered on a pipe or file, so the last log lines before a crash were lost
+    setvbuf(stdout, nullptr, _IOLBF, 0);
+
     try
     {
+        // hooks which must run before the process ends (exit_hooks.h), on every return path out of
+        // main: declared first, so they run after the destruction of the client
+        exit_hooks::Scope exit_hooks_scope;
+
         std::set_terminate(terminateHandler);
+
+        // throw-site stack traces for the crash reports and Client::notify
+        installThrowHook();
 
         //resolve crash-log path before installing handlers so a very early
         //signal can still be written to disk
         initCrashLogPath();
         if (crash_log_path[0] != '\0')
-            std::cout << "COMPASSClient: crash log path " << crash_log_path << std::endl;
+            std::cout << "COMPASSClient: crash reports go to " << crash_log_path << std::endl;
 
+#ifdef _WIN32
+        SetUnhandledExceptionFilter(unhandledExceptionHandler);
+        SetConsoleCtrlHandler(consoleCtrlHandler, TRUE);
+        signal(SIGTERM, signalHandler);      // external term - stack intact
+#else
         logCoreDumpLimit();
         installAlternateSignalStack();
 
@@ -346,6 +712,7 @@ int main(int argc, char** argv)
         installCrashSignalHandler(SIGABRT);  // heap may be corrupted - allocator untrusted
         signal(SIGTERM, signalHandler);      // external term - stack intact
         signal(SIGPIPE, SIG_IGN);           // prevent crash on broken socket
+#endif
         
         const bool is_app_image = Utils::System::appDir() != nullptr;
 
@@ -397,11 +764,19 @@ int main(int argc, char** argv)
             }
         }
 
-        Client client(argc, argv);
+        Client client(argc, argv, createAppHooks());
 
         if (client.quitRequested())
             return 0;
             // Alternative: _exit(0) to skip static destructors entirely
+
+        //stall self-reporting (hidden option --stall_watchdog): any main thread
+        //stretch above the threshold dumps its own live backtrace to stderr (see
+        //main_thread_stall)
+        main_thread_stall::Scope stall_watchdog_scope;
+
+        if (client.stallWatchdogRequested())
+            main_thread_stall::start(&client);
 
         if (!client.run())
         {
@@ -414,19 +789,23 @@ int main(int argc, char** argv)
     }
     catch (std::exception& ex)
     {
-        cerr << "main: caught exception '" << ex.what() << "'" << endl;
+        std::ostringstream ss;
+        ss << "main: caught exception '" << ex.what() << "'" << endl;
 
-        if (!last_throw_trace.empty())
-            cerr << "\nStacktrace at throw site:\n" << last_throw_trace << endl;
+        const std::string site = throwSiteOf(dynamic_cast<const void*>(&ex));
+        if (!site.empty())
+            ss << "\nStacktrace at throw site:\n" << site << endl;
+
+        writeCrashText(ss.str());
 
         return -1;
     }
     catch (...)
     {
-        cerr << "main: caught exception" << endl;
+        std::ostringstream ss;
+        ss << "main: caught exception of unknown type (no throw site: the thrown object is unknown)" << endl;
 
-        if (!last_throw_trace.empty())
-            cerr << "\nStacktrace at throw site:\n" << last_throw_trace << endl;
+        writeCrashText(ss.str());
 
         return -1;
     }

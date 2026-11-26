@@ -19,8 +19,8 @@
 
 #include "layertreemodel.h"
 #include "layertreedefs.h"
+#include "dbcontentlayer.h"
 
-class DBContentRootItem;
 class AnnotationsRootItem;
 
 /**
@@ -43,7 +43,34 @@ public:
 
     bool showsAnnotations() const { return annotations_root_item_ != nullptr; }
 
+    /// the view's data set is final (source finalize received, neither cleared nor partially updated since)
+    void setDataComplete(bool complete) { data_complete_ = complete; }
+    bool dataComplete() const { return data_complete_; }
+
+    /// Updates the data subtree in place from the entries (see DBContentRootItem::updateFrom()), the view
+    /// releases its old payloads afterwards; vanished items are forgotten.
+    /// - complete data => a reload ends
+    /// - while reloading, updates from incomplete data are skipped => the stale rows stay
+    /// content_final => display not from the loaded data (e.g. an annotation): ends a reload
+    void updateDataSubtree(const std::vector<DBContentRootItem::LeafEntry>& entries,
+                           const std::vector<DBContentRootItem::TopLeafEntry>& top_leaves = {},
+                           bool content_final = false);
+
+    /// a reload starts: the leaves drop their payloads (released by the view next) and show stale until
+    /// the final update; nothing to do if the subtree is empty
+    void beginDataReload();
+    /// removes the items of the data subtree (forgotten), ends a reload
+    void clearDataSubtree();
+    bool dataReloading() const;
+
+    bool hasStaleItems() const override;
+
 private:
+    void setDataStale(bool stale);
+    void notifySubtreeChanged(LayerTreeItem* item);
+
     DBContentRootItem*   dbcontent_root_item_   = nullptr;
     AnnotationsRootItem* annotations_root_item_ = nullptr;
+
+    bool data_complete_ = false; // see setDataComplete()
 };

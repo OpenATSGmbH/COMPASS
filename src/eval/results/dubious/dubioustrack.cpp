@@ -15,19 +15,19 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/dubious/dubioustrack.h"
+#include "results/dubious/dubioustrack.h"
 
-#include "eval/results/base/featuredefinitions.h"
+#include "results/base/featuredefinitions.h"
 
-#include "eval/requirement/base/base.h"
-#include "eval/requirement/dubious/dubioustrack.h"
+#include "requirement/base/base.h"
+#include "requirement/dubious/dubioustrack.h"
 
 #include "evaluationtargetdata.h"
 #include "evaluationmanager.h"
 
 #include "logger.h"
-#include "util/stringconv.h"
-#include "util/timeconv.h"
+#include "stringconv.h"
+#include "timeconv.h"
 #include "viewpoint.h"
 
 #include "traced_assert.h"
@@ -96,12 +96,12 @@ SingleDubiousTrack::SingleDubiousTrack(const std::string& result_id,
 {
     for (const auto& detail_it : details)
     {
-        if (dubious_reasons_.size())
-            dubious_reasons_ += "\n";
+        if (reasons_.size())
+            reasons_ += "\n";
 
         auto dub_reasons_str = dubiousReasonsString(detail_it.comments());
 
-        dubious_reasons_ += to_string(detail_it.getValue(DetailKey::UTNOrTrackNum).toUInt()) + ":" + dub_reasons_str;
+        reasons_ += to_string(detail_it.getValue(DetailKey::UTNOrTrackNum).toUInt()) + ":" + dub_reasons_str;
     }
 
     updateResult();
@@ -216,7 +216,7 @@ nlohmann::json::array_t SingleDubiousTrack::targetTableValuesCustom() const
              resultValueOptional(p_dubious_update_), // "PDU"
              num_tracks_,                            // "#T"
              num_tracks_dubious_,                    // "#DT"
-             dubious_reasons_ };                     // "Reasons"
+             reasons_ };                     // "Reasons"
 }
 
 /**
@@ -224,9 +224,11 @@ nlohmann::json::array_t SingleDubiousTrack::targetTableValuesCustom() const
 std::vector<Single::TargetInfo> SingleDubiousTrack::targetInfos() const
 {
     auto p_dubious_up_var          = SingleProbabilityBase::formatProbabilityOptional(p_dubious_update_);
-    auto track_duration_var        = Utils::String::doubleToStringPrecision(track_duration_all_,2).c_str();
-    auto track_duration_dub_var    = Utils::String::doubleToStringPrecision(track_duration_dubious_,2).c_str();
-    auto track_duration_nondub_var = Utils::String::doubleToStringPrecision(track_duration_nondub_,2).c_str();
+    auto round2 = [] (double value) { return nlohmann::json(std::round(value * 100.0) / 100.0); };
+
+    auto track_duration_var        = round2(track_duration_all_);
+    auto track_duration_dub_var    = round2(track_duration_dubious_);
+    auto track_duration_nondub_var = round2(track_duration_nondub_);
     auto dubious_t_avg_var         = num_tracks_dubious_ > 0 ? nlohmann::json(roundf(track_duration_dubious_/(float)num_tracks_dubious_ * 100.0) / 100.0) : nlohmann::json();
 
     nlohmann::json p_dubious_t_var, p_nondub_t_var;
@@ -249,36 +251,15 @@ std::vector<Single::TargetInfo> SingleDubiousTrack::targetInfos() const
              TargetInfo("Duration Non-Dubious [s]"       , "Duration of non-dubious tracks"         , track_duration_nondub_var),
              TargetInfo("Average Duration Dubious [s]"   , "Average duration of dubious tracks"     , dubious_t_avg_var        ),
              TargetInfo("Duration Dubious Ratio [%]"     , "Duration ratio of dubious tracks"       , p_dubious_t_var          ),
-             TargetInfo("Duration Non-Dubious Ration [%]", "Duration ratio of non-dubious tracks"   , p_nondub_t_var           ) };
-}
-
-/**
-*/
-std::vector<std::string> SingleDubiousTrack::detailHeaders() const
-{
-    return {"ToD", "TN", "Dubious Comment"};
-}
-
-/**
-*/
-nlohmann::json::array_t SingleDubiousTrack::detailValues(const EvaluationDetail& detail,
-                                                         const EvaluationDetail* parent_detail) const
-{
-    traced_assert(parent_detail);
-
-    return { Utils::Time::toString(detail.timestamp()),
-             parent_detail->getValue(DetailKey::UTNOrTrackNum).toUInt(),
-             dubiousReasonsString(detail.comments()) }; // "Comment"
+             TargetInfo("Duration Non-Dubious Ratio [%]", "Duration ratio of non-dubious tracks"   , p_nondub_t_var           ) };
 }
 
 /**
 */
 bool SingleDubiousTrack::detailIsOkStatic(const EvaluationDetail& detail)
 {
-    auto comments = detail.comments().group(DetailCommentGroupDubious);
-    bool is_dub   = (comments.has_value() && !comments->empty());
-
-    return !is_dub;
+    //a test report is dubious by its reason bits, a period (parent detail) by its reasons
+    return !isDubiousUpdate(detail) && !detail.comments().hasComments(DetailCommentGroupDubious);
 }
 
 /**
@@ -446,7 +427,7 @@ FeatureDefinitions JoinedDubiousTrack::getCustomAnnotationDefinitions() const
         return boost::optional<bool>(SingleDubiousTrack::detailIsOkStatic(detail));
     };
 
-    defs.addDefinition<FeatureDefinitionBinaryGrid>(requirement()->name(), calculator_, "Passed")
+    defs.addDefinition<FeatureDefinitionIssueCountGrid>(requirement()->name(), calculator_, "Issues")
         .addDataSeries(ValueSource<bool>(getValue), 
                        GridAddDetailMode::AddEvtPosition, 
                        false);

@@ -16,7 +16,8 @@
  */
 
 #include "scatterplotviewchartview.h"
-#include "scatterplotviewdatawidget.h"
+#include "scatterplotviewrenderwidget.h"
+#include "traced_assert.h"
 #include "logger.h"
 
 #include <QApplication>
@@ -31,16 +32,19 @@ namespace QtCharts
 
 /**
  */
-ScatterPlotViewChartView::ScatterPlotViewChartView (ScatterPlotViewDataWidget* data_widget, 
-                                                    QChart* chart, 
+ScatterPlotViewChartView::ScatterPlotViewChartView (ScatterPlotViewRenderWidget* render_widget,
+                                                    QChart* chart,
+                                                    bool use_opengl,
                                                     QWidget* parent)
-:   //the data is drawn with OpenGL acceleration, which composites above any
+:   //data drawn with OpenGL acceleration composites above any
     //widget laid over the chart, so the selection has to be an accelerated
     //series too
-    ChartView   (chart, ChartView::SelectionStyle::SeriesLines, parent)
-,   data_widget_(data_widget)
+    ChartView     (chart,
+                   use_opengl ? ChartView::SelectionStyle::SeriesLines : ChartView::SelectionStyle::RubberBand,
+                   parent)
+,   render_widget_(render_widget)
 {
-    traced_assert(data_widget_);
+    traced_assert(render_widget_);
 }
 
 /**
@@ -64,9 +68,7 @@ bool ScatterPlotViewChartView::handleMousePress(Qt::MouseButtons buttons, const 
 {
     if (buttons & Qt::LeftButton)
     {
-        ScatterPlotViewDataTool tool = data_widget_->selectedTool();
-
-        if (tool == SP_NAVIGATE_TOOL)
+        if (render_widget_->dragEnabled())
         {
             logdbg << "navigate x " << widget_pos.x() << " y " << widget_pos.y();
 
@@ -75,7 +77,7 @@ bool ScatterPlotViewChartView::handleMousePress(Qt::MouseButtons buttons, const 
 
             return true;
         }
-        else if (tool == SP_ZOOM_RECT_TOOL || tool == SP_SELECT_TOOL)
+        else if (render_widget_->rectangleRequested())
         {
             loginf << "rect x " << widget_pos.x() << " y " << widget_pos.y();
 
@@ -105,9 +107,7 @@ bool ScatterPlotViewChartView::handleMouseMove(Qt::MouseButtons buttons, const Q
 {
     if (buttons & Qt::LeftButton)
     {
-        ScatterPlotViewDataTool tool = data_widget_->selectedTool();
-
-        if (tool == SP_NAVIGATE_TOOL)
+        if (render_widget_->dragEnabled())
         {
             logdbg << "navigate x " << widget_pos.x() << " y " << widget_pos.y() << " drag_data_init " << drag_data_init_;
 
@@ -122,7 +122,7 @@ bool ScatterPlotViewChartView::handleMouseMove(Qt::MouseButtons buttons, const Q
 
             return true;
         }
-        else if ((tool == SP_ZOOM_RECT_TOOL || tool == SP_SELECT_TOOL) && isSelectionEnabled())
+        else if (render_widget_->rectangleRequested() && isSelectionEnabled())
         {
             logdbg << "rect x " << widget_pos.x() << " y " << widget_pos.y();
 
@@ -147,9 +147,7 @@ bool ScatterPlotViewChartView::handleMouseRelease(Qt::MouseButtons buttons, cons
 {
     if (buttons & Qt::LeftButton)
     {
-        ScatterPlotViewDataTool tool = data_widget_->selectedTool();
-
-        if (tool == SP_NAVIGATE_TOOL)
+        if (render_widget_->dragEnabled())
         {
             logdbg << "navigate x " << widget_pos.x() << " y " << widget_pos.y();
 
@@ -157,7 +155,7 @@ bool ScatterPlotViewChartView::handleMouseRelease(Qt::MouseButtons buttons, cons
 
             return true;
         }
-        else if ((tool == SP_ZOOM_RECT_TOOL || tool == SP_SELECT_TOOL) && isSelectionEnabled())
+        else if (render_widget_->rectangleRequested() && isSelectionEnabled())
         {
             loginf << "rect x " << widget_pos.x() << " y " << widget_pos.y();
 
@@ -186,12 +184,11 @@ bool ScatterPlotViewChartView::handleMouseRelease(Qt::MouseButtons buttons, cons
 }
 
 /**
+ * Reports the selected region (chart coordinates) to the render widget.
  */
 void ScatterPlotViewChartView::sendSelectedRegion()
 {
-    auto region = selectedChartRegion();
-
-    emit rectangleSelectedSignal(region.topLeft(), region.bottomRight());
+    render_widget_->rectangleSelected(selectedChartRegion());
 }
 
 /**

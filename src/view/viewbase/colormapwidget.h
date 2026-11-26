@@ -17,16 +17,14 @@
 
 #pragma once
 
-#include "colormap.h"
 #include "colorlegend.h"
 
 #include <QWidget>
 
-class ColorMap;
-
 class QHBoxLayout;
 
 /**
+ * Shows a color legend (one row per entry: color square and text).
 */
 class ColorLegendWidget : public QWidget
 {
@@ -34,23 +32,16 @@ public:
     ColorLegendWidget(QWidget* parent = nullptr);
     virtual ~ColorLegendWidget();
 
-    void setColorMap(const ColorMap& colormap);
-    void setDecorator(const ColorMap::ValueDecorator& d);
-    void showSelectionColor(bool ok);
-    void showNullColor(bool ok);
-
-    void updateUI();
+    void setLegend(const ColorLegend& legend);
+    void clear();
 
     const ColorLegend& currentLegend() const { return legend_; }
 
 private:
     void createUI();
+    void updateUI();
 
-    ColorMap                 colormap_;
-    ColorLegend              legend_;
-    ColorMap::ValueDecorator decorator_;
-    bool                     show_selection_col_ = false;
-    bool                     show_null_col_ = false;
+    ColorLegend  legend_;
 
     QHBoxLayout* layout_ = nullptr;
     QWidget*     widget_ = nullptr;

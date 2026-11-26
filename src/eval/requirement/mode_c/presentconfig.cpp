@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/mode_c/presentconfig.h"
-#include "eval/requirement/mode_c/present.h"
-#include "eval/requirement/mode_c/modecpresentconfigwidget.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
+#include "requirement/mode_c/presentconfig.h"
+#include "requirement/mode_c/present.h"
+#include "requirement/mode_c/modecpresentconfigwidget.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 using namespace std;
 
@@ -53,12 +53,14 @@ BaseConfigWidget* ModeCPresentConfig::createWidget()
 
 void ModeCPresentConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
+    BaseConfig::addToReport(report);
+
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
-    auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& table = section.getTable("req_table");
 
-    table.addRow({"Probability [1]", "Probability of Mode C code present",
-                  roundf(prob_ * 10000.0) / 100.0});
+    table.addRow({"Probability [%]", "Probability of Mode C code present",
+                  probabilityPercent(prob_)});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
 }

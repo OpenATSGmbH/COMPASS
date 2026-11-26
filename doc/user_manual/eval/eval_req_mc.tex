@@ -5,7 +5,8 @@
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=14cm,frame]{figures/eval_req_mc_correct.png}
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_mc_correct.png}
   \caption{Evaluation Mode C Correct requirement}
 \end{figure}
 
@@ -82,7 +83,8 @@ Also, a table is given for all single targets, sorted by PC.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=14cm,frame]{figures/eval_req_mc_correct_periods.png}
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_mc_correct_periods.png}
   \caption{Evaluation Mode C Correct Periods requirement}
 \end{figure}
 
@@ -92,6 +94,7 @@ For each target existing in the reference data (within the current sector) a tes
 be detected correctly within each test update interval. Correctly here means up to a certain configurable threshold.
 Update intervals without correct Mode C code are counted as misses, which are used to calculate the probability of correct Mode C
 detection, which has to fulfill a given threshold.
+A reference period with test target reports, but without a correct Mode C code, counts all its update intervals as missed. A test target report without a Mode C code is not correct. If the reference has no Mode C code, the test target report counts as correct.
 
 \begin{itemize}  
     \item Probability [1]: Probability of correct Mode C code detection
@@ -99,8 +102,31 @@ detection, which has to fulfill a given threshold.
     \item Update Interval [s]: Update interval of the test data
     \item Use Miss Tolerance: Checkbox if miss tolerance should be used
     \item Miss Tolerance [s]: Acceptable time delta for miss detection
+    \item Exclude Detection Misses: Checkbox if only update intervals with a test target report should be counted
     \item Maximum Offset [ft]: Maximum absolute distance between reference and test value for Mode C code to be counted as correct
+    \item Level Flight Only: Checkbox if only reference periods in level flight should be used
+    \item Maximum Level ROCD [ft/min]: Maximum absolute reference rate of climb/descent for level flight, only used if 'Level Flight Only' is set
 \end{itemize}
+\ \\
+
+If 'Level Flight Only' is set, the following applies:
+\begin{itemize}
+    \item A reference update is in level flight if its rate of climb/descent (ROCD) exists and its absolute value is not larger than 'Maximum Level ROCD'.
+    \item The reference periods only contain reference updates inside the sector and in level flight. Climbing and descending segments are not evaluated.
+    \item A reference update without ROCD is not in level flight.
+    \item Test target reports outside these periods get the comment 'Outside sector/reference period or not in level flight'.
+\end{itemize}
+\ \\
+
+This option implements EUROCAE ED-142 section 6.4.3, which uses segments of trajectories with constant flight level only. In the supplied ED-142 standard it is set with a 'Maximum Level ROCD' of 300 ft/min. \\
+
+If 'Exclude Detection Misses' is set, the following applies:
+\begin{itemize}
+    \item Detection misses are update intervals without any test target report. They are counted from the gaps between all test target reports, in the same way as the misses.
+    \item The detection misses are removed from the expected and from the missed update intervals. The probability is then the probability of a correct Mode C code within an update interval in which a test target report was output.
+    \item This option implements EUROCAE ED-142 section 6.4.3. It is set in the supplied ED-142 standard.
+\end{itemize}
+\ \\
 
 \subsubsection{Result Values}
 
@@ -153,7 +179,8 @@ detection, which has to fulfill a given threshold.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=14cm,frame]{figures/eval_req_mc_false.png}
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_mc_false.png}
   \caption{Evaluation Mode C False requirement}
 \end{figure}
 
@@ -231,7 +258,8 @@ Also, a table is given for all single targets, sorted by PF.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=14cm,frame]{figures/eval_req_mc_present.png}
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_mc_present.png}
   \caption{Evaluation Mode C Present requirement}
 \end{figure}
 
@@ -306,7 +334,8 @@ Also, a table is given for all single targets, sorted by PP.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=14cm,frame]{figures/eval_req_rocd_correct.png}
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_rocd_correct.png}
   \caption{Evaluation ROCD Correct requirement}
 \end{figure}
 

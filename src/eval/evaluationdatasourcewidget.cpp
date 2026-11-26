@@ -21,7 +21,7 @@
 #include "db_context_manager.h"
 #include "evaluationcalculator.h"
 #include "evaluationmanager.h"
-#include "compass.h"
+#include "ui_test_common.h"
 
 #include <QLabel>
 #include <QCheckBox>
@@ -69,8 +69,9 @@ EvaluationDataSourceWidget::EvaluationDataSourceWidget(EvaluationCalculator& cal
     if (title_ == "Reference Data")
         excluded_dbcontents = {"CAT001", "CAT048"};
 
-    dbcont_combo_ = new DBContentComboBox(calculator_.manager().compass().dbContentManager(),
+    dbcont_combo_ = new DBContentComboBox(calculator_.manager().dbContentManager(),
                                           false, true, excluded_dbcontents);
+    dbcont_combo_->QObject::setObjectName("dbcontent_combo");
 
     if (dbcont_combo_->findText(dbcontent_name_.c_str()) >= 0)
     {
@@ -107,6 +108,7 @@ EvaluationDataSourceWidget::EvaluationDataSourceWidget(EvaluationCalculator& cal
     line_lay->addWidget(new QLabel("Line ID"), 0, 0);
 
     QComboBox* line_box = new QComboBox();
+    line_box->setObjectName("line_combo");
     line_box->addItems({"1", "2", "3", "4"});
     line_box->setCurrentIndex(line_id_);
 
@@ -118,9 +120,9 @@ EvaluationDataSourceWidget::EvaluationDataSourceWidget(EvaluationCalculator& cal
 
     setLayout(main_layout);
 
-    connect(&calculator_.manager().compass().dbContextManager(), &context::DBContextManager::activeContextChangedSignal,
+    connect(&calculator_.manager().dbContextManager(), &context::DBContextManager::activeContextChangedSignal,
             this, &EvaluationDataSourceWidget::updateDataSourcesSlot); // update if data sources changed
-    connect(&calculator_.manager().compass().dbContextManager(), &context::DBContextManager::dataSourcesChangedSignal,
+    connect(&calculator_.manager().dbContextManager(), &context::DBContextManager::dataSourcesChangedSignal,
             this, &EvaluationDataSourceWidget::updateDataSourcesSlot);
 }
 
@@ -136,7 +138,7 @@ void EvaluationDataSourceWidget::updateDataSourcesSlot()
     traced_assert(data_source_layout_);
 
     QLayoutItem* child;
-    while (!data_source_layout_->isEmpty() && (child = data_source_layout_->takeAt(0)) != nullptr)
+    while ((child = data_source_layout_->takeAt(0)) != nullptr)
     {
         if (child->widget())
             delete child->widget();
@@ -148,7 +150,7 @@ void EvaluationDataSourceWidget::updateDataSourcesSlot()
     unsigned int col, row;
     unsigned int cnt = 0;
 
-    auto& ctx_man = calculator_.manager().compass().dbContextManager();
+    auto& ctx_man = calculator_.manager().dbContextManager();
 
     map<string, bool> data_sources;
 
@@ -161,7 +163,7 @@ void EvaluationDataSourceWidget::updateDataSourcesSlot()
 
     for (auto& it : data_sources)
     {
-        ds_id = stoul(it.first);
+        ds_id = stoull(it.first);
 
         if (!ctx_man.hasDataSource(ds_id))
             continue;
@@ -170,6 +172,7 @@ void EvaluationDataSourceWidget::updateDataSourcesSlot()
         traced_assert(ds);
 
         QCheckBox* checkbox = new QCheckBox(tr(ds->name().c_str()));
+        UI_TEST_OBJ_NAME(checkbox, QString::fromStdString("data_source_" + ds->name()));
         checkbox->setChecked(it.second);
         checkbox->setProperty("id", ds_id);
         connect(checkbox, SIGNAL(clicked()), this, SLOT(toggleDataSourceSlot()));

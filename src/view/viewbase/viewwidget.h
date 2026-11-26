@@ -17,28 +17,40 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
+#include <functional>
 #include <memory>
+#include <string>
+#include <vector>
 
 #include <QWidget>
 
 #include "appmode.h"
+#include "configpanelstate.h"
 #include "ui_test_testable.h"
 #include "traced_assert.h"
 
 #include <boost/optional.hpp>
 
+#include <limits>
+
 //class EventProcessor;
 class View;
+class ViewModel;
+class ViewRenderWidget;
 class ViewToolWidget;
-class ViewDataWidget;
 class ViewConfigWidget;
 class ViewToolSwitcher;
 class ViewLoadStateWidget;
 class ViewPresetWidget;
 class ViewInfoWidget;
+class ViewLayerTreeModel;
+class DBContentDataSet;
 
 class QSplitter;
 class QLayout;
+class QHBoxLayout;
 
 /**
 @brief Base class for a views "display" component.
@@ -50,9 +62,9 @@ A ViewWidget consists of a standard layout with a set of typical components loca
 Some of them need to be derived and set manually in the derived ViewWidget's constructor, some are pregenerated and can
 be used directly.
 _____________________________________________________________________________
-|_ViewPresetWidget____|________ViewToolWidget________________________________|           
+|_ViewPresetWidget____|________ViewToolWidget________________________________|
 |                                              ||                            |
-| ViewDataWidget                               || ViewConfigWidget           |
+| ViewRenderWidget                             || ViewConfigWidget           |
 |                                              ||                            |
 |                                              ||                            |
 |                                              ||                            |
@@ -73,22 +85,23 @@ _____________________________________________________________________________
 |'Lower widget'                                                              |
 |____________________________________________________________________________|
 
-ViewDataWidget [derive]: Visualizes the data of the view (e.g. a graph). Located on the left side of the widget.
-Needs to be derived and then set via setDataWidget() in the constructor of the derived class.
+ViewModel and ViewRenderWidget [derive]: The model holds and processes the data of the view, the render widget
+visualizes it (e.g. a graph). The render widget is located on the left side of the widget.
+Both are set via setRenderWidget() in the constructor of the derived class. The view owns the model.
+The view widget runs the data flows of the view (load, update, clear, redraw) on the model and the render widget.
 
 ViewConfigWidget [derive]: Implements a configuration area for the view located on the right side of the widget.
 Needs to be derived and then set via setConfigWidget() in the constructor of the derived class.
 
 ViewPresetWidget: Widget for selecting and editing view presets. No need to derive.
 
-ViewToolWidget: A toolbar located above the ViewDataWidget, holding the view's needed tool buttons and actions.
-This is a generic class which doesn't need to be derived, but is rather filled in the derived ViewWidget's constructor and
-provided with all needed callbacks. Interacts with the ViewDataWidget to switch the view's active tool and handles tool
-interaction like activating, deactivating and canceling tools.
+ViewToolWidget: A toolbar located above the render widget, holding the view's needed tool buttons and actions.
+The toolbar is created in setRenderWidget(), from the tool switcher of the render widget. It shows the tools
+registered there (ViewRenderWidget::registerTool()).
 
 ViewLoadStateWidget: A widget located below the configuration area. Provides state information for the view
-and means to update the view manually. Interacts with the ViewWidget and the ViewDataWidget to e.g.issue reloads and redraws,
-ot to obtain state information from them.
+and means to update the view manually. Interacts with the ViewWidget to e.g.issue reloads and redraws,
+ot to obtain state information from it.
 
 'Lower widget': This is a widget residing on the bottom along the whole ViewWidget's width.
 Any QWidget derived class can be set as the 'lower widget' via setLowerWidget().
@@ -97,18 +110,22 @@ The widget's container is only visible if the widget is set.
 The ViewWidget acts both to generate the basic layout and to handle interaction between all these components.
 It also serves as the View's main interface to all ui and display functionality.
 */
-class ViewWidget : public QWidget, public ui_test::UITestable
+class COMPASS_VIEW_API ViewWidget : public QWidget, public ui_test::UITestable
 {
     Q_OBJECT
 
 signals:
     void viewRefreshed();
+    /// the display of the render widget changed (redraw, new display data)
+    void displayChangedSignal();
 
 public:
+    /// gives the display data of the model and the render options of the view to the render widget
+    typedef std::function<void()>                UpdateDisplayFunc;
+    typedef std::function<void(nlohmann::json&)> DataInfoFunc;
+
     ViewWidget(View* view, QWidget* parent = nullptr);
     virtual ~ViewWidget();
-
-    void toggleConfigWidget();
 
     void updateToolWidget();
     void updateLoadState();
@@ -122,11 +139,43 @@ public:
     void loadingDone();
     void redrawStarted();
     void redrawDone();
-    void appModeSwitch(AppMode app_mode);
+    virtual void appModeSwitch(AppMode app_mode);
     void configChanged();
 
-    ViewDataWidget* getViewDataWidget() { traced_assert(data_widget_); return data_widget_; }
-    const ViewDataWidget* getViewDataWidget() const { traced_assert(data_widget_); return data_widget_; }
+    // data flows, run on the model and the render widget
+
+    void updateFromSource(const DBContentDataSet& source,
+                          const std::vector<std::string>& names, bool reset, bool last);
+    /// Redraws the display. recompute: the model computes the display data again, can run asynchronously.
+    /// notify: emits the redraw start and end to the components (manual redraws, e.g. ViewLoadStateWidget).
+    void redrawData(bool recompute, bool notify = false);
+    void liveReload();
+    /// a reload follows the next clear, see ViewModel::beginDataReload()
+    void beginDataReload();
+    void attachLayerPanel(ViewLayerTreeModel* layer_model);
+
+    // data state
+
+    bool hasData() const;
+    virtual bool hasAnnotations() const;
+    bool hasContent() const;
+    bool hasVisibleContent() const;
+    bool isDrawn() const;
+    bool isContentDrawn() const;
+    /// the model still processes data asynchronously, see ViewModel::hasPendingProcessing()
+    bool hasPendingProcessing() const;
+
+    // screenshots
+
+    virtual bool hasScreenshotContent() const;
+    /// the contents of the render widget as an image
+    virtual QImage renderData();
+
+    ViewModel& model() { traced_assert(model_); return *model_; }
+    const ViewModel& model() const { traced_assert(model_); return *model_; }
+    ViewRenderWidget& renderWidget() { traced_assert(render_widget_); return *render_widget_; }
+    const ViewRenderWidget& renderWidget() const { traced_assert(render_widget_); return *render_widget_; }
+
     ViewConfigWidget* getViewConfigWidget() { traced_assert(config_widget_); return config_widget_; }
     const ViewConfigWidget* getViewConfigWidget() const { traced_assert(config_widget_); return config_widget_; }
 
@@ -157,11 +206,14 @@ public:
     static const int DataWidgetStretch;
     static const int ConfigWidgetStretch;
 
+    static const int ToolScreenshot;
+    static const int ToolConfigPanel;
+
 protected:
     ViewToolWidget* getViewToolWidget() { traced_assert(tool_widget_); return tool_widget_; }
     const ViewToolWidget* getViewToolWidget() const { traced_assert(tool_widget_); return tool_widget_; }
-    ViewToolSwitcher* getViewToolSwitcher() { traced_assert(tool_switcher_); return tool_switcher_.get(); }
-    const ViewToolSwitcher* getViewToolSwitcher() const { traced_assert(tool_switcher_); return tool_switcher_.get(); }
+    ViewToolSwitcher* getViewToolSwitcher() { traced_assert(tool_switcher_); return tool_switcher_; }
+    const ViewToolSwitcher* getViewToolSwitcher() const { traced_assert(tool_switcher_); return tool_switcher_; }
     ViewLoadStateWidget* getViewLoadStateWidget() { traced_assert(state_widget_); return state_widget_; }
     const ViewLoadStateWidget* getViewLoadStateWidget() const { traced_assert(state_widget_); return state_widget_; }
     ViewPresetWidget* getViewPresetWidget() { return preset_widget_; }
@@ -189,21 +241,57 @@ protected:
      */
     virtual bool showInfoWidget() { return false; }
 
-    void setDataWidget(ViewDataWidget* w);
+    /// Sets the model (NOT owned, the view owns it and it must outlive the view widget) and the render widget
+    /// (shown in the data area). update_display gives the render widget the display data of the model and the
+    /// render options of the view. It runs on each new display data of the model and on each redraw without
+    /// recompute. initial_display: the render widget shows the display before the first load, it does not
+    /// count as drawn.
+    void setRenderWidget(ViewModel* model,
+                         ViewRenderWidget* render_widget,
+                         const UpdateDisplayFunc& update_display,
+                         bool initial_display = true);
+    /// replaces the default data view info (of the model, then of the render widget)
+    void setDataInfoFunc(const DataInfoFunc& func) { data_info_ = func; }
+    /// The render widget changed its display without a redraw of the view widget (e.g. an asynchronous commit).
+    /// Notifies the components, not during a redraw of the view widget, which notifies them itself.
+    void renderDisplayChanged();
+
     void setConfigWidget(ViewConfigWidget* w);
     void setLowerWidget(QWidget* w);
+
+    void resizeEvent(QResizeEvent* event) override;
 
 private:
     void createStandardLayout();
     void connectWidgets();
+    void registerHostTools();
+
+    void updateConfigPanel(config_panel::UserAction action);
+
+    /// the model has new display data, e.g. from the commit of an asynchronous recompute
+    void displayDataChanged();
+    nlohmann::json dataInfoJSON() const;
+
+    /// the model finished asynchronous processing - emits the deferred
+    /// viewRefreshed() edge (see loadingDone)
+    void modelProcessingFinished();
+
+    /// viewRefreshed() was held back in loadingDone() because the model was still
+    /// processing the load asynchronously
+    bool refresh_pending_ = false;
+
+    /// inside redrawData(), which notifies the components itself
+    bool redrawing_ = false;
 
     static const int PresetSelectionWidth  = 200;
     static const int PresetSelectionSpacer = 20;
+    static const int DataMinWidth          = 250;
 
     /// The view the widget is part of
     View* view_ = nullptr;
 
     //containers
+    QHBoxLayout*    top_layout_              = nullptr;
     QSplitter*      main_splitter_           = nullptr;
     QWidget*        data_widget_container_   = nullptr;
     QWidget*        config_widget_container_ = nullptr;
@@ -212,7 +300,8 @@ private:
 
     //view widget components
     ViewToolWidget*      tool_widget_   = nullptr;
-    ViewDataWidget*      data_widget_   = nullptr;
+    ViewModel*           model_         = nullptr; // NOT owned
+    ViewRenderWidget*    render_widget_ = nullptr;
     ViewConfigWidget*    config_widget_ = nullptr;
     ViewInfoWidget*      info_widget_   = nullptr;
     ViewLoadStateWidget* state_widget_  = nullptr;
@@ -220,7 +309,15 @@ private:
     
     QWidget*             lower_widget_  = nullptr;
 
-    std::unique_ptr<ViewToolSwitcher> tool_switcher_;
+    /// the switcher the toolbar shows, of the render widget
+    ViewToolSwitcher* tool_switcher_ = nullptr;
+
+    UpdateDisplayFunc update_display_;
+    DataInfoFunc      data_info_;
 
     bool init_ = false;
+
+    config_panel::State config_panel_state_ = config_panel::State::Expanded;
+    /// no width yet counts as wide, so the first width can collapse the panel
+    int config_panel_view_width_ = std::numeric_limits<int>::max();
 };

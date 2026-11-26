@@ -2,6 +2,7 @@
 
 #include "spline_interpolator.h"
 #include "test_reconstruction_common.h"
+#include "number.h"
 
 #include <cmath>
 
@@ -40,7 +41,7 @@ TEST_CASE("spline interpolator resamples a straight line", "[reconstruction][spl
         mms.push_back(makeMeasurement(
             base_lat,
             base_lon + (v_ms * i * dt_in) / metersPerDegLon(base_lat),
-            t0 + boost::posix_time::seconds((long)(i * dt_in))));
+            t0 + boost::posix_time::seconds((std::int64_t)(i * dt_in))));
 
     SplineInterpolator interp;
     interp.config().sample_dt = 1.0;
@@ -95,7 +96,7 @@ TEST_CASE("spline interpolator handles a curved trajectory", "[reconstruction][s
 
         mms.push_back(makeMeasurement(base_lat + y / MetersPerDegLat,
                                       base_lon + x / metersPerDegLon(base_lat),
-                                      t0 + boost::posix_time::seconds((long)(i * dt_in))));
+                                      t0 + boost::posix_time::seconds((std::int64_t)(i * dt_in))));
     }
 
     SplineInterpolator interp;
@@ -127,16 +128,54 @@ TEST_CASE("spline interpolator splits on time gaps", "[reconstruction][spline]")
     // two groups of measurements separated by a 60 s gap
     for (size_t i = 0; i < 5; ++i)
         mms.push_back(makeMeasurement(47.0, 16.0 + i * 0.001,
-                                      t0 + boost::posix_time::seconds((long)(i * 4))));
+                                      t0 + boost::posix_time::seconds((std::int64_t)(i * 4))));
     for (size_t i = 0; i < 5; ++i)
         mms.push_back(makeMeasurement(47.0, 16.1 + i * 0.001,
-                                      t0 + boost::posix_time::seconds((long)(80 + i * 4))));
+                                      t0 + boost::posix_time::seconds((std::int64_t)(80 + i * 4))));
 
     auto parts = SplineInterpolator::splitMeasurements(mms, 30.0);
 
     REQUIRE(parts.size() == 2);
     CHECK(parts[0].size() == 5);
     CHECK(parts[1].size() == 5);
+}
+
+TEST_CASE("spline interpolator interpolates the velocity bearing towards the second measurement", "[reconstruction][spline]")
+{
+    // velocity of 100 m/s with bearing b0 at the first and b1 at the second measurement,
+    // the interpolated bearing has to lie between b0 and b1 (minimum angle)
+    auto bearingAt = [] (double b0_deg, double b1_deg, double factor)
+    {
+        boost::posix_time::ptime t0(boost::gregorian::date(2026, 6, 9),
+                                    boost::posix_time::time_duration(12, 0, 0));
+
+        Measurement mm0, mm1;
+        mm0.t = t0;
+        mm1.t = t0 + boost::posix_time::seconds(1);
+
+        auto v0 = Utils::Number::speedAngle2SpeedVec(100.0, b0_deg);
+        auto v1 = Utils::Number::speedAngle2SpeedVec(100.0, b1_deg);
+
+        mm0.vx = v0.first;
+        mm0.vy = v0.second;
+        mm1.vx = v1.first;
+        mm1.vy = v1.second;
+
+        auto mm = SplineInterpolator::interpMeasurement(Eigen::Vector2d(0.0, 0.0), t0 + boost::posix_time::milliseconds(500),
+                                                        mm0, mm1, factor, CoordSystem::Cart,
+                                                        SplineInterpolator::CovMatInterpMode::Linear);
+        REQUIRE(mm.vx.has_value());
+        REQUIRE(mm.vy.has_value());
+
+        double b = Utils::Number::speedVec2SpeedAngle(*mm.vx, *mm.vy).second;
+        return b < 0.0 ? b + 360.0 : b;
+    };
+
+    CHECK(bearingAt(10.0,  20.0,  0.5) == Approx(15.0));
+    CHECK(bearingAt(20.0,  10.0,  0.5) == Approx(15.0));
+    CHECK(bearingAt(10.0,  20.0,  0.25) == Approx(12.5));
+    CHECK(bearingAt(350.0, 10.0,  0.5) == Approx(0.0).margin(1e-9));
+    CHECK(bearingAt(170.0, 190.0, 0.5) == Approx(180.0));
 }
 
 TEST_CASE("spline state vector and covariance blending", "[reconstruction][spline]")

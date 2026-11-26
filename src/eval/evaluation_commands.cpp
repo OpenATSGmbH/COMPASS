@@ -18,51 +18,55 @@
 #include "evaluation_commands.h"
 #include "rtcommand/rtcommand_macros.h"
 #include "rtcommand_registry.h"
-#include "compass.h"
 #include "evaluationmanager.h"
 #include "evaluationcalculator.h"
 #include "evaluationstandard.h"
 #include "requirement/group.h"
 #include "requirement/base/baseconfig.h"
-#include "mainwindow.h"
-#include "compass.h"
+#include "appstate.h"
 #include "dbcontentmanager.h"
+#include "evaluationtargetfilter.h"
+#include "targetmodel.h"
 
 #include <boost/program_options.hpp>
 
-REGISTER_RTCOMMAND(RTCommandEvaluate)
-REGISTER_RTCOMMAND(RTCommandGetEvalStandards)
-
-static COMPASS* s_compass = nullptr;
-
 /**
 */
-void init_evaluation_commands(COMPASS& compass)
+void init_evaluation_commands(rtcommand::RTCommandRegistry& registry,
+                              EvaluationManager& eval_manager)
 {
-    s_compass = &compass;
-    RTCommandEvaluate::init();
-    RTCommandGetEvalStandards::init();
+    registry.registerCommand<RTCommandEvaluate>(eval_manager);
+    registry.registerCommand<RTCommandFilterEvalTargets>(eval_manager);
+    registry.registerCommand<RTCommandGetEvalStandards>(eval_manager);
 }
 
 /***************************************************************************************
  * RTCommandEvaluate
  ***************************************************************************************/
 
+/**
+ */
+RTCommandEvaluate::RTCommandEvaluate(EvaluationManager& eval_manager)
+    : rtcommand::RTCommand()
+    , eval_manager_(eval_manager)
+{
+}
+
 bool RTCommandEvaluate::run_impl()
 {
-    if (!(*s_compass).dbOpened())
+    if (!eval_manager_.appState().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if ((*s_compass).appMode() != AppMode::Offline) // to be sure
+    if (eval_manager_.appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+(*s_compass).appModeStr());
+        setResultMessage("Wrong application mode "+eval_manager_.appState().appModeStr());
         return false;
     }
 
-    EvaluationManager& eval_man = (*s_compass).evaluationManager();
+    EvaluationManager& eval_man = eval_manager_;
 
     //try to parse configuration
     if (!config_.empty())
@@ -76,7 +80,7 @@ bool RTCommandEvaluate::run_impl()
     }
 
     if (run_filter_)
-        (*s_compass).dbContentManager().autoFilterUTNS();
+        eval_manager_.dbContentManager().autoFilterUTNS();
 
     auto can_evaluate = eval_man.canEvaluate();
     if (!can_evaluate.ok())
@@ -93,6 +97,10 @@ bool RTCommandEvaluate::run_impl()
         return false;
     }
 
+    nlohmann::json reply;
+    reply["report"] = eval_man.lastResultName();
+    setJSONReply(reply);
+
     return true;
 }
 
@@ -100,8 +108,8 @@ void RTCommandEvaluate::collectOptions_impl(OptionsDescription& options,
                                           PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-        ("config,c", po::value<std::string>()->default_value(""), "evaluation configuration as json string")
-        ("result,r", po::value<std::string>()->default_value(""), "name under which the evaluation result will be stored")
+        ("config,c", po::value<std::string>()->default_value(""), "evaluation configuration as JSON string")
+        ("result,r", po::value<std::string>()->default_value(""), "name under which the evaluation result will be stored, default name if empty")
         ("run_filter,f", "run evaluation filter before evaluation");
 }
 
@@ -113,24 +121,99 @@ void RTCommandEvaluate::assignVariables_impl(const VariablesMap& variables)
 }
 
 /***************************************************************************************
+ * RTCommandFilterEvalTargets
+ ***************************************************************************************/
+
+/**
+ */
+RTCommandFilterEvalTargets::RTCommandFilterEvalTargets(EvaluationManager& eval_manager)
+    : rtcommand::RTCommand()
+    , eval_manager_(eval_manager)
+{
+}
+
+bool RTCommandFilterEvalTargets::run_impl()
+{
+    if (!eval_manager_.appState().dbOpened())
+    {
+        setResultMessage("Database not opened");
+        return false;
+    }
+
+    if (eval_manager_.appState().appMode() != AppMode::Offline)
+    {
+        setResultMessage("Wrong application mode "+eval_manager_.appState().appModeStr());
+        return false;
+    }
+
+    DBContentManager& dbcont_man = eval_manager_.dbContentManager();
+
+    if (!dbcont_man.hasTargetsInfo())
+    {
+        setResultMessage("No targets in database");
+        return false;
+    }
+
+    //try to parse configuration
+    if (!config_.empty())
+    {
+        auto res = eval_manager_.targetFilter().applyJSONStringParameters(config_);
+        if (!res.ok())
+        {
+            setResultMessage("Could not apply configuration: " + res.error());
+            return false;
+        }
+    }
+
+    // the filter only disables targets, so use all targets first for a filter from scratch
+    if (use_all_)
+        dbcont_man.setUseAllTargets(true);
+
+    if (!no_run_)
+        dbcont_man.autoFilterUTNS();
+
+    unsigned int num_targets = dbcont_man.numTargets();
+    unsigned int num_ignored = dbcont_man.targetModel()->getIgnoredUTNs().size();
+
+    nlohmann::json reply;
+    reply["targets"] = num_targets;
+    reply["used"]    = num_targets - num_ignored;
+    reply["ignored"] = num_ignored;
+    setJSONReply(reply);
+
+    return true;
+}
+
+void RTCommandFilterEvalTargets::collectOptions_impl(OptionsDescription& options,
+                                                     PosOptionsDescription& positional)
+{
+    ADD_RTCOMMAND_OPTIONS(options)
+        ("config,c", po::value<std::string>()->default_value(""), "evaluation target filter configuration as JSON string")
+        ("use_all,a", "use all targets before the filter runs")
+        ("no_run,n", "do not run the filter, only apply the configuration and use_all");
+}
+
+void RTCommandFilterEvalTargets::assignVariables_impl(const VariablesMap& variables)
+{
+    RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
+    RTCOMMAND_CHECK_VAR(variables, "use_all", use_all_)
+    RTCOMMAND_CHECK_VAR(variables, "no_run", no_run_)
+}
+
+/***************************************************************************************
  * RTCommandGetEvalStandards
  ***************************************************************************************/
 
-RTCommandGetEvalStandards::RTCommandGetEvalStandards()
+RTCommandGetEvalStandards::RTCommandGetEvalStandards(EvaluationManager& eval_manager)
     : rtcommand::RTCommand()
+    , eval_manager_(eval_manager)
 {
     condition.setDelay(10);
 }
 
 bool RTCommandGetEvalStandards::run_impl()
 {
-    if (!s_compass)
-    {
-        setResultMessage("COMPASS not initialized");
-        return false;
-    }
-
-    if (!s_compass->evaluationManager().calculator())
+    if (!eval_manager_.calculator())
     {
         setResultMessage("Evaluation calculator not available");
         return false;
@@ -141,7 +224,7 @@ bool RTCommandGetEvalStandards::run_impl()
 
 bool RTCommandGetEvalStandards::checkResult_impl()
 {
-    auto& calculator = *s_compass->evaluationManager().calculator();
+    auto& calculator = *eval_manager_.calculator();
 
     nlohmann::json standards_array = nlohmann::json::array();
 

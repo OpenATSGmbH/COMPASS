@@ -16,11 +16,17 @@
  */
 
 #include "mainwindow_commands.h"
+#include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/variable/reportvariable.h"
 #include "mainwindow.h"
+#include "compassroot.h"
 #include "compass.h"
 #include "db_context_manager.h"
 #include "taskmanager.h"
 #include "taskresult.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontentfigure.h"
 #include "evaluationmanager.h"
 #include "dbcontentmanager.h"
 #include "radarplotpositioncalculatortask.h"
@@ -33,9 +39,9 @@
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
 #include "logger.h"
-#include "util/files.h"
+#include "files.h"
 #include "rtcommand_registry.h"
-#include "util/config.h"
+#include "config.h"
 
 #include "mainwindow_commands_file.h"
 #include "mainwindow_commands_import.h"
@@ -55,88 +61,71 @@ using namespace std;
 using namespace Utils;
 
 //file
-REGISTER_RTCOMMAND(main_window::RTCommandOpenDB)
-REGISTER_RTCOMMAND(main_window::RTCommandOpenRecentDB)
-REGISTER_RTCOMMAND(main_window::RTCommandCreateDB)
-REGISTER_RTCOMMAND(main_window::RTCommandCloseDB)
-REGISTER_RTCOMMAND(main_window::RTCommandQuit)
 
 //import
-REGISTER_RTCOMMAND(main_window::RTCommandImportViewPointsFile)
-REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXFile)
-REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXFiles)
-REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXPCAPFile)
-REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXPCAPFiles)
-REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXNetworkStart)
-REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXNetworkStop)
-REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXNetworkPause)
-REGISTER_RTCOMMAND(main_window::RTCommandImportASTERIXNetworkResume)
-REGISTER_RTCOMMAND(main_window::RTCommandImportJSONFile)
-REGISTER_RTCOMMAND(main_window::RTCommandImportGPSTrail)
-
-REGISTER_RTCOMMAND(main_window::RTCommandImportDataSourcesFile)
-REGISTER_RTCOMMAND(main_window::RTCommandDeleteAllDataSources)
-REGISTER_RTCOMMAND(main_window::RTCommandImportSectorsJSON)
-REGISTER_RTCOMMAND(main_window::RTCommandCalculateRadarPlotPositions)
-REGISTER_RTCOMMAND(main_window::RTCommandCalculateARTASAssociations)
-REGISTER_RTCOMMAND(main_window::RTCommandReconstructReferences)
-REGISTER_RTCOMMAND(main_window::RTCommandAnalyzeDataSource)
-REGISTER_RTCOMMAND(main_window::RTCommandLoadData)
-REGISTER_RTCOMMAND(main_window::RTCommandExportViewPointsReport)
-REGISTER_RTCOMMAND(main_window::RTCommandExportReport)
-REGISTER_RTCOMMAND(main_window::RTCommandGetExistingReports)
-REGISTER_RTCOMMAND(main_window::RTCommandGetReport)
-
-REGISTER_RTCOMMAND(main_window::RTCommandGetEvents)
-REGISTER_RTCOMMAND(main_window::RTCommandReconfigure)
-REGISTER_RTCOMMAND(main_window::RTCommandClientInfo)
 
 namespace main_window
 {
 
-void init_commands()
+/**
+ */
+void init_commands(rtcommand::RTCommandRegistry& registry,
+                   CompassRoot& root)
 {
     // file
-    main_window::RTCommandOpenDB::init();
-    main_window::RTCommandOpenRecentDB::init();
-    main_window::RTCommandCreateDB::init();
-    main_window::RTCommandImportDataSourcesFile::init();
-    main_window::RTCommandDeleteAllDataSources::init();
-    main_window::RTCommandCloseDB::init();
-    main_window::RTCommandQuit::init();
+    registry.registerCommand<main_window::RTCommandOpenDB>(root);
+    registry.registerCommand<main_window::RTCommandOpenRecentDB>(root);
+    registry.registerCommand<main_window::RTCommandCreateDB>(root);
+    registry.registerCommand<main_window::RTCommandImportDataSourcesFile>(root);
+    registry.registerCommand<main_window::RTCommandDeleteAllDataSources>(root);
+    registry.registerCommand<main_window::RTCommandCloseDB>(root);
+    registry.registerCommand<main_window::RTCommandQuit>();
 
     // import
-    main_window::RTCommandImportViewPointsFile::init();
-    main_window::RTCommandImportASTERIXFile::init();
-    main_window::RTCommandImportASTERIXFiles::init();
-    main_window::RTCommandImportASTERIXPCAPFile::init();
-    main_window::RTCommandImportASTERIXPCAPFiles::init();
-    main_window::RTCommandImportASTERIXNetworkStart::init();
-    main_window::RTCommandImportASTERIXNetworkStop::init();
-    main_window::RTCommandImportASTERIXNetworkPause::init();
-    main_window::RTCommandImportASTERIXNetworkResume::init();
+    registry.registerCommand<main_window::RTCommandImportViewPointsFile>(root);
+    registry.registerCommand<main_window::RTCommandImportASTERIXFile>(root);
+    registry.registerCommand<main_window::RTCommandImportASTERIXFiles>(root);
+    registry.registerCommand<main_window::RTCommandImportASTERIXPCAPFile>(root);
+    registry.registerCommand<main_window::RTCommandImportASTERIXPCAPFiles>(root);
+    registry.registerCommand<main_window::RTCommandImportASTERIXNetworkStart>(root);
+    registry.registerCommand<main_window::RTCommandImportASTERIXNetworkStop>(root);
+    registry.registerCommand<main_window::RTCommandImportASTERIXNetworkPause>(root);
+    registry.registerCommand<main_window::RTCommandImportASTERIXNetworkResume>(root);
 
-    main_window::RTCommandImportJSONFile::init();
-    main_window::RTCommandImportGPSTrail::init();
-    main_window::RTCommandImportSectorsJSON::init();
-    main_window::RTCommandCalculateRadarPlotPositions::init();
-    main_window::RTCommandReconstructReferences::init();
-    main_window::RTCommandAnalyzeDataSource::init();
-    main_window::RTCommandLoadData::init();
-    main_window::RTCommandExportViewPointsReport::init();
-    main_window::RTCommandExportReport::init();
-    main_window::RTCommandGetExistingReports::init();
-    main_window::RTCommandGetReport::init();
+    registry.registerCommand<main_window::RTCommandImportJSONFile>(root);
+    registry.registerCommand<main_window::RTCommandImportGPSTrail>(root);
+    registry.registerCommand<main_window::RTCommandImportSectorsJSON>(root);
+    registry.registerCommand<main_window::RTCommandCalculateRadarPlotPositions>(root);
+    registry.registerCommand<main_window::RTCommandCalculateARTASAssociations>(root);
+    registry.registerCommand<main_window::RTCommandReconstructReferences>(root);
+    registry.registerCommand<main_window::RTCommandAnalyzeDataSource>(root);
+    registry.registerCommand<main_window::RTCommandLoadData>(root);
+    registry.registerCommand<main_window::RTCommandExportViewPointsReport>(root);
+    registry.registerCommand<main_window::RTCommandExportReport>(root);
+    registry.registerCommand<main_window::RTCommandGetExistingReports>(root);
+    registry.registerCommand<main_window::RTCommandGetReport>(root);
+    registry.registerCommand<main_window::RTCommandGetReportFigure>(root);
 
-    main_window::RTCommandGetEvents::init();
-    main_window::RTCommandReconfigure::init();
-    main_window::RTCommandClientInfo::init();
+    registry.registerCommand<main_window::RTCommandGetEvents>();
+    registry.registerCommand<main_window::RTCommandReconfigure>(root);
+    registry.registerCommand<main_window::RTCommandClientInfo>(root);
 
-    context_cmd::init_context_commands();
-    dbContent::init_data_source_commands();
+    context_cmd::init_context_commands(registry, root.compass().dbContextManager());
+    dbContent::init_data_source_commands(registry,
+                                         root.compass().dbContextManager(),
+                                         root.compass().dbContentManager(),
+                                         root.sensorStatusTracker());
 }
 
 // import ds
+
+/**
+ */
+RTCommandImportDataSourcesFile::RTCommandImportDataSourcesFile(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
 
 rtcommand::IsValid  RTCommandImportDataSourcesFile::valid() const
 {
@@ -160,19 +149,19 @@ bool RTCommandImportDataSourcesFile::run_impl()
         return false;
     }
 
-//    if (!compass_->dbOpened())
+//    if (!root_.compass().dbOpened())
 //    {
 //        setResultMessage("Database not opened");
 //        return false;
 //    }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    compass_->dbContextManager().importSensors(filename_);
+    root_.compass().dbContextManager().importSensors(filename_);
 
     return true;
 }
@@ -181,7 +170,7 @@ void RTCommandImportDataSourcesFile::collectOptions_impl(OptionsDescription& opt
                                           PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-        ("filename,f", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.json'");
+        ("filename,f", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.json'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -193,22 +182,45 @@ void RTCommandImportDataSourcesFile::assignVariables_impl(const VariablesMap& va
 
 // delete_all_data_sources
 
+/**
+ */
+RTCommandDeleteAllDataSources::RTCommandDeleteAllDataSources(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
 bool RTCommandDeleteAllDataSources::run_impl()
 {
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
+        return false;
+    }
+
+    // the open database's data references its data sources
+    if (root_.compass().dbOpened() && root_.compass().dbContextManager().hasInsertedData())
+    {
+        setResultMessage("Cannot delete data sources while a database with imported data is open");
         return false;
     }
 
     // clear all data sources from active context
-    if (compass_->dbContextManager().hasActiveContext())
-        compass_->dbContextManager().activeContext().dataSources().clear();
+    if (root_.compass().dbContextManager().hasActiveContext())
+        root_.compass().dbContextManager().deleteAllDataSources();
 
     return true;
 }
 
 // import sectors json
+/**
+ */
+RTCommandImportSectorsJSON::RTCommandImportSectorsJSON(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
 rtcommand::IsValid  RTCommandImportSectorsJSON::valid() const
 {
     CHECK_RTCOMMAND_INVALID_CONDITION(!filename_.size(), "Filename empty")
@@ -233,7 +245,7 @@ bool RTCommandImportSectorsJSON::run_impl()
 
     try
     {
-        compass_->dbContextManager().importSectors(filename_);
+        root_.compass().dbContextManager().importSectors(filename_);
     }
     catch(const std::exception& e)
     {
@@ -248,8 +260,8 @@ bool RTCommandImportSectorsJSON::run_impl()
 
     size_t num_sectors = 0;
 
-    traced_assert(compass_->dbContextManager().sectorsLoaded());
-    const auto& sector_layers = compass_->dbContextManager().sectorLayers();
+    traced_assert(root_.compass().dbContextManager().sectorsLoaded());
+    const auto& sector_layers = root_.compass().dbContextManager().sectorLayers();
 
     for (const auto& sl : sector_layers)
         num_sectors += sl->size();
@@ -268,7 +280,7 @@ void RTCommandImportSectorsJSON::collectOptions_impl(OptionsDescription& options
                                           PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-        ("filename,f", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.json’");
+        ("filename,f", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.json'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -279,27 +291,28 @@ void RTCommandImportSectorsJSON::assignVariables_impl(const VariablesMap& variab
 }
 
 // calc radar plot pos
-RTCommandCalculateRadarPlotPositions::RTCommandCalculateRadarPlotPositions()
+RTCommandCalculateRadarPlotPositions::RTCommandCalculateRadarPlotPositions(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.radarplotpositioncalculatortask.doneSignal", -1); // think about max duration
 }
 
 bool RTCommandCalculateRadarPlotPositions::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    RadarPlotPositionCalculatorTask& task = compass_->taskManager().radarPlotPositionCalculatorTask();
+    RadarPlotPositionCalculatorTask& task = root_.taskManager().radarPlotPositionCalculatorTask();
 
     if(!task.canRun())
     {
@@ -315,27 +328,28 @@ bool RTCommandCalculateRadarPlotPositions::run_impl()
 }
 
 // associate ARTAS target reports
-RTCommandCalculateARTASAssociations::RTCommandCalculateARTASAssociations()
+RTCommandCalculateARTASAssociations::RTCommandCalculateARTASAssociations(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.createartasassociationstask.doneSignal", -1); // think about max duration
 }
 
 bool RTCommandCalculateARTASAssociations::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    CreateARTASAssociationsTask& task = compass_->taskManager().createArtasAssociationsTask();
+    CreateARTASAssociationsTask& task = root_.taskManager().createArtasAssociationsTask();
 
     if(!task.canRun())
     {
@@ -352,7 +366,7 @@ bool RTCommandCalculateARTASAssociations::run_impl()
 
 bool RTCommandCalculateARTASAssociations::checkResult_impl()
 {
-    const auto& stats = compass_->taskManager().createArtasAssociationsTask().resultStats();
+    const auto& stats = root_.taskManager().createArtasAssociationsTask().resultStats();
 
     nlohmann::json reply;
 
@@ -376,27 +390,28 @@ bool RTCommandCalculateARTASAssociations::checkResult_impl()
 }
 
 // calc ref
-RTCommandReconstructReferences::RTCommandReconstructReferences()
+RTCommandReconstructReferences::RTCommandReconstructReferences(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.reconstructortask.doneSignal", -1); // think about max duration
 }
 
 bool RTCommandReconstructReferences::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    ReconstructorTask& task = compass_->taskManager().reconstructReferencesTask();
+    ReconstructorTask& task = root_.taskManager().reconstructReferencesTask();
 
     if (!config_.empty())
     {
@@ -410,7 +425,7 @@ bool RTCommandReconstructReferences::run_impl()
 
     if (!disabled_sensors_.empty())
     {
-        auto& ctx_man = compass_->dbContextManager();
+        auto& ctx_man = root_.compass().dbContextManager();
 
         std::vector<std::string> sensors_to_disable = Utils::String::split(disabled_sensors_, ';');
         for (const auto& sensor_name : sensors_to_disable)
@@ -451,8 +466,8 @@ void RTCommandReconstructReferences::collectOptions_impl(OptionsDescription& opt
                                                          PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-        ("config,c", po::value<std::string>()->default_value(""), "reconstructor configuration as json string")
-        ("disable_sensors,d", po::value<std::string>()->default_value(""), "optional list of sensor names to disables, e.g. ‘GPS Trail 1;GPS Trail 2’");
+        ("config,c", po::value<std::string>()->default_value(""), "reconstructor configuration as JSON string")
+        ("disable_sensors,d", po::value<std::string>()->default_value(""), "optional list of sensor names to disable, separated by ';', e.g. 'GPS Trail 1;GPS Trail 2'");
 }
 
 void RTCommandReconstructReferences::assignVariables_impl(const VariablesMap& variables)
@@ -462,23 +477,24 @@ void RTCommandReconstructReferences::assignVariables_impl(const VariablesMap& va
 }
 
 // analyze data source
-RTCommandAnalyzeDataSource::RTCommandAnalyzeDataSource()
+RTCommandAnalyzeDataSource::RTCommandAnalyzeDataSource(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.analyzedatasourcetask.doneSignal", -1);
 }
 
 bool RTCommandAnalyzeDataSource::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline)
+    if (root_.compass().appState().appMode() != AppMode::Offline)
     {
-        setResultMessage("Wrong application mode " + compass_->appModeStr());
+        setResultMessage("Wrong application mode " + root_.compass().appState().appModeStr());
         return false;
     }
 
@@ -488,9 +504,13 @@ bool RTCommandAnalyzeDataSource::run_impl()
         return false;
     }
 
-    AnalyzeDataSourceTask& task = (ds_type_ == "ADSB")
-        ? compass_->taskManager().analyzeADSBDataSourceTask()
-        : compass_->taskManager().analyzeMLATDataSourceTask();
+    AnalyzeDataSourceTask* task_ptr = root_.taskManager().analyzeDataSourceTask(ds_type_);
+    if (!task_ptr)
+    {
+        setResultMessage("Unknown DSType '" + ds_type_ + "' (expected MLAT, ADSB or SMR)");
+        return false;
+    }
+    AnalyzeDataSourceTask& task = *task_ptr;
 
     if (task.dsType() != ds_type_)
     {
@@ -509,13 +529,17 @@ bool RTCommandAnalyzeDataSource::run_impl()
         }
     }
 
-    if (!task.canRun())
+    std::string reason;
+    if (!task.canRunConfiguration(&reason))
     {
-        setResultMessage("Analyze data source task cannot be run "
-                         "(no selected data source / no enabled inspectors / "
-                         "unmet prerequisites)");
+        setResultMessage("Analyze data source task cannot be run: " + reason);
         return false;
     }
+
+    //name under which the task stores the report
+    nlohmann::json reply;
+    reply["report"] = task.reportName();
+    setJSONReply(reply);
 
     task.allowUserInteractions(false);
     task.run();
@@ -530,7 +554,7 @@ void RTCommandAnalyzeDataSource::collectOptions_impl(OptionsDescription& options
         ("ds_type,t", po::value<std::string>()->required(),
          "DSType to analyze (mandatory), e.g. 'MLAT'")
         ("config,c", po::value<std::string>()->default_value(""),
-         "analyze data source configuration as json string");
+         "analyze data source configuration as JSON string");
 }
 
 void RTCommandAnalyzeDataSource::assignVariables_impl(const VariablesMap& variables)
@@ -539,32 +563,38 @@ void RTCommandAnalyzeDataSource::assignVariables_impl(const VariablesMap& variab
     RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
 
     // The completion signal is hardcoded to the MLAT task instance in the
-    // constructor. Redirect it to the ADS-B task instance so the wait condition
-    // (set up before run_impl) spies on the right object's doneSignal and the
-    // command completes - letting any queued follow-up such as --quit run.
+    // constructor. Every DSType has its own task instance under its own
+    // configurable class name, and the object path resolves by class name, so
+    // the signal must be redirected to the instance of the requested DSType.
+    // Without it the wait condition spies the MLAT instance, whose doneSignal
+    // never fires, and the command never completes - which also blocks any
+    // queued follow-up such as --quit.
     // Must happen here at configure time, before the runner registers the spy.
     if (ds_type_ == "ADSB")
         condition.setSignal("compass.taskmanager.analyzeadsbdatasourcetask.doneSignal", -1);
+    else if (ds_type_ == "SMR")
+        condition.setSignal("compass.taskmanager.analyzesmrdatasourcetask.doneSignal", -1);
 }
 
 // load data
-RTCommandLoadData::RTCommandLoadData()
+RTCommandLoadData::RTCommandLoadData(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("mainwindow.dataLoaded", -1); // think about max duration
 }
 
 bool RTCommandLoadData::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
@@ -578,6 +608,14 @@ bool RTCommandLoadData::run_impl()
 }
 
 // export vp report
+/**
+ */
+RTCommandExportViewPointsReport::RTCommandExportViewPointsReport(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
 rtcommand::IsValid  RTCommandExportViewPointsReport::valid() const
 {
     CHECK_RTCOMMAND_INVALID_CONDITION(!filename_.size(), "Filename empty")
@@ -593,15 +631,15 @@ bool RTCommandExportViewPointsReport::run_impl()
         return false;
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
@@ -610,7 +648,7 @@ bool RTCommandExportViewPointsReport::run_impl()
 
     //main_window->showViewPointsTab();
 
-    ViewPointsReportGenerator& gen = compass_->viewManager().viewPointsGenerator();
+    ViewPointsReportGenerator& gen = root_.viewManager().viewPointsGenerator();
 
     ViewPointsReportGeneratorDialog& dialog = gen.dialog();
     // batch export: pure progress display, do not steal os focus from other applications
@@ -631,7 +669,7 @@ void RTCommandExportViewPointsReport::collectOptions_impl(OptionsDescription& op
                                           PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-        ("filename,f", po::value<std::string>()->required(), "given filename, e.g. ’/data/db2/report.tex'");
+        ("filename,f", po::value<std::string>()->required(), "given filename, e.g. '/data/db2/report.tex'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -642,6 +680,14 @@ void RTCommandExportViewPointsReport::assignVariables_impl(const VariablesMap& v
 }
 
 // export evaluation report
+/**
+ */
+RTCommandExportReport::RTCommandExportReport(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
 rtcommand::IsValid  RTCommandExportReport::valid() const
 {
     CHECK_RTCOMMAND_INVALID_CONDITION(!result_name_.size(), "Report name empty")
@@ -658,19 +704,19 @@ bool RTCommandExportReport::run_impl()
         return false;
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    auto& task_manager = compass_->taskManager();
+    auto& task_manager = root_.taskManager();
 
     if (!task_manager.hasResult(result_name_))
     {
@@ -699,7 +745,7 @@ void RTCommandExportReport::collectOptions_impl(OptionsDescription& options,
     ADD_RTCOMMAND_OPTIONS(options)
         ("report,r", po::value<std::string>()->required(), "report name, e.g. 'EUROCAE ED-87E Evaluation'")
         ("dir,f", po::value<std::string>()->default_value(""), "export directory, e.g. '/data/report2/'")
-        ("mode,m", po::value<std::string>()->required(), "export mode, i.e. 'DocX','JSON','Latex','PDF'");
+        ("mode,m", po::value<std::string>()->required(), "export mode, one of 'DocX', 'JSON', 'Latex', 'PDF'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "report")
     ADD_RTCOMMAND_POS_OPTION(positional, "dir"   )
@@ -721,8 +767,9 @@ void RTCommandExportReport::assignVariables_impl(const VariablesMap& variables)
 
 /**
 */
-RTCommandGetExistingReports::RTCommandGetExistingReports()
+RTCommandGetExistingReports::RTCommandGetExistingReports(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
 }
 
@@ -730,27 +777,66 @@ RTCommandGetExistingReports::RTCommandGetExistingReports()
 */
 bool RTCommandGetExistingReports::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    auto& task_manager = compass_->taskManager();
+    auto& task_manager = root_.taskManager();
 
     std::vector<std::string> results;
+    nlohmann::json           details = nlohmann::json::array();
+
+    auto& dbcont_man = root_.compass().dbContentManager();
 
     for (const auto& r : task_manager.results())
-        results.push_back(r.second->name());
+    {
+        const auto& result = *r.second;
+
+        results.push_back(result.name());
+
+        // the Report Table catalog with the Report Variables offered in the Views
+        nlohmann::json detail;
+        detail[ "name"   ] = result.name();
+        detail[ "id"     ] = result.id();
+        detail[ "tables" ] = nlohmann::json::array();
+
+        for (const auto& table : result.reportTables())
+        {
+            nlohmann::json t;
+            t[ "key"             ] = table.key;
+            t[ "display_name"    ] = table.display_name;
+            t[ "kind"            ] = table.kind == ReportTableKind::Record ? "record" : "cell";
+            t[ "num_rows"        ] = table.num_rows;
+            t[ "host_dbcontents" ] = table.host_dbcontents;
+            t[ "columns"         ] = nlohmann::json::array();
+
+            for (const auto& column : table.columns)
+                t[ "columns" ].push_back(column.name);
+
+            t[ "variables" ] = nlohmann::json::array();
+
+            if (dbcont_man.existsReportContent(result.name()))
+                for (const auto& var_it : dbcont_man.reportContent(result.name()).variables())
+                    if (var_it.second->tableKey() == table.key)
+                        t[ "variables" ].push_back(var_it.first);
+
+            detail[ "tables" ].push_back(t);
+        }
+
+        details.push_back(detail);
+    }
 
     nlohmann::json j;
     j["reports"] = results;
+    j["details"] = details;
 
     setJSONReply(j);
 
@@ -761,8 +847,9 @@ bool RTCommandGetExistingReports::run_impl()
 
 /**
 */
-RTCommandGetReport::RTCommandGetReport()
+RTCommandGetReport::RTCommandGetReport(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
 }
 
@@ -777,19 +864,19 @@ rtcommand::IsValid RTCommandGetReport::valid() const
 */
 bool RTCommandGetReport::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    auto& task_manager = compass_->taskManager();
+    auto& task_manager = root_.taskManager();
 
     if (!task_manager.hasResult(result_name))
     {
@@ -853,6 +940,120 @@ void RTCommandGetReport::assignVariables_impl(const VariablesMap &vars)
     RTCOMMAND_GET_VAR_OR_THROW(vars, "section", std::string, section    )
 }
 
+// get_report_figure
+
+/**
+*/
+RTCommandGetReportFigure::RTCommandGetReportFigure(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
+rtcommand::IsValid RTCommandGetReportFigure::valid() const
+{
+    CHECK_RTCOMMAND_INVALID_CONDITION(result_name.empty(), "Report name missing")
+    CHECK_RTCOMMAND_INVALID_CONDITION(section.empty(), "Section missing")
+
+    return rtcommand::RTCommand::valid();
+}
+
+/**
+ * Returns the stored view point (viewable) of each figure in the section, or of the named figure.
+*/
+bool RTCommandGetReportFigure::run_impl()
+{
+    if (!root_.compass().dbOpened())
+    {
+        setResultMessage("Database not opened");
+        return false;
+    }
+
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
+    {
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
+        return false;
+    }
+
+    auto& task_manager = root_.taskManager();
+
+    if (!task_manager.hasResult(result_name))
+    {
+        setResultMessage("Report '" + result_name + "' not available");
+        return false;
+    }
+
+    auto report = task_manager.result(result_name)->report();
+
+    if (!report->hasSection(section))
+    {
+        setResultMessage("Section '" + section + "' not found in report");
+        return false;
+    }
+
+    auto& sec = report->getSection(section);
+
+    if (!figure.empty() && !sec.hasFigure(figure))
+    {
+        setResultMessage("Figure '" + figure + "' not found in section '" + section + "'");
+        return false;
+    }
+
+    nlohmann::json figures = nlohmann::json::array();
+
+    for (auto fig : sec.getFigures())
+    {
+        if (!figure.empty() && fig->name() != figure)
+            continue;
+
+        if (fig->isLocked())
+        {
+            setResultMessage("Figure '" + fig->name() + "' is locked");
+            return false;
+        }
+
+        auto content = fig->viewableContent();
+
+        nlohmann::json jfig;
+        jfig[ "name"       ] = fig->name();
+        jfig[ "caption"    ] = fig->caption();
+        jfig[ "view_point" ] = content ? nlohmann::json(*content) : nlohmann::json::object();
+
+        figures.push_back(jfig);
+    }
+
+    nlohmann::json j;
+    j[ "figures" ] = figures;
+
+    setJSONReply(j);
+
+    return true;
+}
+
+/**
+ */
+void RTCommandGetReportFigure::collectOptions_impl(OptionsDescription &options,
+                                                   PosOptionsDescription &positional)
+{
+    ADD_RTCOMMAND_OPTIONS(options)
+        ("report", po::value<std::string>()->required(), "name of the report, e.g. 'EUROCAE ED-87E Evaluation'")
+        ("section", po::value<std::string>()->required(), "path of the section, e.g. 'Report:Results:Overview:Results'")
+        ("figure", po::value<std::string>()->default_value(""), "optional name of a figure in the section, all figures if not set");
+
+    ADD_RTCOMMAND_POS_OPTION(positional, "report" )
+    ADD_RTCOMMAND_POS_OPTION(positional, "section")
+    ADD_RTCOMMAND_POS_OPTION(positional, "figure" )
+}
+
+/**
+ */
+void RTCommandGetReportFigure::assignVariables_impl(const VariablesMap &vars)
+{
+    RTCOMMAND_GET_VAR_OR_THROW(vars, "report" , std::string, result_name)
+    RTCOMMAND_GET_VAR_OR_THROW(vars, "section", std::string, section    )
+    RTCOMMAND_GET_VAR_OR_THROW(vars, "figure" , std::string, figure     )
+}
+
 // get_events
 
 void RTCommandGetEvents::collectOptions_impl(OptionsDescription& options,
@@ -883,6 +1084,14 @@ bool RTCommandGetEvents::run_impl()
 
 // reconfigure
 
+/**
+ */
+RTCommandReconfigure::RTCommandReconfigure(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
 rtcommand::IsValid RTCommandReconfigure::valid() const
 {
     CHECK_RTCOMMAND_INVALID_CONDITION(path.empty(), "Path empty")
@@ -895,8 +1104,8 @@ void RTCommandReconfigure::collectOptions_impl(OptionsDescription& options,
                                                PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-        ("path", po::value<std::string>()->required(), "configurable to reconfigure")
-        ("config", po::value<std::string>()->required(), "json configuration to apply");
+        ("path", po::value<std::string>()->required(), "path or name of the configurable to reconfigure")
+        ("config", po::value<std::string>()->required(), "JSON configuration to apply");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "path")
     ADD_RTCOMMAND_POS_OPTION(positional, "config")
@@ -911,11 +1120,11 @@ void RTCommandReconfigure::assignVariables_impl(const VariablesMap& variables)
 bool RTCommandReconfigure::run_impl()
 {
     //try to find configurable by path
-    auto find_result = compass_->findSubConfigurablePath(path);
+    auto find_result = root_.compass().findSubConfigurablePath(path);
     if (find_result.first != rtcommand::FindObjectErrCode::NoError)
     {
         //not found by path => try to find configurable by name
-        find_result = compass_->findSubConfigurableName(path);
+        find_result = root_.compass().findSubConfigurableName(path);
 
         //not found
         if (find_result.first != rtcommand::FindObjectErrCode::NoError)
@@ -1004,13 +1213,21 @@ bool RTCommandReconfigure::run_impl()
 
 // client_info
 
+/**
+ */
+RTCommandClientInfo::RTCommandClientInfo(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
 bool RTCommandClientInfo::run_impl()
 {
     nlohmann::json info;
 
-    info[ "appimage" ] = compass_->isAppImage();
-    info[ "version"  ] = compass_->config().getString("version");
-    info[ "appmode"  ] = compass_->appModeStr();
+    info[ "appimage" ] = AppState::isAppImage();
+    info[ "version"  ] = root_.compass().config().getString("version");
+    info[ "appmode"  ] = root_.compass().appState().appModeStr();
 
     setJSONReply(info);
 

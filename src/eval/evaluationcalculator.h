@@ -17,13 +17,19 @@
 
 #pragma once
 
+#include "compass_eval_export.h"
+
 #include "configurable.h"
 
 #include "evaluationdefs.h"
 #include "evaluationsettings.h"
+#include "evaluationconstraints.h"
 #include "evaluationdata.h"
 #include "evaluationresultsgenerator.h"
 #include "datasourcecompoundcoverage.h"
+#include "sectorsfilter.h"
+#include "gridbackgroundsettings.h"
+#include "reportfigureoptions.h"
 
 #include "target.h"
 
@@ -58,7 +64,7 @@ namespace EvaluationRequirementResult
 
 /**
  */
-class EvaluationCalculator : public QObject, public Configurable
+class COMPASS_EVAL_API EvaluationCalculator : public QObject, public Configurable
 {
     Q_OBJECT
 public:
@@ -72,14 +78,6 @@ public:
     {
         std::string               dbcontent;
         std::vector<EvaluationDS> data_sources;
-    };
-
-    struct ROI
-    {
-        double latitude_min  {0};
-        double latitude_max  {0};
-        double longitude_min {0};
-        double longitude_max {0};
     };
 
     typedef std::shared_ptr<EvaluationRequirementResult::Base>      ResultPtr;
@@ -99,7 +97,6 @@ public:
                                                 DBContentManager& dbcontent_man,
                                                 const nlohmann::json& config);
 
-    bool hasPartialResult() const;
     bool dataLoaded() const; 
     bool evaluated() const;
     Result canEvaluate() const;
@@ -109,8 +106,6 @@ public:
 
     Result evaluate();
     Result update();
-    Result reloadNeededData(const std::vector<unsigned int>& utns,
-                            const std::vector<Evaluation::RequirementResultID>& requirements);
     void updateResultsToChanges();
 
     // check and correct missing information
@@ -143,6 +138,11 @@ public:
     bool hasSelectedTestDataSources() const;
 
     std::map<unsigned int, std::set<unsigned int>> usedDataSources() const;
+    std::map<unsigned int, std::set<unsigned int>> usedDataSourcesTst() const;
+
+    // update cycles reported by the test data source, for the status-message PD
+    // method. Empty when no single test source is active or it reports none.
+    const std::vector<boost::posix_time::ptime>& testStatusCycles() const;
 
     // standards & requirements
     bool hasCurrentStandard() const;
@@ -154,6 +154,7 @@ public:
     const EvaluationStandard& currentStandard() const;
 
     bool hasStandard(const std::string& name) const;
+    std::vector<std::string> standardNames() const; // sorted case-insensitively
     void addStandard(const std::string& name);
     void deleteCurrentStandard();
 
@@ -186,7 +187,9 @@ public:
     std::vector<std::shared_ptr<SectorLayer>>& sectorLayers();
     const std::vector<std::shared_ptr<SectorLayer>>& sectorLayers() const;
     void updateSectorLayers();
-    void updateSectorROI();
+    void updateUsedSectorLayers();
+    /// names of the sector layers in which the current standard uses a requirement group
+    std::vector<std::string> usedSectorLayerNames() const;
 
     bool filterMinimumHeight() const;
     const std::string& minHeightFilterLayerName() const;
@@ -209,7 +212,25 @@ public:
                                                                         const std::string& result_id) const; // empty load
     std::unique_ptr<nlohmann::json::object_t> getViewableForEvaluation (unsigned int utn, 
                                                                         const std::string& req_grp_id, 
-                                                                        const std::string& result_id) const; // with data                                                            
+                                                                        const std::string& result_id) const; // with data
+    /// Background set of the report figures of a result with longitude / latitude grids: the stored set. The
+    /// other evaluated sector layers are hidden, the sector layers that are not evaluated follow the stored
+    /// selection (default: hidden).
+    GridBackgroundSettings reportFigureBackground(const std::string& sector_layer_name) const;
+
+    /// Stored background set of the report figures, edited in the dialog
+    ReportFigureBackground reportFigureBackgroundConfig() const;
+    void reportFigureBackgroundConfig(const ReportFigureBackground& background);
+    /// Sector layers that are hidden in the default sector selection: the layers that are not evaluated
+    std::set<std::string> reportFigureDefaultHiddenLayers() const;
+
+    /// Stored options of the report figures (histogram log scale, export layout size), edited in the dialog
+    ReportFigureOptions reportFigureOptionsConfig() const;
+    void reportFigureOptionsConfig(const ReportFigureOptions& options);
+
+    /// Checks the background set and the options of the report figures, then applies the parameters
+    Result applyJSONParameters(const nlohmann::json& params_json) override;
+
     // results
     ResultIterator begin();
     ResultIterator end();
@@ -231,21 +252,29 @@ public:
     EvaluationSettings& settings() { return settings_; }
     const EvaluationSettings& settings() const { return settings_; }
     const dbContent::DataSourceCompoundCoverage& tstSrcsCoverage() const { return *tst_srcs_coverage_; }
-    const boost::optional<ROI>& sectorROI() const { return sector_roi_; }
-    const std::vector<unsigned int>& evaluationUTNs() const { return eval_utns_; }
+    /// sector layers the load and the view points are restricted to, empty if not restricted
+    const std::vector<std::string>& usedSectorLayers() const { return used_sector_layers_; }
+
+    /// the used sector layers with their bounds, their geometry set in the SectorInsideCache for
+    /// the sector_inside() database function. Empty if not restricted
+    std::vector<SectorsFilter::Layer> usedSectorFilterLayers() const;
+    /// surrounding delta of the sector restriction in degrees, from the extent of the used layers
+    /// (SectorsFilter::extentDeltaDeg), keeps target reports near the sector borders
+    double sectorDeltaDeg() const { return sector_delta_deg_; }
 
     bool globalTimeFilterEnabled() const;
-    const Utils::TimeWindow& globalTimeWindow() const { return global_time_window_; }
-    const Utils::TimeWindowCollection& globalExclusionTimeWindows() const { return global_exclusion_time_windows_; }
+    const Utils::TimeWindow& globalTimeWindow() const { return constraints_.globalTimeWindow(); }
+    const Utils::TimeWindowCollection& globalExclusionTimeWindows() const { return constraints_.globalExclusionTimeWindows(); }
 
     const dbContent::TargetEvalConstraints* targetConstraint(unsigned int utn) const;
-    const std::map<unsigned int, dbContent::TargetEvalConstraints>& targetConstraints() const { return target_constraints_; }
+    const std::map<unsigned int, dbContent::TargetEvalConstraints>& targetConstraints() const { return constraints_.targetConstraints(); }
+
+    const EvaluationConstraints& constraints() const { return constraints_; }
 
     std::string constraintsAsString() const;
 
     bool isTimeStampNotExcluded(const boost::posix_time::ptime& ts) const;
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 signals:
     void standardsChanged();
     void currentStandardChanged();
@@ -253,12 +282,11 @@ signals:
     void evaluationDone();
     
 protected:
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
     virtual void checkSubConfigurables() override;
 
     Result evaluateInternal(bool update_constraints,
-                            bool update_report,
-                            const std::vector<unsigned int>& utns,
-                            const std::vector<Evaluation::RequirementResultID>& requirements);
+                            bool update_report);
 
     void readSettings();
 
@@ -288,13 +316,6 @@ protected:
     void storeTargetConstraints();
     void loadTargetConstraints();
 
-    nlohmann::json globalTimeWindowAsJSON() const;
-    nlohmann::json globalExclustionTimeWindowsAsJSON() const;
-    nlohmann::json targetConstraintsAsJSON() const;
-    Utils::TimeWindow globalTimeWindowFromJSON(const nlohmann::json& j) const;
-    Utils::TimeWindowCollection globalExclustionTimeWindowsFromJSON(const nlohmann::json& j) const;
-    std::map<unsigned int, dbContent::TargetEvalConstraints> targetConstraintsFromJSON(const nlohmann::json& j) const;
-
     void clearEvalData();
     void clearConstraints();
 
@@ -302,16 +323,14 @@ protected:
 
     EvaluationManager& eval_man_;
 
-    std::vector<unsigned int>                    eval_utns_;
-    std::vector<Evaluation::RequirementResultID> eval_requirements_;
-
     EvaluationSettings settings_;
 
     //values derived from settings
     std::map<std::string, std::map<std::string, bool>> data_sources_ref_; // db_content -> ds_id -> active flag
     std::map<std::string, std::map<std::string, bool>> data_sources_tst_; // db_content -> ds_id -> active flag
 
-    boost::optional<ROI> sector_roi_;
+    std::vector<std::string> used_sector_layers_;
+    double                   sector_delta_deg_ {0.0};
 
     bool data_loaded_            {false};
     bool reference_data_loaded_  {false};
@@ -326,13 +345,12 @@ protected:
     std::unique_ptr<EvaluationResultsGenerator>            results_gen_;
     std::unique_ptr<dbContent::DataSourceCompoundCoverage> tst_srcs_coverage_;
 
-    bool                                                     global_time_filter_enabled_ = false;
-    nlohmann::json                                           global_time_window_json_;
-    Utils::TimeWindow                                        global_time_window_;
-    nlohmann::json                                           global_exclusion_time_windows_json_;
-    Utils::TimeWindowCollection                              global_exclusion_time_windows_;
-    nlohmann::json                                           target_constraints_json_;
-    std::map<unsigned int, dbContent::TargetEvalConstraints> target_constraints_;
+    // registered constraint parameters, the stored form of constraints_
+    bool                  global_time_filter_enabled_ = false;
+    nlohmann::json        global_time_window_json_;
+    nlohmann::json        global_exclusion_time_windows_json_;
+    nlohmann::json        target_constraints_json_;
+    EvaluationConstraints constraints_;
 
     std::string custom_report_name_;
 

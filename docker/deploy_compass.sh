@@ -28,6 +28,19 @@ cp -r /usr/lib/x86_64-linux-gnu/osgPlugins-3.6.5 appimage/appdir/lib/ 2>/dev/nul
 cp -r /usr/lib64/osgPlugins-3.6.5/ appimage/appdir/lib/ 2>/dev/null || true
 cp /usr/lib64/libosgEarth* appimage/appdir/lib/ 2>/dev/null || true
 
+# PROJ data (proj.db) of the bundled libproj, PROJ_DATA / PROJ_LIB set by compass_client. The host's
+# proj.db of a different PROJ version cannot be read (osgEarth then crashes on a null SRS).
+cp -r /usr/share/proj appimage/appdir/proj
+
+# plugin modules: nothing has them as DT_NEEDED, so linuxdeploy does not find them; copied in here, their
+# dependencies are bundled via --deploy-deps-only below
+LINUXDEPLOY_PLUGINS=()
+if [[ -d /usr/lib/compass_plugins ]]; then
+    mkdir -p appimage/appdir/usr/lib/
+    cp -r /usr/lib/compass_plugins appimage/appdir/usr/lib/
+    LINUXDEPLOY_PLUGINS+=(--deploy-deps-only=${WORKSPACE_BASE:-/app/workspace}/compass/appimage/appdir/usr/lib/compass_plugins)
+fi
+
 mkdir -p appimage/appdir/compass/
 cp -r data appimage/appdir/compass/
 cp -r conf appimage/appdir/compass/
@@ -49,6 +62,12 @@ export NO_STRIP=1
 # Resolve the actual path via ldd on the built binary - authoritative across any
 # GCC version (8 → libasan.so.5, 10 → .so.6, 12+ → .so.8).
 LINUXDEPLOY_EXTRA=()
+
+# jASTERIX installs its shared library to /usr/lib in the container (during the build, after
+# the image was created). On AlmaLinux /usr/lib is not a default library path and the ldconfig
+# cache of the image does not contain the library, so linuxdeploy would not find it.
+export LD_LIBRARY_PATH=/usr/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}
+
 if [[ $ASAN -eq 1 ]]; then
     LIBASAN_PATH=$(ldd /usr/bin/compass_client 2>/dev/null | awk '/libasan/ {print $3; exit}')
     if [[ -n "$LIBASAN_PATH" && -f "$LIBASAN_PATH" ]]; then
@@ -61,7 +80,7 @@ if [[ $ASAN -eq 1 ]]; then
 fi
 
 cd ${WORKSPACE_BASE:-/app/workspace}/compass/docker/linuxdeploy/
-./linuxdeploy-x86_64.AppImage --appdir ${WORKSPACE_BASE:-/app/workspace}/compass/appimage/appdir --executable=/usr/bin/compass_handler --executable=/usr/bin/compass_client --desktop-file=${WORKSPACE_BASE:-/app/workspace}/compass/appimage/compass.desktop --plugin qt --plugin gtk --icon-file ${WORKSPACE_BASE:-/app/workspace}/compass/appimage/ats.png --output appimage "${LINUXDEPLOY_EXTRA[@]}"
+./linuxdeploy-x86_64.AppImage --appdir ${WORKSPACE_BASE:-/app/workspace}/compass/appimage/appdir --executable=/usr/bin/compass_handler --executable=/usr/bin/compass_client --desktop-file=${WORKSPACE_BASE:-/app/workspace}/compass/appimage/compass.desktop --plugin qt --plugin gtk --icon-file ${WORKSPACE_BASE:-/app/workspace}/compass/appimage/ats.png --output appimage "${LINUXDEPLOY_PLUGINS[@]}" "${LINUXDEPLOY_EXTRA[@]}"
 
 mv COMPASS-x86_64.AppImage ${WORKSPACE_BASE:-/app/workspace}/compass/COMPASS_$OS_NAME-x86_64.AppImage
 

@@ -5,7 +5,7 @@ A Table View displays DBContent data as text in tables to allow textual data ins
 
 \begin{figure}[H]
     \centering
-    \hspace*{-2.5cm}
+  \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/table_start.png}
   \caption{Table View startup}
   \label{fig:table_start}
@@ -29,7 +29,7 @@ To load the data the 'Reload' button or the mechanism described in section \name
 
 \begin{figure}[H]
     \centering
-    \hspace*{-2.5cm}
+  \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/table_loaded.png}
   \caption{Table View after loading}
 \end{figure}
@@ -38,7 +38,7 @@ Once updated, the table is filled with text representing the values of the chose
 
 \begin{figure}[H]
   \centering
-    \hspace*{-2.5cm}
+  \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/table_single.png}
   \caption{Table View: single layer active}
 \end{figure}
@@ -51,7 +51,7 @@ Each column header can be left-clicked to sort the table by that column. Clickin
 
 \begin{figure}[H]
   \centering
-    \hspace*{-2.5cm}
+  \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/table_sort.png}
   \caption{Table View: Mode 3/A sorted}
 \end{figure}
@@ -96,11 +96,14 @@ Ordering in the list can be changed by selecting a certain variable and using th
 
 When pressing the 'Remove' button, a selected variable is removed. Pressing the 'Add' button allows appending a variable to the list using a context-menu. \\
 
-If Meta variables are used, they are displayed for all DBContents they exist in. If a DBContent variable is used, it is only displayed in its native content.
+If Meta variables are used, they are displayed for all DBContents they exist in. If a DBContent variable is used, it is only displayed in its native content. \\
+
+The column header shows a brief form of the variable name when the full name does not fit, e.g. 'I062/136 Meas FL' for 'Flight Level Measured'. The tooltip of the header lists the full name, the short name, the description, the origin, the data type and the unit. The clipboard copy and the CSV export use the full name. \\
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=16cm,frame]{figures/table_add.png}
+  \hspace*{-2.4cm}
+    \includegraphics[width=18.8cm,frame]{figures/table_add.png}
   \caption{Table View adding of variables}
 \end{figure}
 

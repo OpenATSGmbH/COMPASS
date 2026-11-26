@@ -23,25 +23,25 @@
 #include "evaluationstandard.h"
 #include "evaluationtaskresult.h"
 
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/baseconfig.h"
-#include "eval/requirement/base/base.h"
+#include "requirement/group.h"
+#include "requirement/base/baseconfig.h"
+#include "requirement/base/base.h"
 
-#include "eval/results/base/single.h"
-#include "eval/results/base/joined.h"
+#include "results/base/single.h"
+#include "results/base/joined.h"
 
-#include "eval/results/evalsectionid.h"
+#include "results/evalsectionid.h"
 
 #include "dbcontentmanager.h"
 #include "dbinterface.h"
+#include "appstate.h"
 
-#include "taskmanager.h"
+#include "itaskprovider.h"
 #include "taskresult.h"
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
-#include "compass.h"
 #include "logger.h"
 #include "stringconv.h"
 #include "global.h"
@@ -54,10 +54,11 @@
 #include <QLabel>
 #include <QMessageBox>
 
-#include "util/tbbhack.h"
+#include "tbbhack.h"
 
 #include "boost/date_time/posix_time/posix_time.hpp"
 
+#include <chrono>
 #include <future>
 
 using namespace std;
@@ -81,8 +82,6 @@ EvaluationResultsGenerator::~EvaluationResultsGenerator()
 /**
  */
 void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
-                                          const std::vector<unsigned int>& utns,
-                                          const std::vector<Evaluation::RequirementResultID>& requirements,
                                           bool update_report)
 {
     traced_assert(calculator_.dataLoaded());
@@ -125,6 +124,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
 
     QProgressDialog postprocess_dialog ("", "", 0, num_req_evals, Dialogs::statusDialogParent());
     postprocess_dialog.setWindowTitle("Evaluating");
+    postprocess_dialog.setObjectName("evaluation_progress_dialog");
     postprocess_dialog.setCancelButton(nullptr);
     postprocess_dialog.setWindowModality(Qt::ApplicationModal);
     // do not steal os focus from other applications when popping up
@@ -142,8 +142,14 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
 
     result_name_ = calculator_.reportName();
 
+    //create the report now, its id names the report tables written during the evaluation
+    {
+        auto& task_manager = calculator_.manager().taskProvider();
+        if (!task_manager.hasCurrentResult())
+            task_manager.beginTaskResultWriting(result_name_, task::TaskResultType::Evaluation);
+    }
+
     vector<unsigned int> used_utns;
-    std::set<unsigned int> utn_set(utns.begin(), utns.end());
 
     DBContentManager& dbcont_man = calculator_.manager().dbContentManager();
 
@@ -154,10 +160,6 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
 
         traced_assert(dbcont_man.existsTarget(target_data_it.utn_));
         traced_assert(data.hasTargetData(target_data_it.utn_));
-
-        //utn list is provided => skip utns not in list
-        if (!utn_set.empty() && !utn_set.count(target_data_it.utn_))
-            continue;
 
         //if (target_data_it.use())
         used_utns.push_back(target_data_it.utn_);
@@ -198,27 +200,12 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                 if (!req_cfg_it->used())
                     continue;
 
-                //check list of requirements if provided
-                if (!requirements.empty())
-                {
-                    auto it = std::find_if(requirements.begin(), requirements.end(), 
-                        [ & ] (const Evaluation::RequirementResultID& id) 
-                        {
-                            return id.sec_layer_name == sector_layer_name &&
-                                   id.req_group_name == requirement_group_name &&
-                                   id.req_name == req_cfg_it->name();
-                        });
-                    
-                        if (it == requirements.end())
-                            continue;
-                }
-
                 loginf << "start"
                        << " sector layer " << sector_layer_name
                        << " group " << requirement_group_name
                        << " req '" << req_cfg_it->name() << "'";
 
-                std::shared_ptr<EvaluationRequirement::Base> req = req_cfg_it->createRequirement();
+                std::shared_ptr<EvaluationRequirement::Base> req = req_cfg_it->createRequirementInstance();
                 std::shared_ptr<Joined> result_sum;
                 map<string, std::shared_ptr<Joined>> extra_results_sums;
 
@@ -227,7 +214,6 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
 
                 vector<bool> done_flags;
                 done_flags.resize(num_utns, false);
-                bool task_done = false;
 
                 // generate results
 //                EvaluateTask* t = new (tbb::task::allocate_root()) EvaluateTask(
@@ -267,16 +253,18 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
 
                         for(unsigned int utn_cnt=0; utn_cnt < num_utns; ++utn_cnt)
                             traced_assert(results[utn_cnt]);
-
-                        task_done = true;
                     }
                     catch (const std::exception& e)
                     {
                         logerr << "exception '" << e.what() << "'";
-                        throw e;
+                        throw;
                     }
 
                 });
+
+                // the future is also ready when the task throws, get() below passes the exception on
+                auto task_done = [&] () {
+                    return pending_future.wait_for(std::chrono::milliseconds(0)) == std::future_status::ready; };
 
                 unsigned int tmp_done_cnt;
 
@@ -290,7 +278,7 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                 logdbg << "waiting on group " << req_group_it->name()
                        << " req '" << req_cfg_it->name() << "'";
 
-                while (!task_done)
+                while (!task_done())
                 {
                     tmp_done_cnt = 0;
 
@@ -325,12 +313,14 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                         Async::waitAndProcessEventsFor(50);
                     }
 
-                    if (!task_done)
+                    if (!task_done())
                     {
                         QCoreApplication::processEvents();
                         QThread::msleep(100);
                     }
                 }
+
+                pending_future.get();
 
                 postprocess_dialog.setLabelText(("Sector Layer "+sector_layer_name+":\nAggregating results").c_str());
 
@@ -407,6 +397,9 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
                     results_vec_.push_back(mops_res_it.second); // has to be added after all singles
                 }
 
+                //write the report table of the requirement and sector layer, before the details are purged
+                writeReportTable(results);
+
                 //purge stored single result details
                 for (auto& result_it : results)
                     result_it->purgeStoredDetails();
@@ -444,6 +437,42 @@ void EvaluationResultsGenerator::evaluate(EvaluationStandard& standard,
 }
 
 /**
+ * Writes the report table of one requirement and sector layer from the single results, while
+ * their details are still stored.
+ */
+void EvaluationResultsGenerator::writeReportTable(const std::vector<std::shared_ptr<Single>>& results)
+{
+    if (results.empty())
+        return;
+
+    auto& task_manager = calculator_.manager().taskProvider();
+    if (!task_manager.hasCurrentResult())
+    {
+        logerr << "no current report, table skipped";
+        return;
+    }
+
+    auto& writer = task_manager.currentResult()->tableWriter();
+
+    auto def = results.front()->reportTableDefinition();
+
+    //keep the key unique in the report
+    const std::string base_key = def.key;
+    for (unsigned int cnt = 2; writer.hasTable(def.key); ++cnt)
+        def.key = base_key + "_" + std::to_string(cnt);
+
+    ReportTableRows rows(writer, writer.define(def));
+
+    for (const auto& result : results)
+        if (result)
+            result->addReportTableRows(rows);
+
+    rows.flush();
+
+    loginf << "table '" << def.key << "' rows " << rows.numRows();
+}
+
+/**
  */
 void EvaluationResultsGenerator::clear()
 {
@@ -476,8 +505,11 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
     dlg.setAttribute(Qt::WA_ShowWithoutActivating, true);
     dlg.show();
 
-    auto& task_manager = calculator_.manager().compass().taskManager();
-    task_manager.beginTaskResultWriting(result_name_, task::TaskResultType::Evaluation);
+    auto& task_manager = calculator_.manager().taskProvider();
+
+    //the evaluation creates the report at its start, a report update on usage changes creates it here
+    if (!task_manager.hasCurrentResult())
+        task_manager.beginTaskResultWriting(result_name_, task::TaskResultType::Evaluation);
 
     auto& result = task_manager.currentResult();
     auto& report = task_manager.currentReport();
@@ -504,7 +536,7 @@ void EvaluationResultsGenerator::generateResultsReportGUI()
 
     gen_table.addRow({"Application", "Application Filename", APP_FILENAME});
     gen_table.addRow({"Application Version", "Application Version", VERSION});
-    gen_table.addRow({"DB", "Database Name", calculator_.manager().compass().lastDbFilename()});
+    gen_table.addRow({"DB", "Database Name", calculator_.manager().appState().lastDbFilename()});
 
     traced_assert(calculator_.hasCurrentStandard());
     gen_table.addRow({"Standard", "Standard name", calculator_.currentStandardName()});

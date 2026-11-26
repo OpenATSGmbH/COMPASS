@@ -123,7 +123,12 @@ void TCPServer::start()
     started_ = true;
 
     int one = 1;
+#ifdef SO_REUSEPORT
     setsockopt(acceptor_.native_handle(), SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &one, sizeof(one));
+#else
+    // Windows: no SO_REUSEPORT, SO_REUSEADDR allows the reuse of the address
+    setsockopt(acceptor_.native_handle(), SOL_SOCKET, SO_REUSEADDR, (const char*)&one, sizeof(one));
+#endif
 
     do_accept();
 }

@@ -15,8 +15,8 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/alongconfigwidget.h"
-#include "eval/requirement/position/alongconfig.h"
+#include "requirement/position/alongconfigwidget.h"
+#include "requirement/position/alongconfig.h"
 #include "logger.h"
 
 #include <QLineEdit>

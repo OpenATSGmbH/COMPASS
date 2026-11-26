@@ -23,6 +23,7 @@
 #include <boost/optional.hpp>
 
 #include <vector>
+#include <functional>
 #include "traced_assert.h"
 
 #include <math.h>
@@ -87,9 +88,19 @@ public:
     void clear();
 
     void add (TimePeriod&& period);
+    /// reference update filter, false = the reference update is not used for the periods (e.g. not in level flight)
+    typedef std::function<bool(const dbContent::TargetReport::DataID&)> RefUpdateFilter;
+
     void createFromReference(const EvaluationTargetData& target_data, 
                              const SectorLayer& sector_layer,
-                             const boost::posix_time::time_duration& max_ref_time_diff);
+                             const boost::posix_time::time_duration& max_ref_time_diff,
+                             const RefUpdateFilter& ref_update_filter = RefUpdateFilter());
+
+    /// periods of the usable reference updates: a period ends at an update that is not usable,
+    /// or before an update more than max_ref_time_diff after the period end
+    void createFromReference(const dbContent::TargetReport::IndexMap& ref_indexes,
+                             const boost::posix_time::time_duration& max_ref_time_diff,
+                             const RefUpdateFilter& is_usable);
 
     void addUpdate(const TimePeriodUpdate& update);
 
@@ -117,8 +128,10 @@ public:
 
     void removeSmallPeriods (boost::posix_time::time_duration min_duration);
 
-    unsigned int getUIs (float update_interval, 
+    unsigned int getUIs (float update_interval,
                          bool inside_sector_only = true) const;
+
+    double getDurationSeconds (bool inside_sector_only = true) const;
 
     void fillInOutsidePeriods(const boost::optional<boost::posix_time::ptime>& data_tmin = boost::optional<boost::posix_time::ptime>(),
                               const boost::optional<boost::posix_time::ptime>& data_tmax = boost::optional<boost::posix_time::ptime>());

@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
+#include <cstdint>
 #include "dbcontentaccessor.h"
 #include "accuracyestimatorbase.h"
 #include "configurable.h"
@@ -28,6 +31,7 @@
 #include "boost/date_time/posix_time/posix_time.hpp"
 
 #include <map>
+#include <unordered_map>
 #include <string>
 #include <memory>
 
@@ -45,11 +49,13 @@ namespace reconstruction
 {
 struct Measurement;
 class KalmanChainPredictors;
+class KalmanInterface;
 }
 
 class Buffer;
 class ReconstructorTask;
 class ReconstructorAssociatorBase;
+class QWidget;
 
 struct AltitudeState;
 
@@ -152,7 +158,7 @@ class ReconstructorBaseSettings
 
 /**
  */
-class ReconstructorBase : public QObject, public Configurable
+class COMPASS_TASK_API ReconstructorBase : public QObject, public Configurable
 {
     Q_OBJECT
 public:
@@ -242,7 +248,7 @@ public:
 
         // creates a target from existing target reports (identity cut remainder) and
         // repoints the track number / ACAD / ACID lookups that moved with them
-        unsigned int createTargetFromReports(const std::vector<unsigned long>& rec_nums,
+        unsigned int createTargetFromReports(const std::vector<std::uint64_t>& rec_nums,
                                              unsigned int source_utn);
 
         void clear();
@@ -251,18 +257,18 @@ public:
     struct TargetReportBatch
     {
         TargetReportBatch(unsigned int ds_id, unsigned int line_id, 
-            boost::posix_time::ptime batch_time, std::vector<unsigned long> rec_nums)
+            boost::posix_time::ptime batch_time, std::vector<std::uint64_t> rec_nums)
         : ds_id_(ds_id), line_id_(line_id), batch_time_(batch_time), rec_nums_(rec_nums)
         {}
 
         unsigned int ds_id_{0};
         unsigned int line_id_{0};
         boost::posix_time::ptime batch_time_;
-        std::vector<unsigned long> rec_nums_;
+        std::vector<std::uint64_t> rec_nums_;
     };
 
     typedef std::map<std::string, std::shared_ptr<Buffer>>                Buffers;
-    typedef std::map<unsigned int, std::map<unsigned long, unsigned int>> AssocMap;
+    typedef std::map<unsigned int, std::map<std::uint64_t, unsigned int>> AssocMap;
 
     // ReconstructorBase(const std::string& class_name,
     //                   const std::string& instance_name,
@@ -302,13 +308,14 @@ public:
                            const dbContent::targetReport::ReconstructorInfo& ri,
                            const dbContent::ReconstructorTarget* target = nullptr);
     void createMeasurement(reconstruction::Measurement& mm, 
-                           unsigned long rec_num,
+                           std::uint64_t rec_num,
                            const dbContent::ReconstructorTarget* target = nullptr);
     
-    const dbContent::targetReport::ReconstructorInfo* getInfo(unsigned long rec_num) const;
+    const dbContent::targetReport::ReconstructorInfo* getInfo(std::uint64_t rec_num) const;
 
     const dbContent::TargetReportAccessor& accessor(const dbContent::targetReport::ReconstructorInfo& tr) const;
 
+    virtual QWidget* createWidget() = 0; // configuration widget, ownership by caller
     virtual void updateWidgets() = 0;
 
     ReconstructorTask& task() const;
@@ -321,15 +328,18 @@ public:
     void saveTargets();
 
     // our data structures
-    std::map<unsigned long, dbContent::targetReport::ReconstructorInfo> target_reports_;
+    // unordered: only looked up by record number, never iterated in key order. holds a few
+    // hundred thousand entries, where a tree lookup costs a chain of cache misses.
+    // references stay valid across insertion and rehashing, which callers rely on
+    std::unordered_map<std::uint64_t, dbContent::targetReport::ReconstructorInfo> target_reports_;
     unsigned int num_new_target_reports_in_slice_{0};
     unsigned int num_new_target_reports_total_{0};
     unsigned int num_unassociated_target_reports_total_{0};
 
     // all sources, record_num -> base info
-    std::multimap<boost::posix_time::ptime, unsigned long> tr_timestamps_;
+    std::multimap<boost::posix_time::ptime, std::uint64_t> tr_timestamps_;
     // all sources sorted by time, ts -> record_num
-    std::map<unsigned int, std::map<unsigned int, std::map<unsigned int, std::vector<unsigned long>>>> tr_ds_;
+    std::map<unsigned int, std::map<unsigned int, std::map<unsigned int, std::vector<std::uint64_t>>>> tr_ds_;
     // dbcontent id -> ds_id -> line id -> record_num, sorted by ts
     std::multimap<boost::posix_time::ptime, TargetReportBatch> tr_batches_;
     
@@ -344,6 +354,12 @@ public:
     // ds_id -> dbcont id -> (assoc, not assoc cnt)
 
     virtual void createAdditionalAnnotations() {}
+
+    /// Main-thread hook called once at the end of a reconstruction run,
+    /// BEFORE saveTargets() and the report finalization. Used for run-end
+    /// analysis (e.g. dubious reference detection) whose results feed the
+    /// targets table and the task report. Must run before reset().
+    virtual void finalizeAnalysis() {}
 
     /// Main-thread hook called once at the end of a reconstruction run,
     /// after all slices have been processed and written. Used for
@@ -371,6 +387,10 @@ public:
     bool isVehicleACAD(unsigned int value);
 
     reconstruction::KalmanEstimator::Settings assocChainEstimatorSettings() const;
+
+    // creates the kalman interface of the given type: built-in types here, further types in derived reconstructors
+    virtual std::unique_ptr<reconstruction::KalmanInterface> createKalmanInterface(kalman::KalmanType ktype,
+                                                                                   const reconstruction::KalmanEstimator::Settings& settings) const;
 
     std::unique_ptr<reconstruction::KalmanChain> createConfiguredAssocChain(bool dynamic_insertions) const;
     std::unique_ptr<reconstruction::KalmanEstimator> createConfiguredAssocEstimator(bool extract_wgs84_pos) const;

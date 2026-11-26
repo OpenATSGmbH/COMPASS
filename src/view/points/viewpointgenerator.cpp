@@ -22,7 +22,7 @@
 
 #include "global.h"
 
-#include "util/stringconv.h"
+#include "stringconv.h"
 
 #include <QBuffer>
 #include <QImageReader>
@@ -56,6 +56,22 @@ void ViewPointGenFilters::toJSON(nlohmann::json& j) const
 
         j[ f.first ] = j_filter;
     }
+}
+
+/********************************************************************************
+ * ViewPointGenLoadData
+ ********************************************************************************/
+
+/**
+*/
+void ViewPointGenLoadData::toJSON(nlohmann::json& j) const
+{
+    j = view_point_load::loadAllData();
+
+    nlohmann::json filters;
+    filters_.toJSON(filters);
+    if (!filters.is_null())
+        j[ViewPointKeys::VP_FILTERS_KEY] = filters;
 }
 
 /********************************************************************************
@@ -201,6 +217,17 @@ void ViewPointGenFeaturePointGeometry::addPoints(const std::vector<Eigen::Vector
         colors_.insert(colors_.end(), colors->begin(), colors->end());
 }
 
+namespace
+{
+/**
+ * Color as #RRGGBB, or as #AARRGGBB if the color is not opaque.
+*/
+std::string colorName(const QColor& c)
+{
+    return c.name(c.alpha() < 255 ? QColor::HexArgb : QColor::HexRgb).toStdString();
+}
+}
+
 /**
 */
 void ViewPointGenFeaturePointGeometry::toJSON_impl(nlohmann::json& j, bool write_binary_if_possible) const
@@ -227,7 +254,7 @@ void ViewPointGenFeaturePointGeometry::toJSON_impl(nlohmann::json& j, bool write
 
         for (const auto& c : colors_)
         {
-            nlohmann::json color = c.name().toStdString();
+            nlohmann::json color = colorName(c);
             colors.push_back(color);
         }
 
@@ -235,7 +262,7 @@ void ViewPointGenFeaturePointGeometry::toJSON_impl(nlohmann::json& j, bool write
     }
     else
     {
-        props[FeatureFieldNamePropColor] = color_.name().toStdString();
+        props[FeatureFieldNamePropColor] = colorName(color_);
     }
 
     writeGeometry(geom);
@@ -558,28 +585,22 @@ QRectF ViewPointGenFeatureText::roi() const
  * ViewPointGenFeatureGeoImage
  ********************************************************************************/
 
-const std::string ViewPointGenFeatureGeoImage::FeatureName                         = "geoimage";
-const std::string ViewPointGenFeatureGeoImage::FeatureGeoImageFieldNameSource      = "source";
-const std::string ViewPointGenFeatureGeoImage::FeatureGeoImageFieldNameFn          = "fn";
-const std::string ViewPointGenFeatureGeoImage::FeatureGeoImageFieldNameData        = "data";
-const std::string ViewPointGenFeatureGeoImage::FeatureGeoImageFieldNameReference   = "reference";
-const std::string ViewPointGenFeatureGeoImage::FeatureGeoImageFieldNameLegend      = "legend";
-const std::string ViewPointGenFeatureGeoImage::FeatureGeoImageFieldNameSubsample   = "subsample";
-const std::string ViewPointGenFeatureGeoImage::FeatureGeoImageFieldNameSubsampling = "subsampling";
+const std::string ViewPointGenFeatureGeoImage::FeatureName                       = "geoimage";
+const std::string ViewPointGenFeatureGeoImage::FeatureGeoImageFieldNameSource    = "source";
+const std::string ViewPointGenFeatureGeoImage::FeatureGeoImageFieldNameFn        = "fn";
+const std::string ViewPointGenFeatureGeoImage::FeatureGeoImageFieldNameData      = "data";
+const std::string ViewPointGenFeatureGeoImage::FeatureGeoImageFieldNameReference = "reference";
+const std::string ViewPointGenFeatureGeoImage::FeatureGeoImageFieldNameLegend    = "legend";
 
 /**
 */
 ViewPointGenFeatureGeoImage::ViewPointGenFeatureGeoImage(const std::string& fn,
                                                          const RasterReference& ref,
-                                                         const ColorLegend& legend,
-                                                         bool subsample,
-                                                         int subsampling)
+                                                         const ColorLegend& legend)
 :   ViewPointGenFeature(FeatureName)
-,   fn_         (fn         )
-,   ref_        (ref        )
-,   legend_     (legend     )
-,   subsample_  (subsample  )
-,   subsampling_(subsampling)
+,   fn_    (fn    )
+,   ref_   (ref   )
+,   legend_(legend)
 {
 }
 
@@ -587,15 +608,11 @@ ViewPointGenFeatureGeoImage::ViewPointGenFeatureGeoImage(const std::string& fn,
 */
 ViewPointGenFeatureGeoImage::ViewPointGenFeatureGeoImage(const QImage& data,
                                                          const RasterReference& ref,
-                                                         const ColorLegend& legend,
-                                                         bool subsample,
-                                                         int subsampling)
+                                                         const ColorLegend& legend)
 :   ViewPointGenFeature(FeatureName)
-,   data_       (data       )
-,   ref_        (ref        )
-,   legend_     (legend     )
-,   subsample_  (subsample  )
-,   subsampling_(subsampling)
+,   data_  (data  )
+,   ref_   (ref   )
+,   legend_(legend)
 {
 }
 
@@ -616,16 +633,13 @@ void ViewPointGenFeatureGeoImage::toJSON_impl(nlohmann::json& j, bool write_bina
         source[ FeatureGeoImageFieldNameFn ] = fn_;
     }
 
-    //reference
-    j[FeatureGeoImageFieldNameReference] = ref_.toJSON();
+    //reference, left out when not set: the reader then takes it from the GeoTIFF file
+    if (!ref_.srs.empty())
+        j[FeatureGeoImageFieldNameReference] = ref_.toJSON();
 
     //legend
     if (!legend_.empty())
         j[FeatureGeoImageFieldNameLegend] = legend_.toJSON();
-
-    //subsampling
-    j[FeatureGeoImageFieldNameSubsample  ] = subsample_;
-    j[FeatureGeoImageFieldNameSubsampling] = subsampling_;
 }
 
 /**
@@ -729,6 +743,7 @@ QRectF ViewPointGenFeatureGeoImage::roi() const
 const std::string ViewPointGenFeatureGrid::FeatureName                        = "grid";
 const std::string ViewPointGenFeatureGrid::FeatureGridFieldNameGrid           = "grid";
 const std::string ViewPointGenFeatureGrid::FeatureGridFieldNameRenderSettings = "render_settings";
+const std::string ViewPointGenFeatureGrid::ViewPointFieldNameBackground       = "grid_background";
 
 /**
 */
@@ -744,9 +759,10 @@ ViewPointGenFeatureGrid::ViewPointGenFeatureGrid(const Grid2DLayer& grid,
 
 /**
 */
-void ViewPointGenFeatureGrid::toJSON_impl(nlohmann::json& j, bool write_binary_if_possible) const
+void ViewPointGenFeatureGrid::toJSON_impl(nlohmann::json& j, bool /*write_binary_if_possible*/) const
 {
-    j[FeatureGridFieldNameGrid] = grid_.toJSON(write_binary_if_possible);
+    //grid data always as json text
+    j[FeatureGridFieldNameGrid] = grid_.toJSON();
 
     if (render_settings_.has_value())
         j[FeatureGridFieldNameRenderSettings] = render_settings_.value().toJSON();
@@ -1167,16 +1183,18 @@ QRectF ViewPointGenAnnotations::roi() const
  * ViewPointGenVP
  ********************************************************************************/
 
-const std::string ViewPointGenVP::ViewPointFieldName        = ViewPoint::VP_NAME_KEY;
-const std::string ViewPointGenVP::ViewPointFieldID          = ViewPoint::VP_ID_KEY;
-const std::string ViewPointGenVP::ViewPointFieldType        = ViewPoint::VP_TYPE_KEY;
-const std::string ViewPointGenVP::ViewPointFieldStatus      = ViewPoint::VP_STATUS_KEY;
-const std::string ViewPointGenVP::ViewPointFieldAnnotations = ViewPoint::VP_ANNOTATION_KEY;
-const std::string ViewPointGenVP::ViewPointFieldFilters     = ViewPoint::VP_FILTERS_KEY;
-const std::string ViewPointGenVP::ViewPointFieldPosLat      = ViewPoint::VP_POS_LAT_KEY;
-const std::string ViewPointGenVP::ViewPointFieldPosLon      = ViewPoint::VP_POS_LON_KEY;
-const std::string ViewPointGenVP::ViewPointFieldWinLat      = ViewPoint::VP_POS_WIN_LAT_KEY;
-const std::string ViewPointGenVP::ViewPointFieldWinLon      = ViewPoint::VP_POS_WIN_LON_KEY;
+//literals, not copies of the ViewPointKeys::VP_*_KEY strings: the initialization order of
+//static strings in different files is undefined, a copy can be empty (seen on Windows,
+//no annotations found). Values must stay equal to the ViewPointKeys keys (unit test).
+const std::string ViewPointGenVP::ViewPointFieldName        = "name";
+const std::string ViewPointGenVP::ViewPointFieldID          = "id";
+const std::string ViewPointGenVP::ViewPointFieldType        = "type";
+const std::string ViewPointGenVP::ViewPointFieldStatus      = "status";
+const std::string ViewPointGenVP::ViewPointFieldAnnotations = "annotations";
+const std::string ViewPointGenVP::ViewPointFieldPosLat      = "position_latitude";
+const std::string ViewPointGenVP::ViewPointFieldPosLon      = "position_longitude";
+const std::string ViewPointGenVP::ViewPointFieldWinLat      = "position_window_latitude";
+const std::string ViewPointGenVP::ViewPointFieldWinLon      = "position_window_longitude";
 
 const std::string ViewPointGenVP::StatusNameOpen   = "open";
 const std::string ViewPointGenVP::StatusNameClosed = "closed";
@@ -1202,6 +1220,16 @@ ViewPointGenVP::ViewPointGenVP(const std::string& name,
 void ViewPointGenVP::addCustomField(const std::string& name, const QVariant& value)
 {
     custom_fields_[ name ] = value;
+}
+
+/**
+*/
+ViewPointGenLoadData& ViewPointGenVP::enableDataLoading()
+{
+    if (!load_data_)
+        load_data_.emplace();
+
+    return *load_data_;
 }
 
 /**
@@ -1232,7 +1260,7 @@ void ViewPointGenVP::toJSON(nlohmann::json& j) const
     j[ViewPointFieldStatus] = statusString();
 
     if (description_.size())
-        j[ViewPoint::VP_DESCRIPTION_KEY] = description_;
+        j[ViewPointKeys::VP_DESCRIPTION_KEY] = description_;
 
     if (!roi_.isEmpty())
     {
@@ -1245,11 +1273,6 @@ void ViewPointGenVP::toJSON(nlohmann::json& j) const
     nlohmann::json annotations;
     annotations_.toJSON(annotations);
     j[ViewPointFieldAnnotations] = annotations;
-
-    nlohmann::json filters;
-    filters_.toJSON(filters);
-    if (!filters.is_null())
-        j[ViewPointFieldFilters] = filters;
 
     for (const auto& cf : custom_fields_)
     {
@@ -1265,10 +1288,8 @@ void ViewPointGenVP::toJSON(nlohmann::json& j) const
             j[cf.first] = cf.second.toString().toStdString();
     }
 
-    if (no_data_loaded_)
-        j[ViewPoint::VP_DS_TYPES_KEY] = nlohmann::json::array();
-    else if (!ds_types_.empty())
-        j[ViewPoint::VP_DS_TYPES_KEY] = ds_types_;
+    if (load_data_)
+        load_data_->toJSON(j[ViewPointKeys::VP_LOAD_DATA_KEY]);
 }
 
 /**
@@ -1473,7 +1494,7 @@ void ViewPointGenerator::toJSON(nlohmann::json& j,
     nlohmann::json vp_content;
 
     vp_content[ViewPointsFieldContentType] = "view_points";
-    vp_content[ViewPointsFieldVersion    ] = ViewPoint::VP_COLLECTION_CONTENT_VERSION;
+    vp_content[ViewPointsFieldVersion    ] = ViewPointKeys::VP_COLLECTION_CONTENT_VERSION;
 
     nlohmann::json viewpoints = nlohmann::json::array();
 

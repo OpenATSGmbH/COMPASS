@@ -31,7 +31,7 @@
 #include <boost/optional.hpp>
 
 class ViewToolSwitcher;
-class ViewWidget;
+struct ViewTool;
 
 class QShortcut;
 class QCursor;
@@ -40,6 +40,9 @@ class QAction;
 /**
  * Toolbar for views. Implements adding of tools and actions to the view's toolbar, switching of tools, etc.
  * Keeps the toolbar generic for all views by giving the possibility to pass callbacks.
+ *
+ * The toolbar shows the tools registered in the tool switcher (ViewToolSwitcher::registerTool()), in the
+ * order of their registration, also the ones registered later. A tool without an icon gets no button.
  */
 class ViewToolWidget : public QToolBar, public ViewComponent
 {
@@ -48,7 +51,7 @@ public:
     typedef std::function<void(bool)>     ToggleCallback; //callback triggered if a checkable action is toggled
     typedef std::function<void(QAction*)> UpdateCallback; //callback for updating an action's state (e.g. check state, enabled state, icon, etc.)
 
-    ViewToolWidget(ViewWidget* view_widget, ViewToolSwitcher* tool_switcher, QWidget* parent = nullptr);
+    ViewToolWidget(ViewToolSwitcher* tool_switcher, QWidget* parent = nullptr);
     virtual ~ViewToolWidget() = default;
 
     void addTool(int id, const UpdateCallback& cb_update = UpdateCallback());
@@ -78,9 +81,8 @@ public:
                            bool checked = false);
     void addSpacer();
     void addSpacer(int width);
+    void addSpacerIfNone();
     void addSeparatorIfValid();
-    void addScreenshotButton();
-    void addConfigWidgetToggle();
 
     void enableAction(int id, bool enable);
 
@@ -106,6 +108,7 @@ private:
     };
 
     void addAction(int id, QAction* action, bool is_tool);
+    void addRegisteredTool(const ViewTool& tool);
 
     void toolSwitched(int id, const QCursor& cursor);
 
@@ -124,7 +127,6 @@ private:
     bool actionIsSpacer(QAction* action) const;
     bool separatorValid() const;
 
-    ViewWidget*       view_widget_   = nullptr;
     ViewToolSwitcher* tool_switcher_ = nullptr;
 
     std::map<int, Action> actions_;

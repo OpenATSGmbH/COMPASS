@@ -17,9 +17,9 @@
 
 #include "evaluationstandardwidget.h"
 #include "evaluationstandard.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/baseconfig.h"
-#include "eval/requirement/base/baseconfigwidget.h"
+#include "requirement/group.h"
+#include "requirement/base/baseconfig.h"
+#include "requirement/base/baseconfigwidget.h"
 #include "logger.h"
 
 #include <QVBoxLayout>
@@ -34,6 +34,7 @@
 
 #include <QMessageBox>
 #include <QFormLayout>
+#include <QCheckBox>
 
 using namespace std;
 
@@ -49,6 +50,7 @@ EvaluationStandardWidget::EvaluationStandardWidget(EvaluationStandard& standard)
             this, &EvaluationStandardWidget::standardConfigChangedSlot);
 
     tree_view_.reset(new QTreeView());
+    tree_view_->setObjectName("standard_tree");
     tree_view_->setModel(&standard_model_);
     tree_view_->setRootIsDecorated(false);
     tree_view_->expandAll();
@@ -70,6 +72,7 @@ EvaluationStandardWidget::EvaluationStandardWidget(EvaluationStandard& standard)
     scroll_area->setWidgetResizable(true);
 
     requirements_widget_ = new QStackedWidget();
+    requirements_widget_->setObjectName("requirement_stack");
 
     scroll_area->setWidget(requirements_widget_);
 
@@ -120,12 +123,15 @@ void EvaluationStandardWidget::showContextMenu(const QPoint& pos)
     EvaluationStandardTreeItem* item = static_cast<EvaluationStandardTreeItem*>(index.internalPointer());
     traced_assert(item);
 
+    //at the clicked item, not at the mouse cursor (e.g. a context menu opened with the keyboard)
+    const QPoint global_pos = tree_view_->viewport()->mapToGlobal(pos);
+
     if (dynamic_cast<EvaluationStandard*>(item))
     {
         loginf << "got standard";
 
         //EvaluationStandard* std = dynamic_cast<EvaluationStandard*>(item);
-        showMenu();
+        showMenu(global_pos);
 
     }
     else if (dynamic_cast<Group*>(item))
@@ -134,7 +140,7 @@ void EvaluationStandardWidget::showContextMenu(const QPoint& pos)
 
         Group* group = dynamic_cast<Group*>(item);
         traced_assert(group);
-        showGroupMenu(*group);
+        showGroupMenu(*group, global_pos);
     }
 }
 
@@ -346,12 +352,12 @@ void EvaluationStandardWidget::showRequirementWidget(QWidget* widget)
     requirements_widget_->setCurrentWidget(widget);
 }
 
-void EvaluationStandardWidget::showMenu ()
+void EvaluationStandardWidget::showMenu (const QPoint& global_pos)
 {
-    menu_.exec(QCursor::pos());
+    menu_.exec(global_pos);
 }
 
-void EvaluationStandardWidget::showGroupMenu (Group& group)
+void EvaluationStandardWidget::showGroupMenu (Group& group, const QPoint& global_pos)
 {
     QMenu menu;
 
@@ -363,10 +369,15 @@ void EvaluationStandardWidget::showGroupMenu (Group& group)
         // requirements
         QMenu* req_menu = menu.addMenu("Add Requirement");
 
+        //readable names in alphabetical order, the action adds the requirement of the class
+        std::map<std::string, std::string> class_by_name;
         for (auto& req_it : Group::requirement_type_mapping_)
+            class_by_name[ req_it.second ] = req_it.first;
+
+        for (auto& name_it : class_by_name)
         {
-            std::string class_name = req_it.first;
-            QAction* action = req_menu->addAction(class_name.c_str());
+            std::string class_name = name_it.second;
+            QAction* action = req_menu->addAction(name_it.first.c_str());
             connect(action, &QAction::triggered, [this,&group,class_name]() {this->addRequirementSlot(group, class_name);});
         }
 
@@ -398,7 +409,7 @@ void EvaluationStandardWidget::showGroupMenu (Group& group)
         }
     }
 
-    menu.exec(QCursor::pos());
+    menu.exec(global_pos);
 }
 
 
@@ -417,6 +428,35 @@ QWidget* EvaluationStandardWidget::createMainWidget()
 
     layout->addRow("Reference Maximum Time Difference [s]", ref_max_time_diff_edit);
 
+    // target selection
+    QCheckBox* ignore_primary_only_check = new QCheckBox();
+    ignore_primary_only_check->setChecked(standard_.ignorePrimaryOnlyTargets());
+    ignore_primary_only_check->setToolTip("Ignore targets without any secondary attributes"
+                                          " (no Mode S address, aircraft identification,"
+                                          " Mode 3/A code or Mode C code)");
+    connect(ignore_primary_only_check, &QCheckBox::clicked,
+            this, &EvaluationStandardWidget::toggleIgnorePrimaryOnlyTargetsSlot);
+
+    layout->addRow("Ignore Primary Only Targets", ignore_primary_only_check);
+
+    QCheckBox* ignore_non_adsb_check = new QCheckBox();
+    ignore_non_adsb_check->setChecked(standard_.ignoreNonADSBTargets());
+    ignore_non_adsb_check->setToolTip("Ignore targets never detected in ADS-B data (CAT021)");
+    connect(ignore_non_adsb_check, &QCheckBox::clicked,
+            this, &EvaluationStandardWidget::toggleIgnoreNonADSBTargetsSlot);
+
+    layout->addRow("Ignore Non-ADSB Targets", ignore_non_adsb_check);
+
+    QCheckBox* ignore_mode_ac_only_check = new QCheckBox();
+    ignore_mode_ac_only_check->setChecked(standard_.ignoreModeACOnlyTargets());
+    ignore_mode_ac_only_check->setToolTip("Ignore targets with a Mode 3/A or Mode C code but"
+                                          " without any Mode S attribute, for standards that"
+                                          " state their requirements for Mode S targets only");
+    connect(ignore_mode_ac_only_check, &QCheckBox::clicked,
+            this, &EvaluationStandardWidget::toggleIgnoreModeACOnlyTargetsSlot);
+
+    layout->addRow("Ignore Mode A/C Only Targets", ignore_mode_ac_only_check);
+
     //QLineEdit* ref_min_acc_edit = new QLineEdit(QString::number(standard_.referenceMinAccuracy()));
     //ref_min_acc_edit->setValidator(new QDoubleValidator(0.1, 1000.0, 1, this));
     //connect(ref_min_acc_edit, &QLineEdit::textEdited,
@@ -427,6 +467,27 @@ QWidget* EvaluationStandardWidget::createMainWidget()
     widget->setLayout(layout);
 
     return widget;
+}
+
+void EvaluationStandardWidget::toggleIgnorePrimaryOnlyTargetsSlot(bool checked)
+{
+    loginf << "value " << checked;
+
+    standard_.ignorePrimaryOnlyTargets(checked);
+}
+
+void EvaluationStandardWidget::toggleIgnoreNonADSBTargetsSlot(bool checked)
+{
+    loginf << "value " << checked;
+
+    standard_.ignoreNonADSBTargets(checked);
+}
+
+void EvaluationStandardWidget::toggleIgnoreModeACOnlyTargetsSlot(bool checked)
+{
+    loginf << "value " << checked;
+
+    standard_.ignoreModeACOnlyTargets(checked);
 }
 
 void EvaluationStandardWidget::refMaxTimeDiffEditSlot(QString value)

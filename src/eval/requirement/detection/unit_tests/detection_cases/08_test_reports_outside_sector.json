@@ -1,0 +1,65 @@
+{
+    "description": "Test reports at 32 s and 40 s outside the sector: the gap 24 s to 48 s is not counted, the report at 48 s is the first after outside.",
+    "params": {
+        "update_interval_s": 8.0,
+        "max_ref_time_diff_s": 5.0
+    },
+    "ref_series": [
+        [
+            0,
+            80,
+            1,
+            true
+        ]
+    ],
+    "tst": [
+        [
+            0,
+            "ok"
+        ],
+        [
+            8,
+            "ok"
+        ],
+        [
+            16,
+            "ok"
+        ],
+        [
+            24,
+            "ok"
+        ],
+        [
+            32,
+            "outside"
+        ],
+        [
+            40,
+            "outside"
+        ],
+        [
+            48,
+            "ok"
+        ],
+        [
+            56,
+            "ok"
+        ],
+        [
+            64,
+            "ok"
+        ],
+        [
+            72,
+            "ok"
+        ],
+        [
+            80,
+            "ok"
+        ]
+    ],
+    "expected": {
+        "sum_expected": 10,
+        "sum_missed": 0
+    }
+}

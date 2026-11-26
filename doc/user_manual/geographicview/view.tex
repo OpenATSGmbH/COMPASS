@@ -27,20 +27,14 @@ This will open a dialog listing all added files with a supported GeoTIFF file ex
 
 \begin{figure}[H]
   \centering
-    \includegraphics[width=12cm]{figures/geoview_import_geotiff_dialog.png}
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/geoview_import_geotiff_dialog.png}
   \caption{Import GeoTIFF dialog}
 \end{figure}
 
 The checkboxes in the 'Import' column can be used to again make a selection of which file to import.
 The 'Information' column will either show information about the image size, or an error message in case 
 the added file is not a valid GeoTIFF. \\
-
-In the 'Subsampling' column the number of subsamples per image pixel can be chosen for each file.
-Subsampling helps to avoid display artifacts at the cost of higher resolution and also memory consumption.
-\textbf{Note} that each pixel will be subsampled in both x- and y-direction, resulting in e.g. 4 times 
-the number of pixels for a subsampling of 2. In the column 'Imported Image Size' the resulting final image size and memory consumption 
-is listed for each image. The 'Auto' mode tries to choose the maximum possible subsampling, while limiting
-memory consumption to a reasonable extent. \\
 
 Pressing the 'Import' button will start the import. \\
 
@@ -51,6 +45,6 @@ Imported GeoTIFF files will persist until COMPASS is closed. \\
 
 \begin{figure}[H]
   \centering
-    \includegraphics[width=6cm]{figures/geoview_import_geotiff_anno.png}
+    \includegraphics[width=8.3cm,frame]{figures/geoview_import_geotiff_anno.png}
   \caption{Imported GeoTIFF files listed in Geographic View's Layer tab}
 \end{figure}

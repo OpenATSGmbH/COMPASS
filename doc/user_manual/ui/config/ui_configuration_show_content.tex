@@ -1,53 +1,45 @@
-\subsection{Show Content}
+\subsection{Show DBContent}
 \label{sec:configure_show_content}
 \label{sec:configure_meta_vars}
 
-This dialog displays all meta variables and DBContent variables for inspection. Previously titled 'Meta Variables', it has been renamed to reflect that it covers the full DBContent schema rather than only the grouped meta variables. \\\\
+The 'Configuration $\rightarrow$ DBContent' menu entry opens the 'Show DBContent' dialog, which displays all Meta Variables and DBContent variables for inspection. \\
 
 \begin{figure}[H]
   \centering
-  \hspace*{-1cm}
-    \includegraphics[width=17cm]{figures/configuration_show_content.png}
-  \caption{Show Content}
+  \hspace*{-2.4cm}
+    \includegraphics[width=18.8cm,frame]{figures/configuration_show_content.png}
+  \caption{Show DBContent}
 \end{figure}
 
-The content is presented as a flat table with the following columns: \\
+On the left side, a tree lists the variables:
+
+\begin{itemize}
+\item 'Meta': The Meta Variables
+\item One node per DBContent (e.g. 'CAT001', 'CAT062', 'RefTraj'): The variables of the DBContent
+\end{itemize}
+\ \\
+
+Selecting a variable shows its details on the right side. For a Meta Variable:
+
+\begin{itemize}
+\item Name: The name of the Meta Variable
+\item Comment: Description, e.g. the DBContents in which the Meta Variable is not defined
+\item One row per DBContent: The DBContent variable the Meta Variable points to, empty if not defined
+\end{itemize}
+\ \\
+
+For a DBContent variable:
 
 \begin{itemize}
 \item Name: The variable's name as used inside COMPASS
-\item Description: Short description of the variable's meaning
-\item Source: ASTERIX data item or other origin
-\item Data type: Underlying data type (bool, int, float, string, ...)
+\item Short Name: Brief name, shown where space is limited (e.g. the Table View header)
+\item Comment: Description of the variable's meaning
+\item Origin: The ASTERIX data item, the input variables of a calculated variable, the alternatives of a selection, or an internal value (see \nameref{sec:key_concepts}), read only
+\item Data Type: Underlying data type (bool, int, float, string, ...)
 \item Unit: Physical unit if applicable
 \item Representation: Display representation (decimal, hex, octal, ...)
-\item Schema: DBContent the variable belongs to, or empty for meta variables
-\end{itemize} \ \\
-
-The 'Source' column reflects what the DBContent definition specifies for each variable. Typical Source values are: \\
-
-\begin{itemize}
-\item ASTERIX item references, e.g.:
-\begin{itemize}
-  \item 'I020/020.CRT'
-  \item 'I001/042.X-Component'
-  \item 'I062/390.CTL.Centre'
+\item DBColumn: Name of the database column
 \end{itemize}
-\item Calculation hints, e.g.:
-\begin{itemize}
-  \item 'Calculated from Time of Day, calendar date'
-  \item 'Filled by the reconstructor'
-  \item 'Calculated from Range, Azimuth (Radar polar->WGS-84 projection)'
-\end{itemize}
-\item Internal hints, e.g.:
-\begin{itemize}
-  \item 'Internal: import line/source identifier'
-\end{itemize}
-\end{itemize} \ \\
+\ \\
 
-Please \textbf{note} that the above are examples of what the 'Source' field can contain - the complete set of possible values is defined by the underlying DBContent configuration. \\
-
-Editing of the displayed entries is gated to \textbf{expert mode}; by default the dialog is read-only. Expert mode can be enabled in either of the following ways: \\
-
-\begin{itemize}
-\item Pass the '--expert\_mode' command-line flag at application startup
-\end{itemize} \ \\
+Editing is gated to \textbf{expert mode}. By default the dialog is read-only and titled 'Show DBContent'. In expert mode, it is titled 'DBContent', the fields can be changed and a Meta Variable can be deleted with the 'Delete' button. Expert mode is enabled with the '--expert\_mode' command-line flag at application startup (see \nameref{sec:command_line}).

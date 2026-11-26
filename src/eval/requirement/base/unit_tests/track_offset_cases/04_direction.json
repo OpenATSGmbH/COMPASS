@@ -1,0 +1,19 @@
+{
+    "description": "Offset given as east / north components on a direction (radians from north, clockwise), as the SMR accuracy splits an offset into radial / tangential (direction = azimuth) and along / across (direction = heading). Direction 90 deg (east): 30 m east is 30 m along, 20 m north is 20 m to the left (across -20). Direction 180 deg (south): 10 m south is 10 m along, 5 m east is 5 m to the left.",
+    "directions": [
+        {
+            "east": 30,
+            "north": 20,
+            "direction_deg": 90,
+            "along": 30,
+            "across": -20
+        },
+        {
+            "east": 5,
+            "north": -10,
+            "direction_deg": 180,
+            "along": 10,
+            "across": -5
+        }
+    ]
+}

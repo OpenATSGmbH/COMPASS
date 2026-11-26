@@ -18,9 +18,14 @@
 #include "mainwindow_commands_file.h"
 #include "mainwindow.h"
 #include "compass.h"
+#include "compassroot.h"
 #include "logger.h"
-#include "util/files.h"
+#include "files.h"
 #include "traced_assert.h"
+
+#include <QApplication>
+#include <QDialog>
+#include <QTimer>
 
 #include <boost/program_options.hpp>
 #include <boost/filesystem/path.hpp>
@@ -31,6 +36,14 @@ using namespace Utils;
 namespace main_window
 {
 // open_db
+
+/**
+ */
+RTCommandOpenDB::RTCommandOpenDB(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
 
 rtcommand::IsValid RTCommandOpenDB::valid() const
 {
@@ -54,9 +67,9 @@ bool RTCommandOpenDB::run_impl()
         return false;
     }
 
-    if (compass_->dbOpened())
+    if (root_.compass().dbOpened())
     {
-        if (assure_open_ && compass_->lastDbFilename() == filename_)
+        if (assure_open_ && root_.compass().appState().lastDbFilename() == filename_)
         {
             return true;
         }
@@ -67,9 +80,9 @@ bool RTCommandOpenDB::run_impl()
         }
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
@@ -78,15 +91,15 @@ bool RTCommandOpenDB::run_impl()
 
     main_window->openExistingDB(filename_);
 
-    return compass_->dbOpened();
+    return root_.compass().dbOpened();
 }
 
 void RTCommandOpenDB::collectOptions_impl(OptionsDescription& options,
                                           PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.db’")
-        ("assure_open", "Only opens the file if it is not already opened");
+    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.db'")
+        ("assure_open", "succeeds without action if the file is already opened");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -99,9 +112,17 @@ void RTCommandOpenDB::assignVariables_impl(const VariablesMap& variables)
 
 // open_recent_db
 
+/**
+ */
+RTCommandOpenRecentDB::RTCommandOpenRecentDB(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
+
 std::string RTCommandOpenRecentDB::getPath() const
 {
-    vector<string> recent_file_list = compass_->dbFileList();
+    vector<string> recent_file_list = root_.compass().dbFileList();
     if (recent_file_list.empty())
         return "";
 
@@ -151,15 +172,15 @@ bool RTCommandOpenRecentDB::run_impl()
         return false;
     }
 
-    if (compass_->dbOpened())
+    if (root_.compass().dbOpened())
     {
         setResultMessage("Database already opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
@@ -168,14 +189,14 @@ bool RTCommandOpenRecentDB::run_impl()
 
     main_window->openExistingDB(fn);
 
-    return compass_->dbOpened();
+    return root_.compass().dbOpened();
 }
 
 void RTCommandOpenRecentDB::collectOptions_impl(OptionsDescription& options,
                                                 PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filename,f", po::value<std::string>()->default_value(""), "filename listed in the recent file history, e.g. ’file1.db’")
+    ("filename,f", po::value<std::string>()->default_value(""), "filename listed in the recent file history, e.g. 'file1.db'")
         ("index,i", po::value<int>()->default_value(-1), "index in the recent file history");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
@@ -188,6 +209,14 @@ void RTCommandOpenRecentDB::assignVariables_impl(const VariablesMap& variables)
     }
 
 // create db
+
+/**
+ */
+RTCommandCreateDB::RTCommandCreateDB(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
 
 rtcommand::IsValid  RTCommandCreateDB::valid() const
 {
@@ -204,15 +233,15 @@ bool RTCommandCreateDB::run_impl()
         return false;
     }
 
-    if (compass_->dbOpened())
+    if (root_.compass().dbOpened())
     {
         setResultMessage("Database already opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
@@ -221,14 +250,14 @@ bool RTCommandCreateDB::run_impl()
 
     main_window->createDB(filename_);
 
-    return compass_->dbOpened();
+    return root_.compass().dbOpened();
 }
 
 void RTCommandCreateDB::collectOptions_impl(OptionsDescription& options,
                                             PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.db’");
+    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.db'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -239,6 +268,14 @@ void RTCommandCreateDB::assignVariables_impl(const VariablesMap& variables)
 }
 
 // close db
+
+/**
+ */
+RTCommandCloseDB::RTCommandCloseDB(CompassRoot& root)
+    : rtcommand::RTCommand()
+    , root_(root)
+{
+}
 
 void RTCommandCloseDB::collectOptions_impl(OptionsDescription& options,
                                            PosOptionsDescription& positional)
@@ -255,10 +292,10 @@ void RTCommandCloseDB::assignVariables_impl(const VariablesMap& variables)
 bool RTCommandCloseDB::run_impl()
 {
     //lets return true if there's nothing to be done
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
         return !strict_;
 
-    if (compass_->appMode() != AppMode::Offline)
+    if (root_.compass().appState().appMode() != AppMode::Offline)
         return false;
 
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
@@ -266,17 +303,49 @@ bool RTCommandCloseDB::run_impl()
 
     main_window->closeDBSlot();
 
-    return !compass_->dbOpened();
+    return !root_.compass().dbOpened();
 }
 
 // quit app
+
+namespace
+{
+/**
+ * Quits when no modal dialog is open. A modal dialog runs its own event loop and
+ * keeps references to the managers. A shutdown inside this loop deletes the managers
+ * before the dialog, and the dialog destructor then uses a deleted manager. So the
+ * dialogs are closed first, and the quit runs from the main event loop.
+ */
+void quitWhenNoModalDialog(MainWindow* main_window, int retries)
+{
+    QWidget* modal = QApplication::activeModalWidget();
+
+    if (modal && retries > 0)
+    {
+        loginf << "closing modal dialog '" << modal->windowTitle().toStdString() << "' before quit";
+
+        if (auto* dialog = qobject_cast<QDialog*>(modal))
+            dialog->reject();
+        else
+            modal->close();
+
+        QTimer::singleShot(100, [main_window, retries] () { quitWhenNoModalDialog(main_window, retries - 1); });
+        return;
+    }
+
+    if (modal)
+        logwrn << "modal dialog '" << modal->windowTitle().toStdString() << "' still open, quitting";
+
+    main_window->quitSlot();
+}
+}
 
 bool RTCommandQuit::run_impl()
 {
     MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
     traced_assert(main_window);
 
-    QTimer::singleShot(100, [main_window] () { main_window->quitSlot(); });
+    QTimer::singleShot(100, [main_window] () { quitWhenNoModalDialog(main_window, 50); });
 
     return true;
 }

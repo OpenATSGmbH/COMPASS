@@ -16,11 +16,11 @@
  */
 
 #include "viewpointsreportgeneratordialog.h"
+#include "appstate.h"
 #include "viewpointsreportgenerator.h"
 //#include "textfielddoublevalidator.h"
 #include "logger.h"
 #include "viewmanager.h"
-#include "compass.h"
 
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -66,6 +66,7 @@ ViewPointsReportGeneratorDialog::ViewPointsReportGeneratorDialog(ViewPointsRepor
         config_grid->addWidget(new QLabel("Report Path"), row, 0);
 
         directory_edit_ = new QLineEdit ();
+        directory_edit_->setObjectName("directory_edit");
         directory_edit_->setText(generator_.reportPath().c_str());
         connect(directory_edit_, &QLineEdit::editingFinished, this, &ViewPointsReportGeneratorDialog::pathEditedSlot);
         config_grid->addWidget(directory_edit_, row, 1);
@@ -74,6 +75,7 @@ ViewPointsReportGeneratorDialog::ViewPointsReportGeneratorDialog(ViewPointsRepor
         config_grid->addWidget(new QLabel("Report Filename"), row, 0);
 
         filename_edit_ = new QLineEdit();
+        filename_edit_->setObjectName("filename_edit");
         filename_edit_->setText(generator_.reportFilename().c_str());
         connect(filename_edit_, &QLineEdit::editingFinished, this, &ViewPointsReportGeneratorDialog::filenameEditedSlot);
         config_grid->addWidget(filename_edit_, row, 1);
@@ -81,6 +83,7 @@ ViewPointsReportGeneratorDialog::ViewPointsReportGeneratorDialog(ViewPointsRepor
         ++row;
 
         QPushButton* set_path_but = new QPushButton("Change Location");
+        set_path_but->setObjectName("change_location_button");
         connect(set_path_but, &QPushButton::clicked, this, &ViewPointsReportGeneratorDialog::setPathSlot);
         config_grid->addWidget(set_path_but, row, 1);
 
@@ -90,6 +93,7 @@ ViewPointsReportGeneratorDialog::ViewPointsReportGeneratorDialog(ViewPointsRepor
         config_grid->addWidget(new QLabel("Author"), row, 0);
 
         author_edit_ = new QLineEdit();
+        author_edit_->setObjectName("author_edit");
         author_edit_->setText(generator_.author().c_str());
         connect(author_edit_, &QLineEdit::textEdited, this, &ViewPointsReportGeneratorDialog::authorEditedSlot);
         config_grid->addWidget(author_edit_, row, 1);
@@ -98,6 +102,7 @@ ViewPointsReportGeneratorDialog::ViewPointsReportGeneratorDialog(ViewPointsRepor
         config_grid->addWidget(new QLabel("Abstract"), row, 0);
 
         abstract_edit_ = new QLineEdit();
+        abstract_edit_->setObjectName("abstract_edit");
         abstract_edit_->setText(generator_.abstract().c_str());
         connect(abstract_edit_, &QLineEdit::textEdited, this, &ViewPointsReportGeneratorDialog::abstractEditedSlot);
         config_grid->addWidget(abstract_edit_, row, 1);
@@ -108,6 +113,7 @@ ViewPointsReportGeneratorDialog::ViewPointsReportGeneratorDialog(ViewPointsRepor
 
 
         all_unsorted_check_ = new QCheckBox();
+        all_unsorted_check_->setObjectName("export_all_check");
         all_unsorted_check_->setChecked(generator_.exportAllUnsorted());
         connect(all_unsorted_check_, &QCheckBox::clicked, this,
                 &ViewPointsReportGeneratorDialog::allUnsortedChangedSlot);
@@ -119,6 +125,7 @@ ViewPointsReportGeneratorDialog::ViewPointsReportGeneratorDialog(ViewPointsRepor
 
 
         group_types_check_ = new QCheckBox();
+        group_types_check_->setObjectName("group_by_type_check");
         group_types_check_->setChecked(generator_.groupByType());
         connect(group_types_check_, &QCheckBox::clicked, this,
                 &ViewPointsReportGeneratorDialog::groupByTypeChangedSlot);
@@ -129,6 +136,7 @@ ViewPointsReportGeneratorDialog::ViewPointsReportGeneratorDialog(ViewPointsRepor
         config_grid->addWidget(new QLabel("Add Overview Table"), row, 0);
 
         add_overview_table_check_ = new QCheckBox();
+        add_overview_table_check_->setObjectName("add_overview_table_check");
         add_overview_table_check_->setChecked(generator_.addOverviewTable());
         connect(add_overview_table_check_, &QCheckBox::clicked, this,
                 &ViewPointsReportGeneratorDialog::addOverviewTableChangedSlot);
@@ -139,6 +147,7 @@ ViewPointsReportGeneratorDialog::ViewPointsReportGeneratorDialog(ViewPointsRepor
         config_grid->addWidget(new QLabel("Wait On Map Loading"), row, 0);
 
         wait_on_map_loading_check_ = new QCheckBox();
+        wait_on_map_loading_check_->setObjectName("wait_on_map_loading_check");
         wait_on_map_loading_check_->setChecked(generator_.waitOnMapLoading());
         connect(wait_on_map_loading_check_, &QCheckBox::clicked, this,
                 &ViewPointsReportGeneratorDialog::waitOnMapLoadingEditedSlot);
@@ -149,6 +158,7 @@ ViewPointsReportGeneratorDialog::ViewPointsReportGeneratorDialog(ViewPointsRepor
         config_grid->addWidget(new QLabel("Add Overview Screenshot"), row, 0);
 
         add_overview_screenshot_check_ = new QCheckBox();
+        add_overview_screenshot_check_->setObjectName("add_overview_screenshot_check");
         add_overview_screenshot_check_->setChecked(generator_.addOverviewScreenshot());
         connect(add_overview_screenshot_check_, &QCheckBox::clicked, this,
                 &ViewPointsReportGeneratorDialog::addOverviewScreenshotChangedSlot);
@@ -159,6 +169,7 @@ ViewPointsReportGeneratorDialog::ViewPointsReportGeneratorDialog(ViewPointsRepor
         config_grid->addWidget(new QLabel("Run PDFLatex"), row, 0);
 
         pdflatex_check_ = new QCheckBox();
+        pdflatex_check_->setObjectName("run_pdflatex_check");
         pdflatex_check_->setChecked(generator_.runPDFLatex());
 
         if (!generator_.pdfLatexFound())
@@ -173,6 +184,7 @@ ViewPointsReportGeneratorDialog::ViewPointsReportGeneratorDialog(ViewPointsRepor
         config_grid->addWidget(new QLabel("Open Created PDF"), row, 0);
 
         open_pdf_check_ = new QCheckBox();
+        open_pdf_check_->setObjectName("open_created_pdf_check");
         open_pdf_check_->setChecked(generator_.openCreatedPDF());
 
         if (!generator_.pdfLatexFound())
@@ -190,6 +202,7 @@ ViewPointsReportGeneratorDialog::ViewPointsReportGeneratorDialog(ViewPointsRepor
     }
 
     run_button_ = new QPushButton("Run");
+    run_button_->setObjectName("run_button");
     connect(run_button_, &QPushButton::clicked, this, &ViewPointsReportGeneratorDialog::runSlot);
     main_layout->addWidget(run_button_);
 
@@ -201,23 +214,27 @@ ViewPointsReportGeneratorDialog::ViewPointsReportGeneratorDialog(ViewPointsRepor
 
         status_grid->addWidget(new QLabel("Elapsed Time"), row, 0);
         elapsed_time_label_ = new QLabel();
+        elapsed_time_label_->setObjectName("elapsed_time_label");
         elapsed_time_label_->setAlignment(Qt::AlignRight);
         status_grid->addWidget(elapsed_time_label_, row, 1);
 
         ++row;
         status_grid->addWidget(new QLabel("Progress"), row, 0);
         progress_bar_ = new QProgressBar();
+        progress_bar_->setObjectName("progress_bar");
         status_grid->addWidget(progress_bar_, row, 1);
 
         ++row;
         status_grid->addWidget(new QLabel("Status"), row, 0);
         status_label_ = new QLabel();
+        status_label_->setObjectName("status_label");
         status_label_->setAlignment(Qt::AlignRight);
         status_grid->addWidget(status_label_, row, 1);
 
         ++row;
         status_grid->addWidget(new QLabel("Remaining Time"), row, 0);
         remaining_time_label_ = new QLabel();
+        remaining_time_label_->setObjectName("remaining_time_label");
         remaining_time_label_->setAlignment(Qt::AlignRight);
         status_grid->addWidget(remaining_time_label_, row, 1);
 
@@ -227,6 +244,7 @@ ViewPointsReportGeneratorDialog::ViewPointsReportGeneratorDialog(ViewPointsRepor
     //main_layout->addStretch();
 
     quit_button_ = new QPushButton("Cancel");
+    quit_button_->setObjectName("cancel_button");
     connect(quit_button_, &QPushButton::clicked, this, &ViewPointsReportGeneratorDialog::cancelSlot);
     main_layout->addWidget(quit_button_);
 
@@ -254,7 +272,7 @@ void ViewPointsReportGeneratorDialog::setPathSlot ()
 {
     QFileDialog dialog(this);
     dialog.setFileMode(QFileDialog::AnyFile);
-    dialog.setDirectory(generator_.viewManager().compass().lastUsedPath().c_str());
+    dialog.setDirectory(generator_.viewManager().appState().lastUsedPath().c_str());
     dialog.setNameFilter("TEX Files (*.tex)");
     dialog.setDefaultSuffix("tex");
     dialog.setAcceptMode(QFileDialog::AcceptMode::AcceptSave);

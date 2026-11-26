@@ -15,15 +15,17 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/identification/false.h"
-#include "eval/standard/evaluationstandard.h"
-#include "eval/results/identification/false.h"
+#include "requirement/identification/false.h"
+#include "requirement/base/falsehelpers.h"
+#include "standard/evaluationstandard.h"
+#include "results/identification/false.h"
+#include "results/base/detailcode.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
 
 #include "logger.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 
 using namespace std;
 using namespace Utils;
@@ -31,6 +33,8 @@ using namespace boost::posix_time;
 
 namespace EvaluationRequirement
 {
+
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
 
 IdentificationFalse::IdentificationFalse(
         const std::string& name, const std::string& short_name, const std::string& group_name,
@@ -76,23 +80,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
     boost::optional<dbContent::TargetPosition> ref_pos;
     //bool ok;
 
-    ValueComparisonResult cmp_res_ti;
-    string cmp_res_ti_comment;
-    bool ti_false;
-
-    ValueComparisonResult cmp_res_ta;
-    string cmp_res_ta_comment;
-    bool ta_false;
-
-    ValueComparisonResult cmp_res_ma;
-    string cmp_res_ma_comment;
-    bool ma_false;
-
-    bool any_false;
-    bool all_false;
     bool result_false;
-
-    string comment;
 
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
     bool skip_detail;
@@ -110,27 +98,19 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
                             const QVariant& num_unknown_id,
                             const QVariant& num_correct_id,
                             const QVariant& num_false_id,
-                            const std::string& comment)
+                            std::uint32_t code)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::RefExists, ref_exists)
-                                             .setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
+                                             .setValue(Result::DetailKey::PosInside, pos_inside)
                                              .setValue(Result::DetailKey::IsNotOk, is_not_ok)
-                                             .setValue(Result::DetailKey::NumUpdates, num_updates)
-                                             .setValue(Result::DetailKey::NumNoRef, num_no_ref)
-                                             .setValue(Result::DetailKey::NumInside, num_pos_inside)
-                                             .setValue(Result::DetailKey::NumOutside, num_pos_outside)
-                                             .setValue(Result::DetailKey::NumUnknownID, num_unknown_id)
-                                             .setValue(Result::DetailKey::NumCorrectID, num_correct_id)
-                                             .setValue(Result::DetailKey::NumFalseID, num_false_id)
                                              .addPosition(ref_pos)
-                                             .generalComment(comment));
+                                             .addCode(code));
     };
 
     for (const auto& tst_id : tst_data)
     {
         ref_exists = false;
         is_inside = false;
-        comment = "";
 
         skip_detail = false;
 
@@ -145,7 +125,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
                 addDetail(timestamp, pos_current, {},
                             false, {}, false, // ref_exists, pos_inside,
                             num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                            num_unknown, num_correct, num_false, "No reference data");
+                            num_unknown, num_correct, num_false, 0);
 
             ++num_no_ref_pos;
             continue;
@@ -162,7 +142,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
                 addDetail(timestamp, pos_current, {},
                             false, {}, false, // ref_exists, pos_inside,
                             num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                            num_unknown, num_correct, num_false, "No reference position");
+                            num_unknown, num_correct, num_false, DetailCode::NoRefPosition);
 
             ++num_no_ref_pos;
             continue;
@@ -178,84 +158,64 @@ std::shared_ptr<EvaluationRequirementResult::Single> IdentificationFalse::evalua
                 addDetail(timestamp, pos_current, ref_pos,
                             ref_exists, is_inside, false, // ref_exists, pos_inside,
                             num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                            num_unknown, num_correct, num_false, "Outside sector");
+                            num_unknown, num_correct, num_false, 0);
 
             ++num_pos_outside;
             continue;
         }
         ++num_pos_inside;
 
-        tie(cmp_res_ti, cmp_res_ti_comment) = compareTi(tst_id, target_data, max_ref_time_diff);
-        tie(cmp_res_ta, cmp_res_ta_comment) = compareTa(tst_id, target_data, max_ref_time_diff);
-        tie(cmp_res_ma, cmp_res_ma_comment) = compareModeA(tst_id, target_data, max_ref_time_diff);
+        // compare the used identification values
+        std::vector<ValueComparisonResult> cmp_results;
+        std::uint32_t                      false_code = 0; // the values that differ
 
-        any_false = false;
-        all_false = true;
+        auto addCompare = [ & ] (ValueComparisonResult cmp_res, std::uint32_t differs_bit)
+        {
+            cmp_results.push_back(cmp_res);
+            false_code |= comparisonCode(cmp_res, differs_bit, 0);
+        };
 
         if (use_ms_ti_)
-        {
-            ti_false = cmp_res_ti == ValueComparisonResult::Different;
-
-            if (ti_false)
-                comment += "ACID false (" + cmp_res_ti_comment + ")";
-
-            any_false |= ti_false;
-            all_false &= ti_false;
-        }
-
+            addCompare(compareTi(tst_id, target_data, max_ref_time_diff), DetailCode::Value::AcidDiffers);
         if (use_ms_ta_)
-        {
-            ta_false = cmp_res_ta == ValueComparisonResult::Different;
-
-            if (ta_false)
-            {
-                if (comment.size())
-                    comment += ", ";
-
-                comment += "ACAD false (" + cmp_res_ta_comment + ")";
-            }
-
-            any_false |= ta_false;
-            all_false &= ta_false;
-        }
-
+            addCompare(compareTa(tst_id, target_data, max_ref_time_diff), DetailCode::Value::AcadDiffers);
         if (use_mode_a_)
+            addCompare(compareModeA(tst_id, target_data, max_ref_time_diff), DetailCode::Value::M3ADiffers);
+
+        auto report_class = FalseHelpers::classify(cmp_results, require_all_false_);
+
+        result_false = report_class == FalseHelpers::ReportClass::False;
+
+        switch (report_class)
         {
-            ma_false = cmp_res_ma == ValueComparisonResult::Different;
+            case FalseHelpers::ReportClass::NoRefValue:
+                if (skip_no_data_details)
+                    skip_detail = true;
 
-            if (ma_false)
-            {
-                if (comment.size())
-                    comment += ", ";
-                comment += "M3A false (" + cmp_res_ma_comment + ")";
-            }
+                ++num_no_ref_val;
+                break;
 
-            any_false |= ma_false;
-            all_false &= ma_false;
+            case FalseHelpers::ReportClass::Unknown:
+                if (skip_no_data_details)
+                    skip_detail = true;
+
+                ++num_unknown;
+                break;
+
+            case FalseHelpers::ReportClass::Correct:
+                ++num_correct;
+                break;
+
+            case FalseHelpers::ReportClass::False:
+                ++num_false;
+                break;
         }
-
-        if (!use_ms_ti_ && !use_ms_ta_ && !use_mode_a_)
-            all_false = false; // if none is used, set to false
-
-        if (require_all_false_)
-        {
-            result_false = all_false;
-        }
-        else // one correct ok
-        {
-            result_false = any_false;
-        }
-
-        if (result_false)
-            ++num_false;
-        else
-            ++num_correct;
 
         if (!skip_detail)
             addDetail(timestamp, pos_current, ref_pos,
                         ref_exists, is_inside, result_false,
                         num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                        num_unknown, num_correct, num_false, comment);
+                        num_unknown, num_correct, num_false, FalseHelpers::code(report_class) | false_code);
     }
 
     logdbg << "'" << name_ << "': utn " << target_data.utn_

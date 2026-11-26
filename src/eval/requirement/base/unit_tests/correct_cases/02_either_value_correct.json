@@ -1,0 +1,47 @@
+{
+    "description": "Mode A and ACID without require correctness of all (ED-117A 5.4.5 accepts either item). A system that outputs only Mode A or only ACID is correct with the one correct item. Without any same value the report is not correct. PID = 3 / 5.",
+    "require_all_correct": false,
+    "reports": [
+        {
+            "cmp": [
+                "same",
+                "no_tst"
+            ],
+            "class": "correct"
+        },
+        {
+            "cmp": [
+                "no_tst",
+                "same"
+            ],
+            "class": "correct"
+        },
+        {
+            "cmp": [
+                "different",
+                "same"
+            ],
+            "class": "correct"
+        },
+        {
+            "cmp": [
+                "different",
+                "no_tst"
+            ],
+            "class": "not_correct"
+        },
+        {
+            "cmp": [
+                "no_tst",
+                "no_tst"
+            ],
+            "class": "not_correct"
+        }
+    ],
+    "expected": {
+        "no_ref_val": 0,
+        "correct": 3,
+        "not_correct": 2,
+        "probability": 0.6
+    }
+}

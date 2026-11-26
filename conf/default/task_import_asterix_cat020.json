@@ -9,24 +9,6 @@
     "sub_configs": [
         {
             "class_name": "JSONDataMapping",
-            "instance_name": "JSONDataMapping1",
-            "parameters": {
-                "active": true,
-                "append_value": false,
-                "comment": "Type number, value 12870",
-                "db_content_name": "CAT020",
-                "db_content_variable_name": "DS ID",
-                "dimension": "",
-                "format_data_type": "",
-                "in_array": false,
-                "json_key": "ds_id",
-                "json_value_format": "",
-                "mandatory": false,
-                "unit": ""
-            }
-        },
-        {
-            "class_name": "JSONDataMapping",
             "instance_name": "JSONDataMapping10",
             "parameters": {
                 "active": true,
@@ -105,7 +87,7 @@
                 "append_value": false,
                 "comment": "",
                 "db_content_name": "CAT020",
-                "db_content_variable_name": "X StdDev",
+                "db_content_variable_name": "X StdDev SDP",
                 "dimension": "",
                 "format_data_type": "",
                 "in_array": false,
@@ -123,7 +105,7 @@
                 "append_value": false,
                 "comment": "",
                 "db_content_name": "CAT020",
-                "db_content_variable_name": "Y StdDev",
+                "db_content_variable_name": "Y StdDev SDP",
                 "dimension": "",
                 "format_data_type": "",
                 "in_array": false,
@@ -141,7 +123,7 @@
                 "append_value": false,
                 "comment": "",
                 "db_content_name": "CAT020",
-                "db_content_variable_name": "X DoP",
+                "db_content_variable_name": "X DoP DOP",
                 "dimension": "",
                 "format_data_type": "",
                 "in_array": false,
@@ -159,7 +141,7 @@
                 "append_value": false,
                 "comment": "",
                 "db_content_name": "CAT020",
-                "db_content_variable_name": "X/Y DoP Cov",
+                "db_content_variable_name": "X/Y DoP Cov DOP",
                 "dimension": "",
                 "format_data_type": "",
                 "in_array": false,
@@ -177,7 +159,7 @@
                 "append_value": false,
                 "comment": "",
                 "db_content_name": "CAT020",
-                "db_content_variable_name": "Y DoP",
+                "db_content_variable_name": "Y DoP DOP",
                 "dimension": "",
                 "format_data_type": "",
                 "in_array": false,
@@ -195,11 +177,29 @@
                 "append_value": false,
                 "comment": "",
                 "db_content_name": "CAT020",
-                "db_content_variable_name": "X/Y StdDev Cov",
+                "db_content_variable_name": "X/Y StdDev Cov SDP",
                 "dimension": "",
                 "format_data_type": "",
                 "in_array": false,
                 "json_key": "500.SDP.rho-xy",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMapping109",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Geometric Height StdDev SDH",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "500.SDH.sigma-gh",
                 "json_value_format": "",
                 "mandatory": false,
                 "unit": ""
@@ -843,7 +843,7 @@
                 "append_value": false,
                 "comment": "Type number, value 1, weird mapping",
                 "db_content_name": "CAT020",
-                "db_content_variable_name": "Altitude Reporting Capability\n",
+                "db_content_variable_name": "Altitude Reporting Capability",
                 "dimension": "",
                 "format_data_type": "",
                 "in_array": false,
@@ -965,7 +965,7 @@
             "class_name": "JSONDataMapping",
             "instance_name": "JSONDataMapping57",
             "parameters": {
-                "active": false,
+                "active": true,
                 "append_value": false,
                 "comment": "Type number, value 2, not found",
                 "db_content_name": "CAT020",
@@ -987,7 +987,7 @@
                 "append_value": false,
                 "comment": "Type number, value 1.5",
                 "db_content_name": "CAT020",
-                "db_content_variable_name": "X DoP",
+                "db_content_variable_name": "X DoP PA",
                 "dimension": "",
                 "format_data_type": "",
                 "in_array": false,
@@ -1005,7 +1005,7 @@
                 "append_value": false,
                 "comment": "Type number, value 0.25",
                 "db_content_name": "CAT020",
-                "db_content_variable_name": "X/Y DoP Cov",
+                "db_content_variable_name": "X/Y DoP Cov PA",
                 "dimension": "",
                 "format_data_type": "",
                 "in_array": false,
@@ -1041,7 +1041,7 @@
                 "append_value": false,
                 "comment": "Type number, value 0.5",
                 "db_content_name": "CAT020",
-                "db_content_variable_name": "Y DoP",
+                "db_content_variable_name": "Y DoP PA",
                 "dimension": "",
                 "format_data_type": "",
                 "in_array": false,
@@ -1059,7 +1059,7 @@
                 "append_value": false,
                 "comment": "Type number, value 7.5",
                 "db_content_name": "CAT020",
-                "db_content_variable_name": "X/Y StdDev Cov",
+                "db_content_variable_name": "X/Y StdDev Cov PA",
                 "dimension": "",
                 "format_data_type": "",
                 "in_array": false,
@@ -1077,7 +1077,7 @@
                 "append_value": false,
                 "comment": "Type number, value 20.0",
                 "db_content_name": "CAT020",
-                "db_content_variable_name": "X StdDev",
+                "db_content_variable_name": "X StdDev PA",
                 "dimension": "",
                 "format_data_type": "",
                 "in_array": false,
@@ -1095,7 +1095,7 @@
                 "append_value": false,
                 "comment": "Type number, value 10.75",
                 "db_content_name": "CAT020",
-                "db_content_variable_name": "Y StdDev",
+                "db_content_variable_name": "Y StdDev PA",
                 "dimension": "",
                 "format_data_type": "",
                 "in_array": false,
@@ -1172,6 +1172,24 @@
                 "format_data_type": "",
                 "in_array": false,
                 "json_key": "artas_md5",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingRecordData",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type string, original record data in hex",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Record Data",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "record_data",
                 "json_value_format": "",
                 "mandatory": false,
                 "unit": ""
@@ -1388,6 +1406,744 @@
                 "format_data_type": "",
                 "in_array": false,
                 "json_key": "260.MB DATA",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd1",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode 2 Code",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "050.Mode-2 reply",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd2",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode 2 Valid",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "050.V",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd3",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode 2 Garbled",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "050.G",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd4",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode 2 Smoothed",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "050.L",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd5",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode 1 Code",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "055.Mode-1 Code",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd6",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode 1 Valid",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "055.V",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd7",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode 1 Garbled",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "055.G",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd8",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode 1 Smoothed",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "055.L",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd9",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode C Code Reply",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "100.Mode-C reply",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd10",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode C Reply Valid",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "100.V",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd11",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode C Reply Garbled",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "100.G",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd12",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode C Code Confidence",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "100.QXi",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd13",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Geometric Height StdDev PA",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.PA.SDH.SDH",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd14",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Reported Ground Speed",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.GVV.Ground Speed",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd15",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Reported Track Angle",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.GVV.Track Angle",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd16",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Range Exceeded",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.GVV.RE",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd17",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Ground Speed StdDev",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.GVA.GSSD",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd18",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Track Angle StdDev",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.GVA.TASD",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd19",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Report Transmission Time",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.TRT.Time Of ASTERIX Report Transmission",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd20",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "AIC Capability Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.AIC.AIC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd21",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "ACAS RA Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.ARA.ARA",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd22",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "ARC Capability Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.ARC.ARC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd23",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Flight Level Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.FL.FL",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd24",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Geometric Height Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.GH.GH",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd25",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode 1 Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.M1.M1",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd26",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode 2 Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.M2.M2",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd27",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode 3/A Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.M3A.M3A",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd28",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode C Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.MC.MC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd29",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Pre-programmed Message Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.MSG.MSG",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd30",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "MSSC Capability Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.MSSC.MSSC",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd31",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "SPI Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.SPI.SPI",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd32",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Flight Status Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.STAT.STAT",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd33",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Target Address Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.TA.TA",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd34",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Target Identification Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.TI.TI",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd35",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Vehicle Fleet ID Age",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.VI.VI",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd36",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode S MB Age",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.MBD.Mode S MB Data.MBA",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd37",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode S MB Age BDS1",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.MBD.Mode S MB Data.BDS1",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingAdd38",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Mode S MB Age BDS2",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "REF.DA.MBD.Mode S MB Data.BDS2",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingRecordingTime",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, recording time of the record's frame or packet in seconds since midnight",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Recording Time",
+                "dimension": "Time",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "recording_time",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": "Second"
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingRecordingDay",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, recording day counter of the record's frame, 0 at the start of the recording",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Recording Day",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "recording_day",
+                "json_value_format": "",
+                "mandatory": false,
+                "unit": ""
+            }
+        },
+        {
+            "class_name": "JSONDataMapping",
+            "instance_name": "JSONDataMappingRecordingDate",
+            "parameters": {
+                "active": true,
+                "append_value": false,
+                "comment": "Type number, uTC date of the record's frame or packet as YYYYMMDD",
+                "db_content_name": "CAT020",
+                "db_content_variable_name": "Recording Date",
+                "dimension": "",
+                "format_data_type": "",
+                "in_array": false,
+                "json_key": "recording_date",
                 "json_value_format": "",
                 "mandatory": false,
                 "unit": ""

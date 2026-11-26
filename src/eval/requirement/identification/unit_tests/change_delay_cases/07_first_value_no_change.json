@@ -1,0 +1,31 @@
+{
+    "description": "Only one value in the reference: no change.",
+    "params": {
+        "max_delay_s": 15.0,
+        "min_stable_time_s": 10.0
+    },
+    "ref_series": [
+        [
+            0,
+            100,
+            1,
+            "4567"
+        ]
+    ],
+    "tst_series": [
+        [
+            0,
+            100,
+            4,
+            "4567"
+        ]
+    ],
+    "expected": {
+        "events": 0,
+        "passed": 0,
+        "failed": 0,
+        "never_reported": 0,
+        "not_assessable": 0,
+        "delays": []
+    }
+}

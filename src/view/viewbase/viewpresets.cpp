@@ -16,9 +16,10 @@
  */
 
 #include "viewpresets.h"
+#include "appstate.h"
+#include "viewmanager.h"
 
 #include "view.h"
-#include "compass.h"
 #include "files.h"
 #include "config.h"
 #include "timeconv.h"
@@ -737,7 +738,7 @@ bool ViewPresets::updatePresetConfig(Preset& preset, View* view, bool update_pre
         preset.preview = renderPreview(view);
 
     //update signature on config modify
-    updatePresetStamp(preset, view->compass().config().getString("version"));
+    updatePresetStamp(preset, view->viewManager().appState().appVersion());
 
     return cfg_changed;
 }

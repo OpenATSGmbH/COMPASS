@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include <QObject>
 
 //#include "buffer.h"
@@ -28,7 +30,7 @@ class Job;
 class ScatterPlotView;
 class ViewableDataConfig;
 
-class ScatterPlotViewDataSource : public QObject, public Configurable
+class COMPASS_VIEW_API ScatterPlotViewDataSource : public QObject, public Configurable
 {
     Q_OBJECT
   public slots:
@@ -42,8 +44,6 @@ class ScatterPlotViewDataSource : public QObject, public Configurable
     /// @brief Destructor
     virtual ~ScatterPlotViewDataSource();
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json);
-
     /// @brief Returns variable read list
     dbContent::VariableOrderedSet* getSet()
     {
@@ -55,6 +55,8 @@ class ScatterPlotViewDataSource : public QObject, public Configurable
     void showViewPoint (ViewableDataConfig* vp);
 
   protected:
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json);
+
     ScatterPlotView* view_{nullptr};
 
     /// Variable read list

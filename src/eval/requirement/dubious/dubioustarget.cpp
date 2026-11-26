@@ -16,15 +16,16 @@
  */
 
 
-#include "eval/requirement/dubious/dubioustarget.h"
+#include "requirement/dubious/dubioustarget.h"
+#include "requirement/dubious/dubious_helpers.h"
 
-#include "eval/results/dubious/dubioustarget.h"
+#include "results/dubious/dubioustarget.h"
 
 #include "evaluationmanager.h"
 
-#include "util/stringconv.h"
-#include "util/timeconv.h"
-#include "util/number.h"
+#include "stringconv.h"
+#include "timeconv.h"
+#include "number.h"
 #include "global.h"
 
 #include <cmath>
@@ -108,7 +109,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTarget::evaluate (co
     unsigned int num_pos_inside_dubious {0};
 
     typedef EvaluationRequirementResult::SingleDubiousTarget Result;
-    typedef EvaluationDetail                                 Detail;
     
     std::vector<Result::DetailData> detail_data(1);
     auto& detail = detail_data[ 0 ];
@@ -142,10 +142,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTarget::evaluate (co
 
         detail.left_sector = false;
         ++num_pos_inside;
-
-        if (!detail.first_inside && timestamp - detail.tod_end > seconds(300)) // not first time and time gap too large, skip
-            continue;
-
         ++detail.num_pos_inside;
 
         detail.details.emplace_back(timestamp, tst_pos);
@@ -194,18 +190,8 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTarget::evaluate (co
     unsigned int dubious_turnrate_found;
     unsigned int dubious_rocd_found;
 
-    bool all_updates_dubious; // for short or primary track
-    std::map<std::string, std::string> all_updates_dubious_reasons;
-
-    bool has_last_tod;
-    ptime last_timestamp;
-    float time_diff;
-    double acceleration;
-    double turnrate;
-    double rocd;
-
-    all_updates_dubious = false;
-    all_updates_dubious_reasons.clear();
+    std::uint32_t all_updates_code; // reasons of the period, for all its updates
+    all_updates_code = 0;
 
     dubious_groundspeed_found = 0;
     dubious_acceleration_found = 0;
@@ -214,183 +200,128 @@ std::shared_ptr<EvaluationRequirementResult::Single> DubiousTarget::evaluate (co
 
     if (!do_not_evaluate_target && mark_primary_only_ && !detail.has_mode_ac && !detail.has_mode_s)
     {
-        detail.dubious_reasons["Pri."] = "";
-
-        all_updates_dubious = true;
-        all_updates_dubious_reasons["Pri."] = "";
+        detail.reasons["Pri."] = "";
+        all_updates_code |= DubiousHelpers::PrimaryOnly;
     }
 
     if (!do_not_evaluate_target && use_min_updates_ && !detail.left_sector && detail.num_pos_inside < min_updates_)
     {
-        detail.dubious_reasons["#Up"] = to_string(detail.num_pos_inside);
-
-        all_updates_dubious = true;
-        all_updates_dubious_reasons["#Up"] = to_string(detail.num_pos_inside);
+        detail.reasons["#Up"] = to_string(detail.num_pos_inside);
+        all_updates_code |= DubiousHelpers::FewUpdates;
     }
 
     if (!do_not_evaluate_target && use_min_duration_ && !detail.left_sector && detail.duration < min_duration_)
     {
-        detail.dubious_reasons["Dur."] = Time::toString(detail.duration, 1);
-
-        all_updates_dubious = true;
-        all_updates_dubious_reasons["Dur."] = Time::toString(detail.duration, 1);
+        detail.reasons["Dur."] = Time::toString(detail.duration, 1);
+        all_updates_code |= DubiousHelpers::ShortDuration;
     }
 
-    has_last_tod = false;
+    DubiousHelpers::Params params;
+    params.use_max_groundspeed    = use_max_groundspeed_;
+    params.max_groundspeed_kts    = max_groundspeed_kts_;
+    params.check_calculated_speed = true;
+    params.use_max_acceleration   = use_max_acceleration_;
+    params.max_acceleration       = max_acceleration_;
+    params.use_max_turnrate       = use_max_turnrate_;
+    params.max_turnrate           = max_turnrate_;
+    params.use_max_rocd           = use_rocd_;
+    params.max_rocd               = max_rocd_;
+    params.min_comparison_time    = minimum_comparison_time_;
+    params.max_comparison_time    = maximum_comparison_time_;
 
-    Detail* last_update {nullptr};
-    Transformation trafo_;
+    std::vector<DubiousHelpers::Update> updates(detail.details.size());
+    Transformation trafo;
 
-    bool ok;
-    double x_pos, y_pos;
-    double distance, t_diff, spd;
-
-    double max_groundspeed_ms = max_groundspeed_kts_ * KNOTS2M_S;
-
-    for (auto& update : detail.details)
+    for (size_t cnt = 0; cnt < detail.details.size(); ++cnt)
     {
-        if (!do_not_evaluate_target && all_updates_dubious) // mark was primarty/short track if required
-            Result::logComments(update, all_updates_dubious_reasons);
-
+        const auto& update = detail.details[cnt];
         auto id = target_data.tstChain().dataID(update.timestamp());
 
-        auto tst_spd = target_data.tstChain().groundSpeed(id); // m/s
+        auto& u = updates[cnt];
+        u.time_s = Time::partialSeconds(update.timestamp() - detail.details.front().timestamp());
 
-        if (!do_not_evaluate_target && use_max_groundspeed_)
+        if (auto spd = target_data.tstChain().groundSpeed(id))
+            u.speed_ms = *spd;
+        if (auto trk = target_data.tstChain().trackAngle(id))
+            u.track_angle_deg = *trk;
+        if (auto mc = target_data.tstChain().modeC(id))
+            u.mode_c_ft = *mc;
+
+        if (cnt > 0)
         {
-            if (tst_spd.has_value() && *tst_spd > max_groundspeed_ms)
-            {
-                Result::logComment(update, "MSpd", String::doubleToStringPrecision(*tst_spd, 1));
+            const auto& last = detail.details[cnt - 1];
 
-                ++dubious_groundspeed_found;
-            }
-            else if (last_update) // check last speed to last update
-            {
-                tie(ok, x_pos, y_pos) = trafo_.distanceCart(
-                            last_update->position(0).latitude_, last_update->position(0).longitude_,
-                            update.position(0).latitude_, update.position(0).longitude_);
-                distance = sqrt(pow(x_pos, 2) + pow(y_pos, 2));
-                t_diff = Time::partialSeconds(update.timestamp() - last_update->timestamp());
-                traced_assert(t_diff >= 0);
+            bool ok;
+            double x_pos, y_pos;
+            tie(ok, x_pos, y_pos) = trafo.distanceCart(last.position(0).latitude_, last.position(0).longitude_,
+                                                       update.position(0).latitude_, update.position(0).longitude_);
+            u.distance_to_previous_m = sqrt(pow(x_pos, 2) + pow(y_pos, 2));
+        }
+    }
 
-                if (t_diff > 0)
-                {
-                    spd = M_S2KNOTS * distance / t_diff;
+    auto flags = DubiousHelpers::checkUpdates(updates, params);
 
-                    if(spd > max_groundspeed_kts_)
-                    {
-                        Result::logComment(update, "CSpd",
-                                           String::doubleToStringPrecision(spd, 1));
-                        ++dubious_groundspeed_found;
-                    }
-                }
-            }
+    for (size_t cnt = 0; cnt < detail.details.size(); ++cnt)
+    {
+        auto& update = detail.details[cnt];
+        const auto& f = flags[cnt];
+
+        // mark was primary/short track if required, and the reasons of the test report with their values
+        update.addCode(all_updates_code);
+
+        if (f.reported_speed_ms)
+        {
+            update.setValue(Result::DetailKey::ReportedSpeed, *f.reported_speed_ms);
+            ++dubious_groundspeed_found;
+        }
+        else if (f.calculated_speed_kts)
+        {
+            update.setValue(Result::DetailKey::CalculatedSpeed, *f.calculated_speed_kts);
+            ++dubious_groundspeed_found;
         }
 
-        if (has_last_tod)
+        if (f.acceleration)
         {
-            traced_assert(update.timestamp() >= last_timestamp);
-            time_diff = Time::partialSeconds(update.timestamp() - last_timestamp);
-
-            if (!do_not_evaluate_target && time_diff >= minimum_comparison_time_
-                    && time_diff <= maximum_comparison_time_)
-            {
-                auto id_last = target_data.tstChain().dataID(last_timestamp);
-
-                auto tst_spd_last = target_data.tstChain().groundSpeed(id_last); // m/s
-
-                if (use_max_acceleration_ && tst_spd.has_value() && tst_spd_last.has_value())
-                {
-                    acceleration = fabs(*tst_spd - *tst_spd_last) / time_diff;
-
-                    if (acceleration > max_acceleration_)
-                    {
-                        Result::logComment(update, "Acc",
-                                           String::doubleToStringPrecision(acceleration, 1));
-
-                        ++dubious_acceleration_found;
-                    }
-                }
-
-                if (!do_not_evaluate_target && use_max_turnrate_)
-                {
-
-                    auto tst_track_angle = target_data.tstChain().trackAngle(id);
-                    auto tst_track_angle_last = target_data.tstChain().trackAngle(id_last);
-
-                    if (tst_track_angle.has_value() && tst_track_angle_last.has_value())
-                    {
-
-                        turnrate = Number::calculateMinAngleDifference(*tst_track_angle_last, *tst_track_angle) / time_diff;
-
-                        if (fabs(turnrate) > max_turnrate_)
-                        {
-                            Result::logComment(update, "TR",
-                                               String::doubleToStringPrecision(turnrate, 1));
-
-                            ++dubious_turnrate_found;
-                        }
-                    }
-                }
-
-                if (!do_not_evaluate_target && use_rocd_)
-                {
-                    auto tst_mc = target_data.tstChain().modeC(id);
-                    auto tst_mc_last = target_data.tstChain().modeC(id_last);
-
-                    if (tst_mc.has_value() && tst_mc_last.has_value())
-                    {
-
-                        rocd = fabs(*tst_mc - *tst_mc_last) / time_diff;
-
-                        if (rocd > max_rocd_)
-                        {
-                            Result::logComment(update, "ROCD", String::doubleToStringPrecision(rocd, 1));
-
-                            ++dubious_rocd_found;
-                        }
-                    }
-                }
-            }
-
-            last_update = &update;
+            update.setValue(Result::DetailKey::Acceleration, *f.acceleration);
+            ++dubious_acceleration_found;
         }
 
-        // done
-        last_timestamp = update.timestamp();
-        has_last_tod   = true;
+        if (f.turnrate)
+        {
+            update.setValue(Result::DetailKey::TurnRate, *f.turnrate);
+            ++dubious_turnrate_found;
+        }
+
+        if (f.rocd)
+        {
+            update.setValue(Result::DetailKey::ROCD, *f.rocd);
+            ++dubious_rocd_found;
+        }
     }
 
     if (!do_not_evaluate_target && use_max_groundspeed_ && dubious_groundspeed_found > 0)
     {
-        detail.dubious_reasons["Spd"] = to_string(dubious_groundspeed_found);
+        detail.reasons["Spd"] = to_string(dubious_groundspeed_found);
     }
 
     if (!do_not_evaluate_target && use_max_acceleration_ && dubious_acceleration_found > 0)
     {
-        detail.dubious_reasons["Acc"] = to_string(dubious_acceleration_found);
+        detail.reasons["Acc"] = to_string(dubious_acceleration_found);
     }
 
     if (!do_not_evaluate_target && use_max_turnrate_ && dubious_turnrate_found > 0)
     {
-        detail.dubious_reasons["TR"] = to_string(dubious_turnrate_found);
+        detail.reasons["TR"] = to_string(dubious_turnrate_found);
     }
 
     if (!do_not_evaluate_target && use_rocd_ && dubious_rocd_found > 0)
     {
-        detail.dubious_reasons["ROCD"] = to_string(dubious_rocd_found);
+        detail.reasons["ROCD"] = to_string(dubious_rocd_found);
     }
 
     detail.num_pos_inside_dubious = detail.numDubious(); // num of tods with issues
 
-    if (detail.num_pos_inside && ((float) detail.num_pos_inside_dubious /(float)(detail.num_pos_inside) > dubious_prob_))
-    {
-        detail.is_dubious = true;
-    }
-    else
-    {
-        detail.is_dubious = false;
-    }
+    detail.is_dubious = DubiousHelpers::isDubious(detail.num_pos_inside_dubious, detail.num_pos_inside, dubious_prob_);
 
     //        loginf << "'" << name_ << "': utn " << target_data.utn_
     //               << " is_dubious_ " << track_detail.is_dubious_

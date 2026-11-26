@@ -34,6 +34,10 @@ public:
     static FilterClause sqlFor(IDBVariableResolver& resolver,
                                float min, float max, bool null_wanted,
                                const std::string& dbcontent_name);
+    /// the variable candidates of the Mode C Code selection of the content, a value is
+    /// searched in every one of them, empty when the content has no selection
+    static std::vector<std::string> searchedCandidates(IDBVariableResolver& resolver,
+                                                       const std::string& dbcontent_name);
 
     virtual bool filters(const std::string& dbcontent_name) override;
     virtual void reset() override;

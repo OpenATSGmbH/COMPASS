@@ -19,7 +19,6 @@
 #include "histogramview.h"
 #include "viewabledataconfig.h"
 #include "viewmanager.h"
-#include "compass.h"
 //#include "configuration.h"
 //#include "configurationmanager.h"
 #include "dbcontent/dbcontent.h"
@@ -66,7 +65,7 @@ HistogramViewDataSource::~HistogramViewDataSource()
     }
 }
 
-void HistogramViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult HistogramViewDataSource::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
     const auto& instance_name = Configuration::getInstanceName(child_json);
@@ -76,21 +75,22 @@ void HistogramViewDataSource::generateSubConfigurable(nlohmann::json& child_json
     if (class_name.compare("VariableOrderedSet") == 0)
     {
         traced_assert(set_ == 0);
-        set_ = new VariableOrderedSet(child_json, view_->compass().dbContentManager(), this);
+        set_ = new VariableOrderedSet(child_json, view_->viewManager().dbContentManager(), this);
     }
     else
-        throw std::runtime_error(
-            "HistogramViewDataSource: generateSubConfigurable: unknown class_name " + class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 void HistogramViewDataSource::checkSubConfigurables()
 {
     if (set_ == nullptr)
     {
-        generateSubConfigurableFromConfig("VariableOrderedSet", "VariableOrderedSet0");
+        createSubConfigurableFromConfig("VariableOrderedSet", "VariableOrderedSet0");
         traced_assert(set_);
 
-        DBContentManager& dbcont_man = view_->viewManager().compass().dbContentManager();
+        DBContentManager& dbcont_man = view_->viewManager().dbContentManager();
 
         if (dbcont_man.existsMetaVariable("rec_num"))
             set_->add(dbcont_man.metaVariable("rec_num"));
@@ -150,7 +150,7 @@ void HistogramViewDataSource::showViewPoint (ViewableDataConfig* vp)
 
 bool HistogramViewDataSource::addTemporaryVariable (const std::string& dbcontent_name, const std::string& var_name)
 {
-    DBContentManager& dbcont_man = view_->viewManager().compass().dbContentManager();
+    DBContentManager& dbcont_man = view_->viewManager().dbContentManager();
 
     if (dbcontent_name == META_OBJECT_NAME)
     {
@@ -184,7 +184,7 @@ bool HistogramViewDataSource::addTemporaryVariable (const std::string& dbcontent
 
 void HistogramViewDataSource::removeTemporaryVariable (const std::string& dbcontent_name, const std::string& var_name)
 {
-    DBContentManager& dbcont_man = view_->viewManager().compass().dbContentManager();
+    DBContentManager& dbcont_man = view_->viewManager().dbContentManager();
 
     if (dbcontent_name == META_OBJECT_NAME)
     {

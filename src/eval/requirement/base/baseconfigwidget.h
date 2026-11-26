@@ -17,10 +17,13 @@
 
 #pragma once
 
+#include "compass_eval_export.h"
+
 #include <QWidget>
 
 class QLineEdit;
 class QCheckBox;
+class QComboBox;
 
 class QFormLayout;
 
@@ -30,7 +33,7 @@ namespace EvaluationRequirement
 class BaseConfig;
 class ComparisonTypeComboBox;
 
-class BaseConfigWidget : public QWidget
+class COMPASS_EVAL_API BaseConfigWidget : public QWidget
 {
     Q_OBJECT
 
@@ -40,6 +43,7 @@ public slots:
     void changedNameSlot();
     void changedShortNameSlot();
     void changedCommentSlot();
+    void changedTargetSelectionSlot(int index);
 
 
 public:
@@ -50,6 +54,7 @@ protected:
     BaseConfig& config_;
 
     QFormLayout* form_layout_ {nullptr};
+    QComboBox* target_selection_box_ {nullptr};
 };
 
 }

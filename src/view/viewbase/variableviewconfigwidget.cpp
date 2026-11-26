@@ -16,10 +16,10 @@
  */
 
 #include "variableviewconfigwidget.h"
+#include "viewmanager.h"
 #include "variableview.h"
 #include "viewvariable.h"
 
-#include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/variable/variableselectionwidget.h"
 
@@ -53,7 +53,7 @@ VariableViewConfigWidget::VariableViewConfigWidget(ViewWidget* view_widget,
 
         layout->addWidget(new QLabel(QString::fromStdString(label)));
 
-        auto sel_widget = new dbContent::VariableSelectionWidget(var_view_->compass().dbContentManager());
+        auto sel_widget = new dbContent::VariableSelectionWidget(var_view_->viewManager().dbContentManager());
         sel_widget->setObjectName(QString::fromStdString(object_name));
 
         var_view_->variable(idx).configureWidget(*sel_widget);

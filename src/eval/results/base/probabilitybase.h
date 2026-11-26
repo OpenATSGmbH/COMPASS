@@ -17,10 +17,10 @@
 
 #pragma once
 
-#include "eval/results/base/single.h"
-#include "eval/results/base/joined.h"
+#include "results/base/single.h"
+#include "results/base/joined.h"
 
-#include "eval/requirement/base/probabilitybase.h"
+#include "requirement/base/probabilitybase.h"
 
 namespace EvaluationRequirementResult
 {
@@ -30,8 +30,15 @@ namespace EvaluationRequirementResult
 class ProbabilityBase
 {
 public:
-    static nlohmann::json formatProbability(double prob);
-    static nlohmann::json formatProbabilityOptional(const boost::optional<double>& prob);
+    // Default number of decimals of a probability shown in percent. Requirements
+    // with a threshold finer than this pass their own number, so a failing value
+    // is never rounded to zero in the report.
+    static const unsigned int NumProbabilityDecimalsDefault;
+
+    static nlohmann::json formatProbability(double prob,
+                                            unsigned int decimals = NumProbabilityDecimalsDefault);
+    static nlohmann::json formatProbabilityOptional(const boost::optional<double>& prob,
+                                                    unsigned int decimals = NumProbabilityDecimalsDefault);
 };
 
 /**

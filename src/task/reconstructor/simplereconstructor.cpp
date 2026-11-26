@@ -18,7 +18,6 @@
 #include "simplereconstructor.h"
 #include "reconstructortask.h"
 #include "simplereconstructorwidget.h"
-#include "compass.h"
 #include "taskmanager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -78,7 +77,7 @@ dbContent::VariableSet SimpleReconstructor::getReadSetFor(const std::string& dbc
 {
     dbContent::VariableSet read_set;
 
-    DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
+    DBContentManager& dbcont_man = task_.manager().dbContentManager();
 
             // ds id
     traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ds_id_));
@@ -118,9 +117,6 @@ dbContent::VariableSet SimpleReconstructor::getReadSetFor(const std::string& dbc
 
     if (dbcontent_name == "CAT062")
     {
-        traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_));
-        read_set.add(dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_));
-
         // mode 3a age, for measurement-time stamping of identity values
         if (dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat062_m3a_age_))
             read_set.add(dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat062_m3a_age_));
@@ -198,6 +194,11 @@ SimpleReconstructorWidget* SimpleReconstructor::widget() // ownage by caller
             widget, &SimpleReconstructorWidget::updateSlot);
 
     return widget;
+}
+
+QWidget* SimpleReconstructor::createWidget() // ownage by caller
+{
+    return widget();
 }
 
 void SimpleReconstructor::updateWidgets()

@@ -59,6 +59,7 @@ EvaluationMainTabWidget::EvaluationMainTabWidget(EvaluationCalculator& calculato
     // titles define which data sources to display
     data_source_ref_widget_.reset(
                 new EvaluationDataSourceWidget(calculator_, "Reference Data", calculator_.dbContentNameRef(), settings.line_id_ref_));
+    data_source_ref_widget_->setObjectName("reference_data");
     connect (data_source_ref_widget_.get(), &EvaluationDataSourceWidget::dbContentNameChangedSignal,
              this, &EvaluationMainTabWidget::dbContentRefNameChangedSlot);
     connect (data_source_ref_widget_.get(), &EvaluationDataSourceWidget::usedDataSourceChangedSignal,
@@ -69,6 +70,7 @@ EvaluationMainTabWidget::EvaluationMainTabWidget(EvaluationCalculator& calculato
 
     data_source_tst_widget_.reset(
                 new EvaluationDataSourceWidget(calculator_, "Test Data", calculator_.dbContentNameTst(), settings.line_id_tst_));
+    data_source_tst_widget_->setObjectName("test_data");
     connect (data_source_tst_widget_.get(), &EvaluationDataSourceWidget::dbContentNameChangedSignal,
              this, &EvaluationMainTabWidget::dbContentTstNameChangedSlot);
     connect (data_source_tst_widget_.get(), &EvaluationDataSourceWidget::usedDataSourceChangedSignal,
@@ -87,6 +89,7 @@ EvaluationMainTabWidget::EvaluationMainTabWidget(EvaluationCalculator& calculato
     std_layout->addWidget(standard_label);
 
     standard_box_.reset(new EvaluationStandardComboBox(calculator_));
+    standard_box_->setObjectName("standard_combo");
     std_layout->addWidget(standard_box_.get());
 
     main_layout->addLayout(std_layout);
@@ -99,6 +102,7 @@ EvaluationMainTabWidget::EvaluationMainTabWidget(EvaluationCalculator& calculato
     report_name_layout->addWidget(report_name_label);
 
     report_name_edit_ = new QLineEdit;
+    report_name_edit_->setObjectName("report_name_edit");
     report_name_edit_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred); 
     report_name_layout->addWidget(report_name_edit_);
 
@@ -116,6 +120,7 @@ EvaluationMainTabWidget::EvaluationMainTabWidget(EvaluationCalculator& calculato
     height_filter_layout->addWidget(height_filter_label);
 
     min_height_filter_combo_ = new QComboBox;
+    min_height_filter_combo_->setObjectName("min_height_filter_combo");
     height_filter_layout->addWidget(min_height_filter_combo_);
 
     connect(min_height_filter_combo_, QOverload<int>::of(&QComboBox::currentIndexChanged), this, &EvaluationMainTabWidget::minHeightFilterChangedSlot);
@@ -130,6 +135,7 @@ EvaluationMainTabWidget::EvaluationMainTabWidget(EvaluationCalculator& calculato
     sec_layout->addWidget(sec_label);
 
     sector_widget_.reset(new EvaluationSectorWidget(calculator_, dialog_));
+    sector_widget_->setObjectName("sector_group_usage");
     sector_widget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     sec_layout->addWidget(sector_widget_.get());
 

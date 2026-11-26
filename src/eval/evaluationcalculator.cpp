@@ -21,14 +21,13 @@
 
 #include "evaluationstandard.h"
 #include "evaluationdialog.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
-#include "eval/requirement/base/baseconfig.h"
-#include "eval/results/base/base.h"
-#include "eval/results/base/single.h"
-#include "eval/results/base/joined.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
+#include "requirement/base/baseconfig.h"
+#include "results/base/base.h"
+#include "results/base/single.h"
+#include "results/base/joined.h"
 
-#include "compass.h"
 #include "dbinterface.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
@@ -41,11 +40,12 @@
 //#include "dbcontent/variable/variable.h"
 //#include "buffer.h"
 #include "filtermanager.h"
+#include "sectorsfilter.h"
 //#include "dbfilter.h"
 //#include "viewabledataconfig.h"
 #include "viewmanager.h"
 #include "stringconv.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "global.h"
 #include "viewpoint.h"
 #include "projectionmanager.h"
@@ -59,6 +59,8 @@
 #include <QThread>
 #include <QMessageBox>
 
+#include <algorithm>
+#include <cctype>
 #include <memory>
 //#include <fstream>
 #include <cstdlib>
@@ -161,7 +163,7 @@ ResultT<EvaluationCalculator*> EvaluationCalculator::clone(EvaluationManager& ev
     if (c->canEvaluate().ok())
     {
         //update some stuff in case the cloned calculator can evaluate
-        c->updateSectorROI();
+        c->updateUsedSectorLayers();
     }
 
     auto res = ResultT<EvaluationCalculator*>::succeeded(c);
@@ -188,6 +190,10 @@ void EvaluationCalculator::readSettings()
 
     registerParameter("use_grp_in_sector", &settings_.use_grp_in_sector_, Settings().use_grp_in_sector_);
     registerParameter("use_requirement", &settings_.use_requirement_, Settings().use_requirement_);
+
+    registerParameter("sector_delta_fraction", &settings_.sector_delta_fraction_, Settings().sector_delta_fraction_);
+    registerParameter("sector_delta_min_m", &settings_.sector_delta_min_m_, Settings().sector_delta_min_m_);
+    registerParameter("sector_delta_max_deg", &settings_.sector_delta_max_deg_, Settings().sector_delta_max_deg_);
 
     // registerParameter("max_ref_time_diff", &settings_.max_ref_time_diff_, Settings().max_ref_time_diff_);
 
@@ -254,6 +260,10 @@ void EvaluationCalculator::readSettings()
     // histogram generation
     registerParameter("histogram_num_bins", &settings_.histogram_num_bins, Settings().histogram_num_bins);
 
+    // background set of the geographic report figures
+    registerParameter(ReportFigureBackground::ParameterName, &settings_.report_figure_background_, nlohmann::json::object());
+    registerParameter(ReportFigureOptions::ParameterName, &settings_.report_figure_options_, nlohmann::json::object());
+
     // eval task result calculator specific
     if (!is_default_calculator_)
     {
@@ -269,7 +279,7 @@ void EvaluationCalculator::readSettings()
 
 /**
  */
-void EvaluationCalculator::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult EvaluationCalculator::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -290,7 +300,9 @@ void EvaluationCalculator::generateSubConfigurable(nlohmann::json& child_json)
         });
     }
     else
-        throw std::runtime_error("EvaluationCalculator: generateSubConfigurable: unknown class_name " + class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 /**
@@ -429,7 +441,7 @@ void EvaluationCalculator::clearEvalData()
     data_->clear();
     results_gen_->clear();
 
-    sector_roi_.reset();
+    used_sector_layers_.clear();
 
     reference_data_loaded_  = false;
     test_data_loaded_       = false;
@@ -443,14 +455,11 @@ void EvaluationCalculator::clearConstraints()
 {
     global_time_filter_enabled_ = false;
 
-    global_time_window_json_ = nlohmann::json();
-    global_time_window_ = Utils::TimeWindow();
-
+    global_time_window_json_            = nlohmann::json();
     global_exclusion_time_windows_json_ = nlohmann::json();
-    global_exclusion_time_windows_ = Utils::TimeWindowCollection();
+    target_constraints_json_            = nlohmann::json();
 
-    target_constraints_json_ = nlohmann::json();
-    target_constraints_.clear();
+    constraints_.clear();
 }
 
 /**
@@ -460,7 +469,7 @@ void EvaluationCalculator::clearConstraints()
  */
 Result EvaluationCalculator::evaluate()
 {
-    return evaluateInternal(true, true, {}, {});
+    return evaluateInternal(true, true);
 }
 
 /**
@@ -470,26 +479,13 @@ Result EvaluationCalculator::evaluate()
  */
 Result EvaluationCalculator::update()
 {
-    return evaluateInternal(false, true, {}, {});
-}
-
-/**
- * Reloads all needed data for specified utns and requirements.
- * - Uses the internally stored constraints
- * - Will NOT regenerate the report
- */
-Result EvaluationCalculator::reloadNeededData(const std::vector<unsigned int>& utns,
-                                              const std::vector<Evaluation::RequirementResultID>& requirements)
-{
-    return evaluateInternal(false, false, utns, requirements);
+    return evaluateInternal(false, true);
 }
 
 /**
  */
 Result EvaluationCalculator::evaluateInternal(bool update_constraints,
-                                              bool update_report,
-                                              const std::vector<unsigned int>& utns,
-                                              const std::vector<Evaluation::RequirementResultID>& requirements)
+                                              bool update_report)
 {
     loginf;
 
@@ -502,9 +498,7 @@ Result EvaluationCalculator::evaluateInternal(bool update_constraints,
 
     try
     {
-        eval_utns_         = utns;
-        eval_requirements_ = requirements;
-        update_report_     = update_report;
+        update_report_ = update_report;
 
         // remove previous stuff
         eval_man_.resetViewableDataConfig(true);
@@ -520,7 +514,7 @@ Result EvaluationCalculator::evaluateInternal(bool update_constraints,
 
         // update stuff before load
         updateCompoundCoverage(activeDataSourcesTst());
-        updateSectorROI();
+        updateUsedSectorLayers();
 
         if (update_constraints)
             updateConstraints();
@@ -552,13 +546,13 @@ Result EvaluationCalculator::loadingDone()
     bool has_ref_data = data.count(settings_.dbcontent_name_ref_);
     bool has_tst_data = data.count(settings_.dbcontent_name_tst_);
 
-    if (eval_utns_.empty() && !has_ref_data)
+    if (!has_ref_data)
         return Result::failed("Loading data failed, no reference data was loaded");
 
     data_->addReferenceData(settings_.dbcontent_name_ref_, settings_.line_id_ref_);
     reference_data_loaded_ = has_ref_data;
 
-    if (eval_utns_.empty() && !has_tst_data)
+    if (!has_tst_data)
         return Result::failed("Loading data failed, no test data was loaded");
 
     data_->addTestData(settings_.dbcontent_name_tst_, settings_.line_id_tst_);
@@ -599,7 +593,7 @@ Result EvaluationCalculator::evaluateData()
     traced_assert(data_loaded_);
     traced_assert(canEvaluate().ok());
 
-    Projection& projection = eval_man_.compass().projectionManager().currentProjection();
+    Projection& projection = eval_man_.projectionManager().currentProjection();
     projection.clearCoordinateSystems();
     projection.addAllCoordinateSystems();
 
@@ -611,7 +605,7 @@ Result EvaluationCalculator::evaluateData()
     emit resultsChanged();
     
     // eval
-    results_gen_->evaluate(currentStandard(), eval_utns_, eval_requirements_, update_report_);
+    results_gen_->evaluate(currentStandard(), update_report_);
 
     evaluated_ = true;
 
@@ -623,11 +617,49 @@ Result EvaluationCalculator::evaluateData()
 
 /**
  */
+/**
+ * The active test data sources with the test line, as a load selection.
+ */
+std::map<unsigned int, std::set<unsigned int>> EvaluationCalculator::usedDataSourcesTst() const
+{
+    std::map<unsigned int, std::set<unsigned int>> data_sources;
+
+    if (!data_sources_tst_.count(settings_.dbcontent_name_tst_))
+        return data_sources;
+
+    for (const auto& ds_it : data_sources_tst_.at(settings_.dbcontent_name_tst_))
+        if (ds_it.second)
+            data_sources[std::stoull(ds_it.first)] = { settings_.line_id_tst_ };
+
+    return data_sources;
+}
+
+/**
+ * The update cycles the system under test reports. Cycles are per data source, so
+ * they are only unambiguous with exactly one active test data source.
+ */
+const std::vector<boost::posix_time::ptime>& EvaluationCalculator::testStatusCycles() const
+{
+    static const std::vector<boost::posix_time::ptime> no_cycles;
+
+    auto ds_selection = usedDataSourcesTst();
+
+    if (ds_selection.size() != 1)
+        return no_cycles;
+
+    const unsigned int ds_id = ds_selection.begin()->first;
+
+    if (!eval_man_.hasStatusCycles(ds_id, settings_.line_id_tst_))
+        return no_cycles;
+
+    return eval_man_.statusCycles(ds_id, settings_.line_id_tst_);
+}
+
 std::map<unsigned int, std::set<unsigned int>> EvaluationCalculator::usedDataSources() const
 {
     std::map<unsigned int, std::set<unsigned int>> data_sources;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     std::set<unsigned int> line_ref_set = {settings_.line_id_ref_};
 
@@ -635,7 +667,7 @@ std::map<unsigned int, std::set<unsigned int>> EvaluationCalculator::usedDataSou
 
     for (auto& ds_it : data_sources_ref_.at(settings_.dbcontent_name_ref_))
     {
-        ds_id = stoul(ds_it.first);
+        ds_id = stoull(ds_it.first);
 
         loginf << "ref ds_id '" << ds_it.first << "' uint " << ds_id;
 
@@ -652,7 +684,7 @@ std::map<unsigned int, std::set<unsigned int>> EvaluationCalculator::usedDataSou
 
     for (auto& ds_it : data_sources_tst_.at(settings_.dbcontent_name_tst_))
     {
-        ds_id = stoul(ds_it.first);
+        ds_id = stoull(ds_it.first);
 
         loginf << "tst ds_id '" << ds_it.first << "' uint " << ds_id;
 
@@ -691,7 +723,7 @@ const std::string& EvaluationCalculator::minHeightFilterLayerName() const
  */
 void EvaluationCalculator::minHeightFilterLayerName(const std::string& layer_name)
 {
-    traced_assert(layer_name.empty() || eval_man_.compass().dbContextManager().hasSectorLayer(layer_name));
+    traced_assert(layer_name.empty() || eval_man_.dbContextManager().hasSectorLayer(layer_name));
 
     loginf << "layer changed to "
            << (layer_name.empty() ? "null" : "'" + layer_name + "'");
@@ -707,7 +739,7 @@ std::shared_ptr<SectorLayer> EvaluationCalculator::minHeightFilterLayer() const
         return {};
 
     //!will assert on non-existing layer name!
-    return eval_man_.compass().dbContextManager().sectorLayer(settings_.min_height_filter_layer_);
+    return eval_man_.dbContextManager().sectorLayer(settings_.min_height_filter_layer_);
 }
 
 /**
@@ -716,7 +748,7 @@ std::shared_ptr<SectorLayer> EvaluationCalculator::minHeightFilterLayer() const
  */
 void EvaluationCalculator::checkMinHeightFilterValid()
 {
-    if (!settings_.min_height_filter_layer_.empty() && !eval_man_.compass().dbContextManager().hasSectorLayer(settings_.min_height_filter_layer_))
+    if (!settings_.min_height_filter_layer_.empty() && !eval_man_.dbContextManager().hasSectorLayer(settings_.min_height_filter_layer_))
     {
         logerr << "Layer '" << settings_.min_height_filter_layer_ << "'"
                << " not present, resetting min height filter";
@@ -773,11 +805,11 @@ set<unsigned int> EvaluationCalculator::activeDataSourcesRef()
 {
     set<unsigned int> srcs;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     for (auto& ds_it : data_sources_ref_[settings_.dbcontent_name_ref_])
     {
-        unsigned int ds_id = stoul(ds_it.first);
+        unsigned int ds_id = stoull(ds_it.first);
         traced_assert(ds_man.hasDataSource(ds_id));
 
         if (ds_it.second)
@@ -794,14 +826,14 @@ EvaluationCalculator::EvaluationDSInfo EvaluationCalculator::activeDataSourceInf
     EvaluationDSInfo ds_info;
     ds_info.dbcontent = settings_.dbcontent_name_ref_;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     for (auto& ds_it : data_sources_ref_.at(settings_.dbcontent_name_ref_))
     {
         if (!ds_it.second)
             continue;
 
-        unsigned int ds_id = stoul(ds_it.first);
+        unsigned int ds_id = stoull(ds_it.first);
         traced_assert(ds_man.hasDataSource(ds_id));
 
         const auto& name = ds_man.dataSource(ds_id)->name();
@@ -871,11 +903,11 @@ set<unsigned int> EvaluationCalculator::activeDataSourcesTst()
 {
     set<unsigned int> srcs;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     for (auto& ds_it : data_sources_tst_[settings_.dbcontent_name_tst_])
     {
-        unsigned int ds_id = stoul(ds_it.first);
+        unsigned int ds_id = stoull(ds_it.first);
         traced_assert(ds_man.hasDataSource(ds_id));
 
         if (ds_it.second)
@@ -892,14 +924,14 @@ EvaluationCalculator::EvaluationDSInfo EvaluationCalculator::activeDataSourceInf
     EvaluationDSInfo ds_info;
     ds_info.dbcontent = settings_.dbcontent_name_tst_;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     for (auto& ds_it : data_sources_tst_.at(settings_.dbcontent_name_tst_))
     {
         if (!ds_it.second)
             continue;
 
-        unsigned int ds_id = stoul(ds_it.first);
+        unsigned int ds_id = stoull(ds_it.first);
         traced_assert(ds_man.hasDataSource(ds_id));
 
         const auto& name = ds_man.dataSource(ds_id)->name();
@@ -920,13 +952,6 @@ void EvaluationCalculator::selectDataSourceTst(const std::string& name,
 
     if (update_settings)
         settings_.active_sources_tst_ = data_sources_tst_;
-}
-
-/**
- */
-bool EvaluationCalculator::hasPartialResult() const
-{
-    return !eval_utns_.empty() || !eval_requirements_.empty();
 }
 
 /**
@@ -1009,7 +1034,7 @@ void EvaluationCalculator::copyCurrentStandard (const std::string& new_name)
 
     std::string instance = getConfiguration().newInstanceID("EvaluationStandard");
 
-    Configurable::generateSubConfigurableFromJSON(currentStandard(), instance, data);
+    Configurable::createSubConfigurableFromJSON(currentStandard(), instance, data);
 
     setCurrentStandardName(new_name);
 
@@ -1061,6 +1086,26 @@ bool EvaluationCalculator::hasStandard(const std::string& name) const
 
 /**
  */
+std::vector<std::string> EvaluationCalculator::standardNames() const
+{
+    std::vector<std::string> names;
+
+    for (const auto& standard : standards_)
+        names.push_back(standard->name());
+
+    auto lower = [] (unsigned char c) { return std::tolower(c); };
+
+    std::sort(names.begin(), names.end(), [&] (const std::string& a, const std::string& b)
+    {
+        return std::lexicographical_compare(a.begin(), a.end(), b.begin(), b.end(),
+                                            [&] (char x, char y) { return lower(x) < lower(y); });
+    });
+
+    return names;
+}
+
+/**
+ */
 void EvaluationCalculator::addStandard(const std::string& name)
 {
     loginf << "name " << name;
@@ -1072,7 +1117,7 @@ void EvaluationCalculator::addStandard(const std::string& name)
     auto& child_json = addNewSubConfiguration("EvaluationStandard");
     child_json[Configuration::ParameterSection]["name"] = name;
 
-    generateSubConfigurable(child_json);
+    createSubConfigurable(child_json);
 
     emit standardsChanged();
 
@@ -1094,11 +1139,19 @@ void EvaluationCalculator::deleteCurrentStandard()
 
     traced_assert(iter != standards_.end());
 
+    // select the neighbor in the sorted list: the next standard, or the previous one if it was the last
+    auto names = standardNames();
+    size_t pos = std::find(names.begin(), names.end(), name) - names.begin();
+    std::string next_name;
+
+    if (names.size() > 1)
+        next_name = pos + 1 < names.size() ? names.at(pos + 1) : names.at(pos - 1);
+
     standards_.erase(iter);
 
     emit standardsChanged();
 
-    currentStandardName("");
+    currentStandardName(next_name);
 }
 
 /**
@@ -1126,7 +1179,7 @@ std::vector<std::string> EvaluationCalculator::currentRequirementNames() const
  */
 bool EvaluationCalculator::sectorsLoaded() const
 {
-    return eval_man_.compass().dbContextManager().sectorsLoaded();
+    return eval_man_.dbContextManager().sectorsLoaded();
 }
 
 /**
@@ -1183,14 +1236,14 @@ bool EvaluationCalculator::anySectorsWithReq() const
  */
 std::vector<std::shared_ptr<SectorLayer>>& EvaluationCalculator::sectorLayers()
 {
-    return eval_man_.compass().dbContextManager().sectorLayers();
+    return eval_man_.dbContextManager().sectorLayers();
 }
 
 /**
  */
 const std::vector<std::shared_ptr<SectorLayer>>& EvaluationCalculator::sectorLayers() const
 {
-    return eval_man_.compass().dbContextManager().sectorLayers();
+    return eval_man_.dbContextManager().sectorLayers();
 }
 
 /**
@@ -1210,7 +1263,7 @@ void EvaluationCalculator::checkReferenceDataSources(bool update_settings)
     if (!hasValidReferenceDBContent())
         return;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     // clear out old ds_ids
     auto ds_copy = data_sources_ref_[settings_.dbcontent_name_ref_];
@@ -1218,7 +1271,7 @@ void EvaluationCalculator::checkReferenceDataSources(bool update_settings)
     unsigned int ds_id;
     for (auto& ds_it : ds_copy)
     {
-        ds_id = stoul(ds_it.first);
+        ds_id = stoull(ds_it.first);
 
         if (!ds_man.hasDataSource(ds_id))
             data_sources_ref_[settings_.dbcontent_name_ref_].erase(ds_it.first);
@@ -1252,7 +1305,7 @@ void EvaluationCalculator::checkTestDataSources(bool update_settings)
     if (!hasValidTestDBContent())
         return;
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     // clear out old ds_ids
     auto ds_copy = data_sources_tst_[settings_.dbcontent_name_tst_];
@@ -1260,7 +1313,7 @@ void EvaluationCalculator::checkTestDataSources(bool update_settings)
     unsigned int ds_id;
     for (auto& ds_it : ds_copy)
     {
-        ds_id = stoul(ds_it.first);
+        ds_id = stoull(ds_it.first);
 
         if (!ds_man.hasDataSource(ds_id))
             data_sources_tst_[settings_.dbcontent_name_tst_].erase(ds_it.first);
@@ -1415,6 +1468,9 @@ void EvaluationCalculator::updateResultsToChanges ()
 nlohmann::json::object_t EvaluationCalculator::getBaseViewableDataConfig () const
 {
     nlohmann::json data;
+    nlohmann::json& load_data = data[ViewPointKeys::VP_LOAD_DATA_KEY];
+
+    load_data[ViewPointKeys::VP_DS_TYPES_KEY] = ViewPointKeys::VP_LOAD_ALL;
 
     // set data sources
 
@@ -1422,68 +1478,70 @@ nlohmann::json::object_t EvaluationCalculator::getBaseViewableDataConfig () cons
 
     for (auto& src_it : data_sources_ref_.at(settings_.dbcontent_name_ref_))
         if (src_it.second)
-            data_sources[stoul(src_it.first)].insert(settings_.line_id_ref_);
+            data_sources[stoull(src_it.first)].insert(settings_.line_id_ref_);
 
     for (auto& src_it : data_sources_tst_.at(settings_.dbcontent_name_tst_))
         if (src_it.second)
-            data_sources[stoul(src_it.first)].insert(settings_.line_id_tst_);
+            data_sources[stoull(src_it.first)].insert(settings_.line_id_tst_);
 
-    data["data_sources"] = data_sources;
+    load_data[ViewPointKeys::VP_DS_KEY] = data_sources;
 
-    if (settings_.load_only_sector_data_ && sector_roi_.has_value())
+    // restrict to the evaluated sector layers, with their exclusion sectors and altitude limits
+    if (!used_sector_layers_.empty())
     {
-        data[ViewPoint::VP_FILTERS_KEY]["Position"]["Latitude Maximum"] = to_string(sector_roi_->latitude_max);
-        data[ViewPoint::VP_FILTERS_KEY]["Position"]["Latitude Minimum"] = to_string(sector_roi_->latitude_min);
-        data[ViewPoint::VP_FILTERS_KEY]["Position"]["Longitude Maximum"] = to_string(sector_roi_->longitude_max);
-        data[ViewPoint::VP_FILTERS_KEY]["Position"]["Longitude Minimum"] = to_string(sector_roi_->longitude_min);
+        auto& sectors_filter = load_data[ViewPointKeys::VP_FILTERS_KEY][SectorsFilter::FilterName];
+
+        sectors_filter[SectorsFilter::ViewPointKeyLayers]   = used_sector_layers_;
+        sectors_filter[SectorsFilter::ViewPointKeyUseDelta] = true;
+        sectors_filter[SectorsFilter::ViewPointKeyDelta]    = sector_delta_deg_;
     }
 
     // if (settings_.use_adsb_filter_)
     // {
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v0"] = settings_.use_v0_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v1"] = settings_.use_v1_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_v2"] = settings_.use_v2_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_v0"] = settings_.use_v0_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_v1"] = settings_.use_v1_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_v2"] = settings_.use_v2_;
 
     //     // nucp
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nucp"] = settings_.use_min_nucp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nucp"] = settings_.min_nucp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nucp"] = settings_.use_max_nucp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nucp"] = settings_.max_nucp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nucp"] = settings_.use_min_nucp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["min_nucp"] = settings_.min_nucp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nucp"] = settings_.use_max_nucp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["max_nucp"] = settings_.max_nucp_;
 
     //     // nic
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nic"] = settings_.use_min_nic_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nic"] = settings_.min_nic_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nic"] = settings_.use_max_nic_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nic"] = settings_.max_nic_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nic"] = settings_.use_min_nic_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["min_nic"] = settings_.min_nic_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nic"] = settings_.use_max_nic_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["max_nic"] = settings_.max_nic_;
 
     //     // nacp
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nacp"] = settings_.use_min_nacp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_nacp"] = settings_.min_nacp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nacp"] = settings_.use_max_nacp_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_nacp"] = settings_.max_nacp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_min_nacp"] = settings_.use_min_nacp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["min_nacp"] = settings_.min_nacp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_max_nacp"] = settings_.use_max_nacp_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["max_nacp"] = settings_.max_nacp_;
 
     //     // sil v1
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v1"] =
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v1"] =
     //         settings_.use_min_sil_v1_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v1"] = settings_.min_sil_v1_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v1"] =
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v1"] = settings_.min_sil_v1_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v1"] =
     //         settings_.use_max_sil_v1_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v1"] = settings_.max_sil_v1_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v1"] = settings_.max_sil_v1_;
 
     //     // sil v2
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v2"] =
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_min_sil_v2"] =
     //         settings_.use_min_sil_v2_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v2"] = settings_.min_sil_v2_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v2"] =
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["min_sil_v2"] = settings_.min_sil_v2_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["use_max_sil_v2"] =
     //         settings_.use_max_sil_v2_;
-    //     data[ViewPoint::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v2"] = settings_.max_sil_v2_;
+    //     data[ViewPointKeys::VP_FILTERS_KEY]["ADSB Quality"]["max_sil_v2"] = settings_.max_sil_v2_;
     // }
 
     if (eval_man_.use_timestamp_filter_)
     {
-        data[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] =
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] =
             Time::toString(eval_man_.load_timestamp_begin_);
-        data[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] =
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] =
             Time::toString(eval_man_.load_timestamp_end_);
     }
 
@@ -1494,11 +1552,7 @@ nlohmann::json::object_t EvaluationCalculator::getBaseViewableDataConfig () cons
  */
 nlohmann::json::object_t EvaluationCalculator::getBaseViewableNoDataConfig () const
 {
-    nlohmann::json data;
-
-    data["data_sources"] = std::map<unsigned int, std::set<unsigned int>>{};
-
-    return data;
+    return nlohmann::json::object_t{};
 }
 
 /**
@@ -1506,7 +1560,7 @@ nlohmann::json::object_t EvaluationCalculator::getBaseViewableNoDataConfig () co
 std::unique_ptr<nlohmann::json::object_t> EvaluationCalculator::getViewableForUTN (unsigned int utn) const
 {
     nlohmann::json::object_t data = getBaseViewableDataConfig();
-    data[ViewPoint::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
+    data[ViewPointKeys::VP_LOAD_DATA_KEY][ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
 
     return std::unique_ptr<nlohmann::json::object_t>{new nlohmann::json::object_t(move(data))};
 }
@@ -1523,7 +1577,83 @@ std::unique_ptr<nlohmann::json::object_t> EvaluationCalculator::getViewableForEv
 
 /**
  */
-std::unique_ptr<nlohmann::json::object_t> EvaluationCalculator::getViewableForEvaluation (unsigned int utn, 
+GridBackgroundSettings EvaluationCalculator::reportFigureBackground(const std::string& sector_layer_name) const
+{
+    GridBackgroundSettings background = reportFigureBackgroundConfig().resolve(reportFigureDefaultHiddenLayers());
+
+    for (const auto& name : usedSectorLayerNames())
+        if (name != sector_layer_name)
+            background.hidden_sector_layers.insert(name);
+
+    return background;
+}
+
+/**
+ */
+ReportFigureBackground EvaluationCalculator::reportFigureBackgroundConfig() const
+{
+    ReportFigureBackground background;
+    if (!background.fromJSON(settings_.report_figure_background_))
+        logerr << "stored report figure background not readable, using the defaults";
+
+    return background;
+}
+
+/**
+ */
+void EvaluationCalculator::reportFigureBackgroundConfig(const ReportFigureBackground& background)
+{
+    settings_.report_figure_background_ = background.toJSON();
+}
+
+/**
+ */
+std::set<std::string> EvaluationCalculator::reportFigureDefaultHiddenLayers() const
+{
+    const auto used = usedSectorLayerNames();
+
+    std::set<std::string> hidden;
+
+    for (const auto& layer : eval_man_.dbContextManager().sectorLayers())
+        if (std::find(used.begin(), used.end(), layer->name()) == used.end())
+            hidden.insert(layer->name());
+
+    return hidden;
+}
+
+/**
+ */
+ReportFigureOptions EvaluationCalculator::reportFigureOptionsConfig() const
+{
+    ReportFigureOptions options;
+    if (!options.fromJSON(settings_.report_figure_options_))
+        logerr << "stored report figure options not readable, using the defaults";
+
+    return options;
+}
+
+/**
+ */
+void EvaluationCalculator::reportFigureOptionsConfig(const ReportFigureOptions& options)
+{
+    settings_.report_figure_options_ = options.toJSON();
+}
+
+/**
+ */
+Result EvaluationCalculator::applyJSONParameters(const nlohmann::json& params_json)
+{
+    for (const std::string& error : { ReportFigureBackground::checkParameter(params_json),
+                                      ReportFigureOptions::checkParameter(params_json) })
+        if (!error.empty())
+            return Result::failed(error);
+
+    return Configurable::applyJSONParameters(params_json);
+}
+
+/**
+ */
+std::unique_ptr<nlohmann::json::object_t> EvaluationCalculator::getViewableForEvaluation (unsigned int utn,
                                                                                           const std::string& req_grp_id, 
                                                                                           const std::string& result_id) const
 {
@@ -1537,7 +1667,7 @@ void EvaluationCalculator::showUTN (unsigned int utn)
     loginf << "utn " << utn;
 
     nlohmann::json data = getBaseViewableDataConfig();
-    data[ViewPoint::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
+    data[ViewPointKeys::VP_LOAD_DATA_KEY][ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
 
     loginf << "showing";
     eval_man_.setViewableDataConfig(data);
@@ -1548,7 +1678,9 @@ void EvaluationCalculator::showUTN (unsigned int utn)
 void EvaluationCalculator::showFullUTN (unsigned int utn)
 {
     nlohmann::json::object_t data;
-    data[ViewPoint::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
+    nlohmann::json& load_data = data[ViewPointKeys::VP_LOAD_DATA_KEY];
+    load_data = view_point_load::loadAllData();
+    load_data[ViewPointKeys::VP_FILTERS_KEY]["UTNs"]["utns"] = to_string(utn);
 
     eval_man_.setViewableDataConfig(data);
 }
@@ -1558,6 +1690,8 @@ void EvaluationCalculator::showFullUTN (unsigned int utn)
 void EvaluationCalculator::showSurroundingData (const EvaluationTarget& target)
 {
     nlohmann::json::object_t data;
+    nlohmann::json& load_data = data[ViewPointKeys::VP_LOAD_DATA_KEY];
+    load_data = view_point_load::loadAllData();
 
     ptime time_begin = target.timeBegin();
     time_begin -= seconds(60);
@@ -1571,21 +1705,21 @@ void EvaluationCalculator::showSurroundingData (const EvaluationTarget& target)
     //    },
 
     // TODO_TIMESTAMP
-    data[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(time_end);
-    data[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] = Time::toString(time_begin);
+    load_data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(time_end);
+    load_data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] = Time::toString(time_begin);
 
     //    "Aircraft Address": {
     //    "Aircraft Address Values": "FEFE10"
     //    },
     if (target.aircraftAddresses().size())
-        data[ViewPoint::VP_FILTERS_KEY]["Aircraft Address"]["Aircraft Address Values"] = target.aircraftAddressesStr()+",NULL";
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Aircraft Address"]["Aircraft Address Values"] = target.aircraftAddressesStr()+",NULL";
 
     //    "Mode 3/A Code": {
     //    "Mode 3/A Code Values": "7000"
     //    }
 
     if (target.modeACodes().size())
-        data[ViewPoint::VP_FILTERS_KEY]["Mode 3/A Codes"]["Mode 3/A Codes Values"] = target.modeACodesStr()+",NULL";
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Mode 3/A Codes"]["Mode 3/A Codes Values"] = target.modeACodesStr()+",NULL";
 
     //    VP_FILTERS_KEY: {
     //    "Barometric Altitude": {
@@ -1601,9 +1735,9 @@ void EvaluationCalculator::showSurroundingData (const EvaluationTarget& target)
         float alt_max = target.modeCMax();
         alt_max += 300;
 
-        data[ViewPoint::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Maximum"] = alt_max;
-        data[ViewPoint::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Minimum"] = alt_min;
-        data[ViewPoint::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude NULL"] = true;
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Maximum"] = alt_max;
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude Minimum"] = alt_min;
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Barometric Altitude"]["Barometric Altitude NULL"] = true;
     }
 
     //    "Position": {
@@ -1620,10 +1754,10 @@ void EvaluationCalculator::showSurroundingData (const EvaluationTarget& target)
         double lon_eps = (target.longitudeMax() - target.longitudeMin()) / 10.0; // 10%
         lon_eps = min(lon_eps, 0.1); // 10% or 0.1 at max
 
-        data[ViewPoint::VP_FILTERS_KEY]["Position"]["Latitude Maximum"] = to_string(target.latitudeMax()+lat_eps);
-        data[ViewPoint::VP_FILTERS_KEY]["Position"]["Latitude Minimum"] = to_string(target.latitudeMin()-lat_eps);
-        data[ViewPoint::VP_FILTERS_KEY]["Position"]["Longitude Maximum"] = to_string(target.longitudeMax()+lon_eps);
-        data[ViewPoint::VP_FILTERS_KEY]["Position"]["Longitude Minimum"] = to_string(target.longitudeMin()-lon_eps);
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Maximum"] = to_string(target.latitudeMax()+lat_eps);
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Latitude Minimum"] = to_string(target.latitudeMin()-lat_eps);
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Maximum"] = to_string(target.longitudeMax()+lon_eps);
+        load_data[ViewPointKeys::VP_FILTERS_KEY]["Position"]["Longitude Minimum"] = to_string(target.longitudeMin()-lon_eps);
     }
 
     eval_man_.setViewableDataConfig(data);
@@ -1699,70 +1833,85 @@ void EvaluationCalculator::useRequirement(const std::string& standard_name,
 
 /**
  */
-void EvaluationCalculator::updateSectorROI()
+void EvaluationCalculator::updateUsedSectorLayers()
 {
-    loginf;
+    used_sector_layers_.clear();
+    sector_delta_deg_ = 0.0;
 
-    sector_roi_.reset();
-
-    if (!settings_.load_only_sector_data_ || 
-        !hasCurrentStandard() || 
-        !sectorsLoaded() || 
-        sectorLayers().empty())
+    if (!settings_.load_only_sector_data_)
         return;
 
-    bool first = true;
-    double lat_min, lat_max, long_min, long_max;
-    double tmp_lat_min, tmp_lat_max, tmp_long_min, tmp_long_max;
+    used_sector_layers_ = usedSectorLayerNames();
 
-    const auto& standard      = currentStandard();
-    const auto& sector_layers = sectorLayers();
-    
-    for (auto& sec_it : sector_layers)
+    sector_delta_deg_ = SectorsFilter::extentDeltaDeg(usedSectorFilterLayers(),
+                                                      settings_.sector_delta_fraction_,
+                                                      settings_.sector_delta_min_m_,
+                                                      settings_.sector_delta_max_deg_);
+
+    loginf << "num_layers " << used_sector_layers_.size() << " sector_delta_deg " << sector_delta_deg_;
+}
+
+/**
+ */
+std::vector<SectorsFilter::Layer> EvaluationCalculator::usedSectorFilterLayers() const
+{
+    std::vector<SectorsFilter::Layer> layers;
+
+    if (used_sector_layers_.empty())
+        return layers;
+
+    auto sector_cache = eval_man_.dbInterface().sectorInsideCachePtr();
+
+    if (!sector_cache)
+    {
+        logerr << "no sector inside cache";
+        return layers;
+    }
+
+    for (const auto& layer : sectorLayers())
+    {
+        if (std::find(used_sector_layers_.begin(), used_sector_layers_.end(), layer->name())
+                == used_sector_layers_.end())
+            continue;
+
+        //geometry for the sector_inside() database function
+        sector_cache->setLayer(layer->name(), layer->sectors());
+
+        auto bounds = sector_cache->bounds(layer->name());
+
+        if (bounds.has_value()) // no non-exclusion sectors otherwise
+            layers.push_back(SectorsFilter::Layer{layer->name(), bounds.value()});
+    }
+
+    return layers;
+}
+
+/**
+ */
+std::vector<std::string> EvaluationCalculator::usedSectorLayerNames() const
+{
+    std::vector<std::string> names;
+
+    if (!hasCurrentStandard() || !sectorsLoaded())
+        return names;
+
+    const auto& standard = currentStandard();
+
+    for (auto& sec_it : sectorLayers())
     {
         const string& sector_layer_name = sec_it->name();
 
         for (auto& req_group_it : standard)
         {
-            const string& requirement_group_name = req_group_it->name();
-
-            if (!useGroupInSectorLayer(sector_layer_name, requirement_group_name))
-                continue; // skip if not used
-
-            if (first)
+            if (useGroupInSectorLayer(sector_layer_name, req_group_it->name()))
             {
-                tie(lat_min, lat_max) = sec_it->getMinMaxLatitude();
-                tie(long_min, long_max) = sec_it->getMinMaxLongitude();
-                first = false;
-            }
-            else
-            {
-                tie(tmp_lat_min, tmp_lat_max) = sec_it->getMinMaxLatitude();
-                tie(tmp_long_min, tmp_long_max) = sec_it->getMinMaxLongitude();
-
-                lat_min = min(lat_min, tmp_lat_min);
-                lat_max = max(lat_max, tmp_lat_max);
-                long_min = min(long_min, tmp_long_min);
-                long_max = max(long_max, tmp_long_max);
+                names.push_back(sector_layer_name);
+                break;
             }
         }
     }
 
-    //        lat_min = 46.49;
-    //        lat_max = 49.16;
-    //        long_min = 11.39;
-    //        long_max = 17.43;
-
-    if (!first)
-    {
-        ROI roi;
-        roi.latitude_min  = lat_min  - 0.2;
-        roi.latitude_max  = lat_max  + 0.2;
-        roi.longitude_min = long_min - 0.2;
-        roi.longitude_max = long_max + 0.2;
-
-        sector_roi_ = roi;
-    }
+    return names;
 }
 
 /**
@@ -1773,7 +1922,7 @@ void EvaluationCalculator::updateCompoundCoverage(std::set<unsigned int> tst_sou
 
     tst_srcs_coverage_->clear();
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
     for (auto ds_id : tst_sources)
     {
@@ -1821,15 +1970,11 @@ void EvaluationCalculator::updateConstraints()
     clearConstraints();
 
     //obtain current constraints
-    bool load_filter_valid = !eval_man_.loadTimestampBegin().is_not_a_date_time() &&
-                             !eval_man_.loadTimestampEnd().is_not_a_date_time();
-
-    global_time_filter_enabled_    = eval_man_.useTimestampFilter();
-    global_time_window_            = load_filter_valid ? Utils::TimeWindow(eval_man_.loadTimestampBegin(), eval_man_.loadTimestampEnd()) : Utils::TimeWindow();
-    global_exclusion_time_windows_ = eval_man_.excludedTimeWindows();
-    target_constraints_            = eval_man_.dbContentManager().targetModel()->evaluationConstraints(true);
+    constraints_.update(eval_man_);
 
     //update serializable json
+    global_time_filter_enabled_ = constraints_.globalTimeFilterEnabled();
+
     storeGlobalTimeWindow();
     storeGlobalExclusionTimeWindows();
     storeTargetConstraints();
@@ -1839,125 +1984,64 @@ void EvaluationCalculator::updateConstraints()
  */
 bool EvaluationCalculator::isTimeStampNotExcluded(const boost::posix_time::ptime& ts) const
 {
-    // global time filters disabled? => not excluded
-    if (!global_time_filter_enabled_)
-        return true;
-
-    //check if ts outside of global load window => excluded
-    if (global_time_window_.valid() && !global_time_window_.contains(ts))
-        return false;
-
-    // check if ts inside global load exclusion windows => excluded
-    if (global_exclusion_time_windows_.contains(ts))
-        return false;
-
-    // not excluded
-    return true;
+    return constraints_.isTimeStampNotExcluded(ts);
 }
 
 /**
  */
 bool EvaluationCalculator::globalTimeFilterEnabled() const
 {
-    return global_time_filter_enabled_;
+    return constraints_.globalTimeFilterEnabled();
 }
 
 /**
  */
 void EvaluationCalculator::storeGlobalTimeWindow()
 {
-    global_time_window_json_ = global_time_window_.valid() ? global_time_window_.getAsJson() : nlohmann::json();
+    global_time_window_json_ = constraints_.globalTimeWindowAsJSON();
 }
 
 /**
  */
 void EvaluationCalculator::loadGlobalTimeWindow()
 {
-    global_time_window_ = Utils::TimeWindow();
-
-    if (global_time_window_json_.is_null())
-        return;
-
-    global_time_window_.setFrom(global_time_window_json_);
+    constraints_.globalTimeFilterEnabled(global_time_filter_enabled_);
+    constraints_.globalTimeWindowFromJSON(global_time_window_json_);
 }
 
 /**
  */
 void EvaluationCalculator::storeGlobalExclusionTimeWindows()
 {
-    global_exclusion_time_windows_json_= global_exclusion_time_windows_.asJSON();
+    global_exclusion_time_windows_json_ = constraints_.globalExclusionTimeWindowsAsJSON();
 }
 
 /**
  */
 void EvaluationCalculator::loadGlobalExclusionTimeWindows()
 {
-    global_exclusion_time_windows_ = Utils::TimeWindowCollection();
-
-    if (global_exclusion_time_windows_json_.is_null())
-        return;
-
-    global_exclusion_time_windows_.setFrom(global_exclusion_time_windows_json_);
+    constraints_.globalExclusionTimeWindowsFromJSON(global_exclusion_time_windows_json_);
 }
 
 /**
  */
 void EvaluationCalculator::storeTargetConstraints()
 {
-    target_constraints_json_ = nlohmann::json::object();
-
-    for (const auto& tc : target_constraints_)
-    {
-        if (!tc.second.hasActiveConstraint())
-            continue;
-
-        auto key = std::to_string(tc.first);
-        target_constraints_json_[ key ] = tc.second.toJSON();
-    }
+    target_constraints_json_ = constraints_.targetConstraintsAsJSON();
 }
 
 /**
  */
 void EvaluationCalculator::loadTargetConstraints()
 {
-    target_constraints_.clear();
-
-    if (target_constraints_json_.is_null())
-        return;
-
-    traced_assert(target_constraints_json_.is_object());
-
-    for (const auto& tc_json : target_constraints_json_.items())
-    {
-        QString s = QString::fromStdString(tc_json.key());
-
-        bool ok;
-        auto utn = s.toUInt(&ok);
-        traced_assert(ok);
-
-        dbContent::TargetEvalConstraints tc;
-        ok = tc.fromJSON(tc_json.value());
-        traced_assert(ok);
-
-        if (!tc.hasActiveConstraint())
-            continue;
-
-        target_constraints_[ utn ] = tc;
-    }
+    constraints_.targetConstraintsFromJSON(target_constraints_json_);
 }
 
 /**
  */
 const dbContent::TargetEvalConstraints* EvaluationCalculator::targetConstraint(unsigned int utn) const
 {
-    if (target_constraints_.empty())
-        return nullptr;
-
-    auto it = target_constraints_.find(utn);
-    if (it == target_constraints_.end())
-        return nullptr;
-
-    return &it->second;
+    return constraints_.targetConstraint(utn);
 }
 
 /**
@@ -2035,9 +2119,9 @@ std::string EvaluationCalculator::suggestReportName() const
     if (ds_sel.empty())
         return "";
 
-    auto& ds_man = eval_man_.compass().dbContextManager();
+    auto& ds_man = eval_man_.dbContextManager();
 
-    unsigned int ds_id = stoul(ds_sel);
+    unsigned int ds_id = stoull(ds_sel);
     traced_assert(ds_man.hasDataSource(ds_id));
 
     const auto& ds_name = ds_man.dataSource(ds_id)->name();

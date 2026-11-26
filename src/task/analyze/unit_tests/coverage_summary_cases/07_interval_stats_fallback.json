@@ -1,0 +1,26 @@
+{
+    "description": "Only zero intervals and no maximum set: the rounded-up P99 is 0, so the fallback maximum of 15 s applies, 3 bins of 5 s, both intervals in the first bin. Empty input is checked separately: num 0 and no histogram bins.",
+    "type": "stats",
+    "intervals": [
+        0.0,
+        0.0
+    ],
+    "hist_max_s": 0.0,
+    "num_bins": 3,
+    "fallback_max_s": 15.0,
+    "expected": {
+        "num": 2,
+        "median_s": 0.0,
+        "p10_s": 0.0,
+        "p90_s": 0.0,
+        "mean_s": 0.0,
+        "hist_max_s": 15.0,
+        "hist_bin_width_s": 5.0,
+        "hist_bins": [
+            2,
+            0,
+            0
+        ],
+        "hist_overflow": 0
+    }
+}

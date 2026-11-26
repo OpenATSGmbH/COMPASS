@@ -17,22 +17,22 @@
 
 #pragma once
 
-#include "toolboxdefs.h"
+#include "compass_app_export.h"
+
 #include "ui_test_testable.h"
+#include "decklayout.h"
 
 #include <vector>
 
 #include <QWidget>
-#include <QToolButton>
-#include <QMouseEvent>
-
-#include <boost/optional.hpp>
 
 #include <memory>
 #include <set>
 
+class DeckButton;
 class ToolBoxWidget;
 class PopupMenu;
+class ViewDeck;
 
 class QPushButton;
 class QVBoxLayout;
@@ -41,35 +41,16 @@ class QLabel;
 class QMenu;
 class QToolBar;
 class QFrame;
+class QSplitter;
 
 /**
+ * Flight Deck: tool button column and the splitter with the tool panel and the view area.
+ *
+ * It also decides which of the two decks of the main window are open (deck::Layout): the Flight Deck with
+ * its tool panel, and the View Deck with the view area. The View Deck asks for a change and follows
+ * viewDeckCollapsedSignal(), see setViewDeck().
  */
-class ToolButton : public QToolButton
-{
-    Q_OBJECT
-public:
-    ToolButton(QWidget* parent = nullptr) : QToolButton(parent) {}
-    virtual ~ToolButton() = default;
-
-signals:
-    void rightClicked();
-
-protected:
-    virtual void mousePressEvent(QMouseEvent *e) override
-    {
-        if (e->button() == Qt::RightButton)
-        {
-            emit rightClicked();
-            return;
-        }
-
-        QToolButton::mousePressEvent(e);
-    }
-};
- 
-/**
- */
-class ToolBox : public QWidget, public ui_test::UITestable
+class COMPASS_APP_API ToolBox : public QWidget, public ui_test::UITestable
 {
     Q_OBJECT
 public:
@@ -79,44 +60,47 @@ public:
     /// selects the tool with the given name, e.g. 'uiset mainwindow.toolbox "Filters"'
     bool uiSet(const QString& str) override { return selectTool(str.toStdString()); }
 
-    void setMainContent(QWidget* content);
+    void setViewDeck(ViewDeck* view_deck);
 
     unsigned int addTool(ToolBoxWidget* tool);
     size_t numTools() const;
 
     void disableTools(std::set<unsigned int> indexes);
 
-    void finalize();
+    /// own button size from the tool labels, the set one once set
+    QSize buttonSize() const;
+    /// sets the fixed size of all tool buttons
+    void setButtonSize(const QSize& size);
+
     void adjustSizings();
 
     void selectTool(size_t idx);
     bool selectTool(const std::string& name);
 
-    bool isExpanded() const;
-
-    boost::optional<toolbox::ScreenRatio> currentScreenRatio() const;
-
     void loadingStarted();
     void loadingDone();
 
-    static const int   ToolIconSize;
-    static const int   ToolNameFontSize;
-    static const int   ToolLabelFontSize;
-    static const float ExpansionFactor;
+    static const int ToolNameFontSize;
 
 signals:
     void toolChanged();
+    void viewDeckCollapsedSignal(bool collapsed);
 
 protected:
     virtual void resizeEvent(QResizeEvent* event) override;
+
+private slots:
+    void collapseViewDeckSlot();
+    void openViewDeckSlot();
 
 private:
     struct Tool
     {
         int            idx    = -1;
         ToolBoxWidget* widget = nullptr;
-        ToolButton*    button = nullptr;
+        DeckButton*    button = nullptr;
         bool           hidden = false;
+        int            width_percent = 0;
     };
 
     void createUI();
@@ -125,10 +109,15 @@ private:
     void updateButtons();
     void toolActivated(int idx);
 
-    void screenRatioChanged(toolbox::ScreenRatio screen_ratio);
+    int  activeTool() const;
+    bool viewDeckOpen() const;
+    void setState(deck::Layout layout, int tool_idx);
+
+    void setWidthPercent(int percent);
+    void applyWidthPercent();
+    void handleDragged(int panel_width);
     void shrink();
     void grow();
-    void toggleExpansion();
 
     std::vector<Tool> tools_;
 
@@ -141,15 +130,18 @@ private:
     QPushButton*    config_button_        = nullptr;
     QAction*        shrink_action_        = nullptr;
     QAction*        grow_action_          = nullptr;
-    QAction*        expand_action_        = nullptr;
     QToolBar*       tool_bar_default_     = nullptr;
     QToolBar*       tool_bar_             = nullptr;
+    QSplitter*      splitter_             = nullptr;
     QWidget*        main_widget_          = nullptr;
     QVBoxLayout*    main_layout_          = nullptr;
     QWidget*        main_content_widget_  = nullptr;
 
+    QSize button_size_; // fixed size of the tool buttons, invalid until set
+
     std::unique_ptr<PopupMenu> config_menu_;
 
-    int  active_tool_idx_ = -1;
-    bool expanded_        = false;
+    // no tool is selected at startup, so only the View Deck is open
+    deck::Layout deck_layout_ = deck::Layout::ViewDeckOnly;
+    int          tool_idx_    = -1; // selected tool, kept while the Flight Deck is collapsed
 };

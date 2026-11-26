@@ -5,11 +5,12 @@
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=14cm,frame]{figures/eval_req_pos_across.png}
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_pos_across.png}
   \caption{Evaluation Position Across requirement}
 \end{figure}
 
-The 'Position Across' requirement is used to calculate the probability of a target report having an across-track error smaller than a defined threshold. The offset of the position (test vs. linear interpolated reference position) is used to calculate the error component across the track angle of the reference at the time. If the absolute value of this across-track position error is smaller or equal than the defined threshold, the target report is counted for the calculated probability PACOK. The PACOK must be greater or equal than the defined 'Probability' for the requirement to pass. \\
+The 'Position Across' requirement is used to calculate the probability of a target report having an across-track error smaller than a defined threshold. The offset of the position (test vs. linear interpolated reference position) is used to calculate the error component across the track angle of the reference at the time. A positive across-track error means that the test position is right of the reference track, a negative value means left of it. If the absolute value of this across-track position error is smaller or equal than the defined threshold, the target report is counted for the calculated probability PACOK. The PACOK must be greater or equal than the defined 'Probability' for the requirement to pass. \\
 
 \begin{itemize}  
 \item Probability [1]: Probability of acceptable across-track position
@@ -88,11 +89,12 @@ Also, a table is given for all single targets, sorted by PACOK.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=14cm,frame]{figures/eval_req_pos_along.png}
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_pos_along.png}
   \caption{Evaluation Position Along requirement}
 \end{figure}
 
-The 'Position Along' requirement is used to calculate the probability of a target report having an along-track error smaller than a defined threshold. The offset of the position (test vs. linear interpolated reference position) is used to calculate the error component along the track angle of the reference at the time. If the absolute value of this along-track position error is smaller or equal than the defined threshold, the target report is counted for the calculated probability PALOK. The PALOK must be greater or equal than the defined 'Probability' for the requirement to pass. \\
+The 'Position Along' requirement is used to calculate the probability of a target report having an along-track error smaller than a defined threshold. The offset of the position (test vs. linear interpolated reference position) is used to calculate the error component along the track angle of the reference at the time. A positive along-track error means that the test position is ahead of the reference position, a negative value means behind it. If the absolute value of this along-track position error is smaller or equal than the defined threshold, the target report is counted for the calculated probability PALOK. The PALOK must be greater or equal than the defined 'Probability' for the requirement to pass. \\
 
 \begin{itemize}  
 \item Probability [1]: Probability of acceptable along-track position
@@ -173,13 +175,15 @@ This requirement can be used in 2 variations:
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=14cm,frame]{figures/eval_req_pos_distance_correct.png}
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_pos_distance_correct.png}
   \caption{Evaluation Position Distance requirement for correct positions}
 \end{figure}
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=14cm,frame]{figures/eval_req_pos_distance_false.png}
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_pos_distance_false.png}
   \caption{Evaluation Position Distance requirement for false positions}
 \end{figure}
 
@@ -199,8 +203,24 @@ The 'Failed Values are of Interest' checkbox define if the target reports passin
 \item Threshold Value [m]: Maximum allowed distance from test target report to reference
 \item Threshold Value Check Type: $\leq$, distance must be less or equal the given threshold
 \item Failed Values are of Interest: Checked, the distances of interest are the ones not passing the check
+\item Use Averaging: Checkbox if one averaged position error per time window should be checked, instead of one error per test target report
+\item Averaging Window [s]: Length of the averaging window
 \end{itemize}
 \ \\
+
+\paragraph{Averaged Position}
+
+Some standards state a position accuracy on an averaged position rather than on a single target report, e.g. EUROCAE ED-117 Section 3.3.3 for stands. With 'Use Averaging' active, the requirement checks one value per time window instead of one value per target report:
+
+\begin{itemize}
+\item The usable test target reports of a target are cut into consecutive, non-overlapping windows of 'Averaging Window [s]', starting at the first usable target report.
+\item A target report outside the sector layer, or a gap longer than the window, ends the current window.
+\item Per window, the mean of the test positions and the mean of the mapped reference positions are calculated. The distance between the 2 means gives the mean position error of the window, which is checked against the threshold.
+\item Windows holding a single target report are skipped, and are listed with the comment 'Single report'.
+\end{itemize}
+\ \\
+
+Since both sides are averaged, the resulting value is the length of the mean error vector, which is also meaningful for a moving target. The counted units are windows, not target reports. Where the source document states no confidence level for such a requirement, a probability of 100\% is a reasonable choice, meaning that every window has to pass. \\
 
 \paragraph{Position False Variation}
 
@@ -283,7 +303,8 @@ Also, a table is given for all single targets, sorted by PCP.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=14cm,frame]{figures/eval_req_pos_distance_rms.png}
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_pos_distance_rms.png}
   \caption{Evaluation Position Latency requirement}
 \end{figure}
 
@@ -365,11 +386,12 @@ Also, a table is given for all single targets, sorted by RMS.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=14cm,frame]{figures/eval_req_pos_latency.png}
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_pos_latency.png}
   \caption{Evaluation Position Latency requirement}
 \end{figure}
 
-The 'Position Latency' requirement is used to calculate the probability of a target report having a time-latency error smaller than a defined threshold. The offset of the position (test vs. linear interpolated reference position) is used to calculate the error component along the track angle of the reference at the time, which divided by the negative speed gives the latency. If the absolute value of this latency is smaller or equal than the defined threshold, the target report is counted for the calculated probability PLTOK. The PLTOK must be greater or equal than the defined 'Probability' for the requirement to pass. \\
+The 'Position Latency' requirement is used to calculate the probability of a target report having a time-latency error smaller than a defined threshold. The offset of the position (test vs. linear interpolated reference position) is used to calculate the error component along the track angle of the reference at the time, which divided by the negative speed gives the latency. A test position behind the reference position gives a positive latency, a test position ahead of it a negative latency. If the absolute value of this latency is smaller or equal than the defined threshold, the target report is counted for the calculated probability PLTOK. The PLTOK must be greater or equal than the defined 'Probability' for the requirement to pass. \\
 
 \begin{itemize}  
 \item Probability [1]: Probability of acceptable position latency
@@ -450,22 +472,35 @@ Also, a table is given for all single targets, sorted by PLTOK.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=14cm,frame]{figures/eval_req_pos_radar_azm.png}
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_pos_radar_azm.png}
   \caption{Evaluation Position Radar Azimuth requirement}
 \end{figure}
 
-The 'Position Radar Azimuth' requirement is used to calculate the probability of a target report
-having an Radar azimuth error smaller than a defined threshold. The offset of the position
-(test vs. linear interpolated reference position) is used to calculate the azimuth error component
-w.r.t. the respective Radar. If the absolute value of this range
-position error is smaller or equal than the defined threshold, the target report is counted
-for the calculated probability CP. The CP must be greater or equal than the
-defined ’Probability’ for the requirement to pass.
+The 'Position Radar Azimuth' requirement checks the azimuth error of a radar, as in the EUROCONTROL
+radar surveillance standard (SUR.ET1.ST01.1000-STD-01-01, 6.3.3.1). It checks one of these statistics:
+
+\begin{itemize}
+\item Standard Deviation: the random error, the standard deviation of the azimuth differences.
+\item Bias: the systematic error, the absolute mean of the azimuth differences.
+\end{itemize}
+\ \\
+
+\begin{itemize}
+\item For each target report, COMPASS calculates the azimuth of the test position and the azimuth of the
+linear interpolated reference position w.r.t. the respective radar.
+\item The azimuth difference is the test azimuth minus the reference azimuth.
+\item The selected statistic must be smaller than the defined maximum for the requirement to pass.
+\item For the standard deviation, \#CP counts the target reports with an absolute azimuth difference smaller
+or equal than the maximum, \#CF the other target reports. These counts give information only. For the bias,
+COMPASS does not check single target reports, all count as \#CP.
+\end{itemize}
 \ \\
 
 \begin{itemize}
 \item Minimum Reference Accuracy [m]: Maximum allowed reference position standard deviation, see \nameref{sec:eval_min_ref_acc}
-\item Maximum Absolute Value [m]: Maximum azimuth offset allowed
+\item Statistic: Checked statistic of the azimuth differences, 'Standard Deviation' or 'Bias'
+\item Maximum Standard Deviation [deg] or Maximum Absolute Bias [deg]: Maximum value of the selected statistic
 \end{itemize}
 
 \subsubsection{Result Values}
@@ -488,15 +523,15 @@ defined ’Probability’ for the requirement to pass.
   \#NoRef [1] & Number of updates w/o reference positions & 12861  \\ \hline
   \#PosInside [1] & Number of updates inside sector & 15113  \\ \hline
   \#PosOutside [1] & Number of updates outside sector & 731  \\ \hline
-  DMin [m] & Minimum of angle distance & -103.90  \\ \hline
-  DMax [m] & Maximum of angle distance & 28.27  \\ \hline
-  DAvg [m] & Average of angle distance & -0.01  \\ \hline
-  DSDev [m] & Standard Deviation of angle distance & 1.25  \\ \hline
-  DVar [$m^2$] & Variance of angle distance & 1.57  \\ \hline
+  DMin [deg] & Minimum of angle distance & -103.90  \\ \hline
+  DMax [deg] & Maximum of angle distance & 28.27  \\ \hline
+  DAvg [deg] & Average of angle distance & -0.01  \\ \hline
+  DSDev [deg] & Standard Deviation of angle distance & 1.25  \\ \hline
+  DVar [$deg^2$] & Variance of angle distance & 1.57  \\ \hline
   \#CF [1] & Number of updates with failed comparison & 1860  \\ \hline
   \#CP [1] & Number of updates with passed comparison  & 13253  \\ \hline
-  Condition &  & <= 0.080000  \\ \hline
-  Condition Fulfilled &  & Passed  \\ \hline
+  Condition &  & < 0.080000  \\ \hline
+  Condition Fulfilled &  & Failed  \\ \hline
 \end{tabularx}
 \end{table}
 \end{center}
@@ -515,14 +550,14 @@ Also, a table is given for all single targets, sorted by \#CF.
     \#NoRef [1] & Number of updates w/o reference positions & 72 \\ \hline
     \#PosInside [1] & Number of updates inside sector & 285 \\ \hline
     \#PosOutside [1] & Number of updates outside sector & 37 \\ \hline
-    DMin [m] & Minimum of angle distance & -0.02 \\ \hline
-    DMax [m] & Maximum of angle distance & 0.15 \\ \hline
-    DAvg [m] & Average of angle distance & 0.09 \\ \hline
-    DSDev [m] & Standard Deviation of angle distance & 0.03 \\ \hline
-    DVar [$m^2$] & Variance of angle distance & 0.00 \\ \hline
+    DMin [deg] & Minimum of angle distance & -0.02 \\ \hline
+    DMax [deg] & Maximum of angle distance & 0.15 \\ \hline
+    DAvg [deg] & Average of angle distance & 0.09 \\ \hline
+    DSDev [deg] & Standard Deviation of angle distance & 0.03 \\ \hline
+    DVar [$deg^2$] & Variance of angle distance & 0.00 \\ \hline
     \#CF [1] & Number of updates with failed comparison & 191 \\ \hline
     \#CP [1] & Number of updates with passed comparison & 94 \\ \hline
-    Condition &  & <= 0.080000 \\ \hline
+    Condition &  & < 0.080000 \\ \hline
     Condition Fulfilled &  & Passed \\ \hline
 \end{tabularx}
 \end{table}
@@ -536,22 +571,45 @@ Also, a table is given for all single targets, sorted by \#CF.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=14cm,frame]{figures/eval_req_pos_radar_rng.png}
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_pos_radar_rng.png}
   \caption{Evaluation Position Radar Range requirement}
 \end{figure}
 
-The 'Position Radar Range' requirement is used to calculate the probability of a target report
-having an Radar range error smaller than a defined threshold. The offset of the position
-(test vs. linear interpolated reference position) is used to calculate the range error component
-w.r.t. the respective Radar. If the absolute value of this range
-position error is smaller or equal than the defined threshold, the target report is counted
-for the calculated probability CP. The CP must be greater or equal than the
-defined ’Probability’ for the requirement to pass.
+The 'Position Radar Range' requirement checks the slant range error of a radar, as in the EUROCONTROL
+radar surveillance standard (SUR.ET1.ST01.1000-STD-01-01, 6.3.3.1). It checks one of these statistics:
+
+\begin{itemize}
+\item Standard Deviation: the random error, the standard deviation of the slant range differences.
+\item Bias: the systematic error, the absolute bias $b$ of the range error model.
+\item Gain: the systematic error, the absolute gain error $g$ of the range error model, in m/NM.
+\end{itemize}
+\ \\
+
+The range error model of the standard is: test slant range $= (1 + g) \cdot$ reference slant range $+ b$.
+COMPASS estimates $g$ and $b$ with a linear least squares fit over all target reports. \\
+
+\begin{itemize}
+\item For each target report, COMPASS calculates the slant range of the test position and the slant range
+of the linear interpolated reference position w.r.t. the respective radar.
+\item The test position uses its Mode C altitude, or the radar height if it has no Mode C. This is the
+altitude that COMPASS uses for the calculation of the radar plot positions, so the test slant range is the
+measured slant range. The reference position uses its own altitude, or the altitude of the test position if
+it has none.
+\item The range difference is the reference slant range minus the test slant range.
+\item The selected statistic must be smaller than the defined maximum for the requirement to pass.
+\item For the standard deviation, \#CP counts the target reports with an absolute range difference smaller
+or equal than the maximum, \#CF the other target reports. These counts give information only. For the bias
+and the gain, COMPASS does not check single target reports, all count as \#CP.
+\item Range bias and range gain are shown for all statistics.
+\end{itemize}
 \ \\
 
 \begin{itemize}
 \item Minimum Reference Accuracy [m]: Maximum allowed reference position standard deviation, see \nameref{sec:eval_min_ref_acc}
-\item Maximum Absolute Value [m]: Maximum range offset allowed
+\item Statistic: Checked statistic, 'Standard Deviation', 'Bias' or 'Gain'
+\item Maximum Standard Deviation [m], Maximum Absolute Bias [m] or Maximum Absolute Gain [m/NM]: Maximum
+value of the selected statistic
 \end{itemize}
 
 \subsubsection{Result Values}
@@ -581,10 +639,10 @@ defined ’Probability’ for the requirement to pass.
   DVar [$m^2$] & Variance of distance & 47034.17 \\ \hline
   \#CF [1] & Number of updates with failed comparison & 1613 \\ \hline
   \#CP [1] & Number of updates with passed comparison  & 13500 \\ \hline
-  Range Bias [m] & Range bias (linear estimation) & -1.42 \\ \hline
-  Range Gain [1] & Range gain (linear estimation) & 1.00014 \\ \hline
-  Condition &  & <= 70.000000 \\ \hline
-  Condition Fulfilled &  & Passed \\ \hline
+  Range Bias [m] & Bias of the range error model & 8.12 \\ \hline
+  Range Gain [m/NM] & Gain of the range error model & -0.33 \\ \hline
+  Condition &  & < 70.000000 \\ \hline
+  Condition Fulfilled &  & Failed \\ \hline
 
 \end{tabularx}
 \end{table}
@@ -609,12 +667,68 @@ Also, a table is given for all single targets, sorted by \#CF.
     DAvg [m] & Average of distance & -19.56 \\ \hline
     DSDev [m] & Standard Deviation of distance & 55.05 \\ \hline
     DVar [$m^2$] & Variance of distance & 0.00 \\ \hline
-    Range Bias [m] & Range bias (linear estimation) & 43520.69 \\ \hline
-    Range Gain [1] & Range gain (linear estimation) & 0.80278 \\ \hline
+    Range Bias [m] & Bias of the range error model & -6.63 \\ \hline
+    Range Gain [m/NM] & Gain of the range error model & -0.28 \\ \hline
     \#CF [1] & Number of updates with failed comparison & 1 \\ \hline
     \#CP [1] & Number of updates with passed comparison & 17 \\ \hline
-    Condition &  & <= 70.000000 \\ \hline
+    Condition &  & < 70.000000 \\ \hline
     Condition Fulfilled &  & Passed \\ \hline
 \end{tabularx}
 \end{table}
 \end{center}
+
+\subsection{Position Radar Time Stamp}
+\label{sec:eval_req_pos_radar_tse}
+
+\subsubsection{Configuration}
+
+\begin{figure}[H]
+    \centering
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_pos_radar_tse.png}
+  \caption{Evaluation Position Radar Time Stamp requirement}
+\end{figure}
+
+The 'Position Radar Time Stamp' requirement checks the systematic time stamp error of a radar, as in the
+EUROCONTROL radar surveillance standard (SUR.ET1.ST01.1000-STD-01-01, 6.3.3.1).
+
+\begin{itemize}
+\item For each target report, COMPASS calculates the along-track offset of the test position to the linear
+interpolated reference position, on the track angle of the reference. A positive along-track offset means
+that the test position is ahead of the reference position.
+\item The time offset of a target report is the negative along-track offset divided by the reference speed.
+A positive time offset means that the time stamp is late. Target reports without reference speed or with a
+reference speed of 0 are not used.
+\item The time stamp error $\Delta t$ is the least squares fit of along-track offset $= -\Delta t \cdot$ speed
+over all used target reports. Fast targets get a large weight, slow targets a small weight, because a small
+position error of a slow target gives a large time offset.
+\item The absolute time stamp error must be smaller than the defined maximum for the requirement to pass.
+\item COMPASS does not check single target reports.
+\end{itemize}
+\ \\
+
+\begin{itemize}
+\item Minimum Reference Accuracy [m]: Maximum allowed reference position standard deviation, see \nameref{sec:eval_min_ref_acc}
+\item Maximum Absolute Error [s]: Maximum absolute time stamp error
+\end{itemize}
+
+\subsubsection{Result Values}
+
+The sector and the single target results give the number of updates and the minimum, maximum, average and
+standard deviation of the time offsets of the target reports, plus:
+
+\begin{center}
+ \begin{table}[H]
+  \begin{tabularx}{\textwidth}{ | l | X |  l | }
+    \hline
+    \textbf{Name} & \textbf{Description} & \textbf{Example} \\ \hline
+    \#Upd [1] & Number of updates used for the time stamp error & 37434 \\ \hline
+    Time Stamp Error [s] & Time stamp error (least squares estimation, positive = late) & 0.085 \\ \hline
+    TSE [s] & Absolute time stamp error & 0.09 \\ \hline
+    Condition &  & < 0.10 \\ \hline
+    Condition Fulfilled &  & Passed \\ \hline
+\end{tabularx}
+\end{table}
+\end{center}
+
+The single target table is sorted by the absolute time stamp error (TSE).

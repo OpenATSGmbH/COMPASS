@@ -54,6 +54,9 @@ public slots:
     void deleteRequirementSlot(Group& group, EvaluationRequirement::BaseConfig& req);
 
     void refMaxTimeDiffEditSlot(QString value);
+    void toggleIgnorePrimaryOnlyTargetsSlot(bool checked);
+    void toggleIgnoreNonADSBTargetsSlot(bool checked);
+    void toggleIgnoreModeACOnlyTargetsSlot(bool checked);
     //void refMinAccEditSlot(QString value);
 
 public:
@@ -65,8 +68,8 @@ public:
 
     void showRequirementWidget(QWidget* widget); // can be nullptr
 
-    void showMenu ();
-    void showGroupMenu (Group& group);
+    void showMenu (const QPoint& global_pos);
+    void showGroupMenu (Group& group, const QPoint& global_pos);
 
 protected:
     void showContextMenu(const QPoint& pos);

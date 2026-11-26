@@ -16,10 +16,9 @@
  */
 
 #include "viewcontainer.h"
+#include "appstate.h"
 
 //#include "config.h"
-#include "files.h"
-#include "global.h"
 #include "tableview.h"
 #include "histogramview.h"
 #include "scatterplotview.h"
@@ -29,22 +28,15 @@
 //#include "stringconv.h"
 #include "view.h"
 #include "viewcontainer.h"
+#include "viewdeck.h"
 #include "viewmanager.h"
-#include "ui_test_common.h"
-#include "compass.h"
 #include "rtcommand_helpers.h"
 #include "viewwidget.h"
 
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "geographicview.h"
-#endif
+#include "json.hpp"
 
-#include <QHBoxLayout>
 #include <QInputDialog>
 #include <QMenu>
-#include <QPushButton>
-#include <QTabBar>
-#include <QTabWidget>
 
 //unsigned int ViewContainer::view_count_ = 0;
 
@@ -64,36 +56,26 @@ using namespace std;
 ViewContainer::ViewContainer(nlohmann::json& config,
                              ViewManager& view_manager,
                              Configurable* parent,
-                             QTabWidget* tab_widget,
+                             ViewDeck* view_deck,
                              int window_cnt)
     : QObject(),
       Configurable(config, parent),
       view_manager_(view_manager),
-      tab_widget_(tab_widget),
+      view_deck_(view_deck),
       window_cnt_(window_cnt)
 {
     logdbg << "window " << window_cnt_;
-    traced_assert(tab_widget_);
+    traced_assert(view_deck_);
 
-    creation_time_ = boost::posix_time::to_time_t(boost::posix_time::microsec_clock::local_time());
+    static std::uint64_t creation_counter = 0;
+    creation_index_ = ++creation_counter;
 
-    disable_add_remove_views_ = view_manager_.compass().disableAddRemoveViews();
+    disable_add_remove_views_ = view_manager_.appState().settings().disable_add_remove_views;
 
-    if (window_cnt != 0)
-    {
-        const QString tool_tip = "Add view";
+    view_deck_->setAddRemoveEnabled(!disable_add_remove_views_);
 
-        QPushButton* add_button = new QPushButton(tab_widget_);
-        UI_TEST_OBJ_NAME(add_button, tool_tip);
-        add_button->setIcon(Files::IconProvider::getIcon("crosshair_fat.png"));
-        add_button->setFixedSize(UI_ICON_SIZE);
-        add_button->setFlat(UI_ICON_BUTTON_FLAT);
-        add_button->setToolTip(tr(tool_tip.toStdString().c_str()));
-        add_button->setDisabled(disable_add_remove_views_);
-
-        connect(add_button, &QPushButton::clicked, this, &ViewContainer::showAddViewMenuSlot);
-        tab_widget_->setCornerWidget(add_button);
-    }
+    connect(view_deck_, &ViewDeck::addViewRequestedSignal, this, &ViewContainer::showAddViewMenuSlot);
+    connect(view_deck_, &ViewDeck::closeViewRequestedSignal, this, &ViewContainer::closeViewSlot);
 
     createSubConfigurables();
 }
@@ -121,37 +103,38 @@ void ViewContainer::addView(const std::string& class_name)
     std::string view_name = view_manager_.newViewName(class_name);
     auto& child_json = addNewSubConfiguration(class_name, instance_name);
     child_json[Configuration::ParameterSection]["name"] = view_name;
-    generateSubConfigurable(child_json);
+    createSubConfigurable(child_json);
+
+    // a view added by the user is shown, the views from the configuration keep the first one selected
+    views_.back()->showInViewDeck();
 }
 
-void ViewContainer::enableViewTab(QWidget* widget, bool value)
+void ViewContainer::enableView(QWidget* widget, bool value)
 {
     traced_assert(widget);
-
-    int index = tab_widget_->indexOf(widget);
-
-    traced_assert(index >= 0); // check if has widget
-    tab_widget_->setTabEnabled(index, value);;
+    view_deck_->setViewEnabled(widget, value);
 }
 
 void ViewContainer::showView(QWidget* widget)
 {
     traced_assert(widget);
-    traced_assert(tab_widget_->indexOf(widget) >= 0); // check if has widget
-    tab_widget_->setCurrentWidget(widget);
+    view_deck_->showView(widget);
 }
 
 View* ViewContainer::currentView() const
 {
-    if (!tab_widget_)
-        return nullptr;
-    QWidget* current = tab_widget_->currentWidget();
+    QWidget* current = view_deck_->currentView();
     if (!current)
         return nullptr;
     for (const auto& v : views_)
         if (v && v->getCentralWidget() == current)
             return v.get();
     return nullptr;
+}
+
+bool ViewContainer::viewDeckCollapsed() const
+{
+    return view_deck_->collapsed();
 }
 
 // void ViewContainer::addTemplateView (std::string template_name)
@@ -167,7 +150,7 @@ View* ViewContainer::currentView() const
 
 //    configuration_.addNewSubConfiguration(view_config);
 
-//    generateSubConfigurable (view_config.getClassId(), view_config.getInstanceId());
+//    createSubConfigurableFromConfig(view_config.getClassId(), view_config.getInstanceId());
 //}
 
 void ViewContainer::addView(View* view)
@@ -176,52 +159,28 @@ void ViewContainer::addView(View* view)
     QWidget* w = view->getCentralWidget();
     traced_assert(w);
 
-    const QString view_name = QString::fromStdString(view->getName());
-
-    // Suppress paint events during tab insertion. QTabWidget::addTab triggers
-    // QWidget::setParent which can fire a paint event on the widget being
-    // reparented. For views containing a QOpenGLWidget (Geographic View) this
-    // causes OSG to render into a stale GL context and crash in SceneView::cull.
-    w->setUpdatesEnabled(false);
-    int index = tab_widget_->addTab(w, view_name);
-    w->setUpdatesEnabled(true);
-
-    QPushButton* manage_button = new QPushButton();
-    UI_TEST_OBJ_NAME(manage_button, view_name + " Manager"); //manage buttons can be reached via e.g. window1.geographicview2_manager
-
-    manage_button->setIcon(Files::IconProvider::getIcon("edit.png"));
-    manage_button->setFixedSize(UI_ICON_SIZE);
-    manage_button->setFlat(UI_ICON_BUTTON_FLAT);
-    manage_button->setToolTip(tr("Manage view"));
-    manage_button->setProperty("view_instance_name", view->instanceName().c_str());
-    manage_button->setDisabled(disable_add_remove_views_);
-    connect(manage_button, SIGNAL(clicked()), this, SLOT(showViewMenuSlot()));
-    tab_widget_->tabBar()->setTabButton(index, QTabBar::RightSide, manage_button);
+    QString tool_tip_info;
 
     //in localbuild we show some info about how the view is reachable via rtcommands
 #if USE_EXPERIMENTAL_SOURCE == true
-    if (!view_manager_.compass().isAppImage())
-    {
-        QString tt = rtcommand::getTooltip(view->getViewWidget(), view);
-        tab_widget_->setTabToolTip(index, tt);
-    }
+    if (!AppState::isAppImage())
+        tool_tip_info = rtcommand::getTooltip(view->getViewWidget(), view);
 #endif
+
+    view_deck_->addView(w,
+                        view->instanceName(),
+                        QString::fromStdString(view->getName()),
+                        QString::fromStdString(view->deckName()),
+                        view->deckIcon(),
+                        tool_tip_info);
 }
 
-void ViewContainer::deleteViewSlot()
+void ViewContainer::closeViewSlot(QWidget* view_widget)
 {
     traced_assert(!disable_add_remove_views_);
 
-    QAction* action = dynamic_cast<QAction*>(sender());
-    traced_assert(action);
-
-    QVariant instance_name_var = action->property("view_instance_name");
-    traced_assert(instance_name_var.isValid());
-
-    string instance_name = instance_name_var.toString().toStdString();
-
     auto iter = std::find_if(views_.begin(), views_.end(),
-                             [&instance_name](const unique_ptr<View>& x) { return x->instanceName() == instance_name;});
+                             [view_widget](const unique_ptr<View>& x) { return x->getCentralWidget() == view_widget;});
 
     traced_assert(iter != views_.end());
 
@@ -260,64 +219,32 @@ void ViewContainer::addNewViewSlot()
 
 const std::vector<std::unique_ptr<View>>& ViewContainer::getViews() const { return views_; }
 
-void ViewContainer::generateSubConfigurable(nlohmann::json& child_json)
+/**
+ * Built-in views, plus the plugin views without creator (set by their plugin, e.g. geo_view::initViews()).
+ */
+ViewContainer::viewFactoryType& ViewContainer::viewFactory()
 {
-    const auto& class_name = Configuration::getClassName(child_json);
+    static viewFactoryType factory = { { "TableView",       &viewFactoryType::createDefault<TableView>,       "Table View",       "Table"   },
+                                       { "HistogramView",   &viewFactoryType::createDefault<HistogramView>,   "Histogram View",   "Histo"   },
+                                       { "ScatterPlotView", &viewFactoryType::createDefault<ScatterPlotView>, "Scatterplot View", "Scatter" },
+                                       { "GridView",        &viewFactoryType::createDefault<GridView>,        "Grid View",        "Grid"    },
+                                       { "GeographicView",  nullptr,                                          "Geographic View",  "Geo",
+                                         CreationSource::Plugin } };
+    return factory;
+}
 
-    if (class_name == "TableView")
-    {
-        views_.emplace_back(new TableView(child_json, this));
+/**
+ * Takes over a view created by the view factory.
+ */
+void ViewContainer::childCreated(Configurable* child)
+{
+    auto view = dynamic_cast<View*>(child);
+    traced_assert(view);
 
-        (*views_.rbegin())->init();
-        addView(views_.rbegin()->get());
-    }
-    else if (class_name == "HistogramView")
-    {
-        views_.emplace_back(new HistogramView(child_json, this));
+    views_.emplace_back(view);
 
-        (*views_.rbegin())->init();
-        addView(views_.rbegin()->get());
-    }
-    else if (class_name == "ScatterPlotView")
-    {
-        views_.emplace_back(new ScatterPlotView(child_json, this));
-
-        (*views_.rbegin())->init();
-        addView(views_.rbegin()->get());
-    }
-    else if (class_name == "GridView")
-    {
-        views_.emplace_back(new GridView(child_json, this));
-
-        (*views_.rbegin())->init();
-        addView(views_.rbegin()->get());
-    }
-    else if (class_name == "GeographicView")
-    {
-#if USE_EXPERIMENTAL_SOURCE == true
-
-        views_.emplace_back(new GeographicView(child_json, this));
-
-        (*views_.rbegin())->init();
-        addView(views_.rbegin()->get());
-#else
-        loginf << "ignored GeographicView since compiled w/o experimental source";
-#endif
-
-    }
-    //  else if (class_name.compare ("MosaicView") == 0)
-    //  {
-    //    MosaicView* view = new MosaicView ( class_name, instance_name, this );
-    //    unsigned int number = getAppendedInt (instance_name);
-    //    if (number >= view_count_)
-    //      view_count_ = number+1;
-
-    //    traced_assert( view );
-    //    view->init();
-    //  }
-    else
-        throw std::runtime_error("ViewContainer: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+    view->init();
+    addView(view);
 }
 
 void ViewContainer::checkSubConfigurables()
@@ -362,39 +289,26 @@ void ViewContainer::showAddViewMenuSlot()
     menu.exec(QCursor::pos());
 }
 
-void ViewContainer::showViewMenuSlot()
+void ViewContainer::resetToConfig(const nlohmann::json& container_config)
 {
-    loginf << "window " << window_cnt_;
-
-    traced_assert(!disable_add_remove_views_);
-
-    QPushButton* button = dynamic_cast<QPushButton*>(sender());
-    traced_assert(button);
-
-    QVariant instance_name_var = button->property("view_instance_name");
-    traced_assert(instance_name_var.isValid());
-
-    string instance_name = instance_name_var.toString().toStdString();
-
-    QMenu menu;
-
-    QAction* delete_action = menu.addAction(tr("Close"));
-    delete_action->setProperty("view_instance_name", instance_name.c_str());
-    connect(delete_action, SIGNAL(triggered()), this, SLOT(deleteViewSlot()));
-
-    menu.exec(QCursor::pos());
-}
-
-void ViewContainer::resetToStartupConfiguration()
-{
-    //remove views
     while (!views_.empty())
+        views_.pop_back(); // removes the view config entry
+
+    if (container_config.contains(Configuration::SubConfigSection))
     {
-        views_.rbegin()->get()->setTmpDisableRemoveConfigOnDelete(true);
-        views_.pop_back();
+        for (const auto& view_config : container_config.at(Configuration::SubConfigSection))
+        {
+            const auto& class_name    = Configuration::getClassName(view_config);
+            const auto& instance_name = Configuration::getInstanceName(view_config);
+
+            // the entry of a skipped view (plugin not present) is kept unchanged
+            if (getConfiguration().hasSubConfiguration(class_name, instance_name))
+                continue;
+
+            addNewSubConfiguration(class_name, instance_name) = view_config;
+        }
     }
 
-    //recreate views from config
     createSubConfigurables();
 }
 

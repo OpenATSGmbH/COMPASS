@@ -169,6 +169,10 @@ kalman::KalmanError KalmanInterface::kalmanStep(kalman::KalmanState& new_state,
 
     double Q_var_in = mm.Q_var.has_value() ? mm.Q_var.value() : Q_var;
 
+    // measurement in stopped state (ADS-B SGV STP bit, near-zero ground
+    // speed, or fixed target): hold the static motion model where supported
+    kalman_filter_->setForceStaticModel(mm.stopped);
+
     auto err = kalman_filter_->predictAndUpdate(dt, Q_var_in, z, {}, {});
 
     if (err != kalman::KalmanError::NoError)
@@ -437,6 +441,14 @@ void KalmanInterface::storeState(Measurement& mm,
 
     mm.vx = filter->xVel(x);
     mm.vy = filter->yVel(x);
+
+    auto vx_var = filter->vxVar(P);
+    auto vy_var = filter->vyVar(P);
+
+    if (vx_var.has_value())
+        mm.vx_stddev = std::sqrt(vx_var.value());
+    if (vy_var.has_value())
+        mm.vy_stddev = std::sqrt(vy_var.value());
 
     mm.ax = filter->xAcc(x);
     mm.ay = filter->yAcc(x);

@@ -9,64 +9,165 @@ Several command line options have been added to allow for semi-automated running
 
 To get a list of available command line options use e.g.:
 \begin{lstlisting}
-./COMPASS-release_x86_64.AppImage --help
+./COMPASS_1.1.0-x86_64.AppImage --help
+\end{lstlisting}
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please note that the examples in this section use the AppImage. On Windows, \texttt{compass\_client.exe} accepts the same options, e.g.:
+\begin{lstlisting}
+compass_client.exe --help
 \end{lstlisting}
 
 \begin{lstlisting}
 Allowed options:
-  --help                                produce help message
-  -r [ --reset ]                        reset user configuration and data
-  --override_cfg_path arg               overrides 'default' config subfolder to other value, e.g. 'org'
-  --expert_mode                         set expert mode
-  --create_db arg                       creates and opens new DuckDB database  with given filename, e.g. '/data/file1.db'
-  --open_db arg                         opens existing DuckDB database with given filename, e.g. '/data/file1.db'
-  --import_data_sources_file arg        imports data sources JSON file with given filename, e.g. '/data/ds1.json'
-  --import_view_points arg              imports view points JSON file with given filename, e.g. '/data/file1.json'
-  --import_asterix_file arg             imports ASTERIX file with given filename, e.g. '/data/file1.ff'
-  --import_asterix_files arg            imports multiple ASTERIX files with given filenames, e.g. '/data/file1.ff;/data/file2.ff'
-  --import_asterix_pcap_file arg        imports ASTERIX PCAP file with given filename, e.g. '/data/file1.pcap'
-  --import_asterix_pcap_files arg       imports multiple ASTERIX PCAP files with given filenames, e.g. '/data/file1.pcap;/data/file2.pcap'
-  --import_asterix_file_line arg        imports ASTERIX file with given line, e.g. 'L2'
-  --import_asterix_date arg             imports ASTERIX file with given date, in YYYY-MM-DD format e.g. '2020-04-20'
-  --import_asterix_file_time_offset arg used time offset during ASTERIX file import Time of Day override, in HH:MM:SS.ZZZ
-  --import_asterix_ignore_time_jumps    imports ASTERIX file ignoring 24h time jumps
-  --import_asterix_network              imports ASTERIX from defined network UDP streams
+  --help                                shows this help message
+  -r [ --reset ]                        resets the user configuration and data
+  --override_cfg_path arg               overrides 'default' config subfolder to
+                                        other value, e.g. 'org'
+  --expert_mode                         sets the expert mode
+  --create_db arg                       creates and opens a new DuckDB database
+                                        with the given filename, e.g.
+                                        '/data/file1.db'
+  --open_db arg                         opens an existing DuckDB database with
+                                        the given filename, e.g.
+                                        '/data/file1.db'
+  --import_data_sources_file arg        imports a data sources JSON file with
+                                        the given filename, e.g.
+                                        '/data/ds1.json'
+  --import_view_points arg              imports a view points JSON file with
+                                        the given filename, e.g.
+                                        '/data/file1.json'
+  --import_asterix_file arg             imports an ASTERIX file with the given
+                                        filename, e.g. '/data/file1.ff'
+  --import_asterix_files arg            imports multiple ASTERIX files with the
+                                        given filenames, e.g.
+                                        '/data/file1.ff;/data/file2.ff'
+  --import_asterix_pcap_file arg        imports an ASTERIX PCAP file with the
+                                        given filename, e.g. '/data/file1.pcap'
+  --import_asterix_pcap_files arg       imports multiple ASTERIX PCAP files
+                                        with the given filenames, e.g.
+                                        '/data/file1.pcap;/data/file2.pcap'
+  --import_asterix_file_line arg        line to import the ASTERIX data into,
+                                        e.g. 'L2'
+  --import_asterix_date arg             date of the imported ASTERIX data, in
+                                        YYYY-MM-DD format, e.g. '2020-04-20'
+  --import_asterix_file_time_offset arg Time of Day offset for the ASTERIX file
+                                        import, in HH:MM:SS.ZZZ format, e.g.
+                                        '00:00:10.000'
+  --import_asterix_ignore_time_jumps    ignores 24h time jumps during the
+                                        ASTERIX file import
+  --import_asterix_network              imports ASTERIX from the configured
+                                        network UDP streams
   --import_asterix_network_time_offset arg
-                                        additive time offset during ASTERIX network import, in HH:MM:SS.ZZZ
+                                        Time of Day offset added during the
+                                        ASTERIX network import, in HH:MM:SS.ZZZ
+                                        format, e.g. '00:00:10.000'
   --import_asterix_network_max_lines arg
-                                        maximum number of lines per data source during ASTERIX network import, 1..4
-  --import_asterix_network_ignore_future_ts 
-                                        keep target reports with future timestamps during ASTERIX 
-                                        network import, skips the future timestamp check
-  --asterix_framing arg                 sets ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff'. If not set configuration value is used
-  --asterix_decoder_cfg arg             sets ASTERIX decoder config using JSON string, e.g. ''{"10":{"edition":"0.31"}}'' (including one pair of single quotes)
-  --import_asterix_parameters arg       ASTERIX import parameters as JSON string, e.g. ''{"filter_modec_active": true,"filter_modec_max": 50000.0,"filter_modec_min": -10000.0}'' (including one pair of single quotes)
-  --import_json arg                     imports JSON file with given filename, e.g. '/data/file1.json'
-  --import_gps_trail arg                imports gps trail NMEA with given filename, e.g. '/data/file2.txt'
-  --import_gps_parameters arg           import GPS parameters as JSON string, e.g. ''{"callsign": "ENTRPRSE", "ds_name": "GPS Trail", "ds_sac": 0, "ds_sic": 0, "mode_3a_code": 961, "set_callsign": true, "set_mode_3a_code": true, "set_target_address": true, "target_address": 16702992,"tod_offset": 0.0}'' (including one pair of single quotes)
-  --import_sectors_json arg             imports exported sectors JSON with given filename, e.g. '/data/sectors.json'
-  --list_contexts                       lists all available data contexts and exits
-  --set_context arg                     sets the active data context, e.g. 'Test'
-  --calculate_radar_plot_positions      calculate radar plot positions
-  --calculate_artas_tr_usage            associate target reports based on ARTAS usage
-  --reconstruct_references              reconstruct references from sensor and tracker data
-  --reconstruct_references_cfg arg      reconstructor configuration as JSON string, e.g. ''{"current_reconstructor_str": "Scoring + UMKalman"}''
-  --load_data                           load data after start
-  --export_view_points_report arg       export view points report after start with given filename, e.g. '/data/db2/report.tex'
-  --evaluate                            run evaluation
-  --evaluation_parameters arg           evaluation parameters as JSON string, e.g. ''{"current_standard": "test", "dbcontent_name_ref": "CAT062", "dbcontent_name_tst": "CAT020"}'' (including one pair of single quotes)
-  --evaluate_run_filter                 run evaluation filter before evaluation
-  --analyze_data_source arg             run the Analyze Data Source task for the given DSType, e.g. 'MLAT'
-  --analyze_parameters arg              Analyze task parameters as JSON string, analogous to --evaluation_parameters
-  --export_report arg                   report name to export, e.g. 'EUROCAE 
-                                        ED-87E Evaluation', PDF per default
+                                        maximum number of lines per data source
+                                        during ASTERIX network import, 1..4
+  --import_asterix_network_ignore_future_ts
+                                        keeps target reports with future
+                                        timestamps during the ASTERIX network
+                                        import, skips the future timestamp
+                                        check
+  --import_asterix_network_replay_file arg
+                                        simulates live input by replaying the
+                                        given IOSS-framed ASTERIX recordings
+                                        simultaneously via UDP to a configured
+                                        network line, e.g. '/data/file1.ff;/dat
+                                        a/file2.ff'
+  --import_asterix_network_replay_speed arg
+                                        replay speed factor during ASTERIX
+                                        network replay, 1.0 replays in recorded
+                                        time
+  --import_asterix_network_replay_line arg
+                                        network line the replayed data is sent
+                                        to, L1..L4
+  --import_asterix_network_replay_stop_at_end
+                                        stops the ASTERIX network import when
+                                        the replay file ends
+  --asterix_framing arg                 sets ASTERIX framing, e.g. 'none',
+                                        'ioss', 'ioss_seq', 'rff', the
+                                        configured value is used if not set
+  --asterix_decoder_cfg arg             sets the ASTERIX decoder configuration
+                                        as JSON string, e.g.
+                                        ''{"10":{"edition":"0.31"}}''
+                                        (including one pair of single quotes)
+  --import_asterix_parameters arg       ASTERIX import parameters as JSON
+                                        string, e.g. ''{"filter_modec_active":
+                                        true,"filter_modec_max":
+                                        50000.0,"filter_modec_min": -10000.0}''
+                                        (including one pair of single quotes)
+  --import_json arg                     imports a JSON file with the given
+                                        filename, e.g. '/data/file1.json'
+  --import_gps_trail arg                imports a GPS trail NMEA file with the
+                                        given filename, e.g. '/data/file2.txt'
+  --import_gps_parameters arg           GPS trail import parameters as JSON
+                                        string, e.g. ''{"callsign": "ENTRPRSE",
+                                        "ds_name": "GPS Trail", "ds_sac": 0,
+                                        "ds_sic": 0, "mode_3a_code": 961,
+                                        "set_callsign": true,
+                                        "set_mode_3a_code": true,
+                                        "set_target_address": true,
+                                        "target_address": 16702992,
+                                        "tod_offset": 0.0}'' (including one
+                                        pair of single quotes)
+  --import_sectors_json arg             imports an exported sectors JSON file
+                                        with the given filename, e.g.
+                                        '/data/sectors.json'
+  --list_contexts                       lists all available data contexts and
+                                        exits
+  --set_context arg                     sets the active data context, e.g.
+                                        'Test'
+  --calculate_radar_plot_positions      runs the Calculate Radar Plot Positions
+                                        task
+  --calculate_artas_tr_usage            associates target reports based on the
+                                        ARTAS track usage
+  --reconstruct_references              runs the Reconstruct References task
+                                        (references from sensor and tracker
+                                        data)
+  --reconstruct_references_cfg arg      reconstructor configuration as JSON
+                                        string, e.g. ''{"current_reconstructor_
+                                        str": "Scoring + UMKalman"}''
+  --analyze_data_source arg             analyzes the data sources of the given
+                                        DSType, 'MLAT', 'ADSB' or 'SMR'
+  --analyze_parameters arg              analyze data source parameters as JSON
+                                        string, e.g. ''{"line_id_tst": 0,
+                                        "cell_size_m": 50.0,
+                                        "inspector_settings":
+                                        {"MLATCoverageInspector":
+                                        {"pd_method_int": 1}}}'' (including one
+                                        pair of single quotes)
+  --load_data                           loads the data into the Views after the
+                                        start
+  --export_view_points_report arg       exports the view points report after
+                                        the start to the given filename, e.g.
+                                        '/data/db2/report.tex'
+  --evaluate                            runs the evaluation
+  --evaluation_parameters arg           evaluation parameters as JSON string,
+                                        e.g. ''{"current_standard": "test",
+                                        "dbcontent_name_ref": "CAT062",
+                                        "dbcontent_name_tst": "CAT020"}''
+                                        (including one pair of single quotes)
+  --evaluate_run_filter                 runs the evaluation filter before the
+                                        evaluation
+  --export_report arg                   name of the report to export, e.g.
+                                        'EUROCAE ED-87E Evaluation', as PDF if
+                                        no export mode is given
   --export_report_directory arg         export directory, e.g. '/data/report2/'
-  --export_report_mode arg              export mode, i.e. 'DocX','JSON','Latex','PDF'
-  --no_cfg_save                         do not save configuration upon quitting
-  --open_rt_cmd_port                    open runtime command port (default at 27960)
-  --enable_event_log                    collect warnings and errors in the event log
-  --no_highdpi                          disable Qt high-DPI scaling (fixes double-sized UI on some systems)
-  --quit                                quit after finishing all previous steps
+  --export_report_mode arg              export mode, one of 'DocX', 'JSON',
+                                        'Latex', 'PDF'
+  --no_cfg_save                         does not save the configuration on quit
+  --open_rt_cmd_port                    opens the runtime command port (default
+                                        27960)
+  --enable_event_log                    collects warnings and errors in the
+                                        event log
+  --quit                                quits after all previous steps are
+                                        finished
+  --no_highdpi                          disables Qt high-DPI scaling (fixes
+                                        double-sized UI on some systems)
+  --bundled_font arg                    uses the bundled Ubuntu font at the
+                                        given point size, e.g. '11' for
+                                        reproducible screenshots
 \end{lstlisting}
 \ \\
 
@@ -83,7 +184,7 @@ Triggers a reset of the user configuration and data. The bundled factory configu
 Overrides the 'default' configuration subfolder name with the given value. Configuration is then read from and written to \texttt{\textasciitilde/.compass/<version>/<arg>/} instead of \texttt{\textasciitilde/.compass/<version>/default/}, which allows separate configuration sets to coexist (e.g. 'org' for organization-specific settings).
 
 \begin{lstlisting}
-./COMPASS-release_x86_64.AppImage --override_cfg_path org
+./COMPASS_1.1.0-x86_64.AppImage --override_cfg_path org
 \end{lstlisting}
 
 \subsubsection{-{}-list\_contexts}
@@ -91,7 +192,7 @@ Overrides the 'default' configuration subfolder name with the given value. Confi
 Lists all available data contexts and indicates which one is currently active. The application exits immediately after printing the list.
 
 \begin{lstlisting}
-./COMPASS-release_x86_64.AppImage --list_contexts
+./COMPASS_1.1.0-x86_64.AppImage --list_contexts
 \end{lstlisting}
 
 Example output:
@@ -107,7 +208,7 @@ Available contexts:
 Sets the active data context to the given name before any database or import operations are performed. If the context does not exist, the application exits with an error.
 
 \begin{lstlisting}
-./COMPASS-release_x86_64.AppImage --set_context Test --open_db /data/file.db
+./COMPASS_1.1.0-x86_64.AppImage --set_context Test --open_db /data/file.db
 \end{lstlisting}
 
 \subsubsection{-{}-create\_db filename}
@@ -156,7 +257,7 @@ After a database was opened, an import using the task described in \nameref{sec:
 
 \subsubsection{-{}-import\_asterix\_network\_time\_offset arg}
 
-If an import using the task described in \nameref{sec:ui_import_asterix_network} is started, it will use the given time offset, in HH:MM:SSS.
+If an import using the task described in \nameref{sec:ui_import_asterix_network} is started, the given Time of Day offset is added, in HH:MM:SS.ZZZ format.
 
 \subsubsection{-{}-import\_asterix\_network\_max\_lines arg}
 
@@ -164,7 +265,7 @@ If an import using the task described in \nameref{sec:ui_import_asterix_network}
 
 \subsubsection{-{}-import\_asterix\_network\_ignore\_future\_ts}
 
-If an import using the task described in \nameref{sec:ui_import_asterix_network} is started, target reports with timestamps in the future relative to the current system time will be silently dropped instead of being kept.
+If an import using the task described in \nameref{sec:ui_import_asterix_network} is started, target reports with timestamps in the future relative to the current system time are kept: the future timestamp check is skipped.
 
 \subsubsection{-{}-asterix\_framing framing}
 
@@ -276,7 +377,7 @@ After a database with imported content exists, reconstruct reference trajectorie
 Overrides the reconstructor configuration with a JSON snippet, e.g. to switch the reconstructor or change a parameter for one batch run without altering the GUI configuration.
 
 \begin{lstlisting}
-./COMPASS-release_x86_64.AppImage --open_db /data/file.db \
+./COMPASS_1.1.0-x86_64.AppImage --open_db /data/file.db \
   --reconstruct_references_cfg '{"current_reconstructor_str": "Scoring + UMKalman"}' \
   --reconstruct_references --quit
 \end{lstlisting}
@@ -338,7 +439,22 @@ In a nice formatting such a string can look like this:
 
 Please note that 'dbcontent\_name\_ref' cannot be set to CAT001 or CAT048; these categories do not provide the maximum X/Y standard deviation required for reference accuracy filtering and are rejected as reference data. \\
 
-The configuration of such parameters is rather complex, and it is recommended to contact the author if detailed information is needed.
+The configuration of such parameters is rather complex, and it is recommended to contact the author if detailed information is needed. \\
+
+The parameter 'report\_figure\_background' sets the background of the geographic report figures, see \nameref{sec:eval_report_figure_background}. It replaces the stored set, a missing field gets its default:
+
+\begin{itemize}
+\item color: background color, e.g. "\#000000"
+\item map\_show, map\_file, map\_opacity (percent): map
+\item borders\_show: national borders
+\item sectors\_show, hidden\_sector\_layers (names), hidden\_sectors (sector IDs): sectors. Without 'hidden\_sector\_layers' the default sector selection of the task applies.
+\end{itemize}
+\ \\
+
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+--evaluation_parameters '{"report_figure_background": {"borders_show": false, "map_opacity": 30}}'
+\end{lstlisting}
+\ \\
 
 \subsubsection{-{}-evaluate\_run\_filter}
 
@@ -346,15 +462,21 @@ When an Evaluation task is started an automatic filtering of targets is performe
 
 \subsubsection{-{}-analyze\_data\_source 'dstype'}
 
-Triggers the Analyze Data Source task for the given DSType. In the current release only 'MLAT' is accepted; see \nameref{chap:analyze}.
+Triggers the Analyze Data Source task for the given DSType: 'MLAT', 'ADSB' or 'SMR', see \nameref{chap:analyze}.
 
 \begin{lstlisting}
-./COMPASS-release_x86_64.AppImage --open_db /data/file.db --analyze_data_source MLAT --quit
+./COMPASS_1.1.0-x86_64.AppImage --open_db /data/file.db --analyze_data_source MLAT --quit
 \end{lstlisting}
 
 \subsubsection{-{}-analyze\_parameters 'str'}
 
-Provides a JSON parameter block for the Analyze task, analogous to \nameref{sec:command_line}'s '--evaluation\_parameters' for the Evaluation task. The exact JSON schema depends on the chosen DSType and is documented alongside \nameref{chap:analyze}.
+Provides a JSON parameter block for the Analyze task, analogous to \nameref{sec:command_line}'s '--evaluation\_parameters' for the Evaluation task. The exact JSON schema depends on the chosen DSType and is documented alongside \nameref{chap:analyze}. \\
+
+The parameter 'report\_figure\_background' sets the background of the geographic report figures, with the same fields as for the Evaluation, see \nameref{sec:analyze_report_figure_background}:
+
+\begin{lstlisting}[basicstyle=\small\ttfamily]
+--analyze_parameters '{"report_figure_background": {"color": "#202020", "hidden_sector_layers": []}}'
+\end{lstlisting}
 
 
 \subsubsection{-{}-export\_report 'str'}
@@ -369,7 +491,7 @@ Sets the report directory to the given value when exporting a report as describe
 
 \subsubsection{-{}-export\_report\_mode 'str'}
 
-Sets the report export type to the given value (i.e. 'DocX', 'JSON', 'Latex', 'PDF') when exporting a report as described in the section \nameref{sec:report_export}.
+Sets the report export type to the given value (one of 'DocX', 'JSON', 'Latex', 'PDF') when exporting a report as described in the section \nameref{sec:report_export}.
 
 \subsubsection{-{}-no\_cfg\_save}
 
@@ -385,7 +507,7 @@ Enables collection of warnings and errors emitted during the session into an in-
 
 \subsubsection{-{}-expert\_mode}
 
-Enables expert mode for the session. This grants edit access to the Show Content dialog (see \nameref{sec:configure_show_content}) and a few other gated controls. The same setting can be made persistent by setting \texttt{"expert\_mode": true} in \texttt{\textasciitilde/.compass/<version>/task.json}.
+Enables expert mode for the session. This grants edit access to the Show DBContent dialog (see \nameref{sec:configure_show_content}) and a few other gated controls. The same setting can be made persistent by setting \texttt{"expert\_mode": true} in \texttt{\textasciitilde/.compass/<version>/task.json}.
 
 \subsubsection{-{}-no\_highdpi}
 

@@ -16,7 +16,8 @@
  */
 
 #include "datasourcestoolwidget.h"
-#include "compass.h"
+#include "appstate.h"
+#include "color_provider.h"
 #include "db_context_manager.h"
 #include "datasourceswidget.h"
 #include "dbcontentmanager.h"
@@ -36,8 +37,10 @@
 #include <QMessageBox>
 #include <QVBoxLayout>
 
-DataSourcesToolWidget::DataSourcesToolWidget(context::DBContextManager& ctx_man)
+DataSourcesToolWidget::DataSourcesToolWidget(context::DBContextManager& ctx_man,
+                                             DBContentManager& dbcont_man)
 : ctx_man_(ctx_man)
+, dbcont_man_(dbcont_man)
 {
     createUI();
 }
@@ -55,7 +58,7 @@ void DataSourcesToolWidget::createUI()
     QVBoxLayout* main_layout = new QVBoxLayout();
     setLayout(main_layout);
 
-    ds_widget_ = new DataSourcesWidget(true, ctx_man_);
+    ds_widget_ = new DataSourcesWidget(true, ctx_man_, dbcont_man_);
     ds_widget_->setContentsMargins(0, 0, 0, 0);
     // Flight-Deck panel doesn't use row selection - silence the blue
     // highlight and current-item marker.
@@ -68,8 +71,10 @@ void DataSourcesToolWidget::createUI()
 
     connect(&ctx_man_, &context::DBContextManager::countsChangedSignal,
             this, [this] { logdbg << "countsChangedSignal received"; updateContent(false); });
+    connect(&ctx_man_, &context::DBContextManager::loadingSelectionChangedSignal,
+            this, [this] { logdbg << "loadingSelectionChangedSignal received"; updateContent(false); });
 
-    auto& dbcont_man = ctx_man_.compass().dbContentManager();
+    auto& dbcont_man = dbcont_man_;
 
     connect(&dbcont_man, &DBContentManager::associationStatusChangedSignal,
             this, [this] { logdbg << "associationStatusChangedSignal received"; updateAdditionalInfo(); });
@@ -84,6 +89,7 @@ void DataSourcesToolWidget::createUI()
         QHBoxLayout* mode_layout = new QHBoxLayout();
 
         QLabel* mode_label = new QLabel("Color Mode:");
+        UI_TEST_OBJ_NAME(mode_label, "DS Color Mode Label")
         mode_label->setFont(font_bold);
         mode_layout->addWidget(mode_label);
 
@@ -91,12 +97,11 @@ void DataSourcesToolWidget::createUI()
         UI_TEST_OBJ_NAME(color_mode_combo_, "Color Mode")
         // Items carry the ColorProvider::Mode enum value as user data so the
         // UI order can be changed independently of the persisted numeric mode.
-        color_mode_combo_->addItem("DSType",              (unsigned int)0); // DSType
-        color_mode_combo_->addItem("Data Source",         (unsigned int)2); // DataSource
-        color_mode_combo_->addItem("Data Source + Line",  (unsigned int)3); // DataSourceLine
-        color_mode_combo_->addItem("DBContent",           (unsigned int)1); // DBContent
+        for (auto mode : context::ColorProvider::modes())
+            color_mode_combo_->addItem(QString::fromStdString(context::ColorProvider::modeName(mode)),
+                                       (unsigned int)mode);
 
-        unsigned int current = ctx_man_.compass().colorMode();
+        unsigned int current = ctx_man_.appState().colorMode();
         int current_idx = color_mode_combo_->findData(current);
         if (current_idx < 0) current_idx = 0;
         color_mode_combo_->setCurrentIndex(current_idx);
@@ -166,9 +171,9 @@ std::vector<std::string> DataSourcesToolWidget::toolLabels() const
 
 /**
  */
-toolbox::ScreenRatio DataSourcesToolWidget::defaultScreenRatio() const 
+int DataSourcesToolWidget::defaultWidthPercent() const
 {
-    return ToolBoxWidget::defaultScreenRatio();
+    return 30;
 }
 
 /**
@@ -213,7 +218,7 @@ void DataSourcesToolWidget::updateContent(bool recreate_required)
  */
 void DataSourcesToolWidget::updateAdditionalInfo()
 {
-    DBContentManager& dbcont_man = ctx_man_.compass().dbContentManager();
+    DBContentManager& dbcont_man = dbcont_man_;
 
     traced_assert(ts_min_label_);
     traced_assert(ts_max_label_);
@@ -245,7 +250,7 @@ void DataSourcesToolWidget::colorModeChangedSlot(int index)
     const unsigned int mode = color_mode_combo_->itemData(index).toUInt();
     loginf << "color mode " << mode;
 
-    ctx_man_.compass().colorMode(mode);
+    ctx_man_.appState().colorMode(mode);
     if (ds_widget_)
         ds_widget_->updateContent();
 }

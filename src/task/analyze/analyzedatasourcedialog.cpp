@@ -16,22 +16,15 @@
  */
 
 #include "analyzedatasourcedialog.h"
+#include "taskmanager.h"
 #include "analyzedatasourcetask.h"
 #include "datasourceinspectorbase.h"
-#include "mlatdataiteminspector.h"
-#include "mlatcoverageinspector.h"
-#include "adsbdataiteminspector.h"
-#include "adsbcoverageinspector.h"
 
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "mlataccuracyinspector.h"
-#include "adsbaccuracyinspector.h"
-#endif
-
-#include "compass.h"
 #include "db_context_manager.h"
 #include "sectorlayer.h"
 #include "data_source.h"
+#include "reportfiguresettingswidget.h"
+#include "ui_test_common.h"
 
 #include <QCheckBox>
 #include <QComboBox>
@@ -64,6 +57,7 @@ AnalyzeDataSourceDialog::AnalyzeDataSourceDialog(AnalyzeDataSourceTask& task, QW
     auto* splitter = new QSplitter(Qt::Horizontal, this);
 
     tree_ = new QTreeWidget(splitter);
+    UI_TEST_OBJ_NAME(tree_, "page_tree");
     tree_->setHeaderHidden(true);
     tree_->setColumnCount(2);
     tree_->setRootIsDecorated(false);
@@ -143,32 +137,22 @@ void AnalyzeDataSourceDialog::buildTree()
 
         auto* item = new QTreeWidgetItem(tree_);
         item->setText(0, QString::fromStdString(ins->name()));
-        if (ins->requiresProfessionalLicense())
-        {
-            item->setText(1, "[pro]");
-            item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
-            QFont f = item->font(1);
-            f.setItalic(true);
-            item->setFont(1, f);
-        }
         item->setFlags(item->flags() | Qt::ItemIsUserCheckable);
-        item->setCheckState(0, task_.inspectorEnabled(ins->className())
-                                   ? Qt::Checked : Qt::Unchecked);
 
-        std::string reason;
-        bool ok = ins->prerequisitesMet(reason);
-        if (!ok)
-        {
-            item->setDisabled(true);
-            item->setToolTip(0, QString::fromStdString(reason));
-        }
-        else if (!ins->description().empty())
-        {
-            item->setToolTip(0, QString::fromStdString(ins->description()));
-        }
+        // inspector page with the unmet prerequisite on top
+        auto* page        = new QWidget();
+        auto* page_layout = new QVBoxLayout(page);
+        page_layout->setContentsMargins(0, 0, 0, 0);
 
-        stack_->insertWidget(stack_idx++, wrapInScroll(buildInspectorWidget(ins)));
-        inspector_rows_.push_back({item, ins});
+        auto* reason_label = new QLabel();
+        reason_label->setWordWrap(true);
+        reason_label->setStyleSheet("QLabel { color: #b00000; }");
+        page_layout->addWidget(reason_label);
+        page_layout->addWidget(buildInspectorWidget(ins), 1);
+
+        stack_->insertWidget(stack_idx++, wrapInScroll(page));
+        inspector_rows_.push_back({item, ins, reason_label});
+        updateInspectorRow(inspector_rows_.back());
     }
 
     report_item_ = new QTreeWidgetItem(tree_);
@@ -220,8 +204,7 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
     auto* w = new QWidget();
     auto* outer = new QVBoxLayout(w);
 
-    auto& ctx = task_.compass().dbContextManager();
-    auto types = ctx.dsTypes();
+    auto& ctx = task_.manager().dbContextManager();
 
     // -- Reference Data ----------------------------------------------------
     auto* ref_box    = new QGroupBox("Reference Data");
@@ -242,6 +225,7 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
         if (!ok)
             return;
         task_.useReferenceDataSource(ds_id, it->checkState() == Qt::Checked);
+        refreshInspectorRows();
         updateRunEnabled();
     });
     ref_layout->addWidget(ref_list, 1);
@@ -285,6 +269,8 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
                 if (updating_ui_ || idx < 0)
                     return;
                 task_.setLineIDRef(static_cast<unsigned int>(idx));
+                refreshInspectorRows();
+                updateRunEnabled();
             });
     ref_line_row->addWidget(ref_line_combo_, 1);
     ref_layout->addLayout(ref_line_row);
@@ -295,13 +281,9 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
     auto* tst_box    = new QGroupBox("Test Data");
     auto* tst_layout = new QVBoxLayout(tst_box);
 
-    std::set<unsigned int> tst_cands;
-    for (auto ds_id : ctx.allDataSourceIds())
-    {
-        auto it = types.find(ds_id);
-        if (it != types.end() && it->second == task_.dsType())
-            tst_cands.insert(ds_id);
-    }
+    // Candidates follow the task's DSType rule (context DSType, or for SMR:
+    // Radar sources with CAT010 data).
+    std::set<unsigned int> tst_cands = task_.testDataSourceCandidateIDs();
 
     auto* tst_list = new QListWidget();
     populateDSList(
@@ -309,7 +291,7 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
         tst_cands,
         ctx,
         [this](unsigned int ds_id) { return task_.useDataSource(ds_id); },
-        QString("No data sources of type ") + QString::fromStdString(task_.dsType())
+        QString("No ") + QString::fromStdString(task_.testDataSourceRequirementText())
             + " present.");
     connect(tst_list, &QListWidget::itemChanged, this, [this](QListWidgetItem* it) {
         if (updating_ui_)
@@ -359,7 +341,9 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
                 if (updating_ui_ || idx < 0)
                     return;
                 task_.setLineIDTst(static_cast<unsigned int>(idx));
+                refreshInspectorRows();
                 updateSuggestedReportName();
+                updateRunEnabled();
             });
     tst_line_row->addWidget(tst_line_combo_, 1);
     tst_layout->addLayout(tst_line_row);
@@ -436,12 +420,25 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
         scope_form->addRow("Maximum Flight Level", row);
     }
 
+    // data exclusions of the evaluation: target use flags, excluded time windows
+    auto* eval_excl_cb = new QCheckBox();
+    UI_TEST_OBJ_NAME(eval_excl_cb, "use_eval_exclusions_check");
+    eval_excl_cb->setChecked(task_.useEvalExclusions());
+    eval_excl_cb->setToolTip("Leave out the targets and time windows excluded in the evaluation "
+                             "(targets not used, excluded time windows per target and global)");
+    connect(eval_excl_cb, &QCheckBox::toggled, this, [this](bool on) {
+        if (updating_ui_) return;
+        task_.setUseEvalExclusions(on);
+    });
+    scope_form->addRow("Use Evaluation Exclusions", eval_excl_cb);
+
     // Limit by sectors: precise per-report inside test (as in the evaluation)
     // against the selected sector layers; when off, all data is used.
     {
-        const auto& layers = task_.compass().dbContextManager().sectorLayers();
+        const auto& layers = task_.manager().dbContextManager().sectorLayers();
 
         auto* sectors_cb = new QCheckBox();
+        UI_TEST_OBJ_NAME(sectors_cb, "limit_by_sectors_check");
         sectors_cb->setChecked(task_.limitBySectors());
         sectors_cb->setEnabled(!layers.empty());
         sectors_cb->setToolTip(layers.empty()
@@ -465,6 +462,7 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
                     continue;
                 const std::string name = layer->name();
                 auto* cb = new QCheckBox(QString::fromStdString(name));
+                UI_TEST_OBJ_NAME(cb, QString::fromStdString("sector_" + name + "_check"));
                 cb->setChecked(task_.useSector(name));
                 connect(cb, &QCheckBox::toggled, this, [this, name](bool on) {
                     if (updating_ui_) return;
@@ -493,7 +491,9 @@ QWidget* AnalyzeDataSourceDialog::buildDataSourcesWidget()
 QWidget* AnalyzeDataSourceDialog::buildReportWidget()
 {
     auto* w = new QWidget();
-    auto* form = new QFormLayout(w);
+    auto* outer = new QVBoxLayout(w);
+    auto* form = new QFormLayout();
+    outer->addLayout(form);
 
     report_name_edit_ = new QLineEdit();
     report_name_edit_->setText(QString::fromStdString(task_.reportName()));
@@ -542,6 +542,20 @@ QWidget* AnalyzeDataSourceDialog::buildReportWidget()
             });
     form->addRow("Max cells per axis", max_spin);
 
+    // the inspectors have their own number of histogram bars
+    auto* figure_settings = new ReportFigureSettingsWidget(
+        task_.manager().dbContextManager(),
+        [ this ] () { return task_.reportFigureDefaultHiddenLayers(); },
+        false);
+    figure_settings->setOptions(task_.reportFigureOptionsConfig());
+    figure_settings->setBackground(task_.reportFigureBackgroundConfig());
+    connect(figure_settings, &ReportFigureSettingsWidget::optionsChangedSignal, this,
+            [ this, figure_settings ] () { task_.reportFigureOptionsConfig(figure_settings->options()); });
+    connect(figure_settings, &ReportFigureSettingsWidget::backgroundChangedSignal, this,
+            [ this, figure_settings ] () { task_.reportFigureBackgroundConfig(figure_settings->background()); });
+    outer->addWidget(figure_settings);
+    outer->addStretch(1);
+
     return w;
 }
 
@@ -551,334 +565,6 @@ void AnalyzeDataSourceDialog::updateSuggestedReportName()
         return;
     QSignalBlocker blocker(report_name_edit_);
     report_name_edit_->setText(QString::fromStdString(task_.suggestReportName()));
-}
-
-namespace
-{
-
-QDoubleSpinBox* makeFloatSpin(double min, double max, double step, int decimals,
-                              const QString& suffix, double value)
-{
-    auto* s = new QDoubleSpinBox();
-    s->setRange(min, max);
-    s->setSingleStep(step);
-    s->setDecimals(decimals);
-    if (!suffix.isEmpty())
-        s->setSuffix(suffix);
-    s->setValue(value);
-    return s;
-}
-
-void buildDataItemSettings(QFormLayout* form,
-                           AnalyzeDataSourceTask& task,
-                           MLATDataItemInspectorSettings& s)
-{
-    auto* group = new QGroupBox("Categories to Include");
-    auto* gl = new QVBoxLayout(group);
-
-    std::set<unsigned int> cats;
-    auto& info_map = task.compass().dbContextManager().asterixInfo();
-    for (auto ds_id : task.selectedDataSourceIDs())
-    {
-        auto it = info_map.find(ds_id);
-        if (it == info_map.end())
-            continue;
-        for (const auto& cat_kv : it->second)
-            cats.insert(cat_kv.first);
-    }
-
-    if (cats.empty())
-    {
-        auto* lbl = new QLabel(
-            "(no ASTERIX info available - select test data sources first)");
-        lbl->setStyleSheet("color: gray;");
-        gl->addWidget(lbl);
-    }
-    else
-    {
-        for (auto cat : cats)
-        {
-            char buf[16];
-            std::snprintf(buf, sizeof(buf), "CAT%03u", cat);
-            auto* cb = new QCheckBox(buf);
-            cb->setChecked(s.catIncluded(cat));
-            QObject::connect(cb, &QCheckBox::toggled, [&s, cat](bool on) {
-                s.setCatIncluded(cat, on);
-            });
-            gl->addWidget(cb);
-        }
-    }
-
-    form->addRow(group);
-}
-
-void buildCoverageSettings(QFormLayout* form,
-                           MLATCoverageInspectorSettings& s)
-{
-    auto* method_combo = new QComboBox();
-    method_combo->addItem("Time Difference",
-                          static_cast<int>(MLATCoverageInspectorSettings::PDMethod::TimeDifference));
-    method_combo->addItem("Status Period Message Based",
-                          static_cast<int>(MLATCoverageInspectorSettings::PDMethod::StatusPeriodMessage));
-    int sel_idx = method_combo->findData(s.pd_method_int_);
-    method_combo->setCurrentIndex(sel_idx >= 0 ? sel_idx : 0);
-
-    auto* ui_spin = makeFloatSpin(0.05, 60.0, 0.1, 2, " s", s.update_interval_s_);
-
-    auto on_method = [&s, ui_spin, method_combo](int) {
-        s.pd_method_int_ = method_combo->currentData().toInt();
-        ui_spin->setEnabled(s.pdMethod() ==
-                            MLATCoverageInspectorSettings::PDMethod::TimeDifference);
-    };
-    QObject::connect(method_combo,
-                     QOverload<int>::of(&QComboBox::currentIndexChanged),
-                     on_method);
-    on_method(0);
-
-    QObject::connect(ui_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                     [&s](double v) { s.update_interval_s_ = static_cast<float>(v); });
-
-    auto* ui_stand_spin = makeFloatSpin(0.05, 60.0, 0.1, 2, " s", s.update_interval_standing_s_);
-    QObject::connect(ui_stand_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                     [&s](double v) { s.update_interval_standing_s_ = static_cast<float>(v); });
-
-    auto* stand_spd_spin = makeFloatSpin(0.0, 50.0, 0.1, 2, " m/s", s.standing_speed_max_mps_);
-    QObject::connect(stand_spd_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                     [&s](double v) { s.standing_speed_max_mps_ = static_cast<float>(v); });
-
-    // Standing UI/threshold only apply to the time-difference method.
-    auto on_method_standing = [ui_stand_spin, stand_spd_spin, method_combo](int) {
-        bool td = method_combo->currentData().toInt()
-                  == static_cast<int>(MLATCoverageInspectorSettings::PDMethod::TimeDifference);
-        ui_stand_spin->setEnabled(td);
-        stand_spd_spin->setEnabled(td);
-    };
-    QObject::connect(method_combo, QOverload<int>::of(&QComboBox::currentIndexChanged),
-                     on_method_standing);
-    on_method_standing(0);
-
-    form->addRow("PD Calculation Method", method_combo);
-    form->addRow("Update Interval (Moving)", ui_spin);
-    form->addRow("Update Interval (Standing)", ui_stand_spin);
-    form->addRow("Standing Speed Threshold", stand_spd_spin);
-
-    auto* miss_cb  = new QCheckBox();
-    miss_cb->setChecked(s.use_miss_tolerance_);
-    auto* miss_spin = makeFloatSpin(0.0, 60.0, 0.05, 3, " s", s.miss_tolerance_s_);
-    miss_spin->setEnabled(s.use_miss_tolerance_);
-    QObject::connect(miss_cb, &QCheckBox::toggled, [&s, miss_spin](bool on) {
-        s.use_miss_tolerance_ = on;
-        miss_spin->setEnabled(on);
-    });
-    QObject::connect(miss_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                     [&s](double v) { s.miss_tolerance_s_ = static_cast<float>(v); });
-    form->addRow("Use Miss Tolerance", miss_cb);
-    form->addRow("Miss Tolerance",     miss_spin);
-
-    auto* acc_spin = makeFloatSpin(0.0, 1.0, 0.01, 2, "", s.pd_acceptable_above_);
-    QObject::connect(acc_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                     [&s](double v) { s.pd_acceptable_above_ = static_cast<float>(v); });
-    form->addRow("Value Acceptable (green)", acc_spin);
-
-    auto* unacc_spin = makeFloatSpin(0.0, 1.0, 0.01, 2, "", s.pd_unacceptable_below_);
-    QObject::connect(unacc_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                     [&s](double v) { s.pd_unacceptable_below_ = static_cast<float>(v); });
-    form->addRow("Value Unacceptable (red)", unacc_spin);
-
-    auto* hbins_spin = new QSpinBox();
-    hbins_spin->setRange(1, 100);
-    hbins_spin->setValue(s.ui_hist_num_bins_);
-    QObject::connect(hbins_spin, QOverload<int>::of(&QSpinBox::valueChanged),
-                     [&s](int v) { s.ui_hist_num_bins_ = v; });
-    form->addRow("Histogram Bins", hbins_spin);
-
-    auto* hmax_spin = makeFloatSpin(0.0, 600.0, 1.0, 1, " s", s.ui_hist_max_s_);
-    QObject::connect(hmax_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                     [&s](double v) { s.ui_hist_max_s_ = static_cast<float>(v); });
-    form->addRow("Histogram Max Interval (0 = auto)", hmax_spin);
-}
-
-#if USE_EXPERIMENTAL_SOURCE == true
-void buildAccuracySettings(QFormLayout* form,
-                           MLATAccuracyInspectorSettings& s)
-{
-    auto bind_float = [](QDoubleSpinBox* spin, float* dst) {
-        QObject::connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                         [dst](double v) { *dst = static_cast<float>(v); });
-    };
-
-    auto* pa_acc = makeFloatSpin(0.0, 10000.0, 1.0, 1, " m",
-                                 s.pos_acc_acceptable_below_m_);
-    bind_float(pa_acc, &s.pos_acc_acceptable_below_m_);
-    form->addRow("Position Accuracy Acceptable (green)", pa_acc);
-
-    auto* pa_unacc = makeFloatSpin(0.0, 10000.0, 1.0, 1, " m",
-                                   s.pos_acc_unacceptable_above_m_);
-    bind_float(pa_unacc, &s.pos_acc_unacceptable_above_m_);
-    form->addRow("Position Accuracy Unacceptable (red)", pa_unacc);
-
-    auto* lower_acc = makeFloatSpin(0.0, 10.0, 0.05, 2, "",
-                                    s.consistency_lower_acceptable_above_);
-    bind_float(lower_acc, &s.consistency_lower_acceptable_above_);
-    form->addRow("Consistency Lower Acceptable (green)", lower_acc);
-
-    auto* lower_unacc = makeFloatSpin(0.0, 10.0, 0.05, 2, "",
-                                      s.consistency_lower_unacceptable_below_);
-    bind_float(lower_unacc, &s.consistency_lower_unacceptable_below_);
-    form->addRow("Consistency Lower Unacceptable (red)", lower_unacc);
-
-    auto* upper_acc = makeFloatSpin(0.0, 100.0, 0.05, 2, "",
-                                    s.consistency_upper_acceptable_below_);
-    bind_float(upper_acc, &s.consistency_upper_acceptable_below_);
-    form->addRow("Consistency Upper Acceptable (green)", upper_acc);
-
-    auto* upper_unacc = makeFloatSpin(0.0, 100.0, 0.05, 2, "",
-                                      s.consistency_upper_unacceptable_above_);
-    bind_float(upper_unacc, &s.consistency_upper_unacceptable_above_);
-    form->addRow("Consistency Upper Unacceptable (red)", upper_unacc);
-}
-
-void buildADSBAccuracySettings(QFormLayout* form,
-                               ADSBAccuracyInspectorSettings& s)
-{
-    auto bind_float = [](QDoubleSpinBox* spin, float* dst) {
-        QObject::connect(spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                         [dst](double v) { *dst = static_cast<float>(v); });
-    };
-
-    auto* pa_acc = makeFloatSpin(0.0, 10000.0, 1.0, 1, " m",
-                                 s.pos_acc_acceptable_below_m_);
-    bind_float(pa_acc, &s.pos_acc_acceptable_below_m_);
-    form->addRow("Position Accuracy Acceptable (green)", pa_acc);
-
-    auto* pa_unacc = makeFloatSpin(0.0, 10000.0, 1.0, 1, " m",
-                                   s.pos_acc_unacceptable_above_m_);
-    bind_float(pa_unacc, &s.pos_acc_unacceptable_above_m_);
-    form->addRow("Position Accuracy Unacceptable (red)", pa_unacc);
-
-    auto* lower_acc = makeFloatSpin(0.0, 10.0, 0.05, 2, "",
-                                    s.consistency_lower_acceptable_above_);
-    bind_float(lower_acc, &s.consistency_lower_acceptable_above_);
-    form->addRow("Consistency Lower Acceptable (green)", lower_acc);
-
-    auto* lower_unacc = makeFloatSpin(0.0, 10.0, 0.05, 2, "",
-                                      s.consistency_lower_unacceptable_below_);
-    bind_float(lower_unacc, &s.consistency_lower_unacceptable_below_);
-    form->addRow("Consistency Lower Unacceptable (red)", lower_unacc);
-
-    auto* upper_acc = makeFloatSpin(0.0, 100.0, 0.05, 2, "",
-                                    s.consistency_upper_acceptable_below_);
-    bind_float(upper_acc, &s.consistency_upper_acceptable_below_);
-    form->addRow("Consistency Upper Acceptable (green)", upper_acc);
-
-    auto* upper_unacc = makeFloatSpin(0.0, 100.0, 0.05, 2, "",
-                                      s.consistency_upper_unacceptable_above_);
-    bind_float(upper_unacc, &s.consistency_upper_unacceptable_above_);
-    form->addRow("Consistency Upper Unacceptable (red)", upper_unacc);
-
-    auto* factor = makeFloatSpin(1.0, 100.0, 0.5, 2, "", s.min_factor_of_interest_);
-    bind_float(factor, &s.min_factor_of_interest_);
-    form->addRow("Dubious Factor Threshold", factor);
-}
-#endif
-
-void buildADSBDataItemSettings(QFormLayout* form,
-                               AnalyzeDataSourceTask& task,
-                               ADSBDataItemInspectorSettings& s)
-{
-    auto* group = new QGroupBox("Categories to Include");
-    auto* gl = new QVBoxLayout(group);
-
-    std::set<unsigned int> cats;
-    auto& info_map = task.compass().dbContextManager().asterixInfo();
-    for (auto ds_id : task.selectedDataSourceIDs())
-    {
-        auto it = info_map.find(ds_id);
-        if (it == info_map.end())
-            continue;
-        for (const auto& cat_kv : it->second)
-            cats.insert(cat_kv.first);
-    }
-
-    if (cats.empty())
-    {
-        auto* lbl = new QLabel(
-            "(no ASTERIX info available - select test data sources first)");
-        lbl->setStyleSheet("color: gray;");
-        gl->addWidget(lbl);
-    }
-    else
-    {
-        for (auto cat : cats)
-        {
-            char buf[16];
-            std::snprintf(buf, sizeof(buf), "CAT%03u", cat);
-            auto* cb = new QCheckBox(buf);
-            cb->setChecked(s.catIncluded(cat));
-            QObject::connect(cb, &QCheckBox::toggled, [&s, cat](bool on) {
-                s.setCatIncluded(cat, on);
-            });
-            gl->addWidget(cb);
-        }
-    }
-
-    form->addRow(group);
-}
-
-void buildADSBCoverageSettings(QFormLayout* form,
-                               ADSBCoverageInspectorSettings& s)
-{
-    auto* ui_spin = makeFloatSpin(0.05, 60.0, 0.1, 2, " s", s.update_interval_s_);
-    QObject::connect(ui_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                     [&s](double v) { s.update_interval_s_ = static_cast<float>(v); });
-    form->addRow("Update Interval (Moving)", ui_spin);
-
-    auto* ui_stand_spin = makeFloatSpin(0.05, 60.0, 0.1, 2, " s", s.update_interval_standing_s_);
-    QObject::connect(ui_stand_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                     [&s](double v) { s.update_interval_standing_s_ = static_cast<float>(v); });
-    form->addRow("Update Interval (Standing)", ui_stand_spin);
-
-    auto* stand_spd_spin = makeFloatSpin(0.0, 50.0, 0.1, 2, " m/s", s.standing_speed_max_mps_);
-    QObject::connect(stand_spd_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                     [&s](double v) { s.standing_speed_max_mps_ = static_cast<float>(v); });
-    form->addRow("Standing Speed Threshold", stand_spd_spin);
-
-    auto* miss_cb  = new QCheckBox();
-    miss_cb->setChecked(s.use_miss_tolerance_);
-    auto* miss_spin = makeFloatSpin(0.0, 60.0, 0.05, 3, " s", s.miss_tolerance_s_);
-    miss_spin->setEnabled(s.use_miss_tolerance_);
-    QObject::connect(miss_cb, &QCheckBox::toggled, [&s, miss_spin](bool on) {
-        s.use_miss_tolerance_ = on;
-        miss_spin->setEnabled(on);
-    });
-    QObject::connect(miss_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                     [&s](double v) { s.miss_tolerance_s_ = static_cast<float>(v); });
-    form->addRow("Use Miss Tolerance", miss_cb);
-    form->addRow("Miss Tolerance",     miss_spin);
-
-    auto* acc_spin = makeFloatSpin(0.0, 1.0, 0.01, 2, "", s.pd_acceptable_above_);
-    QObject::connect(acc_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                     [&s](double v) { s.pd_acceptable_above_ = static_cast<float>(v); });
-    form->addRow("Value Acceptable (green)", acc_spin);
-
-    auto* unacc_spin = makeFloatSpin(0.0, 1.0, 0.01, 2, "", s.pd_unacceptable_below_);
-    QObject::connect(unacc_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                     [&s](double v) { s.pd_unacceptable_below_ = static_cast<float>(v); });
-    form->addRow("Value Unacceptable (red)", unacc_spin);
-
-    auto* hbins_spin = new QSpinBox();
-    hbins_spin->setRange(1, 100);
-    hbins_spin->setValue(s.ui_hist_num_bins_);
-    QObject::connect(hbins_spin, QOverload<int>::of(&QSpinBox::valueChanged),
-                     [&s](int v) { s.ui_hist_num_bins_ = v; });
-    form->addRow("Histogram Bins", hbins_spin);
-
-    auto* hmax_spin = makeFloatSpin(0.0, 600.0, 1.0, 1, " s", s.ui_hist_max_s_);
-    QObject::connect(hmax_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
-                     [&s](double v) { s.ui_hist_max_s_ = static_cast<float>(v); });
-    form->addRow("Histogram Max Interval (0 = auto)", hmax_spin);
-}
-
 }
 
 QWidget* AnalyzeDataSourceDialog::buildInspectorWidget(DataSourceInspectorBase* inspector)
@@ -896,21 +582,7 @@ QWidget* AnalyzeDataSourceDialog::buildInspectorWidget(DataSourceInspectorBase* 
     auto* form = new QFormLayout();
     layout->addLayout(form);
 
-    const std::string cn = inspector->className();
-    if (cn == "MLATDataItemInspector")
-        buildDataItemSettings(form, task_, task_.dataItemSettings());
-    else if (cn == "MLATCoverageInspector")
-        buildCoverageSettings(form, task_.coverageSettings());
-    else if (cn == "ADSBDataItemInspector")
-        buildADSBDataItemSettings(form, task_, task_.adsbDataItemSettings());
-    else if (cn == "ADSBCoverageInspector")
-        buildADSBCoverageSettings(form, task_.adsbCoverageSettings());
-#if USE_EXPERIMENTAL_SOURCE == true
-    else if (cn == "MLATAccuracyInspector")
-        buildAccuracySettings(form, task_.accuracySettings());
-    else if (cn == "ADSBAccuracyInspector")
-        buildADSBAccuracySettings(form, task_.adsbAccuracySettings());
-#endif
+    inspector->addSettingsRows(form);
 
     layout->addStretch(1);
     return w;
@@ -920,17 +592,45 @@ void AnalyzeDataSourceDialog::refreshInspectorRows()
 {
     updating_ui_ = true;
     for (auto& row : inspector_rows_)
-    {
-        std::string reason;
-        bool ok = row.inspector->prerequisitesMet(reason);
-        row.item->setDisabled(!ok);
-        row.item->setToolTip(0, QString::fromStdString(ok ? row.inspector->description()
-                                                          : reason));
-        // Preserve the user's check state even when prerequisites are
-        // temporarily unmet (e.g. no test data sources selected); the Run
-        // button gates execution.
-    }
+        updateInspectorRow(row);
     updating_ui_ = false;
+}
+
+void AnalyzeDataSourceDialog::updateInspectorRow(InspectorRow& row)
+{
+    auto* ins  = row.inspector;
+    auto* item = row.item;
+
+    std::string reason;
+    bool ok = ins->prerequisitesMet(reason);
+
+    // An inspector with unmet prerequisites shows unchecked and disabled. The
+    // task keeps the user's enabled flag, so the check returns once the
+    // prerequisites are met again (e.g. after a test data source is selected).
+    item->setDisabled(!ok);
+    item->setCheckState(0, ok && task_.inspectorEnabled(ins->className())
+                               ? Qt::Checked : Qt::Unchecked);
+
+    // column 1: short tag, the full reason is in the tooltip and on the page
+    QString tag = ins->requiresProfessionalLicense() ? "[pro]" : "";
+    if (!ok)
+        tag = tag.isEmpty() ? "[not available]" : tag + " [not available]";
+
+    item->setText(1, tag);
+    item->setTextAlignment(1, Qt::AlignRight | Qt::AlignVCenter);
+    QFont f = item->font(1);
+    f.setItalic(true);
+    item->setFont(1, f);
+
+    QString tooltip = QString::fromStdString(ok ? ins->description() : "Not available: " + reason);
+    item->setToolTip(0, tooltip);
+    item->setToolTip(1, tooltip);
+
+    if (row.reason_label)
+    {
+        row.reason_label->setText(QString::fromStdString("Not available: " + reason));
+        row.reason_label->setVisible(!ok);
+    }
 }
 
 void AnalyzeDataSourceDialog::treeSelectionChangedSlot()
@@ -990,28 +690,12 @@ void AnalyzeDataSourceDialog::updateRunEnabled()
     if (!run_button_)
         return;
 
-    bool can_run = !task_.selectedDataSourceIDs().empty()
-                   && !task_.selectedReferenceDataSourceIDs().empty();
-    if (can_run)
-    {
-        bool any_enabled = false;
-        for (const auto& row : inspector_rows_)
-        {
-            if (row.item->isDisabled())
-                continue;
-            if (row.item->checkState(0) == Qt::Checked
-                && task_.inspectorEnabled(row.inspector->className()))
-            {
-                any_enabled = true;
-                break;
-            }
-        }
-        can_run = any_enabled;
-    }
-    // Limit by sectors requires at least one selected sector layer.
-    if (can_run && task_.limitBySectors() && task_.selectedSectorLayers().empty())
-        can_run = false;
+    std::string reason;
+    bool can_run = task_.canRunConfiguration(&reason);
+
     run_button_->setEnabled(can_run);
+    run_button_->setToolTip(can_run ? "Run the analysis with the current selection"
+                                    : QString::fromStdString("Cannot run: " + reason));
 }
 
 void AnalyzeDataSourceDialog::runSlot()

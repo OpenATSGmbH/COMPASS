@@ -99,7 +99,7 @@ void ASTERIXDecodeJob::fileJasterixCallback(std::unique_ptr<nlohmann::json> data
                                             size_t num_records, 
                                             size_t num_errors)
 {
-    logdbg << "running on cpu " << sched_getcpu();
+    logdbg << "running on cpu " << job::currentCPU();
 
     if (obsolete_)
         return;
@@ -136,7 +136,7 @@ void ASTERIXDecodeJob::fileJasterixCallback(std::unique_ptr<nlohmann::json> data
         unsigned int category = 0;
         try
         {
-            category = std::stoul(it.key());
+            category = std::stoull(it.key());
         }
         catch (...)
         {
@@ -215,7 +215,7 @@ void ASTERIXDecodeJob::netJasterixCallback(std::unique_ptr<nlohmann::json> data,
         unsigned int category = 0;
         try
         {
-            category = std::stoul(it.key());
+            category = std::stoull(it.key());
         }
         catch (...)
         {
@@ -296,18 +296,10 @@ bool ASTERIXDecodeJob::hasStatusInfo()
 
 /**
 */
-std::string ASTERIXDecodeJob::statusInfoString()
+ASTERIXDecodeStatus ASTERIXDecodeJob::statusInfo()
 {
     traced_assert(hasStatusInfo());
-    return decoder_->statusInfoString();
-}
-
-/**
-*/
-float ASTERIXDecodeJob::statusInfoProgress() // percent
-{
-    traced_assert(hasStatusInfo());
-    return decoder_->statusInfoProgress();
+    return decoder_->statusInfo();
 }
 
 std::string ASTERIXDecodeJob::currentDataSourceName()

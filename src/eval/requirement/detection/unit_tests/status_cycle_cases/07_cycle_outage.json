@@ -1,0 +1,42 @@
+{
+    "description": "Irregular cycles with an outage of the status messages from 8 to 20 s. Median cycle length 1 s, update interval 2 s: 2 cycles per period. The periods follow the reported cycles: [0, 2], [2, 3.9], [3.9, 6], [6, 8] and [8, 21]. The test reports stop at 9.5 s and continue at 20.5 s, but the 13 s period [8, 21] holds the report at 8.5 s and is detected: a gap inside a cycle outage is not seen.",
+    "update_interval_s": 2.0,
+    "cycles": [
+        0,
+        1,
+        2,
+        3,
+        3.9,
+        5,
+        6,
+        7,
+        8,
+        20,
+        21
+    ],
+    "ref_periods": [
+        [
+            0,
+            21
+        ]
+    ],
+    "tst": [
+        [
+            20.5,
+            "ok"
+        ]
+    ],
+    "tst_series": [
+        [
+            0.5,
+            9.5,
+            1
+        ]
+    ],
+    "expected": {
+        "cycles_per_period": 2,
+        "sum_expected": 5,
+        "sum_missed": 0,
+        "misses": []
+    }
+}

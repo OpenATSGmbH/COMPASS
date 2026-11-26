@@ -19,19 +19,20 @@
 #include "reconstructorbase.h"
 #include "reconstructortask.h"
 #include "taskmanager.h"
-#include "compass.h"
 #include "dbcontentmanager.h"
 #include "dbcontent.h"
 #include "dbcontent/variable/variable.h"
 #include "targetreportaccessor.h"
 #include "buffer.h"
-#include "util/number.h"
-#include "util/timeconv.h"
+#include "number.h"
+#include "timeconv.h"
 #include "global.h"
 #include "kalman_chain.h"
 #include "db_context_manager.h"
 #include "timeddataseries.h"
 #include "datasourcebase.h" // for dbContent::DataSourceType enum
+
+#include <set>
 
 #include <boost/optional/optional_io.hpp>
 
@@ -87,14 +88,32 @@ void ContributingSourcesInfo::add(const dbContent::targetReport::ReconstructorIn
             break;
     }    
 
-    if (tr.isPrimaryOnlyDetection())
-        primary_age_ = 0.0;
+    if (tr.ds_type_ == DataSourceType::Radar)
+    {
+        // ANY detection with a primary component counts (a combined PSR+SSR/Mode S plot
+        // refreshes the primary age too), matching I062/290 semantics - not primary-only
+        if (tr.hasPrimaryDetection())
+            psr_age_ = 0.0;
 
-    if (tr.isModeACDetection())
-        mode_ac_age_ = 0.0;
+        // same for SSR: any detection with a secondary component
+        if (tr.hasSSRDetection())
+            ssr_age_ = 0.0;
 
-    if (tr.isModeSDetection())
-        modes_age_ = 0.0;
+        if (tr.isModeSDetection())
+            mds_age_ = 0.0;
+    }
+
+    if (tr.mode_a_code_ && tr.mode_a_code_->hasReliableValue())
+        m3a_age_ = 0.0;
+
+    if (tr.barometric_altitude_ && tr.barometric_altitude_->hasReliableValue())
+        fl_measured_age_ = 0.0;
+
+    if (tr.acid_)
+        acid_age_ = 0.0;
+
+    if (tr.acad_)
+        acad_age_ = 0.0;
 
     if (add_to_rec_nums)
         rec_nums_.push_back(tr.record_num_);
@@ -112,61 +131,31 @@ void ContributingSourcesInfo::increaseTimeTo(boost::posix_time::ptime new_timest
         traced_assert(new_timestamp >= timestamp_);
         auto time_to_add = (new_timestamp - timestamp_).total_milliseconds() / 1000.0;
 
-        if (adsb_age_)
+        auto increaseAge = [ time_to_add ] (boost::optional<float>& age)
         {
-            *adsb_age_ += time_to_add;
-            if (*adsb_age_ > 60.0)
-                adsb_age_ = {};
-        }
+            if (age)
+            {
+                *age += time_to_add;
+                if (*age > 60.0)
+                    age = {};
+            }
+        };
 
-        if (mlat_age_)
-        {
-            *mlat_age_ += time_to_add;
-            if (*mlat_age_ > 60.0)
-                mlat_age_ = {};
-        }
+        increaseAge(adsb_age_);
+        increaseAge(mlat_age_);
+        increaseAge(radar_age_);
+        increaseAge(tracker_age_);
+        increaseAge(reftraj_age_);
+        increaseAge(other_age_);
 
-        if (radar_age_)
-        {
-            *radar_age_ += time_to_add;
-            if (*radar_age_ > 60.0)
-                radar_age_ = {};
-        }
+        increaseAge(psr_age_);
+        increaseAge(ssr_age_);
+        increaseAge(mds_age_);
 
-        if (tracker_age_)
-        {
-            *tracker_age_ += time_to_add;
-            if (*tracker_age_ > 60.0)
-                tracker_age_ = {};
-        }
-
-        if (reftraj_age_)
-        {
-            *reftraj_age_ += time_to_add;
-            if (*reftraj_age_ > 60.0)
-                reftraj_age_ = {};
-        }
-
-        if (primary_age_)
-        {
-            *primary_age_ += time_to_add;
-            if (*primary_age_ > 60.0)
-                primary_age_ = {};
-        }
-
-        if (mode_ac_age_)
-        {
-            *mode_ac_age_ += time_to_add;
-            if (*mode_ac_age_ > 60.0)
-                mode_ac_age_ = {};
-        }
-
-        if (modes_age_)
-        {
-            *modes_age_ += time_to_add;
-            if (*modes_age_ > 60.0)
-                modes_age_ = {};
-        }
+        increaseAge(m3a_age_);
+        increaseAge(fl_measured_age_);
+        increaseAge(acid_age_);
+        increaseAge(acad_age_);
     }
 
     logdbg << "new_timestamp " << Time::toString(new_timestamp);
@@ -287,12 +276,12 @@ void ReconstructorTarget::addPredictionToGlobalStats(const reconstruction::Predi
     global_stats_.num_chain_predictions_proj_changed += s.num_proj_changed;
 }
 
-void ReconstructorTarget::addTargetReport (unsigned long rec_num)
+void ReconstructorTarget::addTargetReport (std::uint64_t rec_num)
 {
     addTargetReportInternal(rec_num, true, true);
 }
 
-void ReconstructorTarget::addTargetReports (const std::multimap<boost::posix_time::ptime, unsigned long>& rec_nums)
+void ReconstructorTarget::addTargetReports (const std::multimap<boost::posix_time::ptime, std::uint64_t>& rec_nums)
 {
     //add single tr without reestimating
     size_t num_added = 0;
@@ -335,7 +324,7 @@ void ReconstructorTarget::addTargetReports (const ReconstructorTarget& other)
 }
 
 ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportInternal(
-    unsigned long rec_num, bool add_to_chain, bool reestimate)
+    std::uint64_t rec_num, bool add_to_chain, bool reestimate)
 {
     bool do_debug = false;
 
@@ -519,7 +508,7 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
 
     if (!ecat_ || *ecat_ == 0) // check for FFT
     {
-        auto& ctx_man = reconstructor_.task().manager().compass().dbContextManager();
+        auto& ctx_man = reconstructor_.task().manager().dbContextManager();
 
         boost::optional<float> baro_altitude_ft;
 
@@ -536,8 +525,15 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
         bool is_from_fft;
         float fft_altitude_ft;
 
+        // identity-less plots (SMR/PSR) of an identified target must not
+        // classify the target as FFT by position alone - use the target's
+        // known Mode S address so the address criterion can veto
+        boost::optional<unsigned int> acad = tr.acad_;
+        if (!acad && !acads_.empty())
+            acad = *acads_.begin();
+
         std::tie(is_from_fft, fft_altitude_ft) = ctx_man.isFromFFT(
-            tr.position_->latitude_, tr.position_->longitude_, tr.acad_, tr.dbcont_id_ == 1,
+            tr.position_->latitude_, tr.position_->longitude_, acad, tr.dbcont_id_ == 1,
             mode_a_code, baro_altitude_ft);
 
         if (is_from_fft)
@@ -602,7 +598,7 @@ unsigned int ReconstructorTarget::numAssociated() const
     return target_reports_.size();
 }
 
-unsigned long ReconstructorTarget::lastAssociated() const
+std::uint64_t ReconstructorTarget::lastAssociated() const
 {
     traced_assert(target_reports_.size());
     return target_reports_.back();
@@ -905,7 +901,7 @@ ReconstructorTarget::ReconstructorInfoPair ReconstructorTarget::dataFor (ptime t
 
     bool debug = false; //interp_options.debug();
 
-    std::multimap<boost::posix_time::ptime, unsigned long>::const_iterator it_lower, it_upper;
+    std::multimap<boost::posix_time::ptime, std::uint64_t>::const_iterator it_lower, it_upper;
     bool has_lower = false;
     bool has_upper = false;
 
@@ -994,7 +990,7 @@ ReconstructorTarget::ReconstructorInfoPair ReconstructorTarget::dataFor (ptime t
             traced_assert(range.first != tr_timestamps_.end());
 
             // multiple timestamps in map => choose one depending on init mode
-            std::multimap<boost::posix_time::ptime, unsigned long>::const_iterator it_start =
+            std::multimap<boost::posix_time::ptime, std::uint64_t>::const_iterator it_start =
                 tr_timestamps_.end();
 
             auto init_mode = interp_options.initMode();
@@ -1552,23 +1548,23 @@ std::pair<boost::optional<dbContent::targetReport::Position>,
 //    return pos;
 //}
 
-bool ReconstructorTarget::hasDataFor (unsigned long rec_num) const
+bool ReconstructorTarget::hasDataFor (std::uint64_t rec_num) const
 {
     return reconstructor_.target_reports_.count(rec_num);
 }
 
-dbContent::targetReport::ReconstructorInfo& ReconstructorTarget::dataFor (unsigned long rec_num) const
+dbContent::targetReport::ReconstructorInfo& ReconstructorTarget::dataFor (std::uint64_t rec_num) const
 {
     //assert (reconstructor_.target_reports_.count(rec_num));
     return reconstructor_.target_reports_.at(rec_num);
 }
 
-bool ReconstructorTarget::hasPositionFor (unsigned long rec_num) const
+bool ReconstructorTarget::hasPositionFor (std::uint64_t rec_num) const
 {
     return dataFor(rec_num).position().has_value();
 }
 
-dbContent::targetReport::Position ReconstructorTarget::positionFor (unsigned long rec_num) const
+dbContent::targetReport::Position ReconstructorTarget::positionFor (std::uint64_t rec_num) const
 {
     traced_assert(hasPositionFor(rec_num));
     return *dataFor(rec_num).position();
@@ -1617,14 +1613,14 @@ float ReconstructorTarget::probTimeOverlaps (const ReconstructorTarget& other) c
     return overlap_duration / targets_min_duration;
 }
 
-std::tuple<vector<unsigned long>, vector<unsigned long>, vector<unsigned long>>
+std::tuple<vector<std::uint64_t>, vector<std::uint64_t>, vector<std::uint64_t>>
 ReconstructorTarget::compareModeACodes (
     const ReconstructorTarget& other,
     boost::posix_time::time_duration max_time_diff, bool do_debug) const
 {
-    vector<unsigned long> unknown;
-    vector<unsigned long> same;
-    vector<unsigned long> different;
+    vector<std::uint64_t> unknown;
+    vector<std::uint64_t> same;
+    vector<std::uint64_t> different;
 
     ComparisonResult cmp_res;
 
@@ -1654,7 +1650,7 @@ ReconstructorTarget::compareModeACodes (
 
     traced_assert(target_reports_.size() == unknown.size()+same.size()+different.size());
 
-    return std::tuple<vector<unsigned long>, vector<unsigned long>, vector<unsigned long>>(unknown, same, different);
+    return std::tuple<vector<std::uint64_t>, vector<std::uint64_t>, vector<std::uint64_t>>(unknown, same, different);
 }
 
 ComparisonResult ReconstructorTarget::compareModeACode (
@@ -1793,13 +1789,13 @@ ComparisonResult ReconstructorTarget::compareModeACode (
         return ComparisonResult::DIFFERENT;
 }
 
-std::tuple<vector<unsigned long>, vector<unsigned long>, vector<unsigned long>> ReconstructorTarget::compareModeCCodes (
-    const ReconstructorTarget& other, const std::vector<unsigned long>& rec_nums,
+std::tuple<vector<std::uint64_t>, vector<std::uint64_t>, vector<std::uint64_t>> ReconstructorTarget::compareModeCCodes (
+    const ReconstructorTarget& other, const std::vector<std::uint64_t>& rec_nums,
     time_duration max_time_diff, float max_alt_diff, bool do_debug) const
 {
-    vector<unsigned long> unknown;
-    vector<unsigned long> same;
-    vector<unsigned long> different;
+    vector<std::uint64_t> unknown;
+    vector<std::uint64_t> same;
+    vector<std::uint64_t> different;
 
     ComparisonResult cmp_res;
 
@@ -1826,7 +1822,7 @@ std::tuple<vector<unsigned long>, vector<unsigned long>, vector<unsigned long>> 
 
     traced_assert(rec_nums.size() == unknown.size()+same.size()+different.size());
 
-    return std::tuple<vector<unsigned long>, vector<unsigned long>, vector<unsigned long>>(unknown, same, different);
+    return std::tuple<vector<std::uint64_t>, vector<std::uint64_t>, vector<std::uint64_t>>(unknown, same, different);
 }
 
 bool ReconstructorTarget::isPrimaryAt(boost::posix_time::ptime timestamp,
@@ -1868,6 +1864,40 @@ bool ReconstructorTarget::isOnGroundAt(const boost::posix_time::ptime& timestamp
         return true;
 
     return false;
+}
+
+bool ReconstructorTarget::isADSBStoppedAt(const boost::posix_time::ptime& timestamp,
+                                          const boost::posix_time::time_duration& max_time_diff) const
+{
+    //the nearest ADS-B report in the vicinity decides: SGV STP bit or ground
+    //speed close to zero means stopped, movement evidence means not stopped.
+    //ONLY ADS-B carries stopped/moving evidence - other sources (MLAT plots,
+    //trackers) must neither set nor end a stopped state
+    dbContent::targetReport::ReconstructorInfo* lower_tr, *upper_tr;
+
+    //only reports actually carrying evidence (STP bit or ground speed) count,
+    //evidence-less ADS-B reports are as transparent as any other source
+    tie(lower_tr, upper_tr) = dataFor(
+        timestamp, max_time_diff,
+        [] (const dbContent::targetReport::ReconstructorInfo& tr)
+        { return tr.dbcont_id_ == 21 && (tr.sgv_stp_.has_value() || tr.velocity_.has_value()); });
+
+    if (lower_tr && upper_tr)
+    {
+        //take the nearest of the two bracketing reports
+        if (timestamp - lower_tr->timestamp_ <= upper_tr->timestamp_ - timestamp)
+            return !lower_tr->isMoving();
+        else
+            return !upper_tr->isMoving();
+    }
+
+    if (lower_tr)
+        return !lower_tr->isMoving();
+
+    if (upper_tr)
+        return !upper_tr->isMoving();
+
+    return false; //no adsb evidence in vicinity
 }
 
 boost::optional<float> ReconstructorTarget::modeCCodeAt (boost::posix_time::ptime timestamp,
@@ -2190,8 +2220,8 @@ TimedDataSeries<unsigned int> ReconstructorTarget::getMode3ASeries() const
 
     float value_usage_seconds = 10; //+/-
 
-    std::function<int(unsigned long)> confidence_func =
-        [this](unsigned long rec_num) -> int
+    std::function<int(std::uint64_t)> confidence_func =
+        [this](std::uint64_t rec_num) -> int
     {
         const dbContent::targetReport::ReconstructorInfo& info =
             reconstructor_.target_reports_.at(rec_num);
@@ -2222,8 +2252,8 @@ TimedDataSeries<unsigned int> ReconstructorTarget::getMode3ASeries() const
         return -1;  // Always return confidence = -1 if no value
     };
 
-    std::function<boost::optional<unsigned int>(unsigned long)> value_func =
-        [this](unsigned long rec_num) -> boost::optional<unsigned int>
+    std::function<boost::optional<unsigned int>(std::uint64_t)> value_func =
+        [this](std::uint64_t rec_num) -> boost::optional<unsigned int>
     {
         const dbContent::targetReport::ReconstructorInfo& info =
             reconstructor_.target_reports_.at(rec_num);
@@ -2250,8 +2280,8 @@ TimedDataSeries<float> ReconstructorTarget::getAltitudeSeries() const
 
     float value_usage_seconds = 5; //+/-
 
-    std::function<int(unsigned long)> confidence_func =
-        [this](unsigned long rec_num) -> int
+    std::function<int(std::uint64_t)> confidence_func =
+        [this](std::uint64_t rec_num) -> int
     {
         const dbContent::targetReport::ReconstructorInfo& info =
             reconstructor_.target_reports_.at(rec_num);
@@ -2281,8 +2311,8 @@ TimedDataSeries<float> ReconstructorTarget::getAltitudeSeries() const
         return -1;  // Always return confidence = -1 if no value
     };
 
-    std::function<boost::optional<float>(unsigned long)> value_func =
-        [this](unsigned long rec_num) -> boost::optional<float>
+    std::function<boost::optional<float>(std::uint64_t)> value_func =
+        [this](std::uint64_t rec_num) -> boost::optional<float>
     {
         const dbContent::targetReport::ReconstructorInfo& info =
             reconstructor_.target_reports_.at(rec_num);
@@ -2309,8 +2339,8 @@ TimedDataSeries<bool> ReconstructorTarget::getGroundBitSeries() const
 
     float altitude_usage_seconds = 5; //+/-
 
-    std::function<int(unsigned long)> confidence_func =
-        [this](unsigned long rec_num) -> int
+    std::function<int(std::uint64_t)> confidence_func =
+        [this](std::uint64_t rec_num) -> int
     {
         const dbContent::targetReport::ReconstructorInfo& info =
             reconstructor_.target_reports_.at(rec_num);
@@ -2329,8 +2359,8 @@ TimedDataSeries<bool> ReconstructorTarget::getGroundBitSeries() const
         return -1;  // Always return confidence = -1 if no value
     };
 
-    std::function<boost::optional<bool>(unsigned long)> value_func =
-        [this](unsigned long rec_num) -> boost::optional<bool>
+    std::function<boost::optional<bool>(std::uint64_t)> value_func =
+        [this](std::uint64_t rec_num) -> boost::optional<bool>
     {
         const dbContent::targetReport::ReconstructorInfo& info =
             reconstructor_.target_reports_.at(rec_num);
@@ -2369,7 +2399,7 @@ void ReconstructorTarget::updateCounts()
 
 std::map <std::string, unsigned int> ReconstructorTarget::getDBContentCounts() const
 {
-    DBContentManager& dbcont_man = reconstructor_.task().manager().compass().dbContentManager();
+    DBContentManager& dbcont_man = reconstructor_.task().manager().dbContentManager();
 
     std::map <std::string, unsigned int> counts;
 
@@ -2393,7 +2423,7 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
     string dbcontent_name = "RefTraj";
     unsigned int dbcontent_id = 255;
 
-    DBContentManager& dbcontent_man = reconstructor_.task().manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = reconstructor_.task().manager().dbContentManager();
 
     PropertyList buffer_list;
 
@@ -2435,6 +2465,12 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
     buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_y_stddev_));
     buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_xy_cov_));
 
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_vx_stddev_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_vy_stddev_));
+
+    // coasting
+    buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_coasting_));
+
     // secondary
     buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_m3a_));
     buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acad_));
@@ -2448,8 +2484,8 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
     buffer_list.addProperty(dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_mom_vert_rate_));
 
     // contrib
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_adsb_age_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_mlat_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_adsb_es_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_mlat_));
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_radar_age_));
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_tracker_age_));
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_reftraj_age_));
@@ -2457,10 +2493,20 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
 
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_));
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_num_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_num_contrib_sensors_));
 
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_primary_));
-    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modeac_));
     buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modes_));
+
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_track_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_psr_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_ssr_));
+
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_m3a_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_fl_measured_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_acid_age_));
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_acad_age_));
+
+    buffer_list.addProperty(dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_assoc_recnums_));
 
     std::shared_ptr<Buffer> buffer_written = std::make_shared<Buffer>(buffer_list, dbcontent_name);
     std::shared_ptr<Buffer> buffer_glue    = std::make_shared<Buffer>(buffer_list, dbcontent_name);
@@ -2608,6 +2654,15 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
         NullableVector<double>& xy_cov_vec = buffer->get<double> (
             dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_xy_cov_).name());
 
+        NullableVector<double>& vx_stddev_vec = buffer->get<double> (
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_vx_stddev_).name());
+        NullableVector<double>& vy_stddev_vec = buffer->get<double> (
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_vy_stddev_).name());
+
+        // coasting
+        NullableVector<unsigned char>& coasting_vec = buffer->get<unsigned char> (
+            dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_coasting_).name());
+
         // ground bit
         NullableVector<bool>& gb_vec = buffer->get<bool> (
             dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_bit_).name());
@@ -2629,9 +2684,9 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
 
         // contribution
         NullableVector<float>& cont_adsb_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_adsb_age_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_adsb_es_).name());
         NullableVector<float>& cont_mlat_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_mlat_age_).name());
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_mlat_).name());
         NullableVector<float>& cont_radar_age_vec = buffer->get<float>(
             dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_radar_age_).name());
         NullableVector<float>& cont_tracker_age_vec = buffer->get<float>(
@@ -2644,14 +2699,31 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
         NullableVector<json>& cont_sources_vec = buffer->get<json>(
             dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_).name());
         NullableVector<unsigned int>& cont_source_num_vec = buffer->get<unsigned int>(
-            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_num_).name());        
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_contrib_sources_num_).name());
+        NullableVector<unsigned char>& num_contrib_sensors_vec = buffer->get<unsigned char>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_num_contrib_sensors_).name());
 
-        NullableVector<float>& cont_primary_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_primary_).name());
-        NullableVector<float>& cont_modeac_age_vec = buffer->get<float>(
-            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modeac_).name());
-        NullableVector<float>& cont_modes_age_vec = buffer->get<float>(
+        NullableVector<float>& cont_mds_age_vec = buffer->get<float>(
             dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_modes_).name());
+
+        NullableVector<float>& track_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_track_age_).name());
+        NullableVector<float>& cont_psr_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_psr_).name());
+        NullableVector<float>& cont_ssr_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_update_age_ssr_).name());
+
+        NullableVector<float>& cont_m3a_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_m3a_age_).name());
+        NullableVector<float>& cont_fl_measured_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_fl_measured_age_).name());
+        NullableVector<float>& cont_acid_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_acid_age_).name());
+        NullableVector<float>& cont_acad_age_vec = buffer->get<float>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_acad_age_).name());
+
+        NullableVector<json>& assoc_recnums_vec = buffer->get<json>(
+            dbcontent_man.getVariable(dbcontent_name, dbcontent_vars::var_reftraj_assoc_recnums_).name());
 
         NullableVector<unsigned int>& utn_vec = buffer->get<unsigned int> (
             dbcontent_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_utn_).name());
@@ -2851,6 +2923,11 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
                 xy_cov_vec.set(buffer_cnt, xy_cov);
             }
 
+            if (ref_it.second.vx_stddev.has_value())
+                vx_stddev_vec.set(buffer_cnt, *ref_it.second.vx_stddev);
+            if (ref_it.second.vy_stddev.has_value())
+                vy_stddev_vec.set(buffer_cnt, *ref_it.second.vy_stddev);
+
             // set other data
             {
                 if (altitude_series.hasValueAt(ref_it.second.t))
@@ -2948,13 +3025,44 @@ std::pair<std::shared_ptr<Buffer>, std::shared_ptr<Buffer>> ReconstructorTarget:
                     cont_sources_vec.set(buffer_cnt, contrib.contributions(reconstructor_));
                 cont_source_num_vec.set(buffer_cnt, contrib.rec_nums_.size());
 
-                if (contrib.primary_age_)
-                    cont_primary_age_vec.set(buffer_cnt, *contrib.primary_age_);
-                if (contrib.mode_ac_age_)
-                    cont_modeac_age_vec.set(buffer_cnt, *contrib.mode_ac_age_);
-                if (contrib.modes_age_)
-                    cont_modes_age_vec.set(buffer_cnt, *contrib.modes_age_);
+                // distinct data sources among the associated reports (CAT062
+                // "Sum Number Contributing Sensors" analog)
+                std::set<unsigned int> contrib_ds_ids;
+                for (auto rec_num : contrib.rec_nums_)
+                {
+                    if (reconstructor_.target_reports_.count(rec_num))
+                        contrib_ds_ids.insert(reconstructor_.target_reports_.at(rec_num).ds_id_);
+                }
+                num_contrib_sensors_vec.set(
+                    buffer_cnt, static_cast<unsigned char>(std::min<size_t>(contrib_ds_ids.size(), 255)));
+
+                coasting_vec.set(buffer_cnt, contrib.rec_nums_.empty() ? 1 : 0);
+
+                if (contrib.mds_age_)
+                    cont_mds_age_vec.set(buffer_cnt, *contrib.mds_age_);
+
+                if (contrib.psr_age_)
+                    cont_psr_age_vec.set(buffer_cnt, *contrib.psr_age_);
+                if (contrib.ssr_age_)
+                    cont_ssr_age_vec.set(buffer_cnt, *contrib.ssr_age_);
+
+                if (contrib.m3a_age_)
+                    cont_m3a_age_vec.set(buffer_cnt, *contrib.m3a_age_);
+                if (contrib.fl_measured_age_)
+                    cont_fl_measured_age_vec.set(buffer_cnt, *contrib.fl_measured_age_);
+                if (contrib.acid_age_)
+                    cont_acid_age_vec.set(buffer_cnt, *contrib.acid_age_);
+                if (contrib.acad_age_)
+                    cont_acad_age_vec.set(buffer_cnt, *contrib.acad_age_);
+
+                if (contrib.rec_nums_.size())
+                    assoc_recnums_vec.set(buffer_cnt, json(contrib.rec_nums_));
             }
+
+            if (!total_timestamp_min_.is_not_a_date_time())
+                track_age_vec.set(
+                    buffer_cnt,
+                    (ref_it.second.t - total_timestamp_min_).total_milliseconds() / 1000.0);
 
             ++buffer_cnt;
 
@@ -3029,11 +3137,11 @@ void ReconstructorTarget::removeOutdatedTargetReports()
     references_.clear();
 }
 
-std::vector<unsigned long> ReconstructorTarget::removeStreamReports(
+std::vector<std::uint64_t> ReconstructorTarget::removeStreamReports(
     unsigned int ds_id, unsigned int line_id, unsigned int track_number,
     const boost::posix_time::ptime& ts, bool at_or_after)
 {
-    std::vector<unsigned long> removed;
+    std::vector<std::uint64_t> removed;
 
     auto tmp_tr_timestamps = std::move(tr_timestamps_);
 
@@ -3202,7 +3310,7 @@ bool ReconstructorTarget::compareChainUpdates(const dbContent::targetReport::Rec
 bool ReconstructorTarget::checkChainBeforeAdd(const dbContent::targetReport::ReconstructorInfo& tr,
                                               int idx) const
 {
-    unsigned long rec_num  = chain()->getUpdate(idx).mm_id; // UGA not unsigned int
+    std::uint64_t rec_num  = chain()->getUpdate(idx).mm_id; // UGA not unsigned int
     traced_assert(reconstructor_.target_reports_.count(rec_num));
     const auto&  tr_chain = reconstructor_.target_reports_.at(rec_num);
 

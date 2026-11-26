@@ -15,15 +15,17 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/mode_a/false.h"
-#include "eval/standard/evaluationstandard.h"
-#include "eval/results/mode_a/false.h"
+#include "requirement/mode_a/false.h"
+#include "requirement/base/falsehelpers.h"
+#include "standard/evaluationstandard.h"
+#include "results/mode_a/false.h"
+#include "results/base/detailcode.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
 
 #include "logger.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 
 using namespace std;
 using namespace Utils;
@@ -31,6 +33,8 @@ using namespace boost::posix_time;
 
 namespace EvaluationRequirement
 {
+
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
 
 ModeAFalse::ModeAFalse(const std::string& name, const std::string& short_name, const std::string& group_name,
                        double prob, COMPARISON_TYPE prob_check_type, EvaluationCalculator& calculator)
@@ -74,7 +78,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeAFalse::evaluate (
     //bool ok;
 
     ValueComparisonResult cmp_res;
-    string comment;
 
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
     bool skip_detail;
@@ -92,27 +95,19 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeAFalse::evaluate (
             const QVariant& num_unknown_id,
             const QVariant& num_correct_id,
             const QVariant& num_false_id,
-            const std::string& comment)
+            std::uint32_t code)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::RefExists, ref_exists)
-                          .setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
+                          .setValue(Result::DetailKey::PosInside, pos_inside)
                           .setValue(Result::DetailKey::IsNotOk, is_not_ok)
-                          .setValue(Result::DetailKey::NumUpdates, num_updates)
-                          .setValue(Result::DetailKey::NumNoRef, num_no_ref)
-                          .setValue(Result::DetailKey::NumInside, num_pos_inside)
-                          .setValue(Result::DetailKey::NumOutside, num_pos_outside)
-                          .setValue(Result::DetailKey::NumUnknownID, num_unknown_id)
-                          .setValue(Result::DetailKey::NumCorrectID, num_correct_id)
-                          .setValue(Result::DetailKey::NumFalseID, num_false_id)
                           .addPosition(ref_pos)
-                          .generalComment(comment));
+                          .addCode(code));
     };
 
     for (const auto& tst_id : tst_data)
     {
         ref_exists = false;
         is_inside = false;
-        comment = "";
 
         skip_detail = false;
 
@@ -127,7 +122,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeAFalse::evaluate (
                 addDetail(timestamp, pos_current, {},
                           false, {}, false, // ref_exists, pos_inside,
                           num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                          num_unknown, num_correct, num_false, "No reference data");
+                          num_unknown, num_correct, num_false, 0);
 
             ++num_no_ref_pos;
             continue;
@@ -144,7 +139,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeAFalse::evaluate (
                 addDetail(timestamp, pos_current, {},
                           false, {}, false, // ref_exists, pos_inside,
                           num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                          num_unknown, num_correct, num_false, "No reference position");
+                          num_unknown, num_correct, num_false, DetailCode::NoRefPosition);
 
             ++num_no_ref_pos;
             continue;
@@ -160,48 +155,49 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeAFalse::evaluate (
                 addDetail(timestamp, pos_current, ref_pos,
                           ref_exists, is_inside, false, // ref_exists, pos_inside,
                           num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                          num_unknown, num_correct, num_false, "Outside sector");
+                          num_unknown, num_correct, num_false, 0);
 
             ++num_pos_outside;
             continue;
         }
         ++num_pos_inside;
 
-        tie(cmp_res, comment) = compareModeA(tst_id, target_data, max_ref_time_diff);
+        cmp_res = compareModeA(tst_id, target_data, max_ref_time_diff);
 
-        code_ok = true;
-        if (cmp_res == ValueComparisonResult::Unknown_NoRefData)
-        {
-            if (skip_no_data_details)
-                skip_detail = true;
+        auto report_class = FalseHelpers::classify(cmp_res);
 
-            ++num_no_ref_val;
-        }
-        else if (cmp_res == ValueComparisonResult::Unknown_NoTstData)
-        {
-            if (skip_no_data_details)
-                skip_detail = true;
+        code_ok = report_class != FalseHelpers::ReportClass::False;
 
-            ++num_unknown;
-        }
-        else if (cmp_res == ValueComparisonResult::Same)
+        switch (report_class)
         {
-            ++num_correct;
+            case FalseHelpers::ReportClass::NoRefValue:
+                if (skip_no_data_details)
+                    skip_detail = true;
+
+                ++num_no_ref_val;
+                break;
+
+            case FalseHelpers::ReportClass::Unknown:
+                if (skip_no_data_details)
+                    skip_detail = true;
+
+                ++num_unknown;
+                break;
+
+            case FalseHelpers::ReportClass::Correct:
+                ++num_correct;
+                break;
+
+            case FalseHelpers::ReportClass::False:
+                ++num_false;
+                break;
         }
-        else if (cmp_res == ValueComparisonResult::Different)
-        {
-            code_ok = false;
-            ++num_false;
-        }
-        else
-            throw runtime_error("EvaluationRequirementModeAFalse: evaluate: unknown compare result "
-                                +to_string(cmp_res));
 
         if (!skip_detail)
             addDetail(timestamp, pos_current, ref_pos,
                       ref_exists, is_inside, !code_ok,
                       num_updates, num_no_ref_pos+num_no_ref_val, num_pos_inside, num_pos_outside,
-                      num_unknown, num_correct, num_false, comment);
+                      num_unknown, num_correct, num_false, FalseHelpers::code(report_class) | comparisonCode(cmp_res, DetailCode::Value::M3ADiffers, 0));
     }
 
     logdbg << "'" << name_ << "': utn " << target_data.utn_

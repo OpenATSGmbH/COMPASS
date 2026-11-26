@@ -16,11 +16,12 @@
  */
 
 #include "asterixdecoderfile.h"
+#include "logmodel.h"
+#include "taskmanager.h"
 #include "asteriximporttask.h"
 
 #include "asynctask.h"
 
-#include "compass.h"
 #include "logger.h"
 #include "files.h"
 #include "stringconv.h"
@@ -123,7 +124,7 @@ void ASTERIXDecoderFile::processCurrentFile()
     }
     catch(const std::exception& e)
     {
-        task().compass().logError("ASTERIX Import") << "file '" << current_file.filename
+        task().manager().logStore().logError("ASTERIX Import") << "file '" << current_file.filename
                                        << "' decode error '" << e.what() << "'";
 
         logerr << "decode error '" << e.what() << "'";
@@ -131,7 +132,7 @@ void ASTERIXDecoderFile::processCurrentFile()
     }
     catch(...)
     {
-        task().compass().logError("ASTERIX Import") << "file '" << current_file.filename
+        task().manager().logStore().logError("ASTERIX Import") << "file '" << current_file.filename
                                        << "' unknown decode error";
 
         logerr << "unknown decode error";
@@ -382,81 +383,24 @@ std::string ASTERIXDecoderFile::getCurrentFilename() const
 
 /**
 */
-std::string ASTERIXDecoderFile::statusInfoString() const
+ASTERIXDecodeStatus ASTERIXDecoderFile::statusInfo() const
 {
-    std::ostringstream html;
-    // Start table and header row
-    html << "<table border=\"0\" width=\"100%\">"
-         << "<tr>"
-            "<th align=\"left\">Filename</th>"
-            "<th align=\"right\">Size (MB)</th>"
-            "<th align=\"center\">Status</th>"
-         << "</tr>";
+    ASTERIXDecodeStatus status;
 
-    const auto& file_infos = source_.files();
-    for (const auto& file_info : file_infos)
-    {
-        // Skip unused files
-        if (!file_info.used)
-            continue;
+    status.progress           = total_file_size_ ? 100.0f * (float)currentlyReadBytes() / (float)total_file_size_
+                                                 : 0.0f;
+    status.elapsed_seconds    = elapsedSeconds();
+    status.remaining_seconds  = getRemainingTime();
+    status.records_per_second = getRecordsPerSecond();
+    status.current_filename   = getCurrentFilename();
 
-        // Filename cell, bold if current
-        std::string filename_cell = (file_info.filename == getCurrentFilename())
-                                   ? "<b>" + file_info.filename + "</b>"
-                                   : file_info.filename;
+    logdbg << "progress " << status.progress << "%"
+           << " done_file_size " << done_file_size_
+           << " file_bytes " << current_file_bytes_read_
+           << " chunk_bytes " << current_chunk_bytes_read_
+           << " total " << total_file_size_;
 
-        // Size in megabytes
-        double mb = file_info.sizeInBytes(/*used_only=*/true) / (1024.0 * 1024.0);
-
-        std::ostringstream size_fmt;
-        size_fmt << std::fixed << std::setprecision(2) << mb;
-
-        // Decoded‐status cell
-        std::string status_cell;
-        
-        if (file_info.filename == getCurrentFilename())
-            status_cell = "Decoding";
-        else if (file_info.fileProcessed())
-            status_cell = "Done";
-
-        if (file_info.hasError())
-            status_cell += "<br> <b><font color=\"red\">(errors detected)</font></b>";
-
-        // One row per file
-        html << "<tr>"
-                "<td align=\"left\">"   << filename_cell    << "</td>"
-                            "<td align=\"right\">"  << size_fmt.str() << "</td>"
-                                 "<td align=\"center\">" << status_cell  << "</td>"
-             << "</tr>";
-    }
-
-    // Two empty spacer rows
-    html << "<tr><td colspan=\"3\">&nbsp;</td></tr>"
-         << "<tr><td colspan=\"3\">&nbsp;</td></tr>";
-
-    // Elapsed / Remaining row
-    html << "<tr>"
-            "<td colspan=\"2\" align=\"left\">Elapsed:  "
-         << Utils::String::timeStringFromDouble(elapsedSeconds(), false)
-         << "</td>"
-            "<td align=\"right\">Remaining: "
-         << Utils::String::timeStringFromDouble(getRemainingTime(), false)
-         << "</td>"
-         << "</tr>";
-
-    html << "<tr><td colspan=\"3\">&nbsp;</td></tr>";
-
-    // Records/sec row
-    html << "<tr>"
-            "<td colspan=\"3\" align=\"right\">"
-            "Records/s: " << static_cast<unsigned int>(getRecordsPerSecond())
-         << "</td>"
-         << "</tr>"
-
-         // Close table
-         << "</table>";
-
-    return html.str();
+    return status;
 }
 
 /**
@@ -520,19 +464,6 @@ size_t ASTERIXDecoderFile::currentlyReadBytes() const
 
 /**
 */
-float ASTERIXDecoderFile::statusInfoProgress() const
-{
-    float progress = 100.0 * (float)currentlyReadBytes() / (float)total_file_size_;
-
-    loginf << "progress " << progress << "%"
-           << " done_file_size " << done_file_size_
-           << " file_bytes " << current_file_bytes_read_
-           << " chunk_bytes " << current_chunk_bytes_read_
-           << " total " << total_file_size_;
-
-    return progress;
-}
-
 std::string ASTERIXDecoderFile::currentDataSourceName() const
 {
     return "File '"+getCurrentFilename()+"'";

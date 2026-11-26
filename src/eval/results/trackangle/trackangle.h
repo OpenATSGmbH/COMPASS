@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/results/base/probabilitybase.h"
+#include "results/base/probabilitybase.h"
 #include "valueaccumulator.h"
 
 #include <boost/optional.hpp>
@@ -98,12 +98,6 @@ public:
         ValueTst,       // double
         SpeedRef,       // double
         PosInside,      //bool
-        NumPos,         //unsigned int
-        NumNoRef,       //unsigned int
-        NumInside,      //unsigned int
-        NumOutside,     //unsigned int
-        NumCheckFailed, //unsigned int
-        NumCheckPassed //unsigned int
     };
 
 protected:
@@ -115,15 +109,23 @@ protected:
     virtual std::string targetTableCustomSortColumn() const override;
     virtual Qt::SortOrder targetTableSortOrder() const override  { return  Qt::SortOrder::DescendingOrder; }
     virtual std::vector<TargetInfo> targetInfos() const override;
-    virtual std::vector<std::string> detailHeaders() const override;
-    virtual nlohmann::json::array_t detailValues(const EvaluationDetail& detail,
-                                                 const EvaluationDetail* parent_detail) const override;
 
     virtual bool detailIsOk(const EvaluationDetail& detail) const override;
+    void addReportTableColumns(ReportTableDefinition& def) const override;
+    void fillReportTableRow(ReportTableRows& rows,
+                            const EvaluationDetail& detail,
+                            const EvaluationDetail* parent_detail,
+                            const EvaluationDetail* prev_detail) const override;
+    void fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                      const Buffer& buffer,
+                                      unsigned int row,
+                                      const EvaluationDetail* prev_detail) const override;
     virtual void addAnnotationForDetail(nlohmann::json& annotations_json, 
                                         const EvaluationDetail& detail, 
                                         TargetAnnotationType type,
                                         bool is_ok) const override;
+
+    virtual FeatureDefinitions getCustomAnnotationDefinitions() const override;
 };
 
 /**

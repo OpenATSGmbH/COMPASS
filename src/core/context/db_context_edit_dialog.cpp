@@ -33,10 +33,11 @@
 #include "questiondialog.h"
 #include "importsectordialog.h"
 #include "airspace.h"
-#include "compass.h"
+#include "appstate.h"
 #include "sector.h"
 #include "sectorlayer.h"
 #include "logger.h"
+#include "dialogs.h"
 
 #include <set>
 
@@ -45,7 +46,7 @@
 
 #include <QApplication>
 #include <QComboBox>
-#include <QFileDialog>
+#include <QFileInfo>
 #include <QHBoxLayout>
 #include <QInputDialog>
 #include <QLabel>
@@ -110,7 +111,9 @@ public:
     }
 };
 
-DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* parent)
+DBContextEditDialog::DBContextEditDialog(DBContextManager& manager,
+                                         const std::vector<std::string>& dbcontent_names,
+                                         QWidget* parent)
     : QDialog(parent)
     , manager_(manager)
 {
@@ -262,7 +265,7 @@ DBContextEditDialog::DBContextEditDialog(DBContextManager& manager, QWidget* par
     detail_stack_->addWidget(fft_edit_widget_);
 
     // create colors edit widget
-    colors_edit_widget_ = new ColorsEditWidget(manager_, [this]() {
+    colors_edit_widget_ = new ColorsEditWidget(manager_, dbcontent_names, [this]() {
         manager_.saveContext(manager_.activeContextName());
     }, this);
     detail_stack_->addWidget(colors_edit_widget_);
@@ -314,7 +317,7 @@ void DBContextEditDialog::rebuildContextCombo()
     if (manager_.hasActiveContext())
         context_combo_->setCurrentText(QString::fromStdString(manager_.activeContextName()));
 
-    bool db_has_data = manager_.compass().dbOpened() && manager_.hasInsertedData();
+    bool db_has_data = manager_.appState().dbOpened() && manager_.hasInsertedData();
 
     // disable context switching when a DB with imported data is open
     context_combo_->setEnabled(!db_has_data);
@@ -362,7 +365,7 @@ void DBContextEditDialog::rebuildTree()
     {
         if (auto* ds = manager_.dataSource(*shown_ds_id))
         {
-            ds_edit_widget_->show(*ds, manager_.compass().lastUsedPath());
+            ds_edit_widget_->show(*ds, manager_.appState().lastUsedPath());
             if (shown_ds_tab >= 0)
                 ds_edit_widget_->setCurrentTabIndex(shown_ds_tab);
         }
@@ -409,7 +412,7 @@ void DBContextEditDialog::itemClickedSlot(const QModelIndex& index)
 
         auto* ds = manager_.dataSource(ds_item->dsId());
         if (ds)
-            ds_edit_widget_->show(*ds, manager_.compass().lastUsedPath());
+            ds_edit_widget_->show(*ds, manager_.appState().lastUsedPath());
         showDetailWidget(ds_edit_widget_);
     }
     else if (dynamic_cast<ASTERIXConfigLeafItem*>(item))
@@ -561,7 +564,7 @@ void DBContextEditDialog::showDataSourcesGroupMenu()
 
     menu.addAction("Import...", [this]()
     {
-        QString path = QFileDialog::getOpenFileName(this, "Import Sensors", "", "JSON Files (*.json)");
+        QString path = Dialogs::getOpenFileName(this, "Import Sensors", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
         try
         {
@@ -579,7 +582,7 @@ void DBContextEditDialog::showDataSourcesGroupMenu()
 
     menu.addAction("Export...", [this]()
     {
-        QString path = QFileDialog::getSaveFileName(this, "Export Sensors", "", "JSON Files (*.json)");
+        QString path = Dialogs::getSaveFileName(this, "Export Sensors", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
         try
         {
@@ -601,10 +604,8 @@ void DBContextEditDialog::showDataSourcesGroupMenu()
                 "Delete all data sources from this context?"))
             return;
 
-        auto& ctx = manager_.activeContext();
-        ctx.dataSources().clear();
-        manager_.saveContext(manager_.activeContextName());
-        rebuildTree();
+        // rebuilds the tree via dataSourcesChangedSignal
+        manager_.deleteAllDataSources();
     });
 
     // disable if empty or if any data source has data in the database
@@ -684,7 +685,7 @@ void DBContextEditDialog::showSectorLayersGroupMenu()
 
     menu.addAction("Import from File...", [this]()
     {
-        QString path = QFileDialog::getOpenFileName(this, "Import Sectors",  "",
+        QString path = Dialogs::getOpenFileName(this, "Import Sectors",  "",
             "Vector Files (*.shp *.geojson *.json *.gml *.kml);;All Files (*)");
         if (path.isEmpty()) return;
 
@@ -747,7 +748,7 @@ void DBContextEditDialog::showSectorLayersGroupMenu()
 
     menu.addAction("Import JSON...", [this]()
     {
-        QString path = QFileDialog::getOpenFileName(this, "Import Sectors (JSON)", "", "JSON Files (*.json)");
+        QString path = Dialogs::getOpenFileName(this, "Import Sectors (JSON)", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
         try
         {
@@ -765,7 +766,7 @@ void DBContextEditDialog::showSectorLayersGroupMenu()
 
     menu.addAction("Export JSON...", [this]()
     {
-        QString path = QFileDialog::getSaveFileName(this, "Export Sectors", "", "JSON Files (*.json)");
+        QString path = Dialogs::getSaveFileName(this, "Export Sectors", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
         try
         {
@@ -873,9 +874,9 @@ void DBContextEditDialog::importAirSpace()
 {
     loginf;
 
-    QString filename = QFileDialog::getOpenFileName(
+    QString filename = Dialogs::getOpenFileName(
         this, "Import Air Space Sectors from JSON",
-        QString::fromStdString(manager_.compass().lastUsedPath()), "*.json");
+        QString::fromStdString(manager_.appState().lastUsedPath()), "*.json");
 
     if (filename.isEmpty())
         return;
@@ -1036,7 +1037,7 @@ void DBContextEditDialog::showFFTsGroupMenu()
 
     menu.addAction("Import...", [this]()
     {
-        QString path = QFileDialog::getOpenFileName(this, "Import FFTs", "", "JSON Files (*.json)");
+        QString path = Dialogs::getOpenFileName(this, "Import FFTs", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
         try
         {
@@ -1054,7 +1055,7 @@ void DBContextEditDialog::showFFTsGroupMenu()
 
     menu.addAction("Export...", [this]()
     {
-        QString path = QFileDialog::getSaveFileName(this, "Export FFTs", "", "JSON Files (*.json)");
+        QString path = Dialogs::getSaveFileName(this, "Export FFTs", "", "JSON Files (*.json)");
         if (path.isEmpty()) return;
         try
         {
@@ -1141,7 +1142,7 @@ void DBContextEditDialog::exportZipSlot()
 
     const auto& name = manager_.activeContext().name();
 
-    QString filepath = QFileDialog::getSaveFileName(
+    QString filepath = Dialogs::getSaveFileName(
         this, "Export Context as Zip", QString::fromStdString(name + ".zip"),
         "Zip Archives (*.zip)");
 
@@ -1164,7 +1165,7 @@ void DBContextEditDialog::exportZipSlot()
 
 void DBContextEditDialog::importZipSlot()
 {
-    QString filepath = QFileDialog::getOpenFileName(
+    QString filepath = Dialogs::getOpenFileName(
         this, "Import Context from Zip", "",
         "Zip Archives (*.zip)");
 

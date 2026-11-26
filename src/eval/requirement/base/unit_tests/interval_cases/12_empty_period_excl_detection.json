@@ -1,0 +1,18 @@
+{
+    "description": "As 11 with Exclude Detection Misses: the period is removed from expected.",
+    "params": {
+        "update_interval_s": 8.0,
+        "exclude_detection_misses": true
+    },
+    "periods": [
+        [
+            0,
+            80
+        ]
+    ],
+    "updates": [],
+    "expected": {
+        "sum_uis": 0,
+        "misses": 0
+    }
+}

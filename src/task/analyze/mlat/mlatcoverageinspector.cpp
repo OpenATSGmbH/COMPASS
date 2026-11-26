@@ -19,28 +19,27 @@
 #include "mlatcoveragehelpers.h"
 #include "analyzedatasourcetask.h"
 #include "analysisdataset.h"
+#include "reporttable.h"
 #include "targetreport3dgrid.h"
 #include "movementui.h"
 
-#include "compass.h"
 #include "logger.h"
 #include "number.h"
 #include "section.h"
 #include "sectioncontenttable.h"
 #include "sectioncontenttext.h"
-#include "stringconv.h"
 #include "system.h"
 #include "targetposition.h"
 #include "sectorlayer.h"
 #include "dbcontent/target/targetreportchain.h"
 
-#include "eval/requirement/detection/detection_pd_helpers.h"
+#include "requirement/detection/detection_pd_helpers.h"
+#include "coveragepdwalk.h"
+#include "coverage_summary_helpers.h"
 
 #include "grid2dlayer.h"
-#include "grid2dlayerrenderer.h"
 #include "grid2drendersettings.h"
 #include "colormap.h"
-#include "colorlegend.h"
 
 #include "viewpointgenerator.h"
 #include "histogram_raw.h"
@@ -60,11 +59,18 @@
 #include <sstream>
 #include <utility>
 
+#include <QCheckBox>
+#include <QComboBox>
+#include <QDoubleSpinBox>
+#include <QFormLayout>
+#include <QSpinBox>
+
 using boost::posix_time::ptime;
 using boost::posix_time::time_duration;
 using Utils::Number::mean;
 using Utils::Number::percentile;
 using analysis::MovementUI;
+namespace CoverageSummaryHelpers = analysis::CoverageSummaryHelpers;
 using analysis::SpeedSamples;
 using analysis::gatherTestSpeeds;
 using analysis::gatherRefSpeeds;
@@ -105,33 +111,16 @@ std::set<std::string> MLATCoverageInspector::testDBContentNames() const
     return {"CAT020", "CAT010"};
 }
 
-bool MLATCoverageInspector::prerequisitesMet(std::string& reason_out) const
-{
-    reason_out.clear();
-
-    if (task_.selectedDataSourceIDs().empty())
-    {
-        reason_out = "No data source selected.";
-        return false;
-    }
-    return true;
-}
-
 namespace
 {
 using Settings = MLATCoverageInspectorSettings;
-using EvaluationRequirement::PDHelpers::MissTestParams;
 using EvaluationRequirement::PDHelpers::RefPeriod;
+using analysis::PDWalkParams;
+using analysis::walkReferencePeriodsTimeDifference;
 
 double partialSeconds(const time_duration& d)
 {
     return static_cast<double>(d.total_microseconds()) / 1.0e6;
-}
-
-ptime addSeconds(ptime t, double s)
-{
-    long long us = static_cast<long long>(std::llround(s * 1.0e6));
-    return t + boost::posix_time::microseconds(us);
 }
 
 time_duration durationFromSeconds(double s)
@@ -142,7 +131,6 @@ time_duration durationFromSeconds(double s)
 
 // Inter-report intervals above this are treated as coverage gaps (target not
 // continuously tracked) and excluded from the measured-cadence statistics.
-constexpr double kMaxUpdateIntervalS = 300.0;
 
 std::string formatNumber(double v, int prec = 4)
 {
@@ -162,18 +150,19 @@ struct CellAttribution
     double alt_ft = 0.0;
 };
 
-// Per-sector slot accumulation: a slot is attributed to every selected sector
-// layer it lies in (evaluation's exact SectorLayer::isInside). `eui`/`mui`
-// accumulate across targets; `touched` is reset per target so the caller can
-// count each target once per sector.
+// Per-sector slot accumulation: a slot (or a share of it) is attributed to
+// every selected sector layer it lies in (evaluation's exact
+// SectorLayer::isInside). `eui`/`mui` accumulate weighted counts across
+// targets; `touched` is reset per target so the caller can count each target
+// once per sector.
 struct SectorWalkAccum
 {
     const std::vector<std::shared_ptr<SectorLayer>>* layers = nullptr;
-    std::vector<std::uint64_t> eui;
-    std::vector<std::uint64_t> mui;
-    std::vector<char>          touched;
+    std::vector<double> eui;
+    std::vector<double> mui;
+    std::vector<char>   touched;
 
-    void accum(const CellAttribution& ca, bool is_miss)
+    void accum(const CellAttribution& ca, double w_eui, double w_mui)
     {
         if (!layers)
             return;
@@ -187,7 +176,8 @@ struct SectorWalkAccum
             const auto& L = (*layers)[i];
             if (L && L->isInside(pos, false, false))
             {
-                if (is_miss) ++mui[i]; else ++eui[i];
+                eui[i] += w_eui;
+                mui[i] += w_mui;
                 touched[i] = 1;
             }
         }
@@ -232,15 +222,13 @@ std::vector<ptime> gatherTestTimestamps(unsigned int utn,
 
 // Time-difference walk per target.
 //
-// For each reference period:
-//   - attribute one #EUI per UI slot, at the cell of the reference position
-//     at slot timestamp `period.begin + k * UI`;
-//   - walk the test timestamps that fall inside `[period.begin, period.end]`
-//     and form gaps (period.begin -> first test, between consecutive tests,
-//     last test -> period.end; or `period` itself when no tests are inside);
-//   - for each gap that passes the miss test, attribute one #MUI per missed
-//     UI slot at the cell of the reference position at the slot timestamp.
-//
+// The walk (shared with the ADS-B coverage inspector, see
+// `analysis::walkReferencePeriodTimeDifference()`) cuts each reference period
+// into pieces of the reference time line, from the gaps between the test
+// reports only: one piece per missed slot (1 #EUI and 1 #MUI) and one detected
+// piece per gap (the remaining fraction of a slot). Each piece is sampled along
+// the reference path and its weight split over the cells by the time spent in
+// each, so a missed slot and its expected slot always share the same cells.
 // Both per-cell counters live on `grid`; the caller aggregates them.
 void walkTargetTimeDifference(unsigned int utn,
                               const std::vector<RefPeriod>& periods,
@@ -249,163 +237,39 @@ void walkTargetTimeDifference(unsigned int utn,
                               TargetReport3DGrid& grid,
                               const Settings& settings,
                               const analysis::MovementUI& mv,
-                              SectorWalkAccum* sec)
+                              SectorWalkAccum* sec,
+                              const analysis::PDWalkGapFunc& on_gap)
 {
     const time_duration d_max = boost::posix_time::seconds(60);
 
-    for (const auto& period : periods)
+    PDWalkParams walk_params;
+    walk_params.mv                 = &mv;
+    walk_params.use_miss_tolerance = settings.use_miss_tolerance_;
+    walk_params.miss_tolerance_s   = settings.miss_tolerance_s_;
+
+    auto pieceFunc = [ & ] (const ptime& begin, const ptime& end, double expected, bool is_miss)
     {
-        const double period_s = partialSeconds(period.end - period.begin);
-        if (period_s <= 0.0)
-            continue;
-
-        // Expected slots: step adaptively by the local update interval, so a
-        // standing target (which the MLAT system updates less often) is expected
-        // less often instead of accruing false misses.
-        std::size_t guard = 0;
-        const std::size_t max_iter = 50'000'000;
-        for (ptime t_slot = period.begin; t_slot < period.end; )
+        analysis::samplePiece(begin, end, walk_params.sample_step_s,
+                              [ & ] (const ptime& t, double frac)
         {
-            auto ca = refCellAt(dataset, utn, t_slot, d_max);
-            if (ca.valid)
-            {
-                grid.addEUI(ca.lat, ca.lon, ca.alt_ft);
-                if (sec) sec->accum(ca, false);
-            }
-            double ui = mv.uiAt(t_slot);
-            if (ui <= 0.0 || ++guard > max_iter)
-                break;
-            t_slot = addSeconds(t_slot, ui);
-        }
+            auto ca = refCellAt(dataset, utn, t, d_max);
+            if (!ca.valid)
+                return;
 
-        // Test timestamps inside [period.begin, period.end].
-        auto first = std::lower_bound(tst_ts_sorted.begin(),
-                                      tst_ts_sorted.end(), period.begin);
-        auto last  = std::upper_bound(tst_ts_sorted.begin(),
-                                      tst_ts_sorted.end(), period.end);
+            const double w_eui = expected * frac;
+            const double w_mui = is_miss ? w_eui : 0.0;
 
-        std::vector<ptime> walk;
-        walk.reserve(static_cast<std::size_t>(std::distance(first, last)) + 2);
-        walk.push_back(period.begin);
-        for (auto it = first; it != last; ++it)
-            walk.push_back(*it);
-        walk.push_back(period.end);
+            grid.addEUI(ca.lat, ca.lon, ca.alt_ft, w_eui);
+            if (is_miss)
+                grid.addMUI(ca.lat, ca.lon, ca.alt_ft, w_mui);
 
-        for (std::size_t i = 0; i + 1 < walk.size(); ++i)
-        {
-            ptime gap_start = walk[i];
-            ptime gap_end   = walk[i + 1];
-            if (gap_end <= gap_start)
-                continue;
-            const float gap_s =
-                static_cast<float>(partialSeconds(gap_end - gap_start));
+            if (sec) sec->accum(ca, w_eui, w_mui);
+        });
+    };
 
-            // Expected cadence inside the gap follows the target's movement at
-            // the gap start (moving vs standing update interval).
-            const double gap_ui = mv.uiAt(gap_start);
-            if (gap_ui <= 0.0)
-                continue;
-
-            MissTestParams miss_params;
-            miss_params.update_interval_s  = static_cast<float>(gap_ui);
-            miss_params.use_miss_tolerance = settings.use_miss_tolerance_;
-            miss_params.miss_tolerance_s   = settings.miss_tolerance_s_;
-
-            if (!EvaluationRequirement::PDHelpers::isMiss(gap_s, miss_params))
-                continue;
-
-            const unsigned int n_misses =
-                EvaluationRequirement::PDHelpers::numMisses(gap_s, miss_params);
-
-            for (unsigned int m = 0; m < n_misses; ++m)
-            {
-                ptime t_miss = addSeconds(gap_start, (m + 1) * gap_ui);
-                if (t_miss >= gap_end)
-                    break;
-                auto ca = refCellAt(dataset, utn, t_miss, d_max);
-                if (ca.valid)
-                {
-                    grid.addMUI(ca.lat, ca.lon, ca.alt_ft);
-                    if (sec) sec->accum(ca, true);
-                }
-            }
-        }
-    }
+    walkReferencePeriodsTimeDifference(periods, tst_ts_sorted, walk_params, pieceFunc, on_gap);
 }
 }  // anonymous namespace
-
-namespace mlatcoverage_internal
-{
-std::vector<CycleEvent> evaluateCyclesInPeriod(
-    const EvaluationRequirement::PDHelpers::RefPeriod& period,
-    const std::vector<ptime>& cycles_sorted,
-    const std::vector<ptime>& tst_ts_sorted,
-    const analysis::MovementUI* mv)
-{
-    std::vector<CycleEvent> out;
-
-    auto cyc_begin = std::lower_bound(cycles_sorted.begin(),
-                                      cycles_sorted.end(),
-                                      period.begin);
-    auto cyc_end   = std::upper_bound(cycles_sorted.begin(),
-                                      cycles_sorted.end(),
-                                      period.end);
-
-    out.reserve(static_cast<std::size_t>(std::distance(cyc_begin, cyc_end)));
-
-    const double standing_ui = mv ? mv->ui_standing : 0.0;
-
-    for (auto it = cyc_begin; it != cyc_end; )
-    {
-        ptime t_cycle = *it;
-
-        // Standing targets are expected only once per standing UI, not every
-        // cycle; the window then spans that interval and the cycles inside it
-        // are skipped (a standing target legitimately reports less often than
-        // the cycle rate). Moving targets keep the per-cycle window.
-        const bool standing = mv && standing_ui > 0.0 && mv->standingAt(t_cycle);
-
-        ptime t_window_end;
-        if (standing)
-        {
-            t_window_end = t_cycle
-                + boost::posix_time::microseconds(
-                      static_cast<long long>(std::llround(standing_ui * 1.0e6)));
-            if (t_window_end > period.end)
-                t_window_end = period.end;
-        }
-        else
-        {
-            auto next_it = std::next(it);
-            t_window_end = (next_it != cyc_end) ? *next_it : period.end;
-        }
-
-        if (t_window_end <= t_cycle)
-        {
-            ++it;
-            continue;
-        }
-
-        auto tst_lo = std::lower_bound(tst_ts_sorted.begin(),
-                                       tst_ts_sorted.end(),
-                                       t_cycle);
-        const bool has_test =
-            (tst_lo != tst_ts_sorted.end() && *tst_lo < t_window_end);
-
-        CycleEvent ev;
-        ev.t_cycle = t_cycle;
-        ev.is_miss = !has_test;
-        out.push_back(ev);
-
-        if (standing)
-            it = std::lower_bound(it, cyc_end, t_window_end);  // skip covered cycles
-        else
-            ++it;
-    }
-
-    return out;
-}
-}  // namespace mlatcoverage_internal
 
 namespace
 {
@@ -427,7 +291,8 @@ void walkTargetStatusMessage(unsigned int utn,
                              TargetReport3DGrid& grid,
                              const Settings& /*settings*/,
                              const analysis::MovementUI& mv,
-                             SectorWalkAccum* sec)
+                             SectorWalkAccum* sec,
+                             const analysis::PDWalkGapFunc& on_gap)
 {
     const time_duration d_max = boost::posix_time::seconds(60);
 
@@ -436,19 +301,37 @@ void walkTargetStatusMessage(unsigned int utn,
         auto events = mlatcoverage_internal::evaluateCyclesInPeriod(
             period, cycles_sorted, tst_ts_sorted, &mv);
 
+        // consecutive missed cycles form one gap, from the last detected cycle
+        // (or the period begin) to the next detected cycle (or the period end)
+        ptime        gap_begin  = period.begin;
+        unsigned int gap_missed = 0;
+
+        auto closeGap = [ & ] (const ptime& end)
+        {
+            if (gap_missed > 0 && on_gap)
+                on_gap(gap_begin, end, gap_missed);
+
+            gap_begin  = end;
+            gap_missed = 0;
+        };
+
         for (const auto& ev : events)
         {
+            if (ev.is_miss)
+                ++gap_missed;
+            else
+                closeGap(ev.t_cycle);
+
             auto ca = refCellAt(dataset, utn, ev.t_cycle, d_max);
             if (!ca.valid)
                 continue;
             grid.addEUI(ca.lat, ca.lon, ca.alt_ft);
-            if (sec) sec->accum(ca, false);
             if (ev.is_miss)
-            {
                 grid.addMUI(ca.lat, ca.lon, ca.alt_ft);
-                if (sec) sec->accum(ca, true);
-            }
+            if (sec) sec->accum(ca, 1.0, ev.is_miss ? 1.0 : 0.0);
         }
+
+        closeGap(period.end);
     }
 }
 }  // anonymous namespace
@@ -524,6 +407,9 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
 
     const auto utns = dataset->utns();
 
+    // Report table: one row per gap, keyed by the first reference sample inside it.
+    ReportTableRows gap_rows(tableWriter(), tableWriter().define(gapTableDefinition()));
+
     for (auto utn : utns)
     {
         if (!dataset->hasReferenceChain(utn))
@@ -543,7 +429,7 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
             ref_ts.insert(kv.first);
 
         auto periods = EvaluationRequirement::PDHelpers::buildReferencePeriods(
-            ref_ts, ref_max_gap, min_period_duration);
+            ref_ts, ref_max_gap, min_period_duration, dataset->referenceBreaks(utn));
         if (periods.empty())
         {
             ++targets_no_ref;
@@ -554,12 +440,7 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
         if (tst_ts_sorted.empty())
             ++targets_no_tst;
 
-        for (std::size_t i = 1; i < tst_ts_sorted.size(); ++i)
-        {
-            double dt = partialSeconds(tst_ts_sorted[i] - tst_ts_sorted[i - 1]);
-            if (dt > 0.0 && dt <= kMaxUpdateIntervalS)
-                intervals.push_back(dt);
-        }
+        CoverageSummaryHelpers::appendUpdateIntervals(tst_ts_sorted, intervals);
 
         ++targets_walked;
 
@@ -577,95 +458,61 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
         mv.ui_standing  = settings.update_interval_standing_s_;
         mv.window_s     = std::max(6.0, 2.0 * settings.update_interval_standing_s_);
 
+        auto on_gap = [ & ] (const ptime& begin, const ptime& end, unsigned int num_missed)
+        {
+            writeGapRow(gap_rows, *dataset, GapRow{ utn, begin, end, num_missed });
+        };
+
         if (use_status_method)
             walkTargetStatusMessage(utn, periods, tst_ts_sorted,
-                                    status_cycles, *dataset, grid, settings, mv, &sec);
+                                    status_cycles, *dataset, grid, settings, mv, &sec, on_gap);
         else
             walkTargetTimeDifference(utn, periods, tst_ts_sorted,
-                                     *dataset, grid, settings, mv, &sec);
+                                     *dataset, grid, settings, mv, &sec, on_gap);
 
         for (std::size_t si = 0; si < sector_layers.size(); ++si)
             if (sec.touched[si])
                 ++sector_target_count[si];
     }
 
+    gap_rows.flush();
+
     auto horizontal = grid.projectHorizontal();
-    std::uint64_t total_eui = 0, total_mui = 0;
-    double worst_pd = 1.0;
-    bool   worst_set = false;
-    std::vector<double> per_cell_pd;
-    per_cell_pd.reserve(horizontal.size());
+
+    std::vector<CoverageSummaryHelpers::CellCounts> cell_counts;
+    cell_counts.reserve(horizontal.size());
     for (const auto& kv : horizontal)
-    {
-        total_eui += kv.second.num_eui;
-        total_mui += kv.second.num_mui;
-        if (kv.second.num_eui == 0) continue;
-        double pd = (static_cast<double>(kv.second.num_eui)
-                     - static_cast<double>(kv.second.num_mui))
-                    / static_cast<double>(kv.second.num_eui);
-        per_cell_pd.push_back(pd);
-        if (kv.second.num_eui >= 5 && (!worst_set || pd < worst_pd))
-        {
-            worst_pd  = pd;
-            worst_set = true;
-        }
-    }
-    double overall_pd = total_eui > 0
-                           ? (static_cast<double>(total_eui) - static_cast<double>(total_mui))
-                                 / static_cast<double>(total_eui)
-                           : 0.0;
+        cell_counts.push_back({ kv.second.num_eui, kv.second.num_mui });
+
+    const auto pd_summary = CoverageSummaryHelpers::summarizePD(cell_counts);
 
     result_.valid              = true;
     result_.targets_walked     = targets_walked;
     result_.targets_no_ref     = targets_no_ref;
     result_.targets_no_tst     = targets_no_tst;
-    result_.total_eui          = total_eui;
-    result_.total_mui          = total_mui;
-    result_.overall_pd         = overall_pd;
-    result_.cells_with_eui     = per_cell_pd.size();
-    result_.median_per_cell_pd = percentile(per_cell_pd, 0.5);
-    result_.p5_per_cell_pd     = percentile(per_cell_pd, 0.05);
-    result_.has_worst_cell     = worst_set;
-    result_.worst_cell_pd      = worst_pd;
+    result_.total_eui          = pd_summary.total_eui;
+    result_.total_mui          = pd_summary.total_mui;
+    result_.overall_pd         = pd_summary.overall_pd;
+    result_.cells_with_eui     = pd_summary.cells_with_eui;
+    result_.median_per_cell_pd = pd_summary.median_cell_pd;
+    result_.p5_per_cell_pd     = pd_summary.p5_cell_pd;
+    result_.has_worst_cell     = pd_summary.has_worst_cell;
+    result_.worst_cell_pd      = pd_summary.worst_cell_pd;
 
-    result_.ui_num_intervals   = intervals.size();
-    if (!intervals.empty())
+    const auto ui_stats = CoverageSummaryHelpers::intervalStats(
+        intervals, settings.ui_hist_max_s_, settings.ui_hist_num_bins_, 15.0);
+
+    result_.ui_num_intervals = ui_stats.num;
+    if (ui_stats.num)
     {
-        result_.ui_median_s = percentile(intervals, 0.5);
-        result_.ui_p10_s    = percentile(intervals, 0.1);
-        result_.ui_p90_s    = percentile(intervals, 0.9);
-        result_.ui_mean_s   = mean(intervals);
-
-        // Histogram: bins over [0, max], plus one overflow bin for >= max so
-        // long detection breaks do not stretch the axis. max = configured value
-        // or, when <= 0, a rounded-up value derived from the data (P99).
-        double hist_max = settings.ui_hist_max_s_ > 0.0f
-                              ? static_cast<double>(settings.ui_hist_max_s_)
-                              : std::ceil(percentile(intervals, 0.99));
-        if (hist_max <= 0.0)
-            hist_max = 15.0;
-        const unsigned int nbins =
-            static_cast<unsigned int>(std::max(1, settings.ui_hist_num_bins_));
-        const double w = hist_max / static_cast<double>(nbins);
-
-        std::vector<std::uint32_t> bins(nbins, 0);
-        std::uint32_t overflow = 0;
-        for (double dt : intervals)
-        {
-            if (dt >= hist_max)
-            {
-                ++overflow;
-                continue;
-            }
-            unsigned int b = static_cast<unsigned int>(std::floor(dt / w));
-            if (b >= nbins)
-                b = nbins - 1;
-            ++bins[b];
-        }
-        result_.ui_hist_max_s     = hist_max;
-        result_.ui_hist_bin_width = w;
-        result_.ui_hist_bins      = std::move(bins);
-        result_.ui_hist_overflow  = overflow;
+        result_.ui_median_s       = ui_stats.median_s;
+        result_.ui_p10_s          = ui_stats.p10_s;
+        result_.ui_p90_s          = ui_stats.p90_s;
+        result_.ui_mean_s         = ui_stats.mean_s;
+        result_.ui_hist_max_s     = ui_stats.hist_max_s;
+        result_.ui_hist_bin_width = ui_stats.hist_bin_width_s;
+        result_.ui_hist_bins      = ui_stats.hist_bins;
+        result_.ui_hist_overflow  = ui_stats.hist_overflow;
     }
 
     // Per-sector rows (over the selected sector layers).
@@ -678,10 +525,7 @@ void MLATCoverageInspector::compute(AnalysisDataset* dataset)
         r.num_targets = sector_target_count[si];
         r.eui         = sec.eui[si];
         r.mui         = sec.mui[si];
-        r.pd          = sec.eui[si] > 0
-            ? (static_cast<double>(sec.eui[si]) - static_cast<double>(sec.mui[si]))
-                  / static_cast<double>(sec.eui[si])
-            : 0.0;
+        r.pd          = CoverageSummaryHelpers::pd(sec.eui[si], sec.mui[si]);
         result_.sectors.push_back(std::move(r));
     }
 }
@@ -691,15 +535,12 @@ namespace
 // Per-cell PD scalar: only cells with #EUI > 0 contribute.
 std::optional<double> pdScalar(const TargetReport3DGrid::Cell& c)
 {
-    if (c.num_eui == 0)
-        return std::nullopt;
-    return (static_cast<double>(c.num_eui) - static_cast<double>(c.num_mui))
-           / static_cast<double>(c.num_eui);
+    return CoverageSummaryHelpers::cellPD(c.num_eui, c.num_mui);
 }
 
 std::uint64_t pdSampleCount(const TargetReport3DGrid::Cell& c)
 {
-    return c.num_eui;
+    return static_cast<std::uint64_t>(std::llround(c.num_eui));
 }
 
 void attachPDFigure(ResultReport::Section& section,
@@ -722,44 +563,29 @@ void attachPDFigure(ResultReport::Section& section,
     rs.min_value = settings.pd_unacceptable_below_;
     rs.max_value = settings.pd_acceptable_above_;
 
+    // Reversed legend so the color-map's "good" end (green for PD) ends up at
+    // the top, matching operator expectation.
+    rs.legend_order     = Grid2DRenderSettings::LegendOrder::Reversed;
+    rs.legend_precision = 2;
+
     PlotMetadata meta("Sensor Coverage", fig_name,
                       proj.x_axis_label, proj.y_axis_label);
 
     auto vp = std::make_unique<ViewPointGenVP>(fig_name, 0, "Grid");
-    vp->noDataLoaded(true);
 
     auto* anno = vp->annotations().getOrCreateAnnotation("PD");
 
-    // Note: ViewPointGenFeatureGeoImage / ViewPointGenFeatureGrid take
-    // ownership of the layer payload via copy; the unique_ptr in `proj`
-    // keeps the Grid2DLayer alive until end of scope.
+    // Note: ViewPointGenFeatureGrid takes ownership of the layer payload via
+    // copy; the unique_ptr in `proj` keeps the Grid2DLayer alive until end of scope.
+    anno->addFeature(new ViewPointGenFeatureGrid(*proj.layer, rs, meta));
+
     if (proj.x_axis_label == "Longitude (deg)" && proj.y_axis_label == "Latitude (deg)")
     {
-        auto rendered = Grid2DLayerRenderer::render(*proj.layer, rs);
-
-        // Reverse so the color-map's "good" end (green for PD) ends up at the
-        // top of the legend tree, matching operator expectation.
-        auto raw = rs.color_map.colorLegend(
-            /*add_sel_color=*/false,
-            /*add_null_color=*/false,
-            [](double v) { return Utils::String::doubleToStringPrecision(v, 2); });
-        ColorLegend legend;
-        const auto& entries = raw.entries();
-        for (auto it = entries.rbegin(); it != entries.rend(); ++it)
-            legend.addEntry(it->first, it->second);
-
-        anno->addFeature(new ViewPointGenFeatureGeoImage(rendered.first, rendered.second, legend));
-
-        // Frame the Geographic View on the populated region of the rendered
-        // raster instead of falling back to the full loaded-data extent.
-        QRectF vp_roi = Grid2DLayerRenderer::geoROIOfOpaquePixels(
-            rendered.first, rendered.second);
+        // Frame the view on the cells with values instead of falling back to
+        // the full loaded-data extent.
+        QRectF vp_roi = proj.layer->geoROIOfValidCells();
         if (!vp_roi.isEmpty())
             vp->setROI(vp_roi);
-    }
-    else
-    {
-        anno->addFeature(new ViewPointGenFeatureGrid(*proj.layer, rs, meta));
     }
 
     nlohmann::json vp_json;
@@ -864,8 +690,8 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
     summary.addRow({"Targets walked",        std::to_string(result_.targets_walked)});
     summary.addRow({"Targets w/o RefTraj",   std::to_string(result_.targets_no_ref)});
     summary.addRow({"Targets w/o test data", std::to_string(result_.targets_no_tst)});
-    summary.addRow({"Total expected slots (#EUI)", std::to_string(result_.total_eui)});
-    summary.addRow({"Total missed slots (#MUI)",   std::to_string(result_.total_mui)});
+    summary.addRow({"Total expected slots (#EUI)", formatNumber(result_.total_eui, 1)});
+    summary.addRow({"Total missed slots (#MUI)",   formatNumber(result_.total_mui, 1)});
     summary.addRow({"Overall PD",                  formatNumber(result_.overall_pd)});
     summary.addRow({"Cells with EUI",              std::to_string(result_.cells_with_eui)});
     summary.addRow({"Median per-cell PD",          formatNumber(result_.median_per_cell_pd)});
@@ -912,10 +738,9 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
 
         const std::string fig = "Update Interval Histogram";
         auto vp = std::make_unique<ViewPointGenVP>(fig, 0, "Histogram");
-        vp->noDataLoaded(true);
         auto* anno = vp->annotations().getOrCreateAnnotation("Update Interval");
         anno->addFeature(new ViewPointGenFeatureHistogram(
-            h, "Update Interval", QColor(0, 128, 192), boost::optional<bool>(),
+            h, "Update Interval", QColor(0, 128, 192), task().reportFigureOptionsConfig().histogram_log_scale,
             PlotMetadata("Sensor Coverage", fig, "Update Interval (s)", "Count")));
 
         nlohmann::json vp_json;
@@ -931,14 +756,14 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
                                     {"Sector", "Targets", "#EUI", "#MUI", "PD"}, false);
         st.addRow({"All (in scope)",
                    std::to_string(result_.targets_walked),
-                   std::to_string(result_.total_eui),
-                   std::to_string(result_.total_mui),
+                   formatNumber(result_.total_eui, 1),
+                   formatNumber(result_.total_mui, 1),
                    formatNumber(result_.overall_pd)});
         for (const auto& r : result_.sectors)
             st.addRow({r.label,
                        std::to_string(r.num_targets),
-                       std::to_string(r.eui),
-                       std::to_string(r.mui),
+                       formatNumber(r.eui, 1),
+                       formatNumber(r.mui, 1),
                        formatNumber(r.pd)});
     }
 
@@ -961,4 +786,93 @@ void MLATCoverageInspector::writeReport(ResultReport::Section& root)
     loginf << "MLATCoverageInspector: walked " << result_.targets_walked << " target(s), "
            << result_.total_eui << " EUI, " << result_.total_mui
            << " MUI, overall PD " << result_.overall_pd;
+}
+
+/**
+*/
+void MLATCoverageInspector::addSettingsRows(QFormLayout* form)
+{
+    auto& s = static_cast<MLATCoverageInspectorSettings&>(settings_);
+
+    auto* method_combo = new QComboBox();
+    method_combo->addItem("Time Difference",
+                          static_cast<int>(MLATCoverageInspectorSettings::PDMethod::TimeDifference));
+    method_combo->addItem("Status Period Message Based",
+                          static_cast<int>(MLATCoverageInspectorSettings::PDMethod::StatusPeriodMessage));
+    int sel_idx = method_combo->findData(s.pd_method_int_);
+    method_combo->setCurrentIndex(sel_idx >= 0 ? sel_idx : 0);
+
+    auto* ui_spin = makeFloatSpin(0.05, 60.0, 0.1, 2, " s", s.update_interval_s_);
+
+    auto on_method = [&s, ui_spin, method_combo](int) {
+        s.pd_method_int_ = method_combo->currentData().toInt();
+        ui_spin->setEnabled(s.pdMethod() ==
+                            MLATCoverageInspectorSettings::PDMethod::TimeDifference);
+    };
+    QObject::connect(method_combo,
+                     QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     on_method);
+    on_method(0);
+
+    QObject::connect(ui_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.update_interval_s_ = static_cast<float>(v); });
+
+    auto* ui_stand_spin = makeFloatSpin(0.05, 60.0, 0.1, 2, " s", s.update_interval_standing_s_);
+    QObject::connect(ui_stand_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.update_interval_standing_s_ = static_cast<float>(v); });
+
+    auto* stand_spd_spin = makeFloatSpin(0.0, 50.0, 0.1, 2, " m/s", s.standing_speed_max_mps_);
+    QObject::connect(stand_spd_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.standing_speed_max_mps_ = static_cast<float>(v); });
+
+    // Standing UI/threshold only apply to the time-difference method.
+    auto on_method_standing = [ui_stand_spin, stand_spd_spin, method_combo](int) {
+        bool td = method_combo->currentData().toInt()
+                  == static_cast<int>(MLATCoverageInspectorSettings::PDMethod::TimeDifference);
+        ui_stand_spin->setEnabled(td);
+        stand_spd_spin->setEnabled(td);
+    };
+    QObject::connect(method_combo, QOverload<int>::of(&QComboBox::currentIndexChanged),
+                     on_method_standing);
+    on_method_standing(0);
+
+    form->addRow("PD Calculation Method", method_combo);
+    form->addRow("Update Interval (Moving)", ui_spin);
+    form->addRow("Update Interval (Standing)", ui_stand_spin);
+    form->addRow("Standing Speed Threshold", stand_spd_spin);
+
+    auto* miss_cb  = new QCheckBox();
+    miss_cb->setChecked(s.use_miss_tolerance_);
+    auto* miss_spin = makeFloatSpin(0.0, 60.0, 0.05, 3, " s", s.miss_tolerance_s_);
+    miss_spin->setEnabled(s.use_miss_tolerance_);
+    QObject::connect(miss_cb, &QCheckBox::toggled, [&s, miss_spin](bool on) {
+        s.use_miss_tolerance_ = on;
+        miss_spin->setEnabled(on);
+    });
+    QObject::connect(miss_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.miss_tolerance_s_ = static_cast<float>(v); });
+    form->addRow("Use Miss Tolerance", miss_cb);
+    form->addRow("Miss Tolerance",     miss_spin);
+
+    auto* acc_spin = makeFloatSpin(0.0, 1.0, 0.01, 2, "", s.pd_acceptable_above_);
+    QObject::connect(acc_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.pd_acceptable_above_ = static_cast<float>(v); });
+    form->addRow("Value Acceptable (green)", acc_spin);
+
+    auto* unacc_spin = makeFloatSpin(0.0, 1.0, 0.01, 2, "", s.pd_unacceptable_below_);
+    QObject::connect(unacc_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.pd_unacceptable_below_ = static_cast<float>(v); });
+    form->addRow("Value Unacceptable (red)", unacc_spin);
+
+    auto* hbins_spin = new QSpinBox();
+    hbins_spin->setRange(1, 100);
+    hbins_spin->setValue(s.ui_hist_num_bins_);
+    QObject::connect(hbins_spin, QOverload<int>::of(&QSpinBox::valueChanged),
+                     [&s](int v) { s.ui_hist_num_bins_ = v; });
+    form->addRow("Histogram Bins", hbins_spin);
+
+    auto* hmax_spin = makeFloatSpin(0.0, 600.0, 1.0, 1, " s", s.ui_hist_max_s_);
+    QObject::connect(hmax_spin, QOverload<double>::of(&QDoubleSpinBox::valueChanged),
+                     [&s](double v) { s.ui_hist_max_s_ = static_cast<float>(v); });
+    form->addRow("Histogram Max Interval (0 = auto)", hmax_spin);
 }

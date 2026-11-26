@@ -27,14 +27,13 @@
 #include <pcap.h>
 #include <pcap/sll.h>
 
+#ifdef _WIN32
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#else
 #include <netinet/in.h>
-#include <netinet/ip.h>
-#include <net/if.h>
-#include <netinet/if_ether.h>
-#include <net/ethernet.h>
-#include <netinet/tcp.h>
-#include <netinet/udp.h>
 #include <arpa/inet.h>
+#endif
 
 #include <QString>
 #include <QStringList>
@@ -50,6 +49,52 @@ const unsigned int PacketSniffer::UnspecifiedPort = std::numeric_limits<unsigned
 
 using namespace std;
 using namespace Utils;
+
+// network headers as in the capture, parsed by offsets: the header structs (ether_header, ip,
+// tcphdr, udphdr) do not exist on Windows. Sizes are the same as of the Linux structs.
+namespace
+{
+const int EtherTypeIP = 0x0800;
+
+const size_t EtherHeaderSize = 14;
+const size_t IPHeaderSize    = 20;  // without options
+const size_t TCPHeaderSize   = 20;  // without options
+const size_t UDPHeaderSize   = 8;
+
+// offsets in the headers
+const size_t EtherTypeOffset  = 12;
+const size_t IPProtocolOffset = 9;
+const size_t IPSourceOffset   = 12;
+const size_t IPDestOffset     = 16;
+const size_t PortSourceOffset = 0;  // TCP and UDP
+const size_t PortDestOffset   = 2;  // TCP and UDP
+const size_t UDPLengthOffset  = 4;
+
+// network byte order (big endian)
+uint16_t readUInt16BE(const u_char* data)
+{
+    return static_cast<uint16_t>((data[0] << 8) | data[1]);
+}
+
+// dotted decimal, as inet_ntop for AF_INET
+std::string ipv4ToString(const u_char* address)
+{
+    return std::to_string(address[0]) + "." + std::to_string(address[1]) + "."
+           + std::to_string(address[2]) + "." + std::to_string(address[3]);
+}
+
+// 64-bit file position, ftell returns a 32-bit long on Windows
+std::int64_t filePosition(FILE* fp)
+{
+    if (!fp)
+        return -1;
+#ifdef _WIN32
+    return _ftelli64(fp);
+#else
+    return ftello(fp);
+#endif
+}
+}
 
 #ifndef DLT_LINUX_SLL2
 #define DLT_LINUX_SLL2 276
@@ -233,24 +278,23 @@ void PacketSniffer::digestPCAPPacket(const struct pcap_pkthdr* pkthdr,
     
     if (link_layer_type == DLT_EN10MB)
     {
-        const struct ether_header* eh = (struct ether_header*)packet;
-        digestPCAPEtherPacket(ntohs(eh->ether_type), pkthdr, packet + sizeof(struct ether_header), sizeof(struct ether_header), read_config);
+        digestPCAPEtherPacket(readUInt16BE(packet + EtherTypeOffset), pkthdr, packet + EtherHeaderSize, EtherHeaderSize, read_config);
     }
     else if(link_layer_type == DLT_LINUX_SLL)
     {
         const struct sll_header* sll = (struct sll_header*)packet;
-        digestPCAPEtherPacket(ntohs(sll->sll_protocol), pkthdr, packet + sizeof(struct sll_header), sizeof(struct sll_header), read_config);
+        digestPCAPEtherPacket(readUInt16BE((const u_char*)&sll->sll_protocol), pkthdr, packet + sizeof(struct sll_header), sizeof(struct sll_header), read_config);
     }
     else if(link_layer_type == DLT_LINUX_SLL2)
     {
         const struct sll2_header* sll2 = (struct sll2_header*)packet;
-        digestPCAPEtherPacket(ntohs(sll2->sll2_protocol), pkthdr, packet + sizeof(struct sll2_header), sizeof(struct sll2_header), read_config);
+        digestPCAPEtherPacket(readUInt16BE((const u_char*)&sll2->sll2_protocol), pkthdr, packet + sizeof(struct sll2_header), sizeof(struct sll2_header), read_config);
     }
     // Raw IP packets (no link layer header)
     else if(link_layer_type == DLT_RAW)
     {
         // Skip directly to IP processing
-        digestPCAPEtherPacket(ETHERTYPE_IP, pkthdr, packet, 0, read_config);
+        digestPCAPEtherPacket(EtherTypeIP, pkthdr, packet, 0, read_config);
     }
     else
     {
@@ -265,15 +309,9 @@ void PacketSniffer::digestPCAPPacket(const struct pcap_pkthdr* pkthdr,
 void PacketSniffer::digestPCAPEtherPacket(int ether_type, 
                                           const struct pcap_pkthdr* pkthdr, 
                                           const u_char* packet, 
-                                          unsigned long data_offs,
+                                          std::uint64_t data_offs,
                                           const ReadConfig& read_config)
 {
-    const struct ip*      ipHeader;
-    const struct tcphdr* tcpHeader;
-    const struct udphdr* udpHeader;
-
-    char         sourceIP[INET_ADDRSTRLEN];
-    char         destIP  [INET_ADDRSTRLEN];
     std::string  sourceIPString, destIPString;
     u_int        sourcePort, destPort;
     uint8_t      ipProtocol;
@@ -283,41 +321,37 @@ void PacketSniffer::digestPCAPEtherPacket(int ether_type,
     size_t  dataLength    = 0;
     size_t  payloadLength = 0; 
 
-    if (ether_type == ETHERTYPE_IP) 
+    if (ether_type == EtherTypeIP) 
     {
-        ipHeader = (struct ip*)packet;
-        inet_ntop(AF_INET, &(ipHeader->ip_src), sourceIP, INET_ADDRSTRLEN);
-        inet_ntop(AF_INET, &(ipHeader->ip_dst), destIP  , INET_ADDRSTRLEN);
+        sourceIPString = ipv4ToString(packet + IPSourceOffset);
+        destIPString   = ipv4ToString(packet + IPDestOffset);
 
-        sourceIPString = std::string(sourceIP);
-        destIPString   = std::string(destIP);
+        ipProtocol = packet[IPProtocolOffset];
+        ipVersion  = packet[0] >> 4;
 
-        ipProtocol = ipHeader->ip_p;
-        ipVersion  = ipHeader->ip_v;
+        const u_char* transportHeader = packet + IPHeaderSize;
 
-        if (ipHeader->ip_p == IPPROTO_TCP) 
+        if (ipProtocol == IPPROTO_TCP) 
         {
-            tcpHeader  = (struct tcphdr*)(packet + sizeof(struct ip));
-            sourcePort = ntohs(tcpHeader->source);
-            destPort   = ntohs(tcpHeader->dest);
+            sourcePort = readUInt16BE(transportHeader + PortSourceOffset);
+            destPort   = readUInt16BE(transportHeader + PortDestOffset);
 
-            data       = (u_char*)(packet + sizeof(struct ip) + sizeof(struct tcphdr));
-            dataLength = pkthdr->len - (data_offs + sizeof(struct ip) + sizeof(struct tcphdr));
+            data       = (u_char*)(transportHeader + TCPHeaderSize);
+            dataLength = pkthdr->len - (data_offs + IPHeaderSize + TCPHeaderSize);
 
-            logdbg << "TCP Packet " << sourceIP << ":" << sourcePort << " => " << destIP << ":" << destPort 
+            logdbg << "TCP Packet " << sourceIPString << ":" << sourcePort << " => " << destIPString << ":" << destPort 
                    << " datalen = " << dataLength << " byte(s)";
         } 
-        else if (ipHeader->ip_p == IPPROTO_UDP) 
+        else if (ipProtocol == IPPROTO_UDP) 
         {
-            udpHeader  = (struct udphdr*)(packet + sizeof(struct ip));
-            sourcePort = ntohs(udpHeader->source);
-            destPort   = ntohs(udpHeader->dest);
+            sourcePort = readUInt16BE(transportHeader + PortSourceOffset);
+            destPort   = readUInt16BE(transportHeader + PortDestOffset);
 
-            data          = (u_char*)(packet + sizeof(struct ip) + sizeof(struct udphdr));
-            dataLength    = pkthdr->len - (data_offs + sizeof(struct ip) + sizeof(struct udphdr));
-            payloadLength = ntohs(udpHeader->len) - sizeof(struct udphdr); //should respect padding
+            data          = (u_char*)(transportHeader + UDPHeaderSize);
+            dataLength    = pkthdr->len - (data_offs + IPHeaderSize + UDPHeaderSize);
+            payloadLength = readUInt16BE(transportHeader + UDPLengthOffset) - UDPHeaderSize; //should respect padding
 
-            logdbg << "UDP Packet " << sourceIP << ":" << sourcePort << " => " << destIP << ":" << destPort 
+            logdbg << "UDP Packet " << sourceIPString << ":" << sourcePort << " => " << destIPString << ":" << destPort 
                    << " datalen = " << dataLength << " byte(s), payload = " << payloadLength << " byte(s)";
 
             //use length from udp header to drop any existing padding
@@ -325,7 +359,7 @@ void PacketSniffer::digestPCAPEtherPacket(int ether_type,
         }
         else
         {
-            unknown_ip_prot_.push_back(ipHeader->ip_p);
+            unknown_ip_prot_.push_back(ipProtocol);
         }
     }
     else
@@ -815,7 +849,7 @@ Result PacketSniffer::readFile(ReadStyle read_style,
             if (err && std::string(err).find("truncated dump file") != std::string::npos)
             {
                 FILE* fp = pcap_file(pcap_file_);
-                long pos = fp ? ftell(fp) : -1;
+                std::int64_t pos = filePosition(fp);
                 //long total = fp ? Utils::Files::fileSize(pcap_filename_) : -1;
 
                 logwrn << "truncated dump tail ignored at byte " << pos;
@@ -914,7 +948,7 @@ ResultT<PacketSniffer::Chunk> PacketSniffer::readFileNext(size_t max_packets,
             if (err && std::string(err).find("truncated dump file") != std::string::npos)
             {
                 FILE* fp = pcap_file(pcap_file_);
-                long pos = fp ? ftell(fp) : -1;
+                std::int64_t pos = filePosition(fp);
 
                 logwrn << "truncated dump tail ignored at byte " << pos;
                 warning = "truncated dump tail ignored";

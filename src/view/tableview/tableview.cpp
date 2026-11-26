@@ -17,13 +17,15 @@
 
 #include "tableview.h"
 #include "viewcontainer.h"
+#include "files.h"
 
 #include <QApplication>
 
-#include "compass.h"
 #include "tableviewconfigwidget.h"
 #include "tableviewdatasource.h"
-#include "tableviewdatawidget.h"
+#include "tableviewmodel.h"
+#include "viewmanager.h"
+#include "tableviewrenderwidget.h"
 #include "tableviewwidget.h"
 #include "logger.h"
 #include "latexvisitor.h"
@@ -51,6 +53,11 @@ TableView::TableView(nlohmann::json& config, ViewContainer* parent)
     registerParameter(ParamUsePresentation, &settings_.use_presentation_, Settings().use_presentation_);
     registerParameter(ParamIgnoreTargetReports, &settings_.ignore_non_target_reports_,
                       Settings().ignore_non_target_reports_);
+
+    model_.reset(new TableViewModel(viewManager().dbContentManager(),
+                                    viewManager().dbContextManager(),
+                                    viewManager().appState()));
+    model_->setObjectName(QString::fromStdString(instanceName()));
 }
 
 /**
@@ -79,23 +86,18 @@ bool TableView::init_impl()
     traced_assert(data_source_);
 
     connect(widget_->getViewConfigWidget(), &TableViewConfigWidget::exportSignal,
-            widget_->getViewDataWidget(), &TableViewDataWidget::exportDataSlot);
-    connect(widget_->getViewDataWidget(), &TableViewDataWidget::exportDoneSignal,
+            widget_->getRenderWidget(), &TableViewRenderWidget::exportDataSlot);
+    connect(widget_->getRenderWidget(), &TableViewRenderWidget::exportDoneSignal,
             widget_->getViewConfigWidget(), &TableViewConfigWidget::exportDoneSlot);
 
-    // connect(this, &TableView::showOnlySelectedSignal,
-    //         widget_->getViewDataWidget(), &TableViewDataWidget::showOnlySelectedSlot);
-    // connect(this, &TableView::usePresentationSignal,
-    //         widget_->getViewDataWidget(), &TableViewDataWidget::usePresentationSlot);
-
-    widget_->getViewDataWidget()->updateToSettingsChange();
+    widget_->getRenderWidget()->updateToSettingsChange();
 
     return true;
 }
 
 /**
 */
-void TableView::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult TableView::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -110,9 +112,10 @@ void TableView::generateSubConfigurable(nlohmann::json& child_json)
     }
     else
     {
-        throw std::runtime_error("TableView: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
     }
+
+    return GenerateResult::Generated;
 }
 
 /**
@@ -121,7 +124,7 @@ void TableView::checkSubConfigurables()
 {
     if (!data_source_)
     {
-        generateSubConfigurableFromConfig(SubConfigDataSource, SubConfigDataSource + "0");
+        createSubConfigurableFromConfig(SubConfigDataSource, SubConfigDataSource + "0");
     }
 
     if (!widget_)
@@ -131,10 +134,10 @@ void TableView::checkSubConfigurables()
     }
 }
 
-TableViewDataWidget* TableView::getDataWidget()
+TableViewRenderWidget* TableView::getRenderWidget()
 {
     traced_assert(widget_);
-    return widget_->getViewDataWidget();
+    return widget_->getRenderWidget();
 }
 
 dbContent::VariableSet TableView::getSet(const std::string& dbcontent_name)
@@ -155,7 +158,7 @@ void TableView::usePresentation(bool value)
 
     setParameter(settings_.use_presentation_, value);
 
-    widget_->getViewDataWidget()->updateToSettingsChange();
+    widget_->getRenderWidget()->updateToSettingsChange();
 }
 
 bool TableView::showOnlySelected() const 
@@ -171,7 +174,7 @@ void TableView::showOnlySelected(bool value)
 
     setParameter(settings_.show_only_selected_, value);
 
-    widget_->getViewDataWidget()->updateToSettingsChange();
+    widget_->getRenderWidget()->updateToSettingsChange();
 
     QApplication::restoreOverrideCursor();
 }
@@ -189,7 +192,7 @@ void TableView::ignoreNonTargetReports(bool value)
 
     setParameter(settings_.ignore_non_target_reports_, value);
 
-    widget_->getViewDataWidget()->updateToSettingsChange();
+    widget_->getRenderWidget()->updateToSettingsChange();
 
     QApplication::restoreOverrideCursor();
 }
@@ -199,15 +202,20 @@ void TableView::accept(LatexVisitor& v)
     v.visit(this);
 }
 
+QIcon TableView::deckIcon() const
+{
+    return Utils::Files::IconProvider::getIcon("view_table.png");
+}
+
 void TableView::updateSelection_impl()
 {
     loginf;
     traced_assert(widget_);
 
     if (settings_.show_only_selected_)
-        widget_->getViewDataWidget()->updateToSelection();
+        widget_->getRenderWidget()->updateToSelection();
     else
-        widget_->getViewDataWidget()->resetModels();  // just updates the checkboxes
+        widget_->getRenderWidget()->resetModels();  // just updates the checkboxes
 }
 
 void TableView::unshowViewPointSlot (ViewableDataConfig* vp)
@@ -232,7 +240,7 @@ void TableView::showViewPointSlot (ViewableDataConfig* vp)
 void TableView::onConfigurationChanged_impl(const std::vector<std::string>& changed_params)
 {
     if (changed_params.size())
-        widget_->getViewDataWidget()->updateToSettingsChange();
+        widget_->getRenderWidget()->updateToSettingsChange();
 }
 
 /**

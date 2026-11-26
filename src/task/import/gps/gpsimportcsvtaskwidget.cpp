@@ -17,7 +17,6 @@
 
 #include "gpsimportcsvtaskwidget.h"
 #include "gpsimportcsvtask.h"
-#include "compass.h"
 #include "taskmanager.h"
 #include "logger.h"
 #include "stringconv.h"
@@ -210,7 +209,7 @@ void GPSImportCSVTaskWidget::sacEditedSlot(const QString& value)
 {
     traced_assert(sac_edit_);
 
-    TextFieldDoubleValidator::displayValidityAsColor(sac_edit_, task_.manager().compass().lineEditInvalidStyle());
+    TextFieldDoubleValidator::displayValidityAsColor(sac_edit_, task_.manager().appState().lineEditInvalidStyle());
 
     if (sac_edit_->hasAcceptableInput())
         task_.dsSAC(sac_edit_->text().toUInt());
@@ -220,7 +219,7 @@ void GPSImportCSVTaskWidget::sicEditedSlot(const QString& value)
 {
     traced_assert(sic_edit_);
 
-    TextFieldDoubleValidator::displayValidityAsColor(sic_edit_, task_.manager().compass().lineEditInvalidStyle());
+    TextFieldDoubleValidator::displayValidityAsColor(sic_edit_, task_.manager().appState().lineEditInvalidStyle());
 
     if (sic_edit_->hasAcceptableInput())
         task_.dsSIC(sic_edit_->text().toUInt());
@@ -236,7 +235,7 @@ void GPSImportCSVTaskWidget::todOffsetEditedSlot(const QString& value)
 {
     traced_assert(tod_offset_edit_);
 
-    TextFieldDoubleValidator::displayValidityAsColor(tod_offset_edit_, task_.manager().compass().lineEditInvalidStyle());
+    TextFieldDoubleValidator::displayValidityAsColor(tod_offset_edit_, task_.manager().appState().lineEditInvalidStyle());
 
     if (tod_offset_edit_->hasAcceptableInput())
         task_.todOffset(value.toFloat());
@@ -256,7 +255,7 @@ void GPSImportCSVTaskWidget::mode3AEditedSlot(const QString& value)
 
     traced_assert(mode_3a_code_edit_);
 
-    TextFieldDoubleValidator::displayValidityAsColor(mode_3a_code_edit_, task_.manager().compass().lineEditInvalidStyle());
+    TextFieldDoubleValidator::displayValidityAsColor(mode_3a_code_edit_, task_.manager().appState().lineEditInvalidStyle());
 
     if (mode_3a_code_edit_->hasAcceptableInput())
         task_.mode3aCode(String::intFromOctalString(value.toStdString()));
@@ -276,7 +275,7 @@ void GPSImportCSVTaskWidget::targetAddressEditedSlot(const QString& value)
 
     traced_assert(target_address_edit_);
 
-    TextFieldDoubleValidator::displayValidityAsColor(target_address_edit_, task_.manager().compass().lineEditInvalidStyle());
+    TextFieldDoubleValidator::displayValidityAsColor(target_address_edit_, task_.manager().appState().lineEditInvalidStyle());
 
     if (target_address_edit_->hasAcceptableInput())
         task_.targetAddress(String::intFromHexString(value.toStdString()));

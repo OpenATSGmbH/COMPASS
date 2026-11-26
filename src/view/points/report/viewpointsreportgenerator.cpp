@@ -16,6 +16,8 @@
  */
 
 #include "viewpointsreportgenerator.h"
+#include "licensemanager.h"
+#include "appstate.h"
 #include "viewpointsreportgeneratordialog.h"
 #include "dialogs.h"
 #include "viewmanager.h"
@@ -27,18 +29,14 @@
 #include "stringconv.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentdataengine.h"
-#include "compass.h"
 #include "global.h"
 #include "dbinterface.h"
 #include "dbconnection.h"
 #include "files.h"
 #include "latexdocument.h"
+#include "latexrun.h"
 #include "latexvisitor.h"
 #include "system.h"
-
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "geographicview.h"
-#endif
 
 #include <QCoreApplication>
 #include <QApplication>
@@ -67,7 +65,7 @@ ViewPointsReportGenerator::ViewPointsReportGenerator(nlohmann::json& config, Vie
 
     registerParameter("abstract", &abstract_, std::string());
 
-    string current_filename = view_manager_.compass().lastDbFilename();
+    string current_filename = view_manager_.appState().lastDbFilename();
 
     report_path_ = Files::getDirectoryFromPath(current_filename)+"/report_"
                 + Files::getFilenameFromPath(current_filename) + "/";
@@ -87,7 +85,7 @@ ViewPointsReportGenerator::ViewPointsReportGenerator(nlohmann::json& config, Vie
     registerParameter("run_pdflatex", &run_pdflatex_, true);
     registerParameter("open_created_pdf", &open_created_pdf_, false);
 
-    pdflatex_found_ = view_manager_.compass().pdflatexFound();
+    pdflatex_found_ = view_manager_.appState().pdflatexFound();
 
     if (!pdflatex_found_)
     {
@@ -119,7 +117,7 @@ void ViewPointsReportGenerator::run ()
 
     try
     {
-        LatexDocument doc (view_manager_.compass(), report_path_, report_filename_);
+        LatexDocument doc (report_path_, report_filename_, view_manager_.licenseManager().licenseeString(true));
         doc.title("View Points Report");
 
         if (author_.size())
@@ -158,16 +156,14 @@ void ViewPointsReportGenerator::run ()
             vp_ids = vp_widget->viewedViewPoints();
 
         string status_str, elapsed_time_str, remaining_time_str;
-        DBContentManager& dbcont_man = view_manager_.compass().dbContentManager();
+        DBContentManager& dbcont_man = view_manager_.dbContentManager();
 
         unsigned int vp_cnt = 0;
         unsigned int vp_size = vp_ids.size();
         double ms;
         double ms_per_vp;
 
-#if USE_EXPERIMENTAL_SOURCE == true
-        GeographicView::instant_display_ = true;
-#endif
+        View::setInstantDisplay(true);
 
         for (auto vp_id : vp_ids)
         {
@@ -249,8 +245,6 @@ void ViewPointsReportGenerator::run ()
             if (run_pdflatex_)
             {
                 std::string command_out;
-                std::string command = "cd "+report_path_+" && pdflatex --interaction=nonstopmode "+report_filename_
-                        +" | awk 'BEGIN{IGNORECASE = 1}/warning|!/,/^$/;'";
 
                 loginf << "running pdflatex";
                 dialog_->setStatus("Running pdflatex");
@@ -258,9 +252,9 @@ void ViewPointsReportGenerator::run ()
 
                 QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
-                logdbg << "cmd '" << command << "'";
+                logdbg << "document '" << report_path_ << "/" << report_filename_ << "'";
 
-                command_out = System::exec(command);
+                command_out = latex::runPDFLatex(report_path_, report_filename_);
 
                 logdbg << "cmd done";
 
@@ -272,23 +266,14 @@ void ViewPointsReportGenerator::run ()
                 elapsed_time_str = String::timeStringFromDouble(ms / 1000.0, false);
                 dialog_->setElapsedTime(elapsed_time_str);
 
-                auto hasFatalLatexError = [&command_out]()
-                {
-                    return command_out.find("! LaTeX Error")    != std::string::npos
-                        || command_out.find("! Emergency stop") != std::string::npos
-                        || command_out.find("Fatal error")      != std::string::npos;
-                };
-
-                while (!hasFatalLatexError()
-                       && (command_out.find("Rerun to get outlines right") != std::string::npos
-                           || command_out.find("Rerun to get cross-references right") != std::string::npos))
+                while (!latex::hasFatalError(command_out) && latex::needsRerun(command_out))
                 {
                     loginf << "re-running pdflatex";
                     dialog_->setStatus("Re-running pdflatex");
 
                     QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
-                    command_out = System::exec(command);
+                    command_out = latex::runPDFLatex(report_path_, report_filename_);
 
                     time_diff = stop_time - start_time;
                     ms = time_diff.total_milliseconds();
@@ -300,7 +285,11 @@ void ViewPointsReportGenerator::run ()
 
                 loginf << "result '" << command_out << "'";
 
-                if (!command_out.size()) // no warnings
+                // pdflatex prints warnings on almost every run (underfull boxes,
+                // package notices), so only a fatal error means no PDF was produced
+                bool fatal_error = latex::hasFatalError(command_out);
+
+                if (!fatal_error)
                 {
                     pdf_created_ = true;
 
@@ -316,17 +305,28 @@ void ViewPointsReportGenerator::run ()
 
                             loginf << "opening '" << fullpath << "'";
 
-                            QDesktopServices::openUrl(QUrl(fullpath.c_str()));
+                            QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(fullpath)));
                         }
                         else
                             logerr << "opening not possible since wrong file ending";
                     }
                 }
-                else // show warnings
+                if (command_out.size())
                 {
-                    QMessageBox msgBox(QApplication::activeWindow());
-                    msgBox.setText("PDF Latex failed with warnings:\n\n"+QString(command_out.c_str()));
-                    msgBox.exec();
+                    // no modal dialog during automatic runs, it would block the run
+                    // until someone clicks it away
+                    if (view_manager_.appState().allowUserInteractions())
+                    {
+                        QMessageBox msgBox(QApplication::activeWindow());
+                        msgBox.setText(QString(fatal_error ? "PDF Latex failed:\n\n"
+                                                           : "PDF Latex warnings:\n\n")
+                                       + QString(command_out.c_str()));
+                        msgBox.exec();
+                    }
+                    else if (fatal_error)
+                        logerr << "pdflatex failed '" << command_out << "'";
+                    else
+                        logwrn << "pdflatex warnings '" << command_out << "'";
                 }
             }
         }
@@ -335,9 +335,7 @@ void ViewPointsReportGenerator::run ()
 
         QApplication::restoreOverrideCursor();
 
-#if USE_EXPERIMENTAL_SOURCE == true
-        GeographicView::instant_display_ = false;
-#endif
+        View::setInstantDisplay(false);
 
         if (show_done_)
         {
@@ -368,10 +366,13 @@ void ViewPointsReportGenerator::run ()
 
         running_ = false;
 
-        QMessageBox m_warning(QMessageBox::Warning, "Export PDF Failed",
-                              (string("Error message:\n")+e.what()).c_str(),
-                              QMessageBox::Ok, QApplication::activeWindow());
-        m_warning.exec();
+        if (view_manager_.appState().allowUserInteractions())
+        {
+            QMessageBox m_warning(QMessageBox::Warning, "Export PDF Failed",
+                                  (string("Error message:\n")+e.what()).c_str(),
+                                  QMessageBox::Ok, QApplication::activeWindow());
+            m_warning.exec();
+        }
     }
 }
 

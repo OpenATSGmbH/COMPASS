@@ -16,8 +16,38 @@
  */
 
 #include "annotationgroupitem.h"
+#include "annotationsrootitem.h"
 
-AnnotationGroupItem::AnnotationGroupItem(const std::string& name)
+#include "traced_assert.h"
+
+AnnotationGroupItem::AnnotationGroupItem(const std::string& name,
+                                         const std::string& update_key,
+                                         const AnnotationsRootItem* root)
     : LayerTreeItem(name)
+    , update_key_(update_key)
+    , root_(root)
 {
+    traced_assert(root_);
+}
+
+/**
+ * Static (not reconciled) outside an update of the root.
+ */
+std::optional<std::vector<std::string>> AnnotationGroupItem::childKeys() const
+{
+    return root_->leafKeys(update_key_);
+}
+
+/**
+ */
+std::unique_ptr<LayerTreeItem> AnnotationGroupItem::createChild(const std::string& key)
+{
+    return root_->createLeaf(update_key_, key);
+}
+
+/**
+ */
+bool AnnotationGroupItem::updateChild(LayerTreeItem& child)
+{
+    return root_->updateLeaf(update_key_, child);
 }

@@ -18,10 +18,82 @@
 #include <iostream>
 
 #include <QApplication>
+#include <QDesktopServices>
+#include <QDir>
+#include <QIcon>
 #include <QProcess>
+#include <QPushButton>
 #include <QFileInfo>
 #include <QMessageBox>
 #include <QTextStream>
+#include <QUrl>
+
+/**
+ * Log folder of the client, ~/.compass/<version>/log/ (HOME_LOG_DIRECTORY in files.h).
+ */
+static QString logDirectory()
+{
+    return QDir::homePath() + "/.compass/" + COMPASS_VERSION + "/log";
+}
+
+/**
+ * Log file of the client process: compass_<start time>_<pid>.log (Logger::logFilePath), empty if not found.
+ */
+static QString logFileOfClient(qint64 pid)
+{
+    if (pid <= 0)
+        return {};
+
+    QDir dir(logDirectory());
+    const QStringList files = dir.entryList({ "compass_*_" + QString::number(pid) + ".log" }, QDir::Files, QDir::Name);
+
+    return files.isEmpty() ? QString() : dir.absoluteFilePath(files.last());
+}
+
+/**
+ * Crash or error message with buttons to open the log file and the log folder.
+ * report: name of the report in the log file, e.g. "crash report"
+ */
+static void showCrashDialog(const QString& title, const QString& err, const QString& report, const QString& log_file)
+{
+    QMessageBox msg(QMessageBox::Critical, title, err);
+
+    QString text = err;
+    if (!log_file.isEmpty())
+        text += "\n\nThe log file contains " + report + ":\n" + QDir::toNativeSeparators(log_file);
+    else
+        text += "\n\nThe log files are in the folder:\n" + QDir::toNativeSeparators(logDirectory());
+    msg.setText(text);
+    msg.setTextInteractionFlags(Qt::TextSelectableByMouse);
+
+    QPushButton* open_file = nullptr;
+    if (!log_file.isEmpty())
+    {
+        open_file = msg.addButton("Open Log File", QMessageBox::ActionRole);
+        open_file->setIcon(QIcon());
+        open_file->setToolTip("Opens the log file with the crash report");
+    }
+
+    QPushButton* open_folder = msg.addButton("Open Log Folder", QMessageBox::ActionRole);
+    open_folder->setIcon(QIcon());
+    open_folder->setToolTip("Opens the folder of the log files");
+
+    QPushButton* close = msg.addButton("Close", QMessageBox::RejectRole);
+    close->setIcon(QIcon());
+
+    //the open buttons keep the message open
+    while (true)
+    {
+        msg.exec();
+
+        if (open_file && msg.clickedButton() == open_file)
+            QDesktopServices::openUrl(QUrl::fromLocalFile(log_file));
+        else if (msg.clickedButton() == open_folder)
+            QDesktopServices::openUrl(QUrl::fromLocalFile(logDirectory()));
+        else
+            break;
+    }
+}
 
 int main(int argc, char** argv)
 {
@@ -31,15 +103,23 @@ int main(int argc, char** argv)
 
     // path to client (assumed to be in the same directory)
     QString realAppPath = QCoreApplication::applicationDirPath() + "/compass_client";
+#ifdef _WIN32
+    realAppPath += ".exe";
+#endif
 
     //collect command line args for COMPASS client
     bool has_rt_cmd_port = false;
+    bool has_quit        = false; // batch use: no message for an exit code other than 0
     QStringList client_args;
-    for (int i = 1; i < argc; ++i) 
+    // QCoreApplication::arguments: correct encoding on all platforms (wide arguments on Windows)
+    const QStringList app_args = QCoreApplication::arguments();
+    for (int i = 1; i < app_args.size(); ++i) 
     {
-        QString arg = QString::fromLocal8Bit(argv[i]);
+        const QString& arg = app_args.at(i);
         if (arg == "--open_rt_cmd_port")
             has_rt_cmd_port = true;
+        if (arg == "--quit")
+            has_quit = true;
         client_args << arg;
     }
 
@@ -70,12 +150,21 @@ int main(int argc, char** argv)
     //     ts.flush();
     // });
 
+    // process id of the client, for its log file (no longer available from the process when it ended)
+    qint64 client_pid = 0;
+
     // monitor exit status
     QObject::connect(process, QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
-                     [process, &has_rt_cmd_port](int exitCode, QProcess::ExitStatus status) {
+                     [process, &has_rt_cmd_port, &has_quit, &client_pid](int exitCode, QProcess::ExitStatus status) {
         int relay_code = exitCode;
         if (status == QProcess::CrashExit)
         {
+#ifdef _WIN32
+            // Windows: the exit code is the NTSTATUS of the crash (e.g. 0xC0000005 access
+            // violation), never 0 - relay it unchanged
+            QString err = "COMPASS client crashed with code 0x"
+                        + QString::number(static_cast<quint32>(exitCode), 16).toUpper();
+#else
             // Shell convention: signal-death encoded as 128 + signum.
             // Qt's exitCode on CrashExit is often 0 on Unix, which would
             // collide with a clean exit - force the high bit so the
@@ -83,9 +172,25 @@ int main(int argc, char** argv)
             relay_code = 128 + (exitCode > 0 ? exitCode : 6 /* SIGABRT fallback */);
             QString err = "COMPASS client crashed with code " + QString::number(exitCode)
                         + " (relaying " + QString::number(relay_code) + ")";
-            QTextStream(stderr) << err << "\n";
+#endif
+            const QString log_file = logFileOfClient(client_pid);
+
+            QTextStream(stderr) << err << "\n"
+                                << "Log file: " << QDir::toNativeSeparators(log_file.isEmpty() ? logDirectory() : log_file) << "\n";
             if (!has_rt_cmd_port)
-                QMessageBox::critical(QApplication::activeWindow(), "Application Crash", err);
+                showCrashDialog("Application Crash", err, "a crash report", log_file);
+        }
+        else if (exitCode != 0)
+        {
+            // e.g. a failed internal check on Windows (abort: code 3) or an error caught in main (-1):
+            // the client wrote a report into its log file as for a crash
+            const QString err      = "COMPASS client ended with error code " + QString::number(exitCode);
+            const QString log_file = logFileOfClient(client_pid);
+
+            QTextStream(stderr) << err << "\n"
+                                << "Log file: " << QDir::toNativeSeparators(log_file.isEmpty() ? logDirectory() : log_file) << "\n";
+            if (!has_rt_cmd_port && !has_quit)
+                showCrashDialog("Application Error", err, "an error report", log_file);
         }
         else
         {
@@ -104,6 +209,8 @@ int main(int argc, char** argv)
             QMessageBox::critical(QApplication::activeWindow(), "Error", err);
         return -1;
     }
+
+    client_pid = process->processId();
 
     return app.exec();
 }

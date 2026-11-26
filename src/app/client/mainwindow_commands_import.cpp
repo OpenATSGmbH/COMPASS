@@ -17,17 +17,20 @@
 
 #include "mainwindow_commands_import.h"
 #include "mainwindow.h"
+#include "mainwindow_commands.h"
+#include "compassroot.h"
 #include "compass.h"
 #include "taskmanager.h"
 #include "viewpointsimporttask.h"
 #include "asteriximporttask.h"
+#include "asterixnetworkreplaysender.h"
 #include "jsonimporttask.h"
 #include "gpstrailimporttask.h"
 #include "viewpointsimporttask.h"
 #include "logger.h"
-#include "util/files.h"
-#include "util/stringconv.h"
-#include "util/timeconv.h"
+#include "files.h"
+#include "stringconv.h"
+#include "timeconv.h"
 #include "dbinterface.h"
 
 #include <boost/program_options.hpp>
@@ -41,8 +44,9 @@ namespace main_window
 
 // import vp
 
-RTCommandImportViewPointsFile::RTCommandImportViewPointsFile()
+RTCommandImportViewPointsFile::RTCommandImportViewPointsFile(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
 }
 
@@ -68,18 +72,18 @@ bool RTCommandImportViewPointsFile::run_impl()
         return false;
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
-    ViewPointsImportTask& vp_import_task = compass_->taskManager().viewPointsImportTask();
+    ViewPointsImportTask& vp_import_task = root_.taskManager().viewPointsImportTask();
 
     vp_import_task.importFilename(filename_);
 
@@ -106,7 +110,7 @@ void RTCommandImportViewPointsFile::collectOptions_impl(OptionsDescription& opti
                                                         PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.json’");
+    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.json'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -144,8 +148,9 @@ namespace helpers
     }
 }
 
-RTCommandImportASTERIXFile::RTCommandImportASTERIXFile()
+RTCommandImportASTERIXFile::RTCommandImportASTERIXFile(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.asteriximporttask.doneSignal", -1); // think about max duration
 }
@@ -155,7 +160,7 @@ rtcommand::IsValid  RTCommandImportASTERIXFile::valid() const
     CHECK_RTCOMMAND_INVALID_CONDITION(!filename_.size(), "Filename empty")
     CHECK_RTCOMMAND_INVALID_CONDITION(!Files::fileExists(filename_), "File '"+filename_+"' does not exist")
 
-    if (framing_.size()) // ’none’, ’ioss’, ’ioss_seq’, ’rff’
+    if (framing_.size()) // 'none', 'ioss', 'ioss_seq', 'rff'
     {
         CHECK_RTCOMMAND_INVALID_CONDITION(
             !(framing_ == "none" || framing_ == "ioss" || framing_ == "ioss_seq" || framing_ == "rff"),
@@ -212,19 +217,19 @@ bool RTCommandImportASTERIXFile::run_impl()
         return false;
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
     unsigned int file_line {0};
 
     if (!config_.empty())
@@ -299,7 +304,7 @@ bool RTCommandImportASTERIXFile::run_impl()
 
 bool RTCommandImportASTERIXFile::checkResult_impl()
 {
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     if (import_task.hasError())
     {
@@ -318,22 +323,22 @@ void RTCommandImportASTERIXFile::collectOptions_impl(OptionsDescription& options
                                                      PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filename", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.json’");
+    ("filename", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.ff'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("framing,f", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given  ASTERIX framing, e.g. ’none’, ’ioss’, ’ioss_seq’, ’rff’");
+     "ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff'");
     ADD_RTCOMMAND_OPTIONS(options)
-    ("line,l", po::value<std::string>()->default_value(""), "imports ASTERIX file with given line e.g. ’L2’");
+    ("line,l", po::value<std::string>()->default_value(""), "line to import the data into, e.g. 'L2'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("date,d", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given date, in YYYY-MM-DD format e.g. ’2020-04-20’");
+     "date of the data, in YYYY-MM-DD format, e.g. '2020-04-20'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("time_offset,t", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ’");
+     "Time of Day offset, in HH:MM:SS.ZZZ format, e.g. '00:00:10.000'");
     ADD_RTCOMMAND_OPTIONS(options)("ignore_time_jumps,i", "ignore 24h time jumps");
     ADD_RTCOMMAND_OPTIONS(options)
     ("config,c", po::value<std::string>()->default_value(""),
-     "ASTERIX import parameters as json string, e.g. '{\"obfuscate_secondary_info\": true}'");
+     "ASTERIX import parameters as JSON string, e.g. '{\"obfuscate_secondary_info\": true}'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -351,8 +356,9 @@ void RTCommandImportASTERIXFile::assignVariables_impl(const VariablesMap& variab
 
 // import asterix files
 
-RTCommandImportASTERIXFiles::RTCommandImportASTERIXFiles()
+RTCommandImportASTERIXFiles::RTCommandImportASTERIXFiles(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.asteriximporttask.doneSignal", -1); // think about max duration
 }
@@ -364,7 +370,7 @@ rtcommand::IsValid RTCommandImportASTERIXFiles::valid() const
     for (const auto& filename : split_filenames_)
         CHECK_RTCOMMAND_INVALID_CONDITION(!Files::fileExists(filename), "File '"+filename+"' does not exist")
 
-    if (framing_.size()) // ’none’, ’ioss’, ’ioss_seq’, ’rff’
+    if (framing_.size()) // 'none', 'ioss', 'ioss_seq', 'rff'
     {
         CHECK_RTCOMMAND_INVALID_CONDITION(
             !(framing_ == "none" || framing_ == "ioss" || framing_ == "ioss_seq" || framing_ == "rff"),
@@ -424,19 +430,19 @@ bool RTCommandImportASTERIXFiles::run_impl()
         }
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     unsigned int file_line {0};
 
@@ -525,7 +531,7 @@ bool RTCommandImportASTERIXFiles::run_impl()
 
 bool RTCommandImportASTERIXFiles::checkResult_impl()
 {
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     if (import_task.hasError())
     {
@@ -547,19 +553,19 @@ void RTCommandImportASTERIXFiles::collectOptions_impl(OptionsDescription& option
     ("filenames", po::value<std::string>()->required(), "given filenames, e.g. '/data/file1.ff;/data/file2.ff'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("framing,f", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given  ASTERIX framing, e.g. ’none’, ’ioss’, ’ioss_seq’, ’rff’");
+     "ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff'");
     ADD_RTCOMMAND_OPTIONS(options)
-    ("line,l", po::value<std::string>()->default_value(""), "imports ASTERIX file with given line e.g. ’L2’");
+    ("line,l", po::value<std::string>()->default_value(""), "line to import the data into, e.g. 'L2'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("date,d", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given date, in YYYY-MM-DD format e.g. ’2020-04-20’");
+     "date of the data, in YYYY-MM-DD format, e.g. '2020-04-20'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("time_offset,t", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ’");
+     "Time of Day offset, in HH:MM:SS.ZZZ format, e.g. '00:00:10.000'");
     ADD_RTCOMMAND_OPTIONS(options)("ignore_time_jumps,i", "ignore 24h time jumps");
     ADD_RTCOMMAND_OPTIONS(options)
     ("config,c", po::value<std::string>()->default_value(""),
-     "ASTERIX import parameters as json string, e.g. '{\"obfuscate_secondary_info\": true}'");
+     "ASTERIX import parameters as JSON string, e.g. '{\"obfuscate_secondary_info\": true}'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filenames") // give position
 }
@@ -586,8 +592,9 @@ void RTCommandImportASTERIXFiles::assignVariables_impl(const VariablesMap& varia
 
 // import asterix pcap file
 
-RTCommandImportASTERIXPCAPFile::RTCommandImportASTERIXPCAPFile()
+RTCommandImportASTERIXPCAPFile::RTCommandImportASTERIXPCAPFile(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.asteriximporttask.doneSignal", -1); // think about max duration
 }
@@ -636,19 +643,19 @@ bool RTCommandImportASTERIXPCAPFile::run_impl()
         return false;
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
     unsigned int file_line {0};
 
     if (!config_.empty())
@@ -715,7 +722,7 @@ bool RTCommandImportASTERIXPCAPFile::run_impl()
 
 bool RTCommandImportASTERIXPCAPFile::checkResult_impl()
 {
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     if (import_task.hasError())
     {
@@ -734,19 +741,19 @@ void RTCommandImportASTERIXPCAPFile::collectOptions_impl(OptionsDescription& opt
                                                          PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filename", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.json’");
+    ("filename", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.pcap'");
     ADD_RTCOMMAND_OPTIONS(options)
-    ("line,l", po::value<std::string>()->default_value(""), "imports ASTERIX file with given line e.g. ’L2’");
+    ("line,l", po::value<std::string>()->default_value(""), "line to import the data into, e.g. 'L2'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("date,d", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given date, in YYYY-MM-DD format e.g. ’2020-04-20’");
+     "date of the data, in YYYY-MM-DD format, e.g. '2020-04-20'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("time_offset,t", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ’");
+     "Time of Day offset, in HH:MM:SS.ZZZ format, e.g. '00:00:10.000'");
     ADD_RTCOMMAND_OPTIONS(options)("ignore_time_jumps,i", "ignore 24h time jumps");
     ADD_RTCOMMAND_OPTIONS(options)
     ("config,c", po::value<std::string>()->default_value(""),
-     "ASTERIX import parameters as json string, e.g. '{\"obfuscate_secondary_info\": true}'");
+     "ASTERIX import parameters as JSON string, e.g. '{\"obfuscate_secondary_info\": true}'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -763,8 +770,9 @@ void RTCommandImportASTERIXPCAPFile::assignVariables_impl(const VariablesMap& va
 
 // import asterix files
 
-RTCommandImportASTERIXPCAPFiles::RTCommandImportASTERIXPCAPFiles()
+RTCommandImportASTERIXPCAPFiles::RTCommandImportASTERIXPCAPFiles(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.asteriximporttask.doneSignal", -1); // think about max duration
 }
@@ -818,19 +826,19 @@ bool RTCommandImportASTERIXPCAPFiles::run_impl()
         }
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     unsigned int file_line {0};
 
@@ -904,7 +912,7 @@ bool RTCommandImportASTERIXPCAPFiles::run_impl()
 
 bool RTCommandImportASTERIXPCAPFiles::checkResult_impl()
 {
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     if (import_task.hasError())
     {
@@ -923,19 +931,19 @@ void RTCommandImportASTERIXPCAPFiles::collectOptions_impl(OptionsDescription& op
                                                           PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filenames", po::value<std::string>()->required(), "given filenames, e.g. '/data/file1.ff;/data/file2.ff'");
+    ("filenames", po::value<std::string>()->required(), "given filenames, e.g. '/data/file1.pcap;/data/file2.pcap'");
     ADD_RTCOMMAND_OPTIONS(options)
-    ("line,l", po::value<std::string>()->default_value(""), "imports ASTERIX file with given line e.g. ’L2’");
+    ("line,l", po::value<std::string>()->default_value(""), "line to import the data into, e.g. 'L2'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("date,d", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given date, in YYYY-MM-DD format e.g. ’2020-04-20’");
+     "date of the data, in YYYY-MM-DD format, e.g. '2020-04-20'");
     ADD_RTCOMMAND_OPTIONS(options)
     ("time_offset,t", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ’");
+     "Time of Day offset, in HH:MM:SS.ZZZ format, e.g. '00:00:10.000'");
     ADD_RTCOMMAND_OPTIONS(options)("ignore_time_jumps,i", "ignore 24h time jumps");
     ADD_RTCOMMAND_OPTIONS(options)
     ("config,c", po::value<std::string>()->default_value(""),
-     "ASTERIX import parameters as json string, e.g. '{\"obfuscate_secondary_info\": true}'");
+     "ASTERIX import parameters as JSON string, e.g. '{\"obfuscate_secondary_info\": true}'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filenames") // give position
 }
@@ -961,8 +969,9 @@ void RTCommandImportASTERIXPCAPFiles::assignVariables_impl(const VariablesMap& v
 
 // import asterix network
 
-RTCommandImportASTERIXNetworkStart::RTCommandImportASTERIXNetworkStart()
+RTCommandImportASTERIXNetworkStart::RTCommandImportASTERIXNetworkStart(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setDelay(500); // think about max duration
 }
@@ -978,36 +987,67 @@ rtcommand::IsValid  RTCommandImportASTERIXNetworkStart::valid() const
         CHECK_RTCOMMAND_INVALID_CONDITION(!ok, "Given time offset '"+time_offset_str_+"' invalid")
     }
 
+    if (replay_files_.size())
+    {
+        for (const auto& replay_file : split_replay_files_)
+        {
+            CHECK_RTCOMMAND_INVALID_CONDITION(!Files::fileExists(replay_file),
+                                              "Replay file '"+replay_file+"' does not exist")
+
+            std::string error;
+            auto first_time = ASTERIXNetworkReplaySender::firstFrameTime(replay_file, &error);
+
+            CHECK_RTCOMMAND_INVALID_CONDITION(!first_time.has_value(),
+                                              "Replay file '"+replay_file+"' invalid: "+error)
+        }
+
+        CHECK_RTCOMMAND_INVALID_CONDITION(replay_speed_ <= 0.0f, "Given replay speed invalid")
+
+        CHECK_RTCOMMAND_INVALID_CONDITION(
+            replay_line_ != "L1" && replay_line_ != "L2" && replay_line_ != "L3" && replay_line_ != "L4",
+            "Given replay line '"+replay_line_+"' invalid")
+    }
+
     return RTCommand::valid();
 }
 
 bool RTCommandImportASTERIXNetworkStart::run_impl()
 {
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    bool db_opened = compass_->dbOpened();
+    // a stopped import finishes asynchronously, wait for it before the new one is prepared
+    if (!root_.taskManager().asterixImporterTask().waitForFinished())
+    {
+        setResultMessage("Previous ASTERIX import still running");
+        return false;
+    }
+
+    bool db_opened = root_.compass().dbOpened();
     assert (db_opened);
-    bool db_inmem  = compass_->dbInMem();
+    bool db_inmem  = root_.compass().dbInMem();
 
-    std::string current_db_filename = (db_opened && !db_inmem) ? compass_->lastDbFilename() : "";
+    std::string current_db_filename = (db_opened && !db_inmem) ? root_.compass().appState().lastDbFilename() : "";
 
-    bool use_db_in_mem = compass_->dbInterface().useLiveInMemDB();
+    bool use_db_in_mem = root_.compass().dbInterface().useLiveInMemDB();
 
     if (use_db_in_mem)
     {
+        MainWindow* main_window = dynamic_cast<MainWindow*> (rtcommand::mainWindow());
+        traced_assert(main_window);
+
         //close current db
         if (db_opened)
-            compass_->mainWindow().closeDBSlot();
+            main_window->closeDBSlot();
 
         //create in-memory db for live mode
-        compass_->mainWindow().createInMemoryDB(current_db_filename);
+        main_window->createInMemoryDB(current_db_filename);
     }
 
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     if (!config_.empty())
     {
@@ -1037,6 +1077,32 @@ bool RTCommandImportASTERIXNetworkStart::run_impl()
 
         if (ignore_future_ts_)
             import_task.settings().network_ignore_future_ts_ = true;
+
+        if (replay_files_.size() && time_offset_str_.empty())
+        {
+            // align the recording start to the current wall clock: shift every
+            // record's ToD so the earliest replayed frame lands at the current UTC time
+            boost::optional<double> reference_time;
+
+            for (const auto& replay_file : split_replay_files_)
+            {
+                std::string error;
+                auto first_time = ASTERIXNetworkReplaySender::firstFrameTime(replay_file, &error);
+                traced_assert(first_time.has_value()); // was checked in valid
+
+                if (!reference_time.has_value() || first_time.value() < reference_time.value())
+                    reference_time = first_time;
+            }
+
+            double current_utc_tod =
+                boost::posix_time::microsec_clock::universal_time().time_of_day().total_milliseconds() / 1000.0;
+
+            import_task.settings().override_tod_active_ = true;
+            import_task.settings().override_tod_offset_ = current_utc_tod - reference_time.value();
+
+            loginf << "replay time offset "
+                   << String::timeStringFromDouble(import_task.settings().override_tod_offset_);
+        }
     }
     catch (exception& e)
     {
@@ -1057,7 +1123,24 @@ bool RTCommandImportASTERIXNetworkStart::run_impl()
         return false;
     }
 
+    if (replay_files_.size())
+    {
+        // resolve endpoint and create the senders before run(), so an invalid
+        // replay setup fails without starting the import
+        std::string error;
+
+        if (!import_task.prepareReplay(split_replay_files_, replay_speed_, replay_line_,
+                                       replay_stop_at_end_, error))
+        {
+            setResultMessage("Replay preparation failed: " + error);
+            return false;
+        }
+    }
+
     import_task.run();
+
+    if (import_task.hasReplay())
+        import_task.startReplay();
 
     // handle errors
 
@@ -1074,7 +1157,7 @@ void RTCommandImportASTERIXNetworkStart::collectOptions_impl(OptionsDescription&
 {
     ADD_RTCOMMAND_OPTIONS(options)
     ("time_offset,t", po::value<std::string>()->default_value(""),
-     "imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ’");
+     "Time of Day offset, in HH:MM:SS.ZZZ format, e.g. '00:00:10.000'");
 
     ADD_RTCOMMAND_OPTIONS(options)
     ("max_lines,m", po::value<int>()->default_value(-1),
@@ -1084,7 +1167,24 @@ void RTCommandImportASTERIXNetworkStart::collectOptions_impl(OptionsDescription&
 
     ADD_RTCOMMAND_OPTIONS(options)
     ("config,c", po::value<std::string>()->default_value(""),
-     "ASTERIX import parameters as json string, e.g. '{\"obfuscate_secondary_info\": true}'");
+     "ASTERIX import parameters as JSON string, e.g. '{\"obfuscate_secondary_info\": true}'");
+
+    ADD_RTCOMMAND_OPTIONS(options)
+    ("replay_file", po::value<std::string>()->default_value(""),
+     "simulates live input by replaying the given IOSS-framed ASTERIX recordings via UDP "
+     "to a configured network line, e.g. '/data/file1.ff;/data/file2.ff'. The files are "
+     "replayed simultaneously keeping their relative timing, and record Time of Day values "
+     "are aligned to the current time unless a time_offset is given explicitly");
+
+    ADD_RTCOMMAND_OPTIONS(options)
+    ("replay_speed", po::value<float>()->default_value(1.0f),
+     "replay speed factor during network replay, 1.0 replays in recorded time");
+
+    ADD_RTCOMMAND_OPTIONS(options)
+    ("replay_line", po::value<std::string>()->default_value("L1"),
+     "network line the replayed data is sent to, L1..L4");
+
+    ADD_RTCOMMAND_OPTIONS(options)("replay_stop_at_end", "stop the network import when the replay file ends");
 }
 
 void RTCommandImportASTERIXNetworkStart::assignVariables_impl(const VariablesMap& variables)
@@ -1093,31 +1193,40 @@ void RTCommandImportASTERIXNetworkStart::assignVariables_impl(const VariablesMap
         RTCOMMAND_GET_VAR_OR_THROW(variables, "max_lines", int, max_lines_)
         RTCOMMAND_CHECK_VAR(variables, "ignore_future_ts", ignore_future_ts_)
         RTCOMMAND_GET_VAR_OR_THROW(variables, "config", std::string, config_)
+        RTCOMMAND_GET_VAR_OR_THROW(variables, "replay_file", std::string, replay_files_)
+        RTCOMMAND_GET_VAR_OR_THROW(variables, "replay_speed", float, replay_speed_)
+        RTCOMMAND_GET_VAR_OR_THROW(variables, "replay_line", std::string, replay_line_)
+        RTCOMMAND_CHECK_VAR(variables, "replay_stop_at_end", replay_stop_at_end_)
+
+        split_replay_files_.clear();
+        for (string filename : String::split(replay_files_, ';'))
+            split_replay_files_.push_back(filename);
     }
 
 // import asterix network stop
 
-RTCommandImportASTERIXNetworkStop::RTCommandImportASTERIXNetworkStop()
+RTCommandImportASTERIXNetworkStop::RTCommandImportASTERIXNetworkStop(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setDelay(500); // think about max duration
 }
 
 bool RTCommandImportASTERIXNetworkStop::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() == AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() == AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     if (!import_task.isRunning() || !import_task.source().isNetworkType())
     {
@@ -1132,6 +1241,14 @@ bool RTCommandImportASTERIXNetworkStop::run_impl()
 
     main_window->liveStopSlot();
 
+    // the import finishes asynchronously after the stop, return only when it is done, so a
+    // following start does not find it still running
+    if (!import_task.waitForFinished())
+    {
+        setResultMessage("ASTERIX import did not finish after stop");
+        return false;
+    }
+
     // handle errors
 
     // if shitty
@@ -1144,8 +1261,9 @@ bool RTCommandImportASTERIXNetworkStop::run_impl()
 
 // import asterix network pause
 
-RTCommandImportASTERIXNetworkPause::RTCommandImportASTERIXNetworkPause()
+RTCommandImportASTERIXNetworkPause::RTCommandImportASTERIXNetworkPause(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     // the pause loads the paused display from the database, done when the main window reports it
     condition.setSignal("mainwindow.dataLoaded", -1);
@@ -1153,19 +1271,19 @@ RTCommandImportASTERIXNetworkPause::RTCommandImportASTERIXNetworkPause()
 
 bool RTCommandImportASTERIXNetworkPause::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::LiveRunning)
+    if (root_.compass().appState().appMode() != AppMode::LiveRunning)
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     if (!import_task.isRunning() || !import_task.source().isNetworkType())
     {
@@ -1183,27 +1301,28 @@ bool RTCommandImportASTERIXNetworkPause::run_impl()
 
 // import asterix network resume
 
-RTCommandImportASTERIXNetworkResume::RTCommandImportASTERIXNetworkResume()
+RTCommandImportASTERIXNetworkResume::RTCommandImportASTERIXNetworkResume(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setDelay(500); // the live window is shown synchronously, same as the stop
 }
 
 bool RTCommandImportASTERIXNetworkResume::run_impl()
 {
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::LivePaused)
+    if (root_.compass().appState().appMode() != AppMode::LivePaused)
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    ASTERIXImportTask& import_task = compass_->taskManager().asterixImporterTask();
+    ASTERIXImportTask& import_task = root_.taskManager().asterixImporterTask();
 
     if (!import_task.isRunning() || !import_task.source().isNetworkType())
     {
@@ -1220,8 +1339,9 @@ bool RTCommandImportASTERIXNetworkResume::run_impl()
 }
 
 // import json
-RTCommandImportJSONFile::RTCommandImportJSONFile()
+RTCommandImportJSONFile::RTCommandImportJSONFile(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.jsonimporttask.doneSignal", -1);  // think about max duration
 }
@@ -1248,19 +1368,19 @@ bool RTCommandImportJSONFile::run_impl()
         return false;
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    JSONImportTask& import_task = compass_->taskManager().jsonImporterTask();
+    JSONImportTask& import_task = root_.taskManager().jsonImporterTask();
 
     import_task.importFilename(filename_);
 
@@ -1280,7 +1400,7 @@ void RTCommandImportJSONFile::collectOptions_impl(OptionsDescription& options,
                                                   PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.json’");
+    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.json'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }
@@ -1291,8 +1411,9 @@ void RTCommandImportJSONFile::assignVariables_impl(const VariablesMap& variables
     }
 
 // import gps trail
-RTCommandImportGPSTrail::RTCommandImportGPSTrail()
+RTCommandImportGPSTrail::RTCommandImportGPSTrail(CompassRoot& root)
     : rtcommand::RTCommand()
+    , root_(root)
 {
     condition.setSignal("compass.taskmanager.gpstrailimporttask.doneSignal", -1); // think about max duration
 }
@@ -1319,19 +1440,19 @@ bool RTCommandImportGPSTrail::run_impl()
         return false;
     }
 
-    if (!compass_->dbOpened())
+    if (!root_.compass().dbOpened())
     {
         setResultMessage("Database not opened");
         return false;
     }
 
-    if (compass_->appMode() != AppMode::Offline) // to be sure
+    if (root_.compass().appState().appMode() != AppMode::Offline) // to be sure
     {
-        setResultMessage("Wrong application mode "+compass_->appModeStr());
+        setResultMessage("Wrong application mode "+root_.compass().appState().appModeStr());
         return false;
     }
 
-    GPSTrailImportTask& import_task = compass_->taskManager().gpsTrailImportTask();
+    GPSTrailImportTask& import_task = root_.taskManager().gpsTrailImportTask();
 
     //deactivate extra information
     import_task.useTodOffset(false);
@@ -1419,16 +1540,16 @@ void RTCommandImportGPSTrail::collectOptions_impl(OptionsDescription& options,
                                                   PosOptionsDescription& positional)
 {
     ADD_RTCOMMAND_OPTIONS(options)
-    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. ’/data/file1.nmea'")
-    ("name,n", po::value<std::string>()->default_value(""), "optional data source name, e.g. ’GPS Trail'")
-    ("sac", po::value<int>()->default_value(-1), "optional sac, e.g. 255")
-    ("sic", po::value<int>()->default_value(-1), "optional sic, e.g. 0")
-    ("tod_offset,t", po::value<double>(), "optional time of day offset, e.g. -10000.0")
-    ("date,d", po::value<std::string>()->default_value(""), "optional override date, e.g. ’2025-01-01'")
-    ("mode3a,m", po::value<std::string>()->default_value(""), "optional mode3a code in octal, e.g. ")
-    ("address,a", po::value<std::string>()->default_value(""), "optional aircraft address in hex, e.g. ’0xffffff'")
-    ("id,i", po::value<std::string>()->default_value(""), "optional aircraft identification, e.g. ’ENTE'")
-    ("config,c", po::value<std::string>()->default_value(""), "configuration as json string, will override existing settings or other provided parameters");
+    ("filename,f", po::value<std::string>()->required(), "given filename, e.g. '/data/file1.nmea'")
+    ("name,n", po::value<std::string>()->default_value(""), "optional data source name, e.g. 'GPS Trail'")
+    ("sac", po::value<int>()->default_value(-1), "optional SAC, e.g. 255")
+    ("sic", po::value<int>()->default_value(-1), "optional SIC, e.g. 0")
+    ("tod_offset,t", po::value<double>(), "optional Time of Day offset in seconds, e.g. -10000.0")
+    ("date,d", po::value<std::string>()->default_value(""), "optional override date, e.g. '2025-01-01'")
+    ("mode3a,m", po::value<std::string>()->default_value(""), "optional Mode 3/A code in octal, e.g. '7000'")
+    ("address,a", po::value<std::string>()->default_value(""), "optional aircraft address in hex, e.g. '0xffffff'")
+    ("id,i", po::value<std::string>()->default_value(""), "optional aircraft identification, e.g. 'ENTE'")
+    ("config,c", po::value<std::string>()->default_value(""), "configuration as JSON string, will override existing settings or other provided parameters");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "filename") // give position
 }

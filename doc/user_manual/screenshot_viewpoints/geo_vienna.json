@@ -1,0 +1,20 @@
+{
+    "id": 1,
+    "name": "Vienna Area",
+    "type": "Saved",
+    "status": "open",
+    "position_latitude": 48.15,
+    "position_longitude": 16.55,
+    "position_window_latitude": 0.5,
+    "position_window_longitude": 0.75,
+    "load_data": {
+        "data_source_types": "all",
+        "data_sources": "all",
+        "filters": {
+            "Timestamp": {
+                "Timestamp Minimum": "2023-04-22 10:15:00.000",
+                "Timestamp Maximum": "2023-04-22 10:20:00.000"
+            }
+        }
+    }
+}

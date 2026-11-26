@@ -65,10 +65,8 @@ void EvaluationStandardComboBox::updateStandards()
 
     addItem("");
 
-    for (auto std_it = calculator_.standardsBegin(); std_it != calculator_.standardsEnd(); ++std_it)
-    {
-        addItem((*std_it)->name().c_str());
-    }
+    for (const auto& name : calculator_.standardNames())
+        addItem(name.c_str());
 
     if (calculator_.hasCurrentStandard())
     {

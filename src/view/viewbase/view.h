@@ -17,6 +17,9 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
+#include <cstdint>
 #include "configurable.h"
 #include "dbcontent/variable/variableset.h"
 #include "viewcontainerwidget.h"
@@ -25,6 +28,7 @@
 #include "viewpresets.h"
 #include "viewinfo.h"
 
+#include <QIcon>
 #include <QObject>
 
 #include <memory>
@@ -33,7 +37,6 @@
 #include <boost/date_time/posix_time/posix_time.hpp>
 #include <boost/optional/optional.hpp>
 
-class COMPASS;
 class ViewContainer;
 class ViewWidget;
 class QQWidget;
@@ -54,9 +57,9 @@ derived from a similar group of coherent classes. For example a new view based o
 a model based on a DBViewModel and a widget based on a DBViewWidget.
 
 A view always has a center widget, in which the ViewWidget is embedded. The central widget will then
-again always be embedded inside a ViewContainerWidget, which shows the specific views in tabs.
+again always be embedded inside the View Deck of a window, which shows the selected view.
  */
-class View : public QObject, public Configurable
+class COMPASS_VIEW_API View : public QObject, public Configurable
 {
     Q_OBJECT
 public:
@@ -89,22 +92,41 @@ public:
 
     virtual void loadingStarted();
 
-    // the single data-delivery callback (virtual so GeographicView can gate it for
-    // live-overload skipping); drives the data widget's updateFromSource
+    // the single data-delivery callback, drives the model's updateFromSource.
+    // Notice: must not be skipped, the views share the buffers (live overload is handled by
+    // holding the tick, see LiveController)
     virtual void updateFromSource(const DBContentDataSet& source,
                                   const std::vector<std::string>& names, bool reset, bool last);
+
+    // true if the view follows the live ticks in live running; other views are cleared on live entry,
+    // get no ticks and are disabled until the next offline or paused display load (see ViewManager)
+    virtual bool followsLiveData() const { return false; }
     virtual void loadingDone();
     virtual void clearData();
+    /// a reload follows the next clear, see ViewModel::beginDataReload()
+    void beginDataReload();
     virtual void appModeSwitch(AppMode app_mode_previous, AppMode app_mode_current);
 
+    // true while the view still processes data asynchronously after loadingDone()
+    // (e.g. the geographic view's geometry builds, the table view's row index build);
+    // processingFinishedSignal() is emitted once done (forwarded from the data
+    // widget). Synchronous views are never pending.
+    virtual bool hasPendingProcessing() const;
+
     const std::string& getName() const;
-    ViewManager& viewManager() { return view_manager_; }
+    ViewManager& viewManager() const { return view_manager_; }
 
     /// @brief Returns the view's central widget
     QWidget* getCentralWidget() { return central_widget_; }
 
-    void enableInTabWidget(bool value);
-    void showInTabWidget();
+    void enableInViewDeck(bool value);
+    void showInViewDeck();
+
+    /// prefix of the short name under the View Deck icon, e.g. "Table" for "Table 0" (short name of the view factory)
+    std::string deckNamePrefix() const;
+    virtual QIcon deckIcon() const = 0;
+    /// short name under the View Deck icon: the prefix and the number of the instance name
+    std::string deckName() const;
 
     virtual dbContent::VariableSet getSet(const std::string& dbcontent_name) = 0;
 
@@ -112,21 +134,25 @@ public:
     void emitSelectionChange();
 
     AppMode appMode() const { return app_mode_; }
-    time_t created() const { return creation_time_; }
+    /// creation sequence number, a higher number means created later. A timestamp with
+    /// second resolution could not order views created within the same second
+    std::uint64_t created() const { return creation_index_; }
 
     const ViewWidget* getViewWidget() const { traced_assert(widget_); return widget_; }
 
     virtual void accept(LatexVisitor& v) = 0;
+    /// LaTeX export of views without their own LatexVisitor::visit() (called by LatexVisitor::visit(View*)), default: nothing
+    virtual void visitLatex(LatexVisitor& v) {}
 
     virtual std::set<std::string> acceptedAnnotationFeatureTypes() const { return {}; }
 
     QImage renderData() const;
     QImage renderView() const;
 
-    void prepareForRender();
-
-    void setExporting(bool ok);
-    bool hasScreenshotContent() const;
+    /// Render immediately, without animations (e.g. camera transitions). Set for all views
+    /// during report and image generation.
+    static bool instantDisplay();
+    static void setInstantDisplay(bool value);
 
     bool reloadNeeded() const;
     bool redrawNeeded() const;
@@ -154,14 +180,17 @@ public:
 signals:
     void selectionChangedSignal();  // do not emit manually, call emitSelectionChange()
     void presetChangedSignal();
+    // emitted when the view started asynchronous data processing (the model's
+    // processor went busy); ViewManager shows the busy state on it outside a load
+    void processingStartedSignal();
+    // emitted when the view has finished asynchronous data processing (see
+    // hasPendingProcessing()); ViewManager defers the load-done edge on it
+    void processingFinishedSignal();
 
 public slots:
     void selectionChangedSlot();
     virtual void unshowViewPointSlot (ViewableDataConfig* vp)=0;
     virtual void showViewPointSlot (ViewableDataConfig* vp)=0;
-
-    COMPASS& compass();
-    COMPASS& compass() const;
 
 protected:
     void updateSelection();
@@ -182,6 +211,8 @@ protected:
     virtual void viewInfoJSON_impl(nlohmann::json& info) const {}
 
     virtual void databaseOpened_impl() {}
+    /// adapts the config to the opened database, before the widgets are informed (e.g. unavailable variables)
+    virtual void adaptConfigToDatabase() {}
     virtual void databaseClosed_impl() {}
 
     virtual void updateSelection_impl() = 0;
@@ -222,7 +253,7 @@ private:
 
     bool    init_ = false;
     AppMode app_mode_;
-    time_t  creation_time_;
+    std::uint64_t creation_index_ = 0;
 
     boost::optional<int> issued_update_;
 
@@ -231,4 +262,6 @@ private:
 
     /// Static member counter
     static unsigned int cnt_;
+
+    static bool instant_display_; // see instantDisplay()
 };

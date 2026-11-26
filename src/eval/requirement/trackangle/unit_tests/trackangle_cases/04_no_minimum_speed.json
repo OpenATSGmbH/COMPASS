@@ -1,0 +1,32 @@
+{
+    "description": "Without minimum speed, also a slow or standing reference is compared: 0.5 m/s with 10 deg passes, 0 m/s with 0 to 200 deg (-160 deg) fails. Probability 1 / 2.",
+    "params": {
+        "threshold": 15.0,
+        "use_minimum_speed": false,
+        "minimum_speed": 3.0,
+        "check_type": "<="
+    },
+    "reports": [
+        {
+            "ref_speed": 0.5,
+            "ref": 90,
+            "tst": 100,
+            "outcome": "passed",
+            "diff": 10
+        },
+        {
+            "ref_speed": 0.0,
+            "ref": 0,
+            "tst": 200,
+            "outcome": "failed",
+            "diff": -160
+        }
+    ],
+    "expected": {
+        "passed": 1,
+        "failed": 1,
+        "no_tst": 0,
+        "ref_speed_low": 0,
+        "probability": 0.5
+    }
+}

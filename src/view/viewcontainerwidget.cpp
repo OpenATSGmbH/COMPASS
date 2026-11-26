@@ -16,19 +16,20 @@
  */
 
 #include "viewcontainerwidget.h"
+#include "licensemanager.h"
+#include "appstate.h"
 
-#include "compass.h"
 #include "config.h"
 #include "files.h"
 #include "logger.h"
 #include "stringconv.h"
 #include "viewcontainer.h"
+#include "viewdeck.h"
 #include "viewmanager.h"
 #include "ui_test_common.h"
 
 #include <QMoveEvent>
 #include <QResizeEvent>
-#include <QTabWidget>
 #include <QPushButton>
 #include <QVBoxLayout>
 #include <QMessageBox>
@@ -67,12 +68,12 @@ ViewContainerWidget::ViewContainerWidget(nlohmann::json& config,
 
     QHBoxLayout* layout = new QHBoxLayout(this);
     layout->setContentsMargins(0, 0, 0, 0);
-    // layout->setSpacing(0);
-    // layout->setMargin(0);
+    layout->setSpacing(0);
 
-    tab_widget_ = new QTabWidget();
-    traced_assert(tab_widget_);
-    layout->addWidget(tab_widget_);
+    // no host for the collapse requests of the deck: a window without Flight Deck always shows a view
+    view_deck_ = new ViewDeck();
+    layout->addWidget(view_deck_->viewArea(), 1);
+    layout->addWidget(view_deck_);
 
     // setLayout (layout);
     setMinimumSize(QSize(min_width_, min_height_));
@@ -82,7 +83,7 @@ ViewContainerWidget::ViewContainerWidget(nlohmann::json& config,
 
     createSubConfigurables();
 
-    if (view_manager_.compass().disableAddRemoveViews())
+    if (view_manager_.appState().settings().disable_add_remove_views)
         setWindowFlags(Qt::Window | Qt::WindowMinimizeButtonHint | Qt::WindowMaximizeButtonHint);
 
     show();
@@ -101,28 +102,29 @@ ViewContainerWidget::~ViewContainerWidget()
     loginf << "done";
 }
 
-void ViewContainerWidget::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult ViewContainerWidget::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
     if (class_name.compare("ViewContainer") == 0)
     {
-        traced_assert(tab_widget_);
+        traced_assert(view_deck_);
         traced_assert(!view_container_);
         view_container_ = new ViewContainer(child_json, view_manager_, this,
-                                            tab_widget_, String::getAppendedInt(instanceName()));
+                                            view_deck_, String::getAppendedInt(instanceName()));
         traced_assert(view_container_);
     }
     else
-        throw std::runtime_error("ViewContainerWidget: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 void ViewContainerWidget::checkSubConfigurables()
 {
     if (!view_container_)
     {
-        generateSubConfigurableFromConfig("ViewContainer", instanceName() + "ViewContainer0");
+        createSubConfigurableFromConfig("ViewContainer", instanceName() + "ViewContainer0");
         traced_assert(view_container_);
     }
 }
@@ -153,7 +155,7 @@ void ViewContainerWidget::resizeEvent(QResizeEvent* event)
 
 void ViewContainerWidget::updateWindowTitle()
 {
-    std::string title = view_manager_.compass().versionString() + " " + name_;
+    std::string title = view_manager_.licenseManager().versionString(view_manager_.appState().appVersion()) + " " + name_;
     QWidget::setWindowTitle(title.c_str());
 }
 

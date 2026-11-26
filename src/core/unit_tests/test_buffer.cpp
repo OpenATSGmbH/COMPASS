@@ -299,22 +299,22 @@ TEST_CASE("Buffer multiple long int NullableVectors", "[buffer][multi][longint]"
 
     for (unsigned int i = 0; i < NUM_VALUES; ++i)
     {
-        auto& nv = buf.get<long int>("long_" + std::to_string(i));
+        auto& nv = buf.get<std::int64_t>("long_" + std::to_string(i));
         for (unsigned int idx = 0; idx < 10; idx += 2)
-            nv.set(idx, static_cast<long int>(i) * 100000L + static_cast<long int>(idx));
+            nv.set(idx, static_cast<std::int64_t>(i) * 100000L + static_cast<std::int64_t>(idx));
     }
 
     REQUIRE(buf.size() == 9);
 
     for (unsigned int i = 0; i < NUM_VALUES; ++i)
     {
-        auto& nv = buf.get<long int>("long_" + std::to_string(i));
+        auto& nv = buf.get<std::int64_t>("long_" + std::to_string(i));
         for (unsigned int idx = 0; idx < 9; ++idx)
         {
             if (idx % 2 == 0)
             {
                 REQUIRE_FALSE(nv.isNull(idx));
-                REQUIRE(nv.get(idx) == static_cast<long int>(i) * 100000L + static_cast<long int>(idx));
+                REQUIRE(nv.get(idx) == static_cast<std::int64_t>(i) * 100000L + static_cast<std::int64_t>(idx));
             }
             else
             {
@@ -333,22 +333,22 @@ TEST_CASE("Buffer multiple unsigned long int NullableVectors", "[buffer][multi][
 
     for (unsigned int i = 0; i < NUM_VALUES; ++i)
     {
-        auto& nv = buf.get<unsigned long int>("ulong_" + std::to_string(i));
+        auto& nv = buf.get<std::uint64_t>("ulong_" + std::to_string(i));
         for (unsigned int idx = 0; idx < 10; idx += 2)
-            nv.set(idx, static_cast<unsigned long int>(i) * 100000UL + idx);
+            nv.set(idx, static_cast<std::uint64_t>(i) * 100000UL + idx);
     }
 
     REQUIRE(buf.size() == 9);
 
     for (unsigned int i = 0; i < NUM_VALUES; ++i)
     {
-        auto& nv = buf.get<unsigned long int>("ulong_" + std::to_string(i));
+        auto& nv = buf.get<std::uint64_t>("ulong_" + std::to_string(i));
         for (unsigned int idx = 0; idx < 9; ++idx)
         {
             if (idx % 2 == 0)
             {
                 REQUIRE_FALSE(nv.isNull(idx));
-                REQUIRE(nv.get(idx) == static_cast<unsigned long int>(i) * 100000UL + idx);
+                REQUIRE(nv.get(idx) == static_cast<std::uint64_t>(i) * 100000UL + idx);
             }
             else
             {
@@ -575,8 +575,8 @@ TEST_CASE("Buffer all data types mixed", "[buffer][multi][alltypes]")
     buf.get<unsigned char>("uc").set(0, 128);
     buf.get<int>("i").set(0, -42);
     buf.get<unsigned int>("ui").set(0, 42u);
-    buf.get<long int>("li").set(0, -123456L);
-    buf.get<unsigned long int>("uli").set(0, 123456UL);
+    buf.get<std::int64_t>("li").set(0, -123456L);
+    buf.get<std::uint64_t>("uli").set(0, 123456UL);
     buf.get<float>("f").set(0, 2.5f);
     buf.get<double>("d").set(0, 9.99);
     buf.get<std::string>("s").set(0, "mixed");
@@ -597,8 +597,8 @@ TEST_CASE("Buffer all data types mixed", "[buffer][multi][alltypes]")
     REQUIRE(buf.get<unsigned char>("uc").get(0) == 128);
     REQUIRE(buf.get<int>("i").get(0) == -42);
     REQUIRE(buf.get<unsigned int>("ui").get(0) == 42u);
-    REQUIRE(buf.get<long int>("li").get(0) == -123456L);
-    REQUIRE(buf.get<unsigned long int>("uli").get(0) == 123456UL);
+    REQUIRE(buf.get<std::int64_t>("li").get(0) == -123456L);
+    REQUIRE(buf.get<std::uint64_t>("uli").get(0) == 123456UL);
     REQUIRE(buf.get<float>("f").get(0) == Approx(2.5f));
     REQUIRE(buf.get<double>("d").get(0) == Approx(9.99));
     REQUIRE(buf.get<std::string>("s").get(0) == "mixed");
@@ -611,8 +611,8 @@ TEST_CASE("Buffer all data types mixed", "[buffer][multi][alltypes]")
     REQUIRE(buf.get<unsigned char>("uc").isNull(1));
     REQUIRE(buf.get<int>("i").isNull(1));
     REQUIRE(buf.get<unsigned int>("ui").isNull(1));
-    REQUIRE(buf.get<long int>("li").isNull(1));
-    REQUIRE(buf.get<unsigned long int>("uli").isNull(1));
+    REQUIRE(buf.get<std::int64_t>("li").isNull(1));
+    REQUIRE(buf.get<std::uint64_t>("uli").isNull(1));
     REQUIRE(buf.get<float>("f").isNull(1));
     REQUIRE(buf.get<double>("d").isNull(1));
     REQUIRE(buf.get<std::string>("s").isNull(1));

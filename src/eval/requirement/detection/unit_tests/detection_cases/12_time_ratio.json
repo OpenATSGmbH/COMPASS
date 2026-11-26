@@ -1,0 +1,58 @@
+{
+    "description": "Time ratio mode (ED-129C): 24 s gap gives 24-8=16 missed seconds of 80 s.",
+    "params": {
+        "update_interval_s": 8.0,
+        "max_ref_time_diff_s": 5.0,
+        "use_time_ratio": true
+    },
+    "ref_series": [
+        [
+            0,
+            80,
+            1,
+            true
+        ]
+    ],
+    "tst": [
+        [
+            0,
+            "ok"
+        ],
+        [
+            8,
+            "ok"
+        ],
+        [
+            16,
+            "ok"
+        ],
+        [
+            40,
+            "ok"
+        ],
+        [
+            48,
+            "ok"
+        ],
+        [
+            56,
+            "ok"
+        ],
+        [
+            64,
+            "ok"
+        ],
+        [
+            72,
+            "ok"
+        ],
+        [
+            80,
+            "ok"
+        ]
+    ],
+    "expected": {
+        "sum_expected": 80,
+        "sum_missed": 16
+    }
+}

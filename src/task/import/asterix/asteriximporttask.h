@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include "asteriximportsettings.h"
 #include "asterixdecodejob.h"
 #include "asterixpostprocess.h"
@@ -36,18 +38,23 @@
 #include <memory>
 
 
-class COMPASS;
 class DBContentManager;
 class TaskManager;
 
 class ASTERIXStatusDialog;
+class ASTERIXNetworkReplaySender;
+class ASTERIXImportProgressDialog;
 
-class QProgressDialog;
 class QTimer;
 
 namespace jASTERIX
 {
 class jASTERIX;
+}
+
+namespace dbContent
+{
+class CalculationPlan;
 }
 
 /**
@@ -66,7 +73,7 @@ struct ASTERIXFileInfo
 
 /**
 */
-class ASTERIXImportTask : public Task, public Configurable
+class COMPASS_TASK_API ASTERIXImportTask : public Task, public Configurable
 {
     Q_OBJECT
 
@@ -89,15 +96,13 @@ public slots:
 
     void checkDataReceivedSlot(); // calls live update function if no data was received
 
+    void replaySenderDoneSlot();
+
     void appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current);
 
 public:
     ASTERIXImportTask(nlohmann::json& config, TaskManager* parent);
     virtual ~ASTERIXImportTask();
-
-    COMPASS& compass() const { return compass_; }
-
-    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     void asterixFileFraming(const std::string& asterix_framing);
     void asterixDecoderConfig(const std::string& asterix_decoder_cfg);
@@ -107,6 +112,9 @@ public:
 
     virtual void stop() override;
     bool isRunning() const;
+    bool waitForFinished(int timeout_ms = FinishTimeoutMs);
+
+    static const int FinishTimeoutMs = 60000;
 
     void runDialog(QWidget* parent = nullptr);
 
@@ -136,9 +144,16 @@ public:
     bool hasError() const { return error_; }
     const std::string& error() const { return error_message_; }
 
+    // network replay (live simulation from IOSS recordings, see ASTERIXNetworkReplaySender)
+    bool prepareReplay(const std::vector<std::string>& filenames, float speed,
+                       const std::string& line_key, bool stop_at_end, std::string& error);
+    void startReplay(); // requires prepareReplay, call after run()
+    bool hasReplay() const { return !replay_senders_.empty(); }
+
     void testFileDecoding();
 
 protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
     virtual void checkSubConfigurables() override;
 
     void reset();
@@ -161,14 +176,13 @@ protected:
     void beginResultReport();
     void buildResultReport(const boost::posix_time::ptime& end_time);
 
-    COMPASS&          compass_;
     DBContentManager& dbcontent_man_;
 
     ASTERIXImportTaskSettings settings_;
     ASTERIXImportSource       source_;
 
-    std::unique_ptr<QProgressDialog> file_progress_dialog_;
-    std::unique_ptr<QTimer>          data_received_timer_;
+    std::unique_ptr<ASTERIXImportProgressDialog> file_progress_dialog_;
+    std::unique_ptr<QTimer>                      data_received_timer_;
 
     mutable std::shared_ptr<jASTERIX::jASTERIX> jasterix_;
     mutable std::string last_applied_asterix_config_; // signature of last config applied by configurejASTERIX, for logging
@@ -179,6 +193,9 @@ protected:
 
     std::unique_ptr<ASTERIXDecoderBase> decoder_;
     std::shared_ptr<ASTERIXDecodeJob>   decode_job_;
+
+    std::vector<std::unique_ptr<ASTERIXNetworkReplaySender>> replay_senders_;
+    bool replay_stop_at_end_ {false};
     
     std::string current_data_source_name_; // used to check for decode file changes
 
@@ -194,12 +211,15 @@ protected:
     ASTERIXTimestampCalculator ts_calculator_;
     //std::future<void> ts_calc_future_;
     std::vector<std::shared_ptr<ASTERIXPostprocessJob>>         postprocess_jobs_;
+    std::shared_ptr<const dbContent::CalculationPlan>           calc_plan_; // built in run(), main thread
     std::map<std::string, std::shared_ptr<Buffer>>              accumulated_buffers_;
     std::vector<std::map<std::string, std::shared_ptr<Buffer>>> queued_insert_buffers_;
 
+    boost::posix_time::ptime import_date_; // UTC day of the running import, set in run()
     boost::posix_time::ptime start_time_;
     boost::posix_time::ptime last_insert_time_;
     boost::posix_time::ptime last_file_progress_time_;
+    std::string              last_file_progress_filename_; // file shown in the progress dialog
 
     boost::posix_time::ptime last_live_update_time_;
 

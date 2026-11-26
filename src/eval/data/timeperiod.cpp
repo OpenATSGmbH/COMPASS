@@ -17,7 +17,7 @@
 
 #include "timeperiod.h"
 //#include "stringconv.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 
 #include "evaluationtargetdata.h"
 #include "dbcontent/target/targetreportchain.h"
@@ -138,21 +138,34 @@ void TimePeriodCollection::add (TimePeriod&& period)
 */
 void TimePeriodCollection::createFromReference(const EvaluationTargetData& target_data, 
                                                const SectorLayer& sector_layer,
-                                               const boost::posix_time::time_duration& max_ref_time_diff)
+                                               const boost::posix_time::time_duration& max_ref_time_diff,
+                                               const RefUpdateFilter& ref_update_filter)
+{
+    createFromReference(target_data.refChain().timestampIndexes(), max_ref_time_diff,
+                        [ & ] (const dbContent::TargetReport::DataID& id)
+                        {
+                            return target_data.isTimeStampNotExcluded(id.timestamp())
+                                && target_data.refPosInside(sector_layer, id)
+                                && (!ref_update_filter || ref_update_filter(id));
+                        });
+}
+
+/**
+*/
+void TimePeriodCollection::createFromReference(const dbContent::TargetReport::IndexMap& ref_indexes,
+                                               const boost::posix_time::time_duration& max_ref_time_diff,
+                                               const RefUpdateFilter& is_usable)
 {
     clear();
-
-    const auto& ref_data = target_data.refChain().timestampIndexes();
 
     boost::posix_time::ptime timestamp;
     boost::optional<bool>    was_inside;
 
-    for (auto& ref_it : ref_data)
+    for (auto& ref_it : ref_indexes)
     {
         timestamp = ref_it.first;
 
-        bool is_inside = target_data.isTimeStampNotExcluded(timestamp)
-                      && target_data.refPosInside(sector_layer, ref_it);
+        bool is_inside = is_usable(dbContent::TargetReport::DataID(ref_it));
 
         if (is_inside)
         {
@@ -354,6 +367,24 @@ unsigned int TimePeriodCollection::getUIs (float update_interval,
     }
 
     return sum_uis;
+}
+
+/**
+*/
+double TimePeriodCollection::getDurationSeconds (bool inside_sector_only) const
+{
+    double duration_s = 0.0;
+
+    for (auto& period_it : periods_)
+    {
+        //skip outside sectors?
+        if (inside_sector_only && period_it.type() == TimePeriod::Type::OutsideSector)
+            continue;
+
+        duration_s += Utils::Time::partialSeconds(period_it.duration());
+    }
+
+    return duration_s;
 }
 
 /**

@@ -1,0 +1,30 @@
+{
+    "description": "Times are seconds of day. Reception 86399.75 s and transmission 0.25 s after midnight is a latency of 0.5 s, not -86399.5 s: passes. Reception 86399.5 s, transmission 0.25 s: 0.75 s, too high. Reception 0.25 s, transmission 86399.75 s of the day before: -0.5 s, negative. Probability 1 / 3.",
+    "max_value_s": 0.5,
+    "reports": [
+        {
+            "tomr": 86399.75,
+            "tort": 0.25,
+            "outcome": "passed",
+            "latency": 0.5
+        },
+        {
+            "tomr": 86399.5,
+            "tort": 0.25,
+            "outcome": "too_high",
+            "latency": 0.75
+        },
+        {
+            "tomr": 0.25,
+            "tort": 86399.75,
+            "outcome": "negative",
+            "latency": -0.5
+        }
+    ],
+    "expected": {
+        "passed": 1,
+        "failed": 2,
+        "no_time_data": 0,
+        "probability": 0.3333333333
+    }
+}

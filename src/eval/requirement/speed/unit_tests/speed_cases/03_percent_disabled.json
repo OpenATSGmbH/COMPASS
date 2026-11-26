@@ -1,0 +1,31 @@
+{
+    "description": "Without 'use percent if higher' only the fixed 5 m/s apply, also at 80 m/s: a difference of 7 m/s fails. Probability 1 / 2.",
+    "params": {
+        "threshold_value": 5.0,
+        "threshold_percent": 10.0,
+        "use_percent_if_higher": false,
+        "check_type": "<"
+    },
+    "reports": [
+        {
+            "ref": 80,
+            "tst": 87,
+            "outcome": "failed",
+            "diff": 7,
+            "threshold": 5
+        },
+        {
+            "ref": 80,
+            "tst": 84,
+            "outcome": "passed",
+            "diff": 4,
+            "threshold": 5
+        }
+    ],
+    "expected": {
+        "passed": 1,
+        "failed": 1,
+        "no_tst": 0,
+        "probability": 0.5
+    }
+}

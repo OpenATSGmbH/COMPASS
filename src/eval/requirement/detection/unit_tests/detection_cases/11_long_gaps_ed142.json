@@ -1,0 +1,66 @@
+{
+    "description": "Long gaps per ED-142 6.4.8: only gaps of at least 26.4 s count, the 32 s gap gives 4 missed update intervals, the 24 s gap none.",
+    "params": {
+        "update_interval_s": 8.0,
+        "max_ref_time_diff_s": 5.0,
+        "min_gap_length_s": 26.4
+    },
+    "ref_series": [
+        [
+            0,
+            120,
+            1,
+            true
+        ]
+    ],
+    "tst": [
+        [
+            0,
+            "ok"
+        ],
+        [
+            8,
+            "ok"
+        ],
+        [
+            16,
+            "ok"
+        ],
+        [
+            48,
+            "ok"
+        ],
+        [
+            56,
+            "ok"
+        ],
+        [
+            64,
+            "ok"
+        ],
+        [
+            88,
+            "ok"
+        ],
+        [
+            96,
+            "ok"
+        ],
+        [
+            104,
+            "ok"
+        ],
+        [
+            112,
+            "ok"
+        ],
+        [
+            120,
+            "ok"
+        ]
+    ],
+    "expected": {
+        "sum_expected": 15,
+        "sum_missed": 4
+    }
+}

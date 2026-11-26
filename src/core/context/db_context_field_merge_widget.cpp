@@ -565,7 +565,7 @@ json FieldMergeWidget::displayToValue(const QString& text, const json& reference
 
     if (reference.is_number_integer() || reference.is_number_unsigned())
     {
-        try { return json(std::stol(str)); }
+        try { return json(std::stoll(str)); }
         catch (...) {}
     }
 

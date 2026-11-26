@@ -19,17 +19,19 @@
 #include "ui_test_find.h"
 #include "rtcommand.h"
 #include "rtcommand_wait_condition.h"
-#include "compass.h"
+#include "rtcommand_host.h"
+#include "logger.h"
 
 #include <QSignalSpy>
+#include <QTimer>
 
 namespace rtcommand
 {
 
 /**
 */
-RTCommandRunnerStash::RTCommandRunnerStash(COMPASS& compass)
-:   compass_(compass)
+RTCommandRunnerStash::RTCommandRunnerStash(IRTCommandHost& host)
+:   host_(host)
 {
 }
 
@@ -50,7 +52,7 @@ bool RTCommandRunnerStash::spySignalReceived() const
 */
 bool RTCommandRunnerStash::spyForSignal(const QString& obj_name, const QString& signal_name)
 {
-    spy_.reset(WaitConditionSignal::createSpy(obj_name, signal_name, compass_));
+    spy_.reset(WaitConditionSignal::createSpy(obj_name, signal_name, host_));
     return (spy_ != nullptr);
 }
 
@@ -63,15 +65,37 @@ void RTCommandRunnerStash::removeSpy()
 }
 
 /**
- * Execute the given runtime command.
+ * Execute the given runtime command. Returns an ExecResult: on a busy view state nothing
+ * is run and the runner is told to retry, so the main thread returns to its event loop
+ * instead of waiting for a state only the frames below it can reach.
+ *
+ * Commands execute on a quiet view state: interactive redraws and reloads process
+ * their data asynchronously, and a command mutating view or manager state while a
+ * worker still reads it corrupts the computation (or worse).
+ *
+ * The host only REPORTS whether now is a good time (viewsBusy()) - the waiting belongs to
+ * the runner thread. Waiting here, in the main thread, deadlocks in practice: a command can be
+ * dispatched from a nested event pump belonging to the very dispatch that would make
+ * the views quiet. QProgressDialog::setValue() pumps events for a modal dialog, and
+ * LoadController::beginViewPhase() does that from inside ViewManager::loadingDoneSlot,
+ * before the view loop has even run - so pumping for a quiet state there waits for a
+ * stack frame below itself (one command stalled 2 h 58 min in CI, 2026-08-19).
+ *
+ * A ViewManager dispatch in flight is exactly that situation: its guard is only set
+ * while the dispatch runs, so seeing it set means our event came out of its pump.
 */
-bool RTCommandRunnerStash::executeCommand(RTCommandMetaTypeWrapper wrapper) const
+int RTCommandRunnerStash::executeCommand(RTCommandMetaTypeWrapper wrapper) const
 {
     if (!wrapper.command)
-        return false;
+        return static_cast<int>(ExecResult::Failed);
 
-    wrapper.command->compass_ = &compass_;
-    return wrapper.command->run();
+    if (host_.viewsBusy())
+        return static_cast<int>(ExecResult::Deferred);
+
+    wrapper.command->host_ = &host_;
+
+    return static_cast<int>(wrapper.command->run() ? ExecResult::Succeeded
+                                                   : ExecResult::Failed);
 }
 
 /**
@@ -79,15 +103,25 @@ bool RTCommandRunnerStash::executeCommand(RTCommandMetaTypeWrapper wrapper) cons
 */
 void RTCommandRunnerStash::executeCommandAsync(RTCommandMetaTypeWrapper wrapper) const
 {
-    if (wrapper.command)
-    {
-        wrapper.command->compass_ = &compass_;
+    if (!wrapper.command)
+        return;
 
-        //the runner does not track state for async commands, since execution
-        //happens after the command reply has already been sent
-        if (wrapper.command->run())
-            wrapper.command->setState(CmdState::Finished);
+    if (host_.viewsBusy())
+    {
+        //no return value to defer with, and no runner thread waiting on us: re-arm
+        //through the event loop. A timer, not a queued invocation - a re-post could be
+        //dispatched again by the same pump we are running in, spinning inside it
+        QTimer::singleShot(ExecRetryMSecs, const_cast<RTCommandRunnerStash*>(this),
+                           [ this, wrapper ] () { executeCommandAsync(wrapper); });
+        return;
     }
+
+    wrapper.command->host_ = &host_;
+
+    //the runner does not track state for async commands, since execution
+    //happens after the command reply has already been sent
+    if (wrapper.command->run())
+        wrapper.command->setState(CmdState::Finished);
 }
 
 /**
@@ -98,7 +132,7 @@ bool RTCommandRunnerStash::postCheckCommand(RTCommandMetaTypeWrapper wrapper) co
     if (!wrapper.command)
         return false;
 
-    wrapper.command->compass_ = &compass_;
+    wrapper.command->host_ = &host_;
     return wrapper.command->checkResult();
 }
 

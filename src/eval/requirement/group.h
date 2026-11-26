@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_eval_export.h"
+
 #include "configurable.h"
 #include "evaluationstandardtreeitem.h"
 
@@ -32,7 +34,7 @@ namespace EvaluationRequirement {
 class BaseConfig;
 }
 
-class Group : public QObject, public Configurable, public EvaluationStandardTreeItem
+class COMPASS_EVAL_API Group : public QObject, public Configurable, public EvaluationStandardTreeItem
 {
     Q_OBJECT
 
@@ -51,8 +53,6 @@ public:
 
     EvaluationStandard* parentConfigurable() const;
     virtual ~Group();
-
-    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     void use(bool ok) override;
     bool used() const override;
@@ -88,6 +88,8 @@ public:
     const std::vector<std::unique_ptr<EvaluationRequirement::BaseConfig>>& configs() const;
 
 protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
     EvaluationStandard& standard_;
     EvaluationCalculator& calculator_;
 

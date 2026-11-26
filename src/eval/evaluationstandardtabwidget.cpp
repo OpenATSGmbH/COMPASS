@@ -21,6 +21,7 @@
 #include "evaluationstandard.h"
 #include "evaluationstandardwidget.h"
 #include "logger.h"
+#include "questiondialog.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -55,6 +56,7 @@ EvaluationStandardTabWidget::EvaluationStandardTabWidget(EvaluationCalculator& c
         std_layout->addWidget(standard_label);
 
         standard_box_.reset(new EvaluationStandardComboBox(calculator_));
+        standard_box_->setObjectName("standard_combo");
 
         std_layout->addWidget(standard_box_.get());
 
@@ -66,21 +68,25 @@ EvaluationStandardTabWidget::EvaluationStandardTabWidget(EvaluationCalculator& c
         QHBoxLayout* button_layout = new QHBoxLayout();
 
         add_button_ = new QPushButton("Add");
+        add_button_->setObjectName("add_button");
         connect (add_button_, &QPushButton::clicked,
                  this, &EvaluationStandardTabWidget::addStandardSlot);
         button_layout->addWidget(add_button_);
 
         rename_button_ = new QPushButton("Rename");
+        rename_button_->setObjectName("rename_button");
         connect (rename_button_, &QPushButton::clicked,
                  this, &EvaluationStandardTabWidget::renameStandardSlot);
         button_layout->addWidget(rename_button_);
 
         copy_button_ = new QPushButton("Copy");
+        copy_button_->setObjectName("copy_button");
         connect (copy_button_, &QPushButton::clicked,
                  this, &EvaluationStandardTabWidget::copyStandardSlot);
         button_layout->addWidget(copy_button_);
 
         remove_button_ = new QPushButton("Remove");
+        remove_button_->setObjectName("remove_button");
         connect (remove_button_, &QPushButton::clicked,
                  this, &EvaluationStandardTabWidget::removeStandardSlot);
         button_layout->addWidget(remove_button_);
@@ -253,6 +259,12 @@ void EvaluationStandardTabWidget::removeStandardSlot ()
     loginf;
 
     traced_assert(calculator_.hasCurrentStandard());
+
+    QString msg = "Do you really want to remove standard '"
+                  + QString::fromStdString(calculator_.currentStandardName()) + "'?";
+    if (!QuestionDialog::ask(this, "Remove Standard", msg))
+        return;
+
     calculator_.deleteCurrentStandard();
 }
 

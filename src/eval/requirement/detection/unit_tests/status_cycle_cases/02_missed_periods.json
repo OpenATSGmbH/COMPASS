@@ -1,0 +1,48 @@
+{
+    "description": "As 01_all_detected, without test reports between 4.5 s and 8.5 s: the periods [5, 6], [6, 7] and [7, 8] are missed.",
+    "update_interval_s": 1.0,
+    "cycle_series": [
+        [
+            0,
+            20,
+            1
+        ]
+    ],
+    "ref_periods": [
+        [
+            0,
+            20
+        ]
+    ],
+    "tst_series": [
+        [
+            0.5,
+            4.5,
+            1
+        ],
+        [
+            8.5,
+            19.5,
+            1
+        ]
+    ],
+    "expected": {
+        "cycles_per_period": 1,
+        "sum_expected": 20,
+        "sum_missed": 3,
+        "misses": [
+            [
+                5,
+                6
+            ],
+            [
+                6,
+                7
+            ],
+            [
+                7,
+                8
+            ]
+        ]
+    }
+}

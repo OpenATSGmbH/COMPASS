@@ -51,7 +51,7 @@ void HistogramGenerator::Results::toRaw(RawHistogramCollection& collection,
             h.addBin(RawHistogramBin(bin.count, bin.labels.label));
 
         if (add_null)
-            h.addBin(RawHistogramBin(r.null_count, NullString));
+            h.addBin(RawHistogramBin(r.null_count, NullString, RawHistogramBin::Tag::NullValues));
 
         collection.addDataSeries(h, name, color);
     }
@@ -71,7 +71,7 @@ void HistogramGenerator::Results::toRaw(RawHistogramCollection& collection,
             h.addBin(RawHistogramBin(bin, bins0[ idx++ ].labels.label));
 
         if (add_null)
-            h.addBin(RawHistogramBin(null_selected_count, NullString));
+            h.addBin(RawHistogramBin(null_selected_count, NullString, RawHistogramBin::Tag::NullValues));
 
         collection.addDataSeries(h, name, color);
     }

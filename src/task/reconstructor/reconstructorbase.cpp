@@ -17,10 +17,10 @@
 
 #include "reconstructorbase.h"
 #include "reconstructortask.h"
-#include "compass.h"
 #include "dbcontentmanager.h"
 #include "dbcontentdataengine.h"
 #include "dbcontent/dbcontent.h"
+#include "dbcontent/target/target.h"
 #include "logger.h"
 #include "stringconv.h"
 #include "timeconv.h"
@@ -31,13 +31,14 @@
 #include "reconstructorassociatorbase.h"
 
 #include "taskmanager.h"
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttext.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttext.h"
+#include "report/sectioncontenttable.h"
 
 #include "kalman_chain.h"
 #include "kalman_online_tracker.h"
+#include "kalman_interface.h"
 #include "tbbhack.h"
 
 #include "dbcontent/variable/metavariable.h"
@@ -49,7 +50,6 @@
 #include "viewpointgenerator.h"
 #include "grid2d.h"
 #include "grid2dlayer.h"
-#include "grid2dlayerrenderer.h"
 #include "grid2drendersettings.h"
 
 #include "sector/sectorlayer.h"
@@ -417,6 +417,9 @@ bool ReconstructorBase::TargetsContainer::canAssocByTrackNumber(
 
         eraseTrackNumberLookup(tr);
 
+        reconstructor_->associator().onTrackNumberDisassociated(
+            tr, utn, ReconstructorAssociatorBase::TrackDisassocReason::ACADReuse);
+
         if (tr.acid_ && acid_2_utn_.count(*tr.acid_))
         {
             if (do_debug || reconstructor_->task().debugSettings().debugUTN(utn))
@@ -477,7 +480,7 @@ int ReconstructorBase::TargetsContainer::assocByTrackNumber(
 }
 
 unsigned int ReconstructorBase::TargetsContainer::createTargetFromReports(
-    const std::vector<unsigned long>& rec_nums, unsigned int source_utn)
+    const std::vector<std::uint64_t>& rec_nums, unsigned int source_utn)
 {
     traced_assert(rec_nums.size());
     traced_assert(reconstructor_);
@@ -568,7 +571,7 @@ ReconstructorBase::ReconstructorBase(nlohmann::json& config,
     ,   task_(task)
     ,   chain_predictors_(new reconstruction::KalmanChainPredictors)
 {
-    accessor_ = make_shared<dbContent::DBContentAccessor>(task_.manager().compass().dbContentManager());
+    accessor_ = make_shared<dbContent::DBContentAccessor>(task_.manager().dbContentManager());
 
     // reference computation
     {
@@ -580,6 +583,8 @@ ReconstructorBase::ReconstructorBase(nlohmann::json& config,
                           ReferenceCalculatorSettings().Q_std.Q_std_air);
         registerParameter("ref_Q_std_unknown", &ref_calc_settings_.Q_std.Q_std_unknown,
                           ReferenceCalculatorSettings().Q_std.Q_std_unknown);
+        registerParameter("ref_Q_std_stopped", &ref_calc_settings_.Q_std_stopped,
+                          ReferenceCalculatorSettings().Q_std_stopped);
 
         registerParameter("dynamic_process_noise", &ref_calc_settings_.dynamic_process_noise,
                           ReferenceCalculatorSettings().dynamic_process_noise);
@@ -751,11 +756,11 @@ bool ReconstructorBase::isVehicleACAD(unsigned int value)
 std::pair<boost::posix_time::ptime, boost::posix_time::ptime> ReconstructorBase::timeFrame() const
 {
     //get full data time range (should)
-    if (!task_.manager().compass().dbContentManager().dataEngine().hasMinMaxTimestamp())
+    if (!task_.manager().dbContentManager().dataEngine().hasMinMaxTimestamp())
         return std::pair<boost::posix_time::ptime, boost::posix_time::ptime>();
 
     boost::posix_time::ptime data_t0, data_t1;
-    std::tie(data_t0, data_t1) = task_.manager().compass().dbContentManager().dataEngine().minMaxTimestamp();
+    std::tie(data_t0, data_t1) = task_.manager().dbContentManager().dataEngine().minMaxTimestamp();
 
     if (data_t0 >= data_t1)
         return std::pair<boost::posix_time::ptime, boost::posix_time::ptime>();
@@ -969,8 +974,8 @@ void ReconstructorBase::processSlice()
     {
         const auto& counts = assocCounts();
 
-        auto& ctx_man = task_.manager().compass().dbContextManager();
-        DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
+        auto& ctx_man = task_.manager().dbContextManager();
+        DBContentManager& dbcont_man = task_.manager().dbContentManager();
 
         for (auto& ds_it : counts)
         {
@@ -1095,11 +1100,11 @@ void ReconstructorBase::createTargetReports()
            << Time::toString(currentSlice().slice_begin_);
 
     boost::posix_time::ptime ts;
-    unsigned long record_num;
+    std::uint64_t record_num;
 
     dbContent::targetReport::ReconstructorInfo info;
 
-    DBContentManager& dbcont_man = task_.manager().compass().dbContentManager();
+    DBContentManager& dbcont_man = task_.manager().dbContentManager();
 
     accessors_.clear();
 
@@ -1110,7 +1115,7 @@ void ReconstructorBase::createTargetReports()
     std::set<unsigned int> unused_ds_ids = task_.unusedDSIDs();
     std::map<unsigned int, std::set<unsigned int>> unused_lines = task_.unusedDSIDLines();
 
-    auto& ctx_man = task_.manager().compass().dbContextManager();
+    auto& ctx_man = task_.manager().dbContextManager();
 
     std::set<unsigned int> ground_only_ds_ids = ctx_man.groundOnlyDataSources();
 
@@ -1124,7 +1129,7 @@ void ReconstructorBase::createTargetReports()
 
     if (task_.useSectorsExtend())
     {
-        auto& ctx = task_.manager().compass().dbContextManager();
+        auto& ctx = task_.manager().dbContextManager();
 
         for (auto& sect_it : task_.usedSectors())
         {
@@ -1134,7 +1139,7 @@ void ReconstructorBase::createTargetReports()
                 continue;
 
             for (const auto& s : ctx.sectorLayer(sect_it.first)->sectors())
-                s->createFastInsideTest();
+                s->createFastInsideTest(task_.sectorDeltaDeg());
 
             used_sector_layers.push_back(ctx.sectorLayer(sect_it.first));
         }
@@ -1158,8 +1163,12 @@ void ReconstructorBase::createTargetReports()
         dbContent::TargetReportAccessor& tgt_acc = accessors_.at(dbcont_id);
         unsigned int buffer_size = tgt_acc.size();
 
-        std::vector<bool> position_usable;
-        position_usable.resize(buffer_size);
+        //grow once for this buffer instead of rehashing repeatedly while inserting
+        target_reports_.reserve(target_reports_.size() + buffer_size);
+
+        //one byte per flag: std::vector<bool> packs flags into shared words,
+        //the parallel writes below would then lose flags (data race)
+        std::vector<unsigned char> position_usable(buffer_size, 0);
 
         tbb::parallel_for(uint(0), buffer_size, [&](unsigned int cnt)
             {
@@ -1265,12 +1274,15 @@ void ReconstructorBase::createTargetReports()
                         || (unused_lines.count(info.ds_id_) && unused_lines.at(info.ds_id_).count(info.line_id_)));
 
                 info.barometric_altitude_ = tgt_acc.barometricAltitude(cnt);
+                info.tracked_baro_altitude_ = tgt_acc.trackedBarometricAltitude(cnt);
 
                 info.velocity_ = tgt_acc.velocity(cnt);
                 info.velocity_accuracy_ = tgt_acc.velocityAccuracy(cnt);
+                info.acceleration_ = tgt_acc.acceleration(cnt);
 
                 info.track_angle_ = tgt_acc.trackAngle(cnt);
                 info.ground_bit_ = tgt_acc.groundBit(cnt);
+                info.detection_type_ = tgt_acc.detectionType(cnt);
                 info.data_source_is_ground_only_ = ground_only_ds_ids.count(info.ds_id_);
 
                 // adsb stuff
@@ -1279,11 +1291,29 @@ void ReconstructorBase::createTargetReports()
                 info.nucp_nic_ = tgt_acc.nucp(cnt);
                 info.sil_ = tgt_acc.sil(cnt);
                 info.ecat_ = tgt_acc.ecat(cnt);
+                info.sgv_stp_ = tgt_acc.sgvStopped(cnt);
+                info.adsb_toa_time_source_ = tgt_acc.adsbToATimeSource(cnt);
 
                 boost::optional<bool> pos_check_failed = tgt_acc.posCheckFailed(cnt);
 
                 if (pos_check_failed && *pos_check_failed)
+                {
                     info.invalidated_pos_ = true;
+                    info.pos_invalidation_reason_ = dbContent::targetReport::PosInvalidationReason::InputPosCheck;
+                    info.pos_check_failed_input_ = true;
+                }
+
+                // GS position validation flags: carried for calibration exclusion
+                // and re-validation, no invalidation on their own (see
+                // ReconstructorInfo comment)
+                boost::optional<bool> range_check_failed = tgt_acc.rangeCheckFailed(cnt);
+                info.adsb_rcf_ = range_check_failed && *range_check_failed;
+
+                boost::optional<bool> cpr_valid = tgt_acc.cprValid(cnt);
+                info.adsb_cpr_invalid_ = cpr_valid && !*cpr_valid;
+
+                boost::optional<bool> ldpj = tgt_acc.localDecodingPositionJump(cnt);
+                info.adsb_ldpj_ = ldpj && *ldpj;
 
                 // insert info
                 target_reports_[record_num] = info;
@@ -1320,7 +1350,7 @@ void ReconstructorBase::createTargetReportBatches()
 {
     loginf << "begin";
 
-    dbContent::DBContentStatusInfo status_info(task_.manager().compass().dbContentManager());
+    dbContent::DBContentStatusInfo status_info(task_.manager().dbContentManager());
 
     status_info.process(accessor_->buffers());
 
@@ -1329,7 +1359,7 @@ void ReconstructorBase::createTargetReportBatches()
 
     std::vector<std::string> data_source_type_order {"RefTraj", "ADSB", "Tracker", "MLAT", "Radar", "Other"};
 
-    auto& ctx_man2 = task_.manager().compass().dbContextManager();
+    auto& ctx_man2 = task_.manager().dbContextManager();
 
     size_t num_truncated_noinfo = 0;
     size_t num_truncated_oor    = 0;
@@ -1359,7 +1389,7 @@ void ReconstructorBase::createTargetReportBatches()
                     if (status_info.hasInfo(ds_it.first, line_it.first))
                         ds_ui_times = status_info.getInfo(ds_it.first, line_it.first);
 
-                    std::map<boost::posix_time::ptime, std::vector<unsigned long>> batches;
+                    std::map<boost::posix_time::ptime, std::vector<std::uint64_t>> batches;
 
                     for (auto& rn_it : line_it.second)
                     {
@@ -1462,8 +1492,8 @@ std::pair<ReconstructorBase::AssocMap, ReconstructorBase::AssocMap> Reconstructo
 {
     loginf;
 
-    std::map<unsigned int, std::map<unsigned long, unsigned int>> associations_written;
-    std::map<unsigned int, std::map<unsigned long, unsigned int>> associations_glue;
+    std::map<unsigned int, std::map<std::uint64_t, unsigned int>> associations_written;
+    std::map<unsigned int, std::map<std::uint64_t, unsigned int>> associations_glue;
     unsigned int num_assoc_written {0};
     unsigned int num_assoc_glue    {0};
 
@@ -1503,7 +1533,7 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
 {
     logdbg;
 
-    DBContentManager& dbcontent_man = task_.manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = task_.manager().dbContentManager();
 
     // write association info to buffers
 
@@ -1525,7 +1555,7 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
             string dbcontent_name = dbcontent_man.dbContentWithId(cont_assoc_it.first);
             //DBContent& dbcontent = dbcontent_man.dbContent(dbcontent_name);
 
-            const std::map<unsigned long, unsigned int>& tr_associations = cont_assoc_it.second;
+            const std::map<std::uint64_t, unsigned int>& tr_associations = cont_assoc_it.second;
 
             logdbg << "db content " << dbcontent_name;
 
@@ -1544,7 +1574,7 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
             shared_ptr<Buffer> buffer = assoc_data.at(dbcontent_name);
 
             NullableVector<unsigned int>& utn_col_vec      = buffer->get<unsigned int>(utn_name);
-            NullableVector<unsigned long>& rec_num_col_vec = buffer->get<unsigned long>(rec_num_name);
+            NullableVector<std::uint64_t>& rec_num_col_vec = buffer->get<std::uint64_t>(rec_num_name);
 
             traced_assert(tr_ds_.count(dbcontent_id));
 
@@ -1633,7 +1663,7 @@ std::pair<ReconstructorBase::Buffers, ReconstructorBase::Buffers> ReconstructorB
                 << " ts min " << Time::toString(ts_vec.get(0))
                 << " max " << Time::toString(ts_vec.get(ts_vec.contentSize()-1));
 
-            auto& ctx_man3 = task_.manager().compass().dbContextManager();
+            auto& ctx_man3 = task_.manager().dbContextManager();
 
             unsigned int ds_id = Number::dsIdFrom(settings().ds_sac, settings().ds_sic);
 
@@ -1675,7 +1705,7 @@ void ReconstructorBase::doReconstructionStatistics()
 
     auto getTable = [ & ] ()
     {
-        auto& section = task_.manager().compass().taskManager().currentReport()->getSection("Reconstruction Statistics");
+        auto& section = task_.manager().currentReport()->getSection("Reconstruction Statistics");
         if (!section.hasTable("Reconstruction Statistics"))
             section.addTable("Reconstruction Statistics", 4, {"", "", "Value", "Value [%]"}, false);
 
@@ -1850,7 +1880,7 @@ void ReconstructorBase::doReconstructionStatistics()
 
 void ReconstructorBase::doUnassociatedAnalysis()
 {
-    auto& dbcont_man = task_.manager().compass().dbContentManager();
+    auto& dbcont_man = task_.manager().dbContentManager();
 
     traced_assert(dbcont_man.dataEngine().hasMinMaxPosition());
 
@@ -1868,7 +1898,7 @@ void ReconstructorBase::doUnassociatedAnalysis()
     QRectF roi(lon_min, lat_min, lon_max - lon_min, lat_max - lat_min);
     traced_assert(!roi.isEmpty());
 
-    auto vp = task().getDebugViewpoint(
+    auto vp = task().getDebugViewpointWithData(
         name+" Unassociated Grid", "Grid");
 
     auto anno = vp->annotations().getOrCreateAnnotation("Unassociated Grid");
@@ -1882,7 +1912,7 @@ void ReconstructorBase::doUnassociatedAnalysis()
     Grid2D grid;
     grid.create(roi, grid2d::GridResolution().setCellCount(num_cells_x, num_cells_y));
 
-    auto& section = task_.manager().compass().taskManager().currentReport()->getSection(
+    auto& section = task_.manager().currentReport()->getSection(
         "Association:Unassociated");
 
     for (auto rec_num : associator().unassociatedRecNums())
@@ -1907,10 +1937,13 @@ void ReconstructorBase::doUnassociatedAnalysis()
 
     rsettings.color_map.create(ColorMap::ColorScale::Green2Red, 2);
 
-    auto result = Grid2DLayerRenderer::render(layers.layer(0), rsettings);
+    anno->addFeature(new ViewPointGenFeatureGrid(
+        layers.layer(0), rsettings,
+        PlotMetadata("Reconstruction", "Unassociated Grid", "Longitude (deg)", "Latitude (deg)")));
 
-    auto f = new ViewPointGenFeatureGeoImage(result.first, result.second);
-    anno->addFeature(f);
+    QRectF vp_roi = layers.layer(0).geoROIOfValidCells();
+    if (!vp_roi.isEmpty())
+        vp->setROI(vp_roi);
 
     if (!section.hasTable("Unassociated Target Reports"))
         section.addTable("Unassociated Target Reports", 8,
@@ -1949,16 +1982,18 @@ void ReconstructorBase::doUnassociatedAnalysis()
     vp->toJSON(vp_json);
     //section.addFigure("Avg. Unused Scatterplot", {vp_json});
 
+    nlohmann::json& load_data = vp_json.at(ViewPointKeys::VP_LOAD_DATA_KEY);
+
     // slice was already switched
-    vp_json[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(
+    load_data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Maximum"] = Time::toString(
         next_slice_begin_ - settings().sliceDuration() - boost::posix_time::milliseconds(1));
-    vp_json[ViewPoint::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] =
+    load_data[ViewPointKeys::VP_FILTERS_KEY]["Timestamp"]["Timestamp Minimum"] =
         Time::toString(current_slice_begin_ - settings().sliceDuration());
 
-    // vp_json[ViewPoint::VP_FILTERS_KEY]["Record Number"]["Record NumberCondition0"] =
+    // load_data[ViewPointKeys::VP_FILTERS_KEY]["Record Number"]["Record NumberCondition0"] =
     //     String::compress(associator().unassociatedRecNums(), ',');
 
-    vp_json[ViewPoint::VP_SELECTED_RECNUMS_KEY] = associator().unassociatedRecNums();
+    load_data[ViewPointKeys::VP_SELECTED_RECNUMS_KEY] = associator().unassociatedRecNums();
 
     table.addRow(row, {vp_json});
 
@@ -1989,9 +2024,62 @@ void ReconstructorBase::saveTargets()
 
     processing_ = true;
 
-    DBContentManager& cont_man = task_.manager().compass().dbContentManager();
+    DBContentManager& cont_man = task_.manager().dbContentManager();
 
-    cont_man.createNewTargets(targets_container_.targets_);
+    // summary of the reconstructed targets for the target model
+    std::vector<dbContent::Target> targets;
+    targets.reserve(targets_container_.targets_.size());
+
+    for (auto& tgt_it : targets_container_.targets_)
+    {
+        dbContent::Target tgt (tgt_it.first, nlohmann::json::object());
+
+                //target.useInEval(tgt_it.second.use_in_eval_);
+
+                //if (tgt_it.second.comment_.size())
+                //    target.comment(tgt_it.second.comment_);
+
+        tgt.aircraftAddresses(tgt_it.second.acads_);
+        tgt.aircraftIdentifications(tgt_it.second.acids_);
+        tgt.modeACodes(tgt_it.second.mode_as_);
+
+        if (tgt_it.second.ecat_ && *tgt_it.second.ecat_ != (unsigned int) dbContent::Target::Category::Unknown)
+            tgt.targetCategory(dbContent::Target::fromECAT(tgt_it.second.ecat_));
+
+        if (tgt_it.second.hasTimestamps())
+        {
+            tgt.timeBegin(tgt_it.second.total_timestamp_min_);
+            tgt.timeEnd(tgt_it.second.total_timestamp_max_);
+        }
+
+        if (tgt_it.second.hasModeC())
+            tgt.modeCMinMax(*tgt_it.second.mode_c_min_, *tgt_it.second.mode_c_max_);
+
+        if (tgt_it.second.latitude_min_ && tgt_it.second.latitude_max_
+            && tgt_it.second.longitude_min_ && tgt_it.second.longitude_max_)
+            tgt.setPositionBounds(*tgt_it.second.latitude_min_, *tgt_it.second.latitude_max_,
+                                  *tgt_it.second.longitude_min_, *tgt_it.second.longitude_max_);
+
+                // set counts
+        for (auto& count_it : tgt_it.second.getDBContentCounts())
+            tgt.dbContentCount(count_it.first, count_it.second);
+
+                // set adsb stuff
+        tgt.adsbCount(tgt_it.second.adsb_count_);
+        tgt.adsbMOPSCount(tgt_it.second.adsb_mops_count_);
+
+        // dubious reference detection counts, only written when non-empty
+        tgt.dubiousRefCounts(tgt_it.second.dubious_ref_counts_);
+
+        //if (tgt_it.second.createdFromTentative())
+        //    tgt.comment("Created from tentative");
+        //else if (tgt_it.second.containsPreviouslyTentative())
+        //    tgt.comment("Contains tentative");
+
+        targets.push_back(tgt);
+    }
+
+    cont_man.createNewTargets(targets);
 
     cont_man.saveTargets();
 
@@ -2164,12 +2252,23 @@ void ReconstructorBase::createMeasurement(reconstruction::Measurement& mm,
         mm.pos_acc_corrected = true;
     }
 
-    //other flags
-    mm.stopped = !ri.isMoving();
+    //other flags: stopped state ONLY from ADS-B evidence (SGV STP bit or
+    //ADS-B ground speed close to zero, nearest report in a 6 s search
+    //window), plus per-definition static target categories; other sources
+    //(MLAT plots, trackers) carry no evidence either way
+    bool static_category = target && (target->targetCategory() == TargetBase::Category::Obstacle
+                                      || target->targetCategory() == TargetBase::Category::FFT);
+
+    if (static_category)
+        mm.stopped = true;
+    else if (target)
+        mm.stopped = target->isADSBStoppedAt(ri.timestamp_, boost::posix_time::seconds(6));
+    else
+        mm.stopped = ri.dbcont_id_ == 21 && !ri.isMoving();
 }
 
 void ReconstructorBase::createMeasurement(reconstruction::Measurement& mm,
-                                          unsigned long rec_num,
+                                          std::uint64_t rec_num,
                                           const dbContent::ReconstructorTarget* target)
 {
     auto it = target_reports_.find(rec_num);
@@ -2178,7 +2277,7 @@ void ReconstructorBase::createMeasurement(reconstruction::Measurement& mm,
     createMeasurement(mm, it->second, target);
 }
 
-const dbContent::targetReport::ReconstructorInfo* ReconstructorBase::getInfo(unsigned long rec_num) const
+const dbContent::targetReport::ReconstructorInfo* ReconstructorBase::getInfo(std::uint64_t rec_num) const
 {
     auto it = target_reports_.find(rec_num);
     if (it == target_reports_.end())
@@ -2216,6 +2315,16 @@ reconstruction::KalmanEstimator::Settings ReconstructorBase::assocChainEstimator
     return referenceCalculatorSettings().chainEstimatorSettings(max_time_diff_pred);
 }
 
+/**
+ * Creates the kalman interface of the given type. The base supports the built-in types only (see
+ * KalmanEstimator::createInterface()), derived reconstructors override this for further types.
+ */
+std::unique_ptr<reconstruction::KalmanInterface> ReconstructorBase::createKalmanInterface(kalman::KalmanType ktype,
+                                                                                          const reconstruction::KalmanEstimator::Settings& settings) const
+{
+    return reconstruction::KalmanEstimator::createInterface(ktype, settings);
+}
+
 std::unique_ptr<reconstruction::KalmanChain> ReconstructorBase::createConfiguredAssocChain(bool dynamic_insertions) const
 {
     std::unique_ptr<reconstruction::KalmanChain> chain;
@@ -2231,18 +2340,18 @@ std::unique_ptr<reconstruction::KalmanChain> ReconstructorBase::createConfigured
     chain->settings().prediction_max_tdiff_sec = settings().max_time_diff_;
 
     chain->configureEstimator(assocChainEstimatorSettings());
-    chain->init(referenceCalculatorSettings().kalman_type_assoc);
+    chain->init(createKalmanInterface(referenceCalculatorSettings().kalman_type_assoc, assocChainEstimatorSettings()));
 
     auto rec_ptr = const_cast<ReconstructorBase*>(this);
 
     chain->setMeasurementAssignFunc(
-        [ rec_ptr ] (reconstruction::Measurement& mm, unsigned long rec_num)
+        [ rec_ptr ] (reconstruction::Measurement& mm, std::uint64_t rec_num)
         {
             rec_ptr->createMeasurement(mm, rec_num);
         });
 
     chain->setMeasurementCheckFunc(
-        [ rec_ptr ] (unsigned long rec_num)
+        [ rec_ptr ] (std::uint64_t rec_num)
         {
             return rec_ptr->target_reports_.find(rec_num) != rec_ptr->target_reports_.end();
         });
@@ -2260,7 +2369,7 @@ std::unique_ptr<reconstruction::KalmanEstimator> ReconstructorBase::createConfig
     kalman->settings().verbosity         = 0;
     kalman->settings().debug             = false;
 
-    kalman->init(referenceCalculatorSettings().kalman_type_assoc);
+    kalman->init(createKalmanInterface(referenceCalculatorSettings().kalman_type_assoc, kalman->settings()));
 
     return kalman;
 }
@@ -2277,7 +2386,7 @@ std::unique_ptr<reconstruction::KalmanOnlineTracker> ReconstructorBase::createCo
     kalman->estimatorSettings().verbosity         = 0;
     kalman->estimatorSettings().debug             = false;
 
-    kalman->init(referenceCalculatorSettings().kalman_type_assoc);
+    kalman->init(createKalmanInterface(referenceCalculatorSettings().kalman_type_assoc, kalman->estimatorSettings()));
 
     return kalman;
 }
@@ -2298,8 +2407,10 @@ void ReconstructorBase::initAssocChainPredictors()
     traced_assert(num_threads > 0);
     traced_assert(chain_predictors_);
 
-    chain_predictors_->init(referenceCalculatorSettings().kalman_type_assoc,
-                            assocChainEstimatorSettings(),
+    const auto estimator_settings = assocChainEstimatorSettings();
+
+    chain_predictors_->init(createKalmanInterface(referenceCalculatorSettings().kalman_type_assoc, estimator_settings),
+                            estimator_settings,
                             num_threads);
 }
 

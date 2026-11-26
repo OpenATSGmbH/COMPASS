@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/requirement/base/probabilitybaseconfigwidget.h"
+#include "requirement/base/probabilitybaseconfigwidget.h"
 
 class QLineEdit;
 class QCheckBox;
@@ -49,6 +49,7 @@ public slots:
     void missToleranceEditSlot(QString value);
 
     void toggleHoldForAnyTargetSlot();
+    void toggleExcludeDetectionMissesSlot();
 
 protected:
     void configure(uint32_t flags);
@@ -68,6 +69,8 @@ protected:
     QLineEdit* miss_tolerance_edit_       = nullptr;
 
     QCheckBox* hold_for_any_target_check_ = nullptr;
+
+    QCheckBox* exclude_detection_misses_check_ = nullptr;
 };
 
 } // namespace EvaluationRequirement

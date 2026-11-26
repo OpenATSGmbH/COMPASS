@@ -56,4 +56,5 @@ public:
     bool requiresLoadedDataset()       const override { return false; }
 
     void writeReport(ResultReport::Section& root) override;
+    void addSettingsRows(QFormLayout* form) override;
 };

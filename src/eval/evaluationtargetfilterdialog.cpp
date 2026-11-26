@@ -16,7 +16,6 @@
  */
 
 #include "evaluationtargetfilterdialog.h"
-#include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontent.h"
 #include "evaluationtargetfilter.h"
@@ -247,6 +246,7 @@ EvaluationTargetFilterDialog::EvaluationTargetFilterDialog(
     button_layout->addStretch();
 
     run_button_ = new QPushButton("Run");
+    run_button_->setObjectName("run_button");
     connect(run_button_, &QPushButton::clicked, this, &EvaluationTargetFilterDialog::runSlot);
     button_layout->addWidget(run_button_);
 

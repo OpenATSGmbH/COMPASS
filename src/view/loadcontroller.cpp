@@ -18,21 +18,24 @@
 #include "loadcontroller.h"
 #include "dialogs.h"
 #include "viewmanager.h"
-#include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentdataengine.h"
 #include "dbcontent/dbcontentdataset.h"
 #include "dbcontent/loadoperation.h"
+#include "dialogs.h"
 #include "logger.h"
 
 #include <QApplication>
 #include <QCoreApplication>
+#include <QEvent>
 #include <QProgressDialog>
+#include <QTimer>
 
 /**
  */
-LoadController::LoadController(COMPASS& compass, QObject* parent)
-    : QObject(parent), compass_(compass)
+LoadController::LoadController(ViewManager& view_manager,
+                               QObject* parent)
+    : QObject(parent), view_manager_(view_manager)
 {
 }
 
@@ -55,7 +58,7 @@ void LoadController::begin(const LoadOperation& op)
 
     value_      = 0.0;
     load_total_ = static_cast<unsigned int>(
-        compass_.dbContentManager().dataEngine().resolveTargetSet(op.spec()).size());
+        view_manager_.dbContentManager().dataEngine().resolveTargetSet(op.spec()).size());
     view_total_ = 0;
 
     // advance the load phase directly off the op (un-guarded, once per content) - not via
@@ -71,21 +74,30 @@ void LoadController::begin(const LoadOperation& op)
     if (load_total_ == 0)
         return; // nothing to load: wait cursor only
 
+    if (dialogs_suppressed_)
+        return; // report export: the modal export dialog covers the busy state
+
     dialog_ = new QProgressDialog("Loading data...", "Cancel", 0, 100,
                                   Dialogs::statusDialogParent());
     dialog_->setWindowModality(Qt::ApplicationModal);
     // do not steal os focus from other applications when popping up
     dialog_->setAttribute(Qt::WA_ShowWithoutActivating, true);
-    dialog_->setMinimumDuration(0);
+    // deferred native show: with a value-driven dialog Qt arms the minimum-duration
+    // timer on the first setValue and shows once it elapsed - a load finishing faster
+    // never flashes the dialog. setValue(0) arms it right here; the force-show timer
+    // fires through the event loop, which keeps running during a load (arrivals are
+    // queued events)
+    dialog_->setMinimumDuration(700);
     dialog_->setAutoClose(false);
     dialog_->setAutoReset(false);
     dialog_->setWindowTitle("Loading Data");
 
     connect(dialog_.data(), &QProgressDialog::canceled, this, &LoadController::canceledSlot);
 
-    // paint before the main thread gets busy submitting jobs / processing arrivals
-    dialog_->show();
-    QCoreApplication::processEvents();
+    // first paint runs synchronously when the deferred show fires (see eventFilter)
+    dialog_->installEventFilter(this);
+
+    dialog_->setValue(0);
 }
 
 /**
@@ -163,8 +175,14 @@ void LoadController::advanceViewPhase()
     if (value_ > 100.0)
         value_ = 100.0;
 
-    // shared setValue guard - see in_set_value_ in the header. A nested advance does
-    // nothing but leave its value for the outer call.
+    // QProgressDialog::setValue() pumps the event loop for a modal dialog. A queued view
+    // completion dispatched by that pump re-enters here and can end the whole cycle -
+    // and Qt's setValue touches the dialog again after the pump returns, so destroying
+    // it in between is a use after free inside Qt. Hence: a nested advance does nothing
+    // but leave its value for the outer call, and an end() arriving while we are inside
+    // setValue only closes the dialog and defers its deletion to deleteStaleDialogs()
+    // below. The guard is shared with the other setValue sites - see in_set_value_ in
+    // the header.
     if (in_set_value_)
         return;
 
@@ -176,10 +194,8 @@ void LoadController::advanceViewPhase()
 
     // the pump inside setValue may have ended the cycle (dialog_ cleared) or started
     // the next load (a different dialog) - re-check before touching it again
-    if (!dialog_)
-        return;
-
-    dialog_->repaint(); // see beginViewPhase
+    if (dialog_)
+        dialog_->repaint(); // see beginViewPhase
 }
 
 /**
@@ -191,14 +207,89 @@ void LoadController::advanceViewPhase()
  */
 void LoadController::opFinishedSlot()
 {
-    if (op_ && compass_.viewManager().currentSource().get() != op_)
+    if (op_ && view_manager_.currentSource().get() != op_)
         end(/*drain=*/false);
+}
+
+/**
+ */
+bool LoadController::eventFilter(QObject* watched, QEvent* event)
+{
+    // synchronous paint on show, delivered to this one widget only - NOT a
+    // processEvents(), which would interleave queued rt commands and other posted
+    // work into the load lifecycle (see readme_loading.md on threshold pumping)
+    if (event->type() == QEvent::Show)
+    {
+        auto* w = qobject_cast<QWidget*>(watched);
+        if (w)
+            w->repaint();
+    }
+
+    return QObject::eventFilter(watched, event);
+}
+
+/**
+ */
+void LoadController::beginViewProcessing()
+{
+    // a load cycle's own dialog already covers the busy state
+    if (op_ || dialog_ || busy_dialog_)
+        return;
+
+    if (dialogs_suppressed_)
+        return; // report export: the modal export dialog covers the busy state
+
+    // indeterminate and modal: the point is blocking user interaction while workers
+    // read view state, the bar itself is secondary
+    busy_dialog_ = new QProgressDialog("Updating views...", QString(), 0, 0,
+                                       Dialogs::statusDialogParent());
+    busy_dialog_->setWindowModality(Qt::ApplicationModal);
+    // do not steal os focus from other applications when popping up
+    busy_dialog_->setAttribute(Qt::WA_ShowWithoutActivating, true);
+    busy_dialog_->setCancelButton(nullptr);
+    busy_dialog_->setMinimumDuration(0); // shown explicitly below
+    busy_dialog_->setAutoClose(false);
+    busy_dialog_->setAutoReset(false);
+    busy_dialog_->setWindowTitle("Updating Views");
+
+    // first paint runs synchronously when the deferred show fires (see eventFilter)
+    busy_dialog_->installEventFilter(this);
+
+    // deferred explicit show, so quick updates stay flicker free: an indeterminate
+    // dialog never arms QProgressDialog's minimum-duration timer (only setValue
+    // does), so relying on auto-show would never display it at all. QPointer
+    // capture: the dialog may be gone again (or replaced by the load dialog) by the
+    // time the timer fires
+    QPointer<QProgressDialog> dialog = busy_dialog_;
+    QTimer::singleShot(700, this, [ dialog ] ()
+    {
+        if (dialog)
+            dialog->show();
+    });
+}
+
+/**
+ */
+void LoadController::endViewProcessing()
+{
+    if (!busy_dialog_)
+        return;
+
+    busy_dialog_->close();
+
+    // deleteLater for the same reason as in end(): Qt may still be inside the dialog
+    // further up the stack
+    busy_dialog_->deleteLater();
+    busy_dialog_.clear();
 }
 
 /**
  */
 void LoadController::end(bool drain)
 {
+    // a lingering interactive busy dialog is superseded by the load cycle's own ux
+    endViewProcessing();
+
     op_ = nullptr;
 
     if (op_conn_)
@@ -258,7 +349,9 @@ void LoadController::end(bool drain)
 /**
  * The deferred tail of an end() that arrived while Qt was executing inside
  * dialog_->setValue() (see the in_set_value_ branch in end()): the dialog was closed and
- * parked, here it is deleted, once setValue has returned.
+ * parked in stale_dialogs_ there; here it is finally deleted. Called by the setValue
+ * sites right after setValue returned, so Qt has left the dialog for good before its
+ * DeferredDelete can be delivered.
  */
 void LoadController::deleteStaleDialogs()
 {
@@ -273,5 +366,5 @@ void LoadController::deleteStaleDialogs()
  */
 void LoadController::canceledSlot()
 {
-    compass_.dbContentManager().dataEngine().cancelLoad();
+    view_manager_.dbContentManager().dataEngine().cancelLoad();
 }

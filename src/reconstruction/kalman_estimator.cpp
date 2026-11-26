@@ -28,11 +28,6 @@
 #include "global.h"
 
 #include "kalman_interface_umkalman2d.h"
-#if USE_EXPERIMENTAL_SOURCE
-#include "kalman_interface_amkalman2d.h"
-#include "kalman_interface_imm2d.h"
-#include "kalman_interface_umkalman2dfull.h"
-#endif
 
 namespace reconstruction
 {
@@ -154,44 +149,16 @@ void KalmanEstimator::init(std::unique_ptr<KalmanInterface>&& interface)
 }
 
 /**
-*/
+ * Creates the interface of a built-in kalman type (UMKalman2D).
+ * Notice: further types are created by the reconstructor using them (ReconstructorBase::createKalmanInterface()).
+ */
 std::unique_ptr<KalmanInterface> KalmanEstimator::createInterface(kalman::KalmanType ktype,
                                                                   const Settings& settings)
 {
     if (ktype == kalman::KalmanType::UMKalman2D)
-    {
         return std::unique_ptr<KalmanInterface>(new reconstruction::KalmanInterfaceUMKalman2D(settings.track_velocities));
-    }
-    else if (ktype == kalman::KalmanType::AMKalman2D)
-    {
-#if USE_EXPERIMENTAL_SOURCE
-        return std::unique_ptr<KalmanInterface>(new reconstruction::KalmanInterfaceAMKalman2D());
-#else
-        throw std::runtime_error("KalmanEstimator: createInterface: reconstructor type not supported by build");
-#endif
-    }
-    else if (ktype == kalman::KalmanType::IMMKalman2D)
-    {
-#if USE_EXPERIMENTAL_SOURCE
-        return std::unique_ptr<KalmanInterface>(new reconstruction::KalmanInterfaceIMM2D(settings.immMuInit(), settings.immMInit()));
-#else
-        throw std::runtime_error("KalmanEstimator: createInterface: reconstructor type not supported by build");
-#endif
-    }
-    else if (ktype == kalman::KalmanType::UMKalman2DFull)
-    {
-#if USE_EXPERIMENTAL_SOURCE
-        return std::unique_ptr<KalmanInterface>(new reconstruction::KalmanInterfaceUMKalman2DFull(settings.track_velocities));
-#else
-        throw std::runtime_error("KalmanEstimator: createInterface: reconstructor type not supported by build");
-#endif
-    }
-    else
-    {
-        throw std::runtime_error("KalmanEstimator: createInterface: unknown kalman type");
-    }
 
-    return {};
+    throw std::runtime_error("KalmanEstimator: createInterface: kalman type " + std::to_string((int)ktype) + " is not built in");
 }
 
 /**

@@ -15,13 +15,13 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/position/positionbase.h"
-#include "eval/requirement/position/distance.h"
+#include "results/position/positionbase.h"
+#include "requirement/position/distance.h"
 
-#include "eval/results/base/featuredefinitions.h"
+#include "results/base/featuredefinitions.h"
 
-#include "eval/requirement/base/base.h"
-#include "eval/requirement/position/distance.h"
+#include "requirement/base/base.h"
+#include "requirement/position/distance.h"
 #include "evaluationmanager.h"
 
 #include "histograminitializer.h"
@@ -169,6 +169,11 @@ unsigned int SinglePositionBaseCommon::common_numIssues() const
 bool SinglePositionBaseCommon::common_detailIsOk(const EvaluationDetail& detail,
                                                  const std::shared_ptr<EvaluationRequirement::Base>& requirement) const
 {
+    // no comparison (no reference, outside, inaccurate reference, invalid value): not an issue,
+    // like in the report tables, where these rows have no check_passed (ReportTableContent::rowIsOk())
+    if (!detail.getValue(DetailKey::Value).isValid())
+        return true;
+
     const EvaluationRequirement::PositionDistance* req = dynamic_cast<const EvaluationRequirement::PositionDistance*>(requirement.get());
 
     auto check_passed = detail.getValueAs<bool>(DetailKey::CheckPassed);
@@ -187,16 +192,85 @@ bool SinglePositionBaseCommon::common_detailIsOk(const EvaluationDetail& detail,
 }
 
 /**
+ * The value column of the position family, named by the result type.
+ */
+ReportTableColumn SinglePositionBaseCommon::common_reportTableValueColumn(const std::string& result_type) const
+{
+    if (result_type.find("Along") != std::string::npos)
+        return ReportTableColumn("along_m", PropertyDataType::DOUBLE, "Along Track Offset",
+                                 "Position offset along the reference track", "Length", "Meter");
+    if (result_type.find("Across") != std::string::npos)
+        return ReportTableColumn("across_m", PropertyDataType::DOUBLE, "Across Track Offset",
+                                 "Position offset across the reference track", "Length", "Meter");
+    if (result_type.find("RadarRange") != std::string::npos)
+        return ReportTableColumn("range_offset_m", PropertyDataType::DOUBLE, "Range Offset",
+                                 "Radar range offset to the reference", "Length", "Meter");
+    if (result_type.find("RadarAzimuth") != std::string::npos)
+        return ReportTableColumn("azimuth_offset_deg", PropertyDataType::DOUBLE, "Azimuth Offset",
+                                 "Radar azimuth offset to the reference", "Angle", "Degree");
+    if (result_type.find("RadarTimeStamp") != std::string::npos)
+        return ReportTableColumn("time_offset_s", PropertyDataType::DOUBLE, "Time Offset",
+                                 "Radar time offset to the reference (along-track offset / speed)", "Time", "Second");
+    if (result_type.find("Latency") != std::string::npos)
+        return ReportTableColumn("latency_s", PropertyDataType::DOUBLE, "Position Latency",
+                                 "Position latency against the reference", "Time", "Second");
+
+    return ReportTableColumn("distance_m", PropertyDataType::DOUBLE, "Distance",
+                             "Horizontal distance between the test report and the reference", "Length", "Meter");
+}
+
+/**
+ */
+void SinglePositionBaseCommon::common_addReportTableColumns(ReportTableDefinition& def,
+                                                            const std::string& result_type) const
+{
+    def.addColumn(common_reportTableValueColumn(result_type));
+    def.addColumn("check_passed", PropertyDataType::BOOL, "Check Passed",
+                  "Value within the requirement threshold");
+    def.addColumn("pos_inside", PropertyDataType::BOOL, "Position Inside",
+                  "Test position inside the sector layer");
+
+    addDetailCodeTexts(def);
+}
+
+/**
+ */
+void SinglePositionBaseCommon::common_fillReportTableRow(ReportTableRows& rows,
+                                                         const EvaluationDetail& detail,
+                                                         const std::string& result_type) const
+{
+    Single::setReportTableValue<double>(rows, common_reportTableValueColumn(result_type).name, detail, DetailKey::Value);
+    Single::setReportTableValue<bool>(rows, "check_passed", detail, DetailKey::CheckPassed);
+    Single::setReportTableValue<bool>(rows, "pos_inside", detail, DetailKey::PosInside);
+}
+
+/**
+ */
+void SinglePositionBaseCommon::common_fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                                                   const Buffer& buffer,
+                                                                   unsigned int row,
+                                                                   const std::string& result_type) const
+{
+    Single::setDetailValue<double>(detail, DetailKey::Value, buffer, common_reportTableValueColumn(result_type).name, row);
+    Single::setDetailValue<bool>(detail, DetailKey::CheckPassed, buffer, "check_passed", row);
+    Single::setDetailValue<bool>(detail, DetailKey::PosInside, buffer, "pos_inside", row);
+}
+
+/**
 */
 FeatureDefinitions SinglePositionBaseCommon::common_getCustomAnnotationDefinitions(const Single& single,
                                                                                    const EvaluationCalculator& calculator) const
 {
     FeatureDefinitions defs;
 
+    const auto labels = overviewLabels();
+
     //histograms
-    defs.addDefinition<FeatureDefinitionStringCategoryHistogram>("Position Error", calculator, "Error Count", "Error Count")
-        .addDataSeries("", { "#CF", "#CP" }, { numFailed(), numPassed() });
-    defs.addDefinition<FeatureDefinitionHistogram<double>>("Position Error", calculator, "Full distribution", "Full distribution [m]")
+    if (labels.update_check)
+        defs.addDefinition<FeatureDefinitionStringCategoryHistogram>(labels.value_name, calculator, "Error Count", "Error Count")
+            .addDataSeries("", { "#CF", "#CP" }, { numFailed(), numPassed() });
+    defs.addDefinition<FeatureDefinitionHistogram<double>>(labels.value_name, calculator, "Full distribution",
+                                                           "Full distribution [" + labels.unit + "]")
         .addDataSeries("", SinglePositionBaseCommon::DetailKey::Value);
 
     return defs;
@@ -487,11 +561,14 @@ FeatureDefinitions JoinedPositionBase::common_getCustomAnnotationDefinitions(con
             invert = true;
     }
 
+    const auto labels = overviewLabels();
+
     //grids (as geoimages)
-    defs.addDefinition<FeatureDefinitionBinaryGrid>("Position Error", calculator, "Comparison Passed")
-        .addDataSeries(SinglePositionBaseCommon::DetailKey::CheckPassed, 
-                       GridAddDetailMode::AddEvtRefPosition, 
-                       invert);
+    if (labels.update_check)
+        defs.addDefinition<FeatureDefinitionIssueCountGrid>(labels.value_name, calculator, "Issues")
+            .addDataSeries(SinglePositionBaseCommon::DetailKey::CheckPassed, 
+                           GridAddDetailMode::AddEvtRefPosition, 
+                           invert);
     
     // defs.addDefinition<FeatureDefinitionGrid<double>>("Position Error", calculator, "Error Mean", true)
     //     .addDataSeries(SinglePositionBaseCommon::DetailKey::Value, 
@@ -507,9 +584,11 @@ FeatureDefinitions JoinedPositionBase::common_getCustomAnnotationDefinitions(con
     //                    GridAddDetailMode::AddEvtRefPosition);
 
     //histograms
-    defs.addDefinition<FeatureDefinitionStringCategoryHistogram>("Position Error", calculator, "Error Count", "Error Count")
-        .addDataSeries("", { "#CF", "#CP" }, { numFailed(), numPassed() });
-    defs.addDefinition<FeatureDefinitionHistogram<double>>("Position Error", calculator, "Full distribution", "Full distribution [m]")
+    if (labels.update_check)
+        defs.addDefinition<FeatureDefinitionStringCategoryHistogram>(labels.value_name, calculator, "Error Count", "Error Count")
+            .addDataSeries("", { "#CF", "#CP" }, { numFailed(), numPassed() });
+    defs.addDefinition<FeatureDefinitionHistogram<double>>(labels.value_name, calculator, "Full distribution",
+                                                           "Full distribution [" + labels.unit + "]")
         .addDataSeries("", SinglePositionBaseCommon::DetailKey::Value);
 
     //scatterplot
@@ -700,6 +779,60 @@ bool JoinedPositionValueBase::exportAsCSV(std::ofstream& strm) const
 FeatureDefinitions JoinedPositionValueBase::getCustomAnnotationDefinitions() const
 {
     return common_getCustomAnnotationDefinitions(*this, calculator_);
+}
+
+/**
+ */
+void SinglePositionProbabilityBase::addReportTableColumns(ReportTableDefinition& def) const
+{
+    common_addReportTableColumns(def, type());
+}
+
+/**
+ */
+void SinglePositionProbabilityBase::fillReportTableRow(ReportTableRows& rows,
+                                  const EvaluationDetail& detail,
+                                  const EvaluationDetail* parent_detail,
+                                  const EvaluationDetail* prev_detail) const
+{
+    common_fillReportTableRow(rows, detail, type());
+}
+
+/**
+ */
+void SinglePositionProbabilityBase::fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                  const Buffer& buffer,
+                                  unsigned int row,
+                                  const EvaluationDetail* prev_detail) const
+{
+    common_fillDetailFromReportTableRow(detail, buffer, row, type());
+}
+
+/**
+ */
+void SinglePositionValueBase::addReportTableColumns(ReportTableDefinition& def) const
+{
+    common_addReportTableColumns(def, type());
+}
+
+/**
+ */
+void SinglePositionValueBase::fillReportTableRow(ReportTableRows& rows,
+                                  const EvaluationDetail& detail,
+                                  const EvaluationDetail* parent_detail,
+                                  const EvaluationDetail* prev_detail) const
+{
+    common_fillReportTableRow(rows, detail, type());
+}
+
+/**
+ */
+void SinglePositionValueBase::fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                  const Buffer& buffer,
+                                  unsigned int row,
+                                  const EvaluationDetail* prev_detail) const
+{
+    common_fillDetailFromReportTableRow(detail, buffer, row, type());
 }
 
 }

@@ -17,7 +17,6 @@
 
 #include "ui_test_find.h"
 #include "logger.h"
-#include "compass.h"
 
 #include <QWidget>
 #include <QAction>

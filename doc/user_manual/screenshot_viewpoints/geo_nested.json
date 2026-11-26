@@ -1,0 +1,66 @@
+{
+    "id": 1,
+    "name": "Nested Example",
+    "type": "Saved",
+    "status": "open",
+    "position_latitude": 13.0,
+    "position_longitude": 23.0,
+    "position_window_latitude": 6.0,
+    "position_window_longitude": 6.0,
+    "annotations": [
+        {
+            "name": "Group1",
+            "symbol_color": "#0000FF",
+            "hidden": false,
+            "annotations": [
+                {
+                    "name": "Nested annotation 1",
+                    "symbol_color": "#0000FF",
+                    "hidden": false,
+                    "features": [
+                        {
+                            "type": "text",
+                            "text": "Nested annotations are nice",
+                            "position": [
+                                12.0,
+                                22.0
+                            ],
+                            "properties": {
+                                "color": "#0000FF",
+                                "direction": "left-up",
+                                "font_size": 10
+                            }
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "name": "Group2",
+            "symbol_color": "#FF00FF",
+            "hidden": false,
+            "annotations": [
+                {
+                    "name": "Nested annotation 2",
+                    "symbol_color": "#FF00FF",
+                    "hidden": false,
+                    "features": [
+                        {
+                            "type": "text",
+                            "text": "Nested annotations are nice",
+                            "position": [
+                                14.0,
+                                24.0
+                            ],
+                            "properties": {
+                                "color": "#FF00FF",
+                                "direction": "left-up",
+                                "font_size": 10
+                            }
+                        }
+                    ]
+                }
+            ]
+        }
+    ]
+}

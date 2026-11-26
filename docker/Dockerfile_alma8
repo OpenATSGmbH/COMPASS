@@ -1,0 +1,209 @@
+FROM almalinux:8
+
+ARG USER_NAME
+ARG USER_ID
+ARG USER_GROUP_ID
+
+ENV USER_NAME=${USER_NAME} \
+    USER_ID=${USER_ID} \
+    USER_GROUP_ID=${USER_GROUP_ID} \
+    OS_NAME=alma8
+
+RUN echo ">>> USER_NAME=${USER_NAME}" \
+ && echo ">>> USER_ID=${USER_ID}" \
+ && echo ">>> USER_GROUP_ID=${USER_GROUP_ID}"
+
+# EPEL and PowerTools hold most of the -devel packages (GDAL, GEOS, log4cpp, Eigen, libpcap, ...)
+RUN dnf install -y dnf-plugins-core epel-release \
+ && dnf config-manager --set-enabled powertools \
+ && dnf update -y \
+ && dnf clean all
+
+# toolchain: gcc-toolset-13 for the build, system gcc 8 libstdc++ at runtime
+RUN dnf install -y \
+    gcc gcc-c++ make autoconf automake libtool pkgconf-pkg-config patch \
+    gcc-toolset-13-gcc gcc-toolset-13-gcc-c++ gcc-toolset-13-binutils gcc-toolset-13-libasan-devel \
+    git wget curl unzip zip xz bzip2 tar which file findutils diffutils mlocate sudo openssl \
+ && dnf clean all
+
+# libraries
+RUN dnf install -y \
+    openssl-devel log4cpp-devel libarchive-devel eigen3-devel gdal-devel libkml-devel \
+    geos-devel libzip-devel libpcap-devel GeographicLib-devel glew-devel \
+    zlib-devel bzip2-devel xz-devel libcurl-devel sqlite-devel \
+    freetype-devel fontconfig-devel giflib-devel libjpeg-turbo-devel libpng-devel libtiff-devel \
+    libX11-devel libXrandr-devel libXinerama-devel libXrender-devel libxcb-devel \
+    libxkbcommon-devel libxkbcommon-x11-devel xcb-util-image-devel xcb-util-wm-devel \
+    xcb-util-keysyms-devel xcb-util-renderutil-devel wayland-devel \
+    mesa-libGL-devel mesa-libEGL-devel mesa-dri-drivers \
+ && dnf clean all
+
+# Qt 5.15, GTK3 for the linuxdeploy gtk plugin, patchelf for the linuxdeploy qt plugin,
+# Xvfb for the OpenGL check and CI
+RUN dnf install -y \
+    qt5-qtbase-devel qt5-qtbase-gui qt5-qtcharts-devel qt5-qtsvg-devel qt5-qtimageformats \
+    qt5-qtwayland qt5-qttools-devel \
+    gtk3-devel gdk-pixbuf2-devel librsvg2 patchelf \
+    xorg-x11-server-Xvfb xorg-x11-xauth glx-utils \
+ && dnf clean all
+
+# libraries installed to /usr/lib and /usr/local below are not in the EL8 default search path
+RUN printf '/usr/lib\n/usr/local/lib\n/usr/local/lib64\n' > /etc/ld.so.conf.d/compass.conf \
+ && ldconfig
+
+RUN groupadd -r someusers --gid=${USER_GROUP_ID}
+RUN useradd -r -p "$(openssl passwd -1 ${USER_NAME})" -g someusers -G wheel --uid=${USER_ID} --create-home --shell /bin/bash ${USER_NAME}
+
+# enable gcc-toolset-13 for all following steps and for the build scripts
+ENV PATH=/opt/rh/gcc-toolset-13/root/usr/bin:/usr/lib64/qt5/bin:${PATH} \
+    LD_LIBRARY_PATH=/opt/rh/gcc-toolset-13/root/usr/lib64:/opt/rh/gcc-toolset-13/root/usr/lib \
+    CC=/opt/rh/gcc-toolset-13/root/usr/bin/gcc \
+    CXX=/opt/rh/gcc-toolset-13/root/usr/bin/g++ \
+    QMAKE=/usr/bin/qmake-qt5
+
+ENV CXXFLAGS="-march=x86-64 -mtune=generic"
+ENV CFLAGS="-march=x86-64 -mtune=generic"
+
+#install cmake
+
+# EL8 cmake is 3.26, compass and jasterix need 3.28
+# prefix /usr: the build scripts call `sudo cmake`, and sudo's secure_path has no /usr/local/bin
+ENV CMAKE_VERSION=3.28
+ENV CMAKE_BUILD=1
+
+RUN wget https://cmake.org/files/v${CMAKE_VERSION}/cmake-${CMAKE_VERSION}.${CMAKE_BUILD}.tar.gz
+RUN tar xzvf cmake-${CMAKE_VERSION}.${CMAKE_BUILD}.tar.gz
+RUN cd cmake-${CMAKE_VERSION}.${CMAKE_BUILD}/ && ./bootstrap --prefix=/usr --parallel=$(nproc)
+RUN cd cmake-${CMAKE_VERSION}.${CMAKE_BUILD}/ && make -j$(nproc)
+RUN cd cmake-${CMAKE_VERSION}.${CMAKE_BUILD}/ && make install
+RUN cmake --version
+
+#install oneTBB
+
+# EL8 tbb-devel is 2018.2, Qt 5.15 moc fails on its tbb_profiling.h (#include inside an enum)
+RUN git clone --branch v2021.13.0 --depth 1 https://github.com/uxlfoundation/oneTBB.git oneTBB
+RUN mkdir oneTBB/build
+RUN cd oneTBB/build && cmake -DCMAKE_INSTALL_PREFIX=/usr/local -DCMAKE_BUILD_TYPE=Release -DTBB_TEST=OFF -DTBB_STRICT=OFF ..
+RUN cd oneTBB/build && make -j$(nproc) && make install
+RUN test ! -e /usr/include/tbb
+
+#install libbacktrace
+
+# needed by boost stacktrace_backtrace, Debian takes backtrace.h from its gcc package
+RUN git clone --depth 1 https://github.com/ianlancetaylor/libbacktrace.git
+RUN cd libbacktrace && ./configure --prefix=/usr/local --enable-shared=no --with-pic && make -j$(nproc) && make install
+
+#install boost
+
+# EL8 boost is 1.66, compass and jasterix need 1.73+
+RUN wget -O boost_1_83_0.tar.gz https://sourceforge.net/projects/boost/files/boost/1.83.0/boost_1_83_0.tar.gz/download --no-check-certificate
+RUN tar xzvf boost_1_83_0.tar.gz
+RUN cd boost_1_83_0/ && ./bootstrap.sh --prefix=/usr/local/ --with-toolset=gcc
+RUN cd boost_1_83_0/ && ./b2 headers cxxflags="-std=c++17 -march=x86-64 -mtune=generic"
+RUN cd boost_1_83_0/ && ./b2 install cxxflags="-std=c++17 -march=x86-64 -mtune=generic -I/usr/local/include" linkflags="-L/usr/local/lib"
+RUN test -f /usr/local/lib/libboost_stacktrace_backtrace.so
+
+RUN git clone --branch OpenSceneGraph-3.6 --depth 1 https://github.com/openscenegraph/OpenSceneGraph.git OpenSceneGraph-3.6
+RUN mkdir OpenSceneGraph-3.6/build
+RUN cd OpenSceneGraph-3.6/build && cmake \
+    -DBUILD_SHARED_LIBS=ON \
+    -DCMAKE_INSTALL_PREFIX=/usr \
+    -DCMAKE_BUILD_TYPE=Release \
+    -DCMAKE_CXX_FLAGS="-DGL_COMPRESSED_SRGB_S3TC_DXT1_EXT=0x8C4C -DGL_COMPRESSED_SRGB_ALPHA_S3TC_DXT1_EXT=0x8C4D -DGL_COMPRESSED_SRGB_ALPHA_S3TC_DXT3_EXT=0x8C4E -DGL_COMPRESSED_SRGB_ALPHA_S3TC_DXT5_EXT=0x8C4F" \
+    -DOPENGL_PROFILE=GLCORE \
+    -DOSG_GLU_AVAILABLE=OFF \
+    -DOSG_GL1_AVAILABLE=OFF \
+    -DOSG_GL2_AVAILABLE=OFF \
+    -DOSG_GL3_AVAILABLE=ON \
+    -DOSG_GLES1_AVAILABLE=OFF \
+    -DOSG_GLES2_AVAILABLE=OFF \
+    -DOSG_GL_DISPLAYLISTS_AVAILABLE=OFF \
+    -DOSG_GL_MATRICES_AVAILABLE=OFF \
+    -DOSG_GL_VERTEX_FUNCS_AVAILABLE=OFF \
+    -DOSG_GL_VERTEX_ARRAY_FUNCS_AVAILABLE=OFF \
+    -DOSG_GL_FIXED_FUNCTION_AVAILABLE=OFF \
+    ..
+RUN cd OpenSceneGraph-3.6/build && make -j$(nproc)
+RUN cd OpenSceneGraph-3.6/build && make install
+
+RUN rm -rf OpenSceneGraph-3.6/build/lib
+
+RUN wget https://github.com/protocolbuffers/protobuf/releases/download/v3.19.1/protobuf-cpp-3.19.1.zip
+RUN unzip protobuf-cpp-3.19.1.zip
+RUN cd protobuf-3.19.1 && ./autogen.sh
+RUN cd protobuf-3.19.1 && ./configure
+RUN cd protobuf-3.19.1 && make -j$(nproc)
+#RUN cd protobuf-3.19.1 && make check
+RUN cd protobuf-3.19.1 && make install
+RUN cd protobuf-3.19.1 && ldconfig # refresh shared library cache.
+
+# Create CMake config for GEOS so osgEarth's find_package(geos) succeeds
+# only if the EPEL geos-devel does not ship CMake config files
+RUN if [ ! -e /usr/lib64/cmake/GEOS ] && [ ! -e /usr/lib64/cmake/geos ]; then \
+    mkdir -p /usr/lib64/cmake/geos && \
+    echo 'add_library(GEOS::geos_c SHARED IMPORTED)' > /usr/lib64/cmake/geos/geos-config.cmake && \
+    echo 'set_target_properties(GEOS::geos_c PROPERTIES' >> /usr/lib64/cmake/geos/geos-config.cmake && \
+    echo '  IMPORTED_LOCATION "/usr/lib64/libgeos_c.so"' >> /usr/lib64/cmake/geos/geos-config.cmake && \
+    echo '  INTERFACE_INCLUDE_DIRECTORIES "/usr/include"' >> /usr/lib64/cmake/geos/geos-config.cmake && \
+    echo ')' >> /usr/lib64/cmake/geos/geos-config.cmake; \
+    fi
+
+# Create CMake config for libzip so osgEarth's find_package(libzip) succeeds
+# only if the EL8 libzip-devel does not ship CMake config files
+RUN if [ ! -e /usr/lib64/cmake/libzip ]; then \
+    mkdir -p /usr/lib64/cmake/libzip && \
+    echo 'add_library(libzip::zip SHARED IMPORTED)' > /usr/lib64/cmake/libzip/libzip-config.cmake && \
+    echo 'set_target_properties(libzip::zip PROPERTIES' >> /usr/lib64/cmake/libzip/libzip-config.cmake && \
+    echo '  IMPORTED_LOCATION "/usr/lib64/libzip.so"' >> /usr/lib64/cmake/libzip/libzip-config.cmake && \
+    echo '  INTERFACE_INCLUDE_DIRECTORIES "/usr/include"' >> /usr/lib64/cmake/libzip/libzip-config.cmake && \
+    echo ')' >> /usr/lib64/cmake/libzip/libzip-config.cmake; \
+    fi
+
+# osgEarth 3.8.1 (tag), LERC and the sqlite3 cache plugin are optional and skipped when their
+# packages are missing
+RUN git clone --branch osgearth-3.8.1 --depth 1 --recurse-submodules https://github.com/pelicanmapping/osgearth.git osgearth-3.8.1
+RUN mkdir osgearth-3.8.1/build
+RUN cd osgearth-3.8.1/build && cmake -DOSGEARTH_BUILD_TESTS=OFF -DOSGEARTH_BUILD_EXAMPLES=OFF -DBUILD_SHARED_LIBS=ON -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_INSTALL_LIBDIR=lib -DCMAKE_BUILD_TYPE=Release ..
+RUN cd osgearth-3.8.1/build && make -j$(nproc)
+RUN cd osgearth-3.8.1/build && make install
+
+# bump when hpuhr/NemaTode master changes, to invalidate the cached layers below
+ARG NEMATODE_REV=11650f3
+RUN wget https://github.com/hpuhr/NemaTode/archive/refs/heads/master.zip
+RUN unzip master.zip
+RUN mkdir NemaTode-master/build
+# shared: linked by the shared compass_task (readme_plugins.md, workstream B)
+RUN cd NemaTode-master/build && cmake -DCMAKE_INSTALL_PREFIX=/usr -DCMAKE_BUILD_TYPE=Release -DBUILD_SHARED_LIBS=ON ..
+RUN cd NemaTode-master/build && make -j$(nproc)
+RUN cd NemaTode-master/build && make install
+
+# DuckDB 2.0.0 (since 2.0.0 the release assets are .tar.gz archives with new names)
+RUN wget https://github.com/duckdb/duckdb/releases/download/v2.0.0/duckdb-shared-libs-linux-amd64.tar.gz
+RUN mkdir libduckdb-linux-amd64
+RUN tar xzf duckdb-shared-libs-linux-amd64.tar.gz -C libduckdb-linux-amd64
+RUN cd libduckdb-linux-amd64 && cp *.h /usr/include
+RUN cd libduckdb-linux-amd64 && cp lib* /usr/lib
+
+# Download and Install DuckDB CLI Client
+RUN wget https://github.com/duckdb/duckdb/releases/download/v2.0.0/duckdb-cli-linux-amd64.tar.gz
+RUN tar xzf duckdb-cli-linux-amd64.tar.gz -C libduckdb-linux-amd64
+RUN mv libduckdb-linux-amd64/duckdb /usr/bin/
+RUN chmod +x /usr/bin/duckdb
+
+# Verify that the JSON extension is available and functional
+RUN duckdb -c "INSTALL json; LOAD json; SELECT json_object('status', 'success') AS json_check;"
+
+RUN ldconfig -v
+RUN updatedb
+
+RUN echo "${USER_NAME} ALL=(ALL) NOPASSWD: ALL" >> /etc/sudoers
+RUN more /etc/sudoers
+
+# Verify Xvfb + software OpenGL core profile (3.3 needed for OSG GL3 build)
+RUN xvfb-run -a glxinfo | grep -E "OpenGL (core profile |)(renderer|version|shading language version)"
+
+# NemaTode installs its config files directly into lib64/cmake, which find_package does not search
+ENV NemaTode_DIR=/usr/lib64/cmake
+
+USER ${USER_NAME}
+WORKDIR /app/workspace/compass/docker

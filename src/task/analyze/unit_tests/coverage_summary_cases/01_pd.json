@@ -1,0 +1,30 @@
+{
+    "description": "PD of expected/missed slots: 10/1 gives 0.9, nothing expected gives 0 (pd) and no cell value (cellPD), more missed than expected is an error of the walk and gives cell PD 0.",
+    "type": "pd",
+    "checks": [
+        {
+            "eui": 10.0,
+            "mui": 1.0,
+            "pd": 0.9,
+            "cell_pd": 0.9
+        },
+        {
+            "eui": 2.5,
+            "mui": 0.5,
+            "pd": 0.8,
+            "cell_pd": 0.8
+        },
+        {
+            "eui": 0.0,
+            "mui": 0.0,
+            "pd": 0.0,
+            "cell_pd": null
+        },
+        {
+            "eui": 4.0,
+            "mui": 5.0,
+            "pd": -0.25,
+            "cell_pd": 0.0
+        }
+    ]
+}

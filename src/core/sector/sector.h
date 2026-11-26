@@ -25,6 +25,7 @@
 
 #include <functional>
 #include <memory>
+#include <vector>
 
 #include <boost/optional.hpp>
 
@@ -35,6 +36,7 @@ class TargetPosition;
 }
 
 class OGRPolygon;
+class OGRGeometry;
 
 /**
  * Fast sector inside test via image discretization.
@@ -54,16 +56,31 @@ public:
         Border
     };
 
+    using Ring = std::vector<std::pair<double,double>>;
+
+    /**
+     * One polygon part, an exterior ring and its holes.
+     */
+    struct Part
+    {
+        Ring              exterior;
+        std::vector<Ring> holes;
+    };
+
     SectorInsideTest();
-    SectorInsideTest(const std::vector<std::pair<double,double>>& points, 
-                     double xmin, 
-                     double ymin, 
-                     double xmax, 
+    SectorInsideTest(const Ring& points,
+                     double xmin,
+                     double ymin,
+                     double xmax,
+                     double ymax);
+    SectorInsideTest(const std::vector<Part>& parts,
+                     double xmin,
+                     double ymin,
+                     double xmax,
                      double ymax);
     virtual ~SectorInsideTest();
 
     CheckResult isInside(double x, double y) const;
-    CheckResult isInside(double x, double y, double delta) const;
 
     bool isValid() const;
 
@@ -76,10 +93,10 @@ private:
 
     void map2Image(double& xm, double& ym, double x, double y) const;
 
-    void create(const std::vector<std::pair<double,double>>& points, 
-                double xmin, 
-                double ymin, 
-                double xmax, 
+    void create(const std::vector<Part>& parts,
+                double xmin,
+                double ymin,
+                double xmax,
                 double ymax);
 
     QImage img_;
@@ -129,7 +146,7 @@ public:
     unsigned int id() const;
 
     std::string name() const;
-    void name(const std::string& name);
+    void name(const std::string& name, bool notify = true); // notify: save via the save callback
 
     std::string layerName() const;
     void layerName(const std::string& layer_name, bool notify = true);
@@ -142,9 +159,13 @@ public:
     unsigned int size () { return points_.size(); }
 
     const std::vector<std::pair<double, double>>& points() const;
+    /// replaces the polygon (lat, lon pairs, at least 3), rebuilds the polygon and the inside
+    /// test caches. notify: save via the save callback
+    void points(const std::vector<std::pair<double,double>>& points, bool notify = true);
 
     std::string colorStr();
-    void colorStr(std::string value);
+    void colorStr(std::string value, bool notify = true); // notify: save via the save callback
+    static std::string defaultColorStr();
     void removeColorStr();
 
     bool isExclusionSector() const { return exclusion_sector_; }
@@ -167,19 +188,39 @@ public:
     void setSaveCallback(SaveCallback cb);
     void setMoveCallback(MoveCallback cb);
 
-    virtual bool isInside(const dbContent::TargetPosition& pos, 
-                          bool has_ground_bit, 
+    virtual bool isInside(const dbContent::TargetPosition& pos,
+                          bool has_ground_bit,
                           bool ground_bit_set,
                           InsideCheckType check_type = InsideCheckType::XYZ) const;
+    /**
+     * Planar inside check with a tolerance in degrees.
+     * delta_deg > 0: inside the sector inflated by delta_deg (within delta_deg of the sector).
+     * delta_deg < 0: inside the sector deflated by |delta_deg| (deeper than |delta_deg| inside).
+     * delta_deg = 0: plain containment.
+     * Fast only after createFastInsideTest(delta_deg) was called for the same delta, otherwise
+     * the slow probe ring is used (delta_deg >= 0 only, a negative delta then degrades to plain
+     * containment).
+     */
     bool isInside(double latitude, double longitude, double delta_deg) const;
 
     std::pair<double, double> getMinMaxLatitude() const;
     std::pair<double, double> getMinMaxLongitude() const;
 
-    void createFastInsideTest() const;
+    /**
+     * Creates the fast inside test.
+     * If delta_deg != 0 the polygon is inflated (delta_deg > 0) or deflated (delta_deg < 0) by
+     * delta_deg first, so that isInside(lat, lon, delta_deg) reduces to a plain containment check
+     * against that shape. Rebuilds only if the requested delta differs from the cached one.
+     * Thread safety: isInside() is read-only afterwards and may be called from several threads,
+     * this method is not.
+     */
+    void createFastInsideTest(double delta_deg = 0.0) const;
 
 protected:
     void createPolygon();
+
+    //slow reference implementation of the delta check, used if no inflated polygon is available
+    bool isInsideProbeRing(double latitude, double longitude, double delta_deg) const;
 
     virtual bool readJSON_impl(const nlohmann::json& json_obj) { return true; };
     virtual void writeJSON_impl(nlohmann::json& json_obj) const {};
@@ -207,6 +248,23 @@ protected:
     boost::optional<double> lon_max_;
 
     mutable boost::optional<SectorInsideTest> inside_test_;
+
+    //delta the fast inside test was built for, 0 = built from the uninflated polygon
+    mutable double inside_test_delta_deg_ = 0.0;
+    mutable bool   inside_test_built_     = false;
+
+    //polygon inflated (delta > 0) or deflated (delta < 0) by inside_test_delta_deg_, only set if
+    //that delta is != 0. A deflated concave sector can split, so this is a general geometry.
+    mutable std::unique_ptr<OGRGeometry> ogr_polygon_delta_;
+
+    //true if deflating by inside_test_delta_deg_ left nothing, every position is outside then
+    mutable bool delta_shape_empty_ = false;
+
+    //bounding rect of ogr_polygon_delta_
+    mutable boost::optional<double> lat_min_delta_;
+    mutable boost::optional<double> lat_max_delta_;
+    mutable boost::optional<double> lon_min_delta_;
+    mutable boost::optional<double> lon_max_delta_;
 
     std::unique_ptr<OGRPolygon> ogr_polygon_;
 };

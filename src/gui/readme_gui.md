@@ -79,7 +79,7 @@ If you need to register a new tool, follow the existing widget classes in `src/c
 ## 1. Dialog shell
 
 - **Window title**: short, in Title Case, no trailing punctuation. Names what the dialog configures or what action it submits (e.g. "Reconstruct Reference Trajectories", "Evaluate", "Analyze MLAT Data Source").
-- **Minimum size**: at least `900 x 720`. Reports, threshold tables, and lists with long names need both the height and the width.
+- **Minimum size**: at least `900 x 720`. Reports, threshold tables, and lists with long names need both the height and the width. Stated exception: *picker dialogs* (modal dialogs whose only job is selecting an entry, e.g. the variable selection dialog) use at least `700 x 600`.
 - **Multi-page dialogs use a two-pane layout**: navigation on the left (`QTreeWidget`), `QStackedWidget` on the right, separated by a horizontal `QSplitter`.
   - `tree_->setHeaderHidden(true)` unless a header label adds information.
   - `tree_->setMinimumWidth(180)`.
@@ -228,7 +228,7 @@ If you need to register a new tool, follow the existing widget classes in `src/c
 
 ## 10. Views
 
-A View is a tab in the Main Viewbar showing one visualization of the loaded dataset. Existing views: TableView, ScatterPlotView, HistogramView, GridView, ViewPoints, GeographicView (closed-source). The framework lives in [src/view/viewbase/](../view/viewbase/); the concrete views live in `src/view/<name>/` and `experimental_src/view/geographicview/`.
+A View is a tab in the Main Viewbar showing one visualization of the loaded dataset. Existing views: TableView, ScatterPlotView, HistogramView, GridView, ViewPoints, GeographicView (closed-source). The framework lives in [src/view/viewbase/](../view/viewbase/); the concrete views live in `src/view/<name>/` and `experimental_src/plugins/geoview/geographicview/`.
 
 A View is the right surface when:
 - The output is a visualization of the **loaded dataset** (the in-memory cross-DBContent buffers), refreshed on Load.
@@ -255,8 +255,9 @@ Every View widget extends `ViewWidget` ([viewwidget.h:40-74](../view/viewbase/vi
 +----------------------------------------------------------+
 ```
 
-- The data widget is the central, dominant region. It claims the remaining space.
-- The config widget docks on the right. Min width 400 px ([viewconfigwidget.h:70-85](../view/viewbase/viewconfigwidget.h#L70-L85)). It is collapsible via the toolbar's Toggle Configuration Panel action.
+- The data widget is the central, dominant region. It claims the remaining space. Its minimum width is 250 px, set by `ViewWidget` for all views. Render widgets do not set a minimum width.
+- The config widget docks on the right. Min width 400 px ([viewconfigwidget.h](../view/viewbase/viewconfigwidget.h)). It is collapsible via the toolbar's Toggle Configuration Panel action. It also collapses by itself when the view gets narrower than its minimum width plus 600 px, and expands again 50 px above that. A collapse by the user stays until the user opens it ([configpanelstate.h](../view/viewbase/configpanelstate.h)).
+- Only the shown view tab counts for the minimum width of the view area (`ViewContainer::updateTabSizePolicies()`).
 - The toolbar is **optional**: a View that is entirely passive (e.g. TableView) may omit it. Once a View has any interactive tool (Select, Zoom, ...), the toolbar is required.
 - The status row ([viewloadstatewidget.h:37-99](../view/viewbase/viewloadstatewidget.h#L37-L99)) is mandatory; it is the only legitimate channel for "no data", "loading", "reload required" feedback.
 
@@ -342,13 +343,22 @@ Rules:
 
 For columns / ordered sets in a tabular view, use `VariableOrderedSetWidget`.
 
+Both widgets open the shared `VariableSelectionDialog` ([variableselectiondialog.h](../db/dbcontent/variable/variableselectiondialog.h)) - a modal picker with search, a content checkbox strip, and a variable tree grouped by ASTERIX data item or by variable group (`Variable::group()`). Rules for picker dialogs of this kind:
+
+- Minimum size `700 x 600` (stated exception to the `900 x 720` dialog rule).
+- Search field first (`setClearButtonEnabled(true)`), filtering recursively over all columns.
+- Bulk-selection actions live in a gear-button `PopupMenu` (`edit.png`, `UI_ICON_SIZE`, flat, menu indicator suppressed) at the **right end** of the checkbox strip row - same pattern as the Flight Deck ToolBox config button.
+- Bottom row: `[Cancel] [Select None (only when an empty selection is allowed)] -- stretch -- [Select]`; the action button is gated on a valid selection.
+- Double-click on a leaf selects and closes.
+- Grouping mode and content selection persist as `Configurable` parameters on the owning manager, not per picker instance.
+
 ### 10.7 Annotations / View Points
 
 A View opts into annotations by extending `VariableView` and constructing its `ViewLayerPanelWidget` with the `show_annotations` flag set (already true by default for views whose `canShowAnnotations()` returns true). The annotation switch UI then appears in the layer panel as a separate `Annotations` subtree alongside the `DBContent` subtree.
 
 - `VariableView::currentAnnotation()` returns the user-selected annotation; the data widget reads it and overlays it (time markers, regions, ...).
 - The annotation subtree is radio-style single-select: when annotations are present, exactly one is always shown. Clicking another leaf swaps the active annotation; the active leaf cannot be unchecked. There is no "show variables instead" escape hatch in the UI - on view-point unshow, the framework reverts to variable display automatically.
-- The flat 2-level structure (group -> annotation) is built by `AnnotationsRootItem::update(...)` ([annotationsrootitem.h](../view/viewbase/layerpanel/annotationsrootitem.h)) from `VariableView::annotations()`. Data widgets connect to `VariableView::annotationsChangedSignal` and call `annotationsRootItem()->update(...)` on every change. See [scatterplotviewdatawidget.cpp](../view/scatterplotview/scatterplotviewdatawidget.cpp), [histogramviewdatawidget.cpp](../view/histogramview/histogramviewdatawidget.cpp), [gridviewdatawidget.cpp](../view/gridview/gridviewdatawidget.cpp) for the wiring.
+- The flat 2-level structure (group -> annotation) is built by `AnnotationsRootItem::update(...)` ([annotationsrootitem.h](../view/viewbase/layerpanel/annotationsrootitem.h)) from `VariableView::annotations()`. The update runs on every `VariableView::annotationsChangedSignal`. The view does it itself (`VariableView::updateAnnotationsTree`, [variableview.cpp](../view/viewbase/variableview.cpp)).
 - A View that does not support annotations returns `false` from `canShowAnnotations()`. The `Annotations` subtree is then never created. Do not silently accept annotation calls and ignore them.
 - **Saving** the current visualization as a view point is not a per-View action. The Flight Deck's `View Points` tool ([viewpointswidget.h:34-101](../view/points/viewpointswidget.h#L34-L101)) handles export / import / management.
 
@@ -377,7 +387,7 @@ When adding a new View:
 
 - All persistent settings are registered as `Configurable` parameters in the View class, not in the data / config widgets.
 - The data widget reads from the View; the config widget writes to it through the View's setters.
-- Sub-configurables (e.g. one config block per axis) follow the standard `generateSubConfigurable` / `checkSubConfigurables` pattern.
+- Sub-configurables (e.g. one config block per axis) follow the standard `generateSubConfigurable_impl` / `checkSubConfigurables` pattern.
 
 ## 11. Reusable helpers
 
@@ -385,6 +395,8 @@ When adding a new View:
 - Existing examples worth following:
   - `ASTERIXReportHelpers::renderDataItemTablesForDS(...)` ([asterixreporthelpers.h](../task/import/asterix/asterixreporthelpers.h)) — shared between the ASTERIX Import report and the Analyze-Data-Source data-item inspector. Both build a small `CategoryView` map and hand it to the helper.
   - `populateDSList(...)` in `analyzedatasourcedialog.cpp` — used by the Reference and Test panes to populate their checkbox lists from a set of IDs and a "checked?" predicate.
+- Reusable widgets in `src/gui`:
+  - `StyledLabel` ([styledlabel.h](styledlabel.h)) — `QLabel` with an optional text shadow (color, offset), for plain text that must stay readable on a semi-transparent background (e.g. the geographic view labels). With the shadow disabled it behaves like a `QLabel`.
 
 ---
 

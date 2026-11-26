@@ -29,6 +29,8 @@ public:
 
     double rs2gElevation(double H_m, double rho_m);
 
+    double altitudeM() const { return altitude_m_; } // height of the radar
+
     void getGroundRange(double slant_range_m,
                           bool has_altitude, double altitude_m,
                           double& ground_range_m, double& adjusted_altitude_m, bool debug=false);

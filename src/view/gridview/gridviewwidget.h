@@ -19,11 +19,18 @@
 
 #include "variableviewwidget.h"
 
+#include <QPointer>
+
 class GridView;
 class GridViewConfigWidget;
-class GridViewDataWidget;
+class GridViewRenderWidget;
+class GridBackgroundRootItem;
+class GridBackgroundSectorsItem;
+class LayerTreeModel;
 
 /**
+ * Widget of the Grid View. Holds the render widget and the background items of the layer panel, whose
+ * checked states are settings of the view.
 */
 class GridViewWidget : public VariableViewWidget
 {
@@ -31,10 +38,28 @@ public:
     GridViewWidget(GridView* view, QWidget* parent = nullptr);
     virtual ~GridViewWidget();
 
-    GridViewDataWidget* getViewDataWidget();
-    const GridViewDataWidget* getViewDataWidget() const;
+    GridViewRenderWidget* renderWidget() { return render_widget_; }
     GridViewConfigWidget* getViewConfigWidget();
     const GridViewConfigWidget* getViewConfigWidget() const;
 
     GridView* getView();
+
+    /// the background settings or the grid opacity of the view changed (also on a reconfigure / preset)
+    void backgroundSettingsChanged();
+
+private:
+    void registerTools();
+
+    /// adds the background subtree and the grid opacity menu to the layer panel
+    void layerPanelAttached();
+    void syncBackgroundItems();
+
+    GridBackgroundRootItem* backgroundRootItem() const;
+    GridBackgroundSectorsItem* sectorsRootItem() const;
+
+    GridViewRenderWidget* render_widget_ = nullptr; // owned by the view widget (Qt parent)
+
+    QPointer<LayerTreeModel>   background_model_;          // model holding the items below
+    GridBackgroundRootItem*    background_root_ = nullptr;
+    GridBackgroundSectorsItem* sectors_root_    = nullptr; // top level Sectors item
 };

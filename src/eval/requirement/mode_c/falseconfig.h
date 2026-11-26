@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/requirement/base/probabilitybaseconfig.h"
+#include "requirement/base/probabilitybaseconfig.h"
 
 #include <memory>
 
@@ -39,17 +39,12 @@ public:
 
     std::shared_ptr<Base> createRequirement() override;
 
-    float maximumProbabilityFalse() const;
-    void maximumProbabilityFalse(float value);
-
     float maxDifference() const;
     void maxDifference(float value);
 
     virtual void addToReport (std::shared_ptr<ResultReport::Report> report);
 
 protected:
-    float maximum_probability_false_{0};
-
     float max_difference_ {0};
 
     virtual BaseConfigWidget* createWidget() override;

@@ -1,0 +1,78 @@
+{
+    "description": "Two inside periods, updates between them are outside and cause no misses.",
+    "params": {
+        "update_interval_s": 8.0
+    },
+    "periods": [
+        [
+            0,
+            40
+        ],
+        [
+            100,
+            140
+        ]
+    ],
+    "updates": [
+        [
+            0.5,
+            "valid"
+        ],
+        [
+            8.5,
+            "valid"
+        ],
+        [
+            16.5,
+            "valid"
+        ],
+        [
+            24.5,
+            "valid"
+        ],
+        [
+            32.5,
+            "valid"
+        ],
+        [
+            39.5,
+            "valid"
+        ],
+        [
+            60,
+            "valid"
+        ],
+        [
+            70,
+            "valid"
+        ],
+        [
+            100.5,
+            "valid"
+        ],
+        [
+            108.5,
+            "valid"
+        ],
+        [
+            116.5,
+            "valid"
+        ],
+        [
+            124.5,
+            "valid"
+        ],
+        [
+            132.5,
+            "valid"
+        ],
+        [
+            139.5,
+            "valid"
+        ]
+    ],
+    "expected": {
+        "sum_uis": 10,
+        "misses": 0
+    }
+}

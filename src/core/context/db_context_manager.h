@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "db_context.h"
 #include "db_context_diff.h"
 #include "radar_accuracy_defs.h"
@@ -37,9 +39,8 @@
 #include <unordered_map>
 #include <vector>
 
-class COMPASS;
-class DataSourcesToolWidget;
-class DataSourcesStatusToolWidget;
+class AppState;
+class DBInterface;
 class SectorLayer;
 class Sector;
 class AirSpace;
@@ -57,7 +58,7 @@ namespace context
  * Also provides all data source and FFT query/lookup methods that were
  * previously in DataSourceManager and FFTManager.
  */
-class DBContextManager : public QObject, public IDataSourceProvider
+class COMPASS_CORE_API DBContextManager : public QObject, public IDataSourceProvider
 {
     Q_OBJECT
 
@@ -67,11 +68,16 @@ signals:
     void dataSourcesChangedSignal();
     void fftsChangedSignal();
     void sectorsChangedSignal();
+    /// a sector layer was renamed, emitted right before the sectorsChangedSignal of the rename
+    void sectorLayerRenamedSignal(const std::string& old_name, const std::string& new_name);
     void countsChangedSignal();
     void asterixInfoChangedSignal();
+    /// the loading selection of data source types, data sources or lines was reset
+    void loadingSelectionChangedSignal();
 
 public:
-    explicit DBContextManager(COMPASS& compass);
+    DBContextManager(AppState& app_state,
+                     DBInterface& db_interface);
     virtual ~DBContextManager();
 
     // ================================================================
@@ -123,6 +129,7 @@ public:
                                      const std::string& name = "",
                                      const std::string& ds_type = "Other");
     void deleteDataSource(unsigned int ds_id);
+    void deleteAllDataSources();
 
     /// if ds.baseColor() is invalid, pick a hue-distant base color (using the
     /// active context's preference) and derive line_colors_. No-op otherwise.
@@ -158,6 +165,8 @@ public:
     void deselectAllDSTypes();
     void selectAllDataSources();
     void deselectAllDataSources();
+    /// enables all data source types, data sources and lines for loading and notifies the widgets
+    void resetLoadingSelection();
     void deselectAllLines();
     void selectSpecificLine(unsigned int line_id);
     void selectDSTypeSpecificDataSources(const std::string& ds_type);
@@ -283,6 +292,7 @@ public:
     bool hasFFT(const std::string& name) const;
     const FFT* fft(const std::string& name) const;
     FFT* fft(const std::string& name);
+    const FFT* fftByRuntimeId(const std::string& runtime_id) const;
     std::vector<std::string> allFFTNames() const;
 
     FFT& createFFT(const std::string& name);
@@ -329,6 +339,15 @@ public:
     void saveSector(std::shared_ptr<Sector> sector);
     void moveSector(unsigned int id, const std::string& old_layer, const std::string& new_layer);
     void renameSectorLayer(const std::string& old_name, const std::string& new_name);
+
+    // edits of existing sectors from the views: apply, save to disk and DB, emit
+    // sectorsChangedSignal. The Sector setters alone save but emit nothing.
+    // returns false if a sector of the new name already exists in the layer
+    bool renameSector(std::shared_ptr<Sector> sector, const std::string& new_name);
+    void setSectorPoints(std::shared_ptr<Sector> sector,
+                         const std::vector<std::pair<double,double>>& points);
+    void setSectorColor(std::shared_ptr<Sector> sector, QColor color);
+    void setSectorLayerColor(const std::string& layer_name, QColor color);
 
     void importAirSpace(const AirSpace& air_space,
                         const std::map<std::string, bool>& sectors_to_import,
@@ -383,17 +402,14 @@ public:
     std::string importContextZip(const std::string& zip_filepath); // returns imported context name
 
     // ================================================================
-    // Widgets (lazy creation, owned by this manager)
-    // ================================================================
-    DataSourcesToolWidget* loadWidget();
-    DataSourcesStatusToolWidget* statusWidget();
-
-    // ================================================================
     // Utility
     // ================================================================
     void rebuildSectorLayers();
+    void persistSectorEdit();
     static std::string basePath();
-    COMPASS& compass() { return compass_; }
+
+    AppState& appState() { return app_state_; }
+    const AppState& appState() const { return app_state_; }
 
 public slots:
     void databaseOpenedSlot();
@@ -409,7 +425,9 @@ private:
     void ensureDataSourceCache() const;
     void invalidateDataSourceCache() const;
 
-    COMPASS& compass_;
+    AppState&    app_state_;
+    DBInterface& db_interface_;
+
     std::string active_context_name_;
     std::map<std::string, DBContext> contexts_;
 
@@ -435,10 +453,6 @@ private:
     std::map<unsigned int, std::map<unsigned int, boost::posix_time::ptime>> max_timestamps_;
 
     SensorConfig sensor_config_;
-
-    // widgets (lazy, owned)
-    std::unique_ptr<DataSourcesToolWidget> load_widget_;
-    std::unique_ptr<DataSourcesStatusToolWidget> status_widget_;
 
     // Lazy RU-name cache over active context's data sources. ds_id lookup
     // itself is served directly by activeContext().dataSources() (a std::map),

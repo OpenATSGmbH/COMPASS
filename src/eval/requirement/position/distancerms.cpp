@@ -15,12 +15,14 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/distancerms.h"
-#include "eval/results/position/distancerms.h"
-#include "eval/standard/evaluationstandard.h"
+#include "requirement/position/distancerms.h"
+#include "requirement/position/positionhelpers.h"
+#include "requirement/position/positiontargetdata.h"
+#include "results/position/distancerms.h"
+#include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "sectorlayer.h"
 
 #include <algorithm>
@@ -47,205 +49,25 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionDistanceRMS::evalua
     logdbg << "'" << name_ << "': utn " << target_data.utn_
            << " threshold_value " << threshold();
 
-    time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
+    const time_duration max_ref_time_diff = Time::partialSeconds(calculator_.currentStandard().referenceMaxTimeDiff());
 
-    const auto& tst_data = target_data.tstChain().timestampIndexes();
+    PositionHelpers::ReportSettings settings;
+    settings.ref_min_accuracy     = ref_min_accuracy_;
+    settings.skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
 
-    unsigned int num_pos {0};
-    unsigned int num_no_ref {0};
-    unsigned int num_pos_outside {0};
-    unsigned int num_pos_inside {0};
-    unsigned int num_ref_inaccurate {0};
-    unsigned int num_pos_calc_errors {0};
-    unsigned int num_comp_failed {0};
-    unsigned int num_comp_passed {0};
+    const auto evaluation = PositionHelpers::evaluateDistancesRMS(
+                target_data.tstChain().timestampIndexes(),
+                PositionTargetData::tstPositions(target_data),
+                PositionTargetData::referenceLookup(target_data, sector_layer, max_ref_time_diff, false),
+                settings, threshold());
 
-    typedef EvaluationRequirementResult::SinglePositionDistanceRMS Result;
-    typedef EvaluationDetail                                    Detail;
-    typedef Result::EvaluationDetails                           Details;
-    Details details;
-
-    ptime timestamp;
-
-    Transformation ogr_geo2cart;
-
-    dbContent::TargetPosition tst_pos;
-
-    bool is_inside;
-    //boost::optional<dbContent::TargetPosition> ret_pos;
-    boost::optional<dbContent::TargetPosition> ref_pos;
-
-    bool comp_passed;
-
-    unsigned int num_distances {0};
-    string comment;
-
-    bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
-
-    auto addDetail = [ & ] (const ptime& ts,
-                            const dbContent::TargetPosition& tst_pos,
-                            const boost::optional<dbContent::TargetPosition>& ref_pos,
-                            const QVariant& pos_inside,
-                            const QVariant& offset,
-                            const QVariant& check_passed,
-                            const QVariant& num_pos,
-                            const QVariant& num_no_ref,
-                            const QVariant& num_pos_inside,
-                            const QVariant& num_pos_outside,
-                            const QVariant& num_comp_passed,
-                            const QVariant& num_comp_failed,
-                            const std::string& comment)
-    {
-        details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
-                                             .setValue(Result::DetailKey::Value, offset)
-                                             .setValue(Result::DetailKey::CheckPassed, check_passed)
-                                             .setValue(Result::DetailKey::NumPos, num_pos)
-                                             .setValue(Result::DetailKey::NumNoRef, num_no_ref)
-                                             .setValue(Result::DetailKey::NumInside, num_pos_inside)
-                                             .setValue(Result::DetailKey::NumOutside, num_pos_outside)
-                                             .setValue(Result::DetailKey::NumCheckPassed, num_comp_passed)
-                                             .setValue(Result::DetailKey::NumCheckFailed, num_comp_failed)
-                                             .addPosition(ref_pos)
-                                             .generalComment(comment));
-    };
-
-    for (const auto& tst_id : tst_data)
-    {
-        ++num_pos;
-
-        timestamp = tst_id.first;
-        tst_pos = target_data.tstChain().pos(tst_id);
-
-        comp_passed = false;
-
-        if (!target_data.hasMappedRefData(tst_id, max_ref_time_diff))
-        {
-            if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos,
-                            {}, // ref_pos
-                            {}, {}, comp_passed, // pos_inside, value, check_passed
-                            num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed,
-                            "No reference data");
-
-            ++num_no_ref;
-            continue;
-        }
-
-        ref_pos = target_data.mappedRefPos(tst_id, max_ref_time_diff);
-
-        if (!ref_pos.has_value())
-        {
-            if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos,
-                            {}, // ref_pos
-                            {}, {}, comp_passed, // pos_inside, value, check_passed
-                            num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed,
-                            "No reference position");
-
-            ++num_no_ref;
-            continue;
-        }
-
-        is_inside = target_data.isTimeStampNotExcluded(timestamp)
-                    && target_data.mappedRefPosInside(sector_layer, tst_id);
-
-        if (!is_inside)
-        {
-            if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos,
-                            ref_pos, // ref_pos
-                            is_inside, {}, comp_passed, // pos_inside, value, check_passed
-                            num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed, 
-                            "Outside sector");
-            ++num_pos_outside;
-            continue;
-        }
-        ++num_pos_inside;
-
-        auto ref_pos_acc = target_data.mappedRefMinAcc(tst_id, max_ref_time_diff); // max std dev
-
-        if (ref_pos_acc && *ref_pos_acc > ref_min_accuracy_)
-        {
-            if (!skip_no_data_details)
-                addDetail(timestamp, tst_pos,
-                            ref_pos, // ref_pos
-                            is_inside, {}, comp_passed, // pos_inside, value, check_passed
-                            num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed, 
-                            "Inaccurate reference position");
-
-            ++num_ref_inaccurate;
-            continue;            
-        }
-
-        bool   transform_ok;
-        double distance;
-
-        std::tie(transform_ok, distance) = ogr_geo2cart.distanceL2Cart(ref_pos->latitude_, ref_pos->longitude_, tst_pos.latitude_, tst_pos.longitude_);
-        traced_assert(transform_ok);
-
-        if (std::isnan(distance) || std::isinf(distance))
-        {
-            addDetail(timestamp, tst_pos,
-                        ref_pos, // ref_pos
-                        is_inside, {}, comp_passed, // pos_inside, value, check_passed
-                        num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                        num_comp_passed, num_comp_failed, 
-                        "DistanceRMS Invalid");
-            ++num_pos_calc_errors;
-            continue;
-        }
-
-        ++num_distances;
-
-        if (fabs(distance) <= threshold()) // for single value
-        {
-            comp_passed = true;
-            ++num_comp_passed;
-            comment = "Passed";
-        }
-        else
-        {
-            ++num_comp_failed;
-            comment = "Failed";
-        }
-
-        addDetail(timestamp, tst_pos,
-                    ref_pos,
-                    is_inside, distance, comp_passed, // pos_inside, value, check_passed
-                    num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                    num_comp_passed, num_comp_failed,
-                    comment);
-    }
-
-    //        logdbg << "'" << name_ << "': utn " << target_data.utn_
-    //               << " num_pos " << num_pos << " num_no_ref " <<  num_no_ref
-    //               << " num_pos_outside " << num_pos_outside << " num_pos_inside " << num_pos_inside
-    //               << " num_pos_ok " << num_pos_ok << " num_pos_nok " << num_pos_nok
-    //               << " num_distances " << num_distances;
-
-    traced_assert(num_no_ref <= num_pos);
-
-    if (num_pos - num_no_ref != num_pos_inside + num_pos_outside)
-        loginf << "'" << name_ << "': utn " << target_data.utn_
-               << " num_pos " << num_pos << " num_no_ref " <<  num_no_ref
-               << " num_pos_outside " << num_pos_outside << " num_pos_inside " << num_pos_inside
-               << " num_pos_calc_errors " << num_pos_calc_errors
-               << " num_distances " << num_distances;
-
-    traced_assert(num_pos - num_no_ref == num_pos_inside + num_pos_outside);
-
-    traced_assert(num_distances == num_comp_failed + num_comp_passed);
-
-    //assert (details.size() == num_pos);
+    const auto& c = evaluation.counts;
 
     return std::make_shared<EvaluationRequirementResult::SinglePositionDistanceRMS>(
                 "UTN:"+to_string(target_data.utn_), instance, sector_layer, target_data.utn_, &target_data,
-                calculator_, details, num_pos, num_no_ref, num_pos_outside, num_pos_inside, num_ref_inaccurate,
-                num_comp_passed, num_comp_failed);
+                calculator_, PositionTargetData::details(evaluation),
+                c.num_pos, c.num_no_ref, c.num_pos_outside, c.num_pos_inside, c.num_ref_inaccurate,
+                c.num_comp_passed, c.num_comp_failed);
 }
 
 }

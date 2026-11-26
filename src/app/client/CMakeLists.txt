@@ -12,6 +12,7 @@ target_sources(compass_app
         "${CMAKE_CURRENT_LIST_DIR}/mainwindow_commands_file.h"
         "${CMAKE_CURRENT_LIST_DIR}/mainwindow_commands_import.h"
         "${CMAKE_CURRENT_LIST_DIR}/toolbox.h"
+        "${CMAKE_CURRENT_LIST_DIR}/decklayout.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/client.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/crashbreadcrumbs.cpp"
@@ -27,6 +28,12 @@ add_executable ( compass_client
     "${CMAKE_CURRENT_LIST_DIR}/cxa_throw_hook.cpp"
 )
 
+if(WIN32)
+    # application manifest (see the top-level CMakeLists.txt)
+    add_dependencies(compass_client compass_windows_rc)
+    target_link_libraries(compass_client "${COMPASS_WINDOWS_RC}")
+endif()
+
 # export symbols so backtrace_symbols_fd() can resolve function names on crash
 # No Q_OBJECT sources in this target (they live in compass_app). Disable AUTOMOC
 # to prevent re-MOCing headers from linked libraries (whose .cpp files already
@@ -41,11 +48,7 @@ target_link_libraries ( compass_client
     compass_app
     compass_config compass_core compass_reconstruction
     compass_gui compass_filter compass_task
-    compass_eval compass_view compass_report
-    # Repeated: static archive link order - COMPASS:: methods in compass_app
-    # and compass_core symbols are needed by libs listed above (eval, view, task, etc.)
-    compass_app compass_core
-    ${jASTERIX_LIBRARIES}
+    compass_eval compass_view compass_result
     ${Boost_LIBRARIES}
     Qt5::Widgets Qt5::Core Qt5::OpenGL Qt5::Charts Qt5::Test
     ${OPENSCENEGRAPH_LIBRARIES}
@@ -54,13 +57,7 @@ target_link_libraries ( compass_client
 
 if(EXPERIMENTAL_SRC)
     target_link_libraries(compass_client
-        compass_osg_utils compass_docx compass_reconst_adv
-        compass_geo_view compass_rtcmd_ext compass_test_lab
-        # Repeated: experimental libs reference COMPASS:: methods and core/task symbols
-        compass_app compass_core compass_reconstruction compass_task
-    )
-    target_include_directories(compass_app PRIVATE
-        "${CMAKE_SOURCE_DIR}/experimental_src/rtcommand"
+        compass_osg_utils compass_rtcmd_ext compass_test_lab
     )
 endif()
 

@@ -1,0 +1,107 @@
+#!/bin/bash
+#
+# Collects the Windows build of COMPASS with all runtime files into compass_deploy in the build
+# folder (paths as in win_build.sh), in the same layout as the AppImage (see Utils::System::appDir):
+#
+#   compass_client.exe, compass_handler.exe, *.dll   executables and runtime libraries
+#   plugins/compass_plugin_*.dll                      plugin modules
+#   (the COMPASS executables, libraries and plugins keep their debug information: -g1, function
+#   names and line tables, for stack traces with function, file and line, see stacktrace_format.h)
+#   platforms/, styles/, imageformats/, iconengines/  Qt plugins
+#   lib/osgPlugins-<version>/                         OSG/osgEarth plugins
+#   compass/conf, compass/data, compass/presets       COMPASS configuration, data, view presets
+#   proj/                                             PROJ data (proj.db)
+#
+# DLLs that nothing imports are removed (win_unused_dlls.py). The remaining imports are
+# Windows system DLLs only (Windows 10 or later).
+#
+# Usage (inside the container, after win_build.sh): win_deploy.sh [--with_tests] [--zip]
+#   --with_tests  also compass_tests.exe (not for the zip file)
+#   --zip         COMPASS_<version>_win64.zip in the build folder, with the folder
+#                 COMPASS_<version>_win64, the Windows counterpart of the AppImage
+
+set -e
+
+: "${OS_NAME:?OS_NAME is not set, rebuild the image with ./build_docker.sh win_deb12}"
+
+BASE=${WORKSPACE_BASE:-/app/workspace}
+COMPASS_SRC=$BASE/compass
+OUT=$COMPASS_SRC/build_$OS_NAME
+
+BUILD=$OUT/compass_build
+DEPLOY=$OUT/compass_deploy
+STRIP=x86_64-w64-mingw32-strip
+
+rm -rf "$DEPLOY"
+mkdir -p "$DEPLOY/lib" "$DEPLOY/compass"
+
+WITH_TESTS=0
+ZIP=0
+for arg in "$@"; do
+    case "$arg" in
+        --with_tests) WITH_TESTS=1 ;;
+        --zip)        ZIP=1 ;;
+        *)            echo "unknown option $arg"; exit 1 ;;
+    esac
+done
+
+EXES="compass_client.exe compass_handler.exe"
+if [ $WITH_TESTS == 1 ]; then EXES="$EXES compass_tests.exe"; fi
+
+# executables, COMPASS libraries (one DLL per module, with the "lib" prefix of MinGW) and plugin
+# modules (in plugins/, where compass_client loads them) with their debug information (-g1)
+for exe in $EXES; do
+    cp "$BUILD/bin/$exe" "$DEPLOY/$exe"
+done
+
+cp "$BUILD"/bin/libcompass_*.dll "$DEPLOY/"
+
+mkdir -p "$DEPLOY/plugins"
+for dll in "$BUILD"/lib/compass_plugins/compass_plugin_*.dll; do
+    [ -e "$dll" ] || continue # build without experimental source
+    cp "$dll" "$DEPLOY/plugins/"
+done
+
+# jASTERIX (shared, installed by win_build.sh)
+$STRIP -o "$DEPLOY/libjasterix.dll" "$OUT/jasterix_install/lib/libjasterix.dll"
+
+# runtime of the MinGW toolchain (libssp: stack protection, needed by TBB)
+cp "$MINGW_GCC_DLL_DIR/libstdc++-6.dll" "$MINGW_GCC_DLL_DIR/libgcc_s_seh-1.dll" \
+   "$MINGW_GCC_DLL_DIR/libssp-0.dll" "$MINGW_SYS_DLL_DIR/libwinpthread-1.dll" "$DEPLOY/"
+
+# libraries built in the image, OSG plugins in lib/ as in the AppImage
+cp "$WIN64_PREFIX"/bin/*.dll "$DEPLOY/"
+cp -r "$WIN64_PREFIX"/bin/osgPlugins-* "$DEPLOY/lib/"
+cp -r "$WIN64_PREFIX/share/proj" "$DEPLOY/proj"
+
+# Qt libraries and plugins
+cp "$QT_WIN_DIR"/bin/Qt5*.dll "$DEPLOY/"
+for plugin_dir in platforms styles imageformats iconengines; do
+    if [ -d "$QT_WIN_DIR/plugins/$plugin_dir" ]; then
+        cp -r "$QT_WIN_DIR/plugins/$plugin_dir" "$DEPLOY/"
+    fi
+done
+
+# COMPASS configuration, data and view presets (as in the AppImage), licence
+cp -r "$COMPASS_SRC/conf" "$COMPASS_SRC/data" "$COMPASS_SRC/presets" "$DEPLOY/compass/"
+cp "$COMPASS_SRC/LICENSE" "$DEPLOY/"
+
+# DLLs that nothing imports (e.g. Qt modules COMPASS does not use)
+python3 "$COMPASS_SRC/docker/win_unused_dlls.py" "$DEPLOY" --remove | tail -1
+
+echo "deployed to $DEPLOY"
+du -sh "$DEPLOY"
+
+if [ $ZIP == 1 ]; then
+    VERSION=$(grep -oP 'CPACK_PACKAGE_VERSION_(MAJOR|MINOR|PATCH) "\K[0-9]+' "$COMPASS_SRC/CMakeLists.txt" \
+              | paste -sd.)
+    NAME="COMPASS_${VERSION}_win64"
+    STAGE=$OUT/zip_stage
+    rm -rf "$STAGE" "$OUT/$NAME.zip"
+    mkdir -p "$STAGE"
+    ln -s "$DEPLOY" "$STAGE/$NAME"
+    (cd "$STAGE" && 7z a -tzip -mx=7 -l "$OUT/$NAME.zip" "$NAME" > /dev/null)
+    rm -rf "$STAGE"
+    echo "zip file $OUT/$NAME.zip"
+    ls -la "$OUT/$NAME.zip"
+fi

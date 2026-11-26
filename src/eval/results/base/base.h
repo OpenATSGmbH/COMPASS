@@ -19,8 +19,8 @@
 
 #include "evaluationdetail.h"
 #include "evaluationdefs.h"
-#include "eval/results/evaluationdetail.h"
-#include "eval/results/base/result_defs.h"
+#include "results/evaluationdetail.h"
+#include "results/base/result_defs.h"
 
 #include <QVariant>
 #include <QRectF>

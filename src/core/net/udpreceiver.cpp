@@ -18,6 +18,7 @@
 #include "udpreceiver.h"
 #include "traced_assert.h"
 #include "logger.h"
+#include "system.h"
 
 #include <boost/bind.hpp>
 
@@ -88,7 +89,18 @@ UDPReceiver::UDPReceiver(boost::asio::io_context& io_context, //const std::strin
     }
 
     //    socket.bind(listen_endpoint, ec);
+#ifdef _WIN32
+    //Windows can not bind a socket to a multicast address: bind to the port on all
+    //interfaces, the socket receives the group's datagrams after join_group. Wine maps the
+    //socket to a Linux one, which bound to all interfaces also receives the groups of the
+    //other sockets on the port: bind to the group address as on Linux
+    boost::asio::ip::udp::endpoint bind_endpoint = mcast_addr.is_multicast() && !Utils::System::runsInWine() ?
+        boost::asio::ip::udp::endpoint(boost::asio::ip::address_v4::any(), line_info_->mcastPort()) :
+        socket_endpoint_;
+    socket_.bind(bind_endpoint, ec);
+#else
     socket_.bind(socket_endpoint_, ec);
+#endif
     if (ec)
     {
         logerr << "socket bind error " << ec.message();

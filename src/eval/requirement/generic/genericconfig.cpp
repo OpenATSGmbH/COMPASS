@@ -15,20 +15,20 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/generic/genericconfig.h"
-#include "eval/requirement/generic/genericconfigwidget.h"
-#include "eval/requirement/generic/generic.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
+#include "requirement/generic/genericconfig.h"
+#include "requirement/generic/genericconfigwidget.h"
+#include "requirement/generic/generic.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
-#include "eval/requirement/mom/momcorrect.h"
-#include "eval/requirement/status/coastingcorrect.h"
-#include "eval/requirement/mode_c/rocdcorrect.h"
-#include "eval/requirement/speed/accelerationcorrect.h"
+#include "requirement/mom/momcorrect.h"
+#include "requirement/status/coastingcorrect.h"
+#include "requirement/mode_c/rocdcorrect.h"
+#include "requirement/speed/accelerationcorrect.h"
 
 using namespace std;
 
@@ -66,12 +66,14 @@ BaseConfigWidget* GenericIntegerConfig::createWidget()
 
 void GenericIntegerConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
+    BaseConfig::addToReport(report);
+
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
-    auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& table = section.getTable("req_table");
 
-    table.addRow({"Probability [1]", "Probability",
-                  roundf(prob_ * 10000.0) / 100.0});
+    table.addRow({"Probability [%]", "Probability",
+                  probabilityPercent(prob_)});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
 
@@ -110,13 +112,15 @@ BaseConfigWidget* GenericDoubleConfig::createWidget()
 
 void GenericDoubleConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
+    BaseConfig::addToReport(report);
+
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
-    auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& table = section.getTable("req_table");
 
     table.addRow({"Threshold [1]", "Threshold", threshold_});
-    table.addRow({"Probability [1]", "Probability",
-                  roundf(prob_ * 10000.0) / 100.0});
+    table.addRow({"Probability [%]", "Probability",
+                  probabilityPercent(prob_)});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
 

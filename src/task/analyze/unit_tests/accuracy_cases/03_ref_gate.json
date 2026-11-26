@@ -1,0 +1,48 @@
+{
+    "description": "Reference gate with factor 2: reference 1 m, claim 5 m: 2 m < 5 m, the offset is measured. Reference 3 m: 6 m >= 5 m, gated. Reference 2.5 m: 5 m >= 5 m, gated (equal is not good enough). No reference accuracy: gated. No claimed accuracy, a claim of 0 or a factor of 0: no gate.",
+    "type": "gate",
+    "checks": [
+        {
+            "factor": 2,
+            "ref": 1,
+            "claimed": 5,
+            "gated": false
+        },
+        {
+            "factor": 2,
+            "ref": 3,
+            "claimed": 5,
+            "gated": true
+        },
+        {
+            "factor": 2,
+            "ref": 2.5,
+            "claimed": 5,
+            "gated": true
+        },
+        {
+            "factor": 2,
+            "ref": null,
+            "claimed": 5,
+            "gated": true
+        },
+        {
+            "factor": 2,
+            "ref": 1,
+            "claimed": null,
+            "gated": false
+        },
+        {
+            "factor": 2,
+            "ref": 1,
+            "claimed": 0,
+            "gated": false
+        },
+        {
+            "factor": 0,
+            "ref": 10,
+            "claimed": 5,
+            "gated": false
+        }
+    ]
+}

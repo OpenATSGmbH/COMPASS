@@ -22,13 +22,17 @@
 #include "rtcommand_macros.h"
 #include "reportdefs.h"
 
+class CompassRoot;
+
 namespace main_window
 {
-extern void init_commands();
+extern void init_commands(rtcommand::RTCommandRegistry& registry, CompassRoot& root);
 
 // import_data_sources_file
 struct RTCommandImportDataSourcesFile : public rtcommand::RTCommand
 {
+    explicit RTCommandImportDataSourcesFile(CompassRoot& root);
+
     std::string filename_;
 
     virtual rtcommand::IsValid valid() const override;
@@ -36,23 +40,33 @@ struct RTCommandImportDataSourcesFile : public rtcommand::RTCommand
 protected:
     virtual bool run_impl() override;
 
-    DECLARE_RTCOMMAND(import_data_sources, "imports data sources JSON file with given filename, e.g. '/data/ds1.json'")
+private:
+    CompassRoot& root_;
+
+    DECLARE_RTCOMMAND(import_data_sources, "imports a data sources JSON file with the given filename, e.g. '/data/ds1.json'")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
 // delete_all_data_sources
 struct RTCommandDeleteAllDataSources : public rtcommand::RTCommand
 {
+    explicit RTCommandDeleteAllDataSources(CompassRoot& root);
+
 protected:
     virtual bool run_impl() override;
 
-    DECLARE_RTCOMMAND(delete_all_data_sources, "deletes all data sources in the configuration, which are not part of an opened database")
+private:
+    CompassRoot& root_;
+
+    DECLARE_RTCOMMAND(delete_all_data_sources, "deletes all data sources of the active context, fails while an opened database contains imported data")
     DECLARE_RTCOMMAND_NOOPTIONS
 };
 
 // import_sectors_json
 struct RTCommandImportSectorsJSON : public rtcommand::RTCommand
 {
+    explicit RTCommandImportSectorsJSON(CompassRoot& root);
+
     std::string filename_;
 
     virtual rtcommand::IsValid valid() const override;
@@ -60,40 +74,49 @@ struct RTCommandImportSectorsJSON : public rtcommand::RTCommand
 protected:
     virtual bool run_impl() override;
 
+private:
+    CompassRoot& root_;
+
     DECLARE_RTCOMMAND(import_sectors_json,
-                      "imports exported sectors JSON with given filename, e.g. ’/data/sectors.json’")
+                      "imports an exported sectors JSON file with the given filename, e.g. '/data/sectors.json'")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
 // calc radar plot pos
 struct RTCommandCalculateRadarPlotPositions : public rtcommand::RTCommand
 {
-    RTCommandCalculateRadarPlotPositions();
+    explicit RTCommandCalculateRadarPlotPositions(CompassRoot& root);
 
 protected:
     virtual bool run_impl() override;
 
-    DECLARE_RTCOMMAND(calculate_radar_plot_positions , "calculate radar plot positions")
+private:
+    CompassRoot& root_;
+
+    DECLARE_RTCOMMAND(calculate_radar_plot_positions , "runs the Calculate Radar Plot Positions task")
     DECLARE_RTCOMMAND_NOOPTIONS
 };
 
 // calc ARTAS assoc
 struct RTCommandCalculateARTASAssociations : public rtcommand::RTCommand
 {
-    RTCommandCalculateARTASAssociations();
+    explicit RTCommandCalculateARTASAssociations(CompassRoot& root);
 
 protected:
     virtual bool run_impl() override;
     virtual bool checkResult_impl() override;
 
-    DECLARE_RTCOMMAND(calculate_artas_tr_usage, "associate target reports based on ARTAS usage")
+private:
+    CompassRoot& root_;
+
+    DECLARE_RTCOMMAND(calculate_artas_tr_usage, "associates target reports based on the ARTAS track usage")
     DECLARE_RTCOMMAND_NOOPTIONS
 };
 
 // calc ref
 struct RTCommandReconstructReferences : public rtcommand::RTCommand
 {
-    RTCommandReconstructReferences();
+    explicit RTCommandReconstructReferences(CompassRoot& root);
 
     std::string disabled_sensors_;
     std::string config_;
@@ -101,14 +124,17 @@ struct RTCommandReconstructReferences : public rtcommand::RTCommand
 protected:
     virtual bool run_impl() override;
 
-    DECLARE_RTCOMMAND(reconstruct_references, "reconstruct references")
+private:
+    CompassRoot& root_;
+
+    DECLARE_RTCOMMAND(reconstruct_references, "runs the Reconstruct References task")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
 // analyze data source
 struct RTCommandAnalyzeDataSource : public rtcommand::RTCommand
 {
-    RTCommandAnalyzeDataSource();
+    explicit RTCommandAnalyzeDataSource(CompassRoot& root);
 
     std::string ds_type_;
     std::string config_;
@@ -116,25 +142,33 @@ struct RTCommandAnalyzeDataSource : public rtcommand::RTCommand
 protected:
     virtual bool run_impl() override;
 
-    DECLARE_RTCOMMAND(analyze_data_source, "analyze a data source by DSType (e.g. 'MLAT')")
+private:
+    CompassRoot& root_;
+
+    DECLARE_RTCOMMAND(analyze_data_source, "analyzes a data source by DSType (e.g. 'MLAT'), replies with the name of the stored report")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
 // load data
 struct RTCommandLoadData : public rtcommand::RTCommand
 {
-    RTCommandLoadData();
+    explicit RTCommandLoadData(CompassRoot& root);
 
 protected:
     virtual bool run_impl() override;
 
-    DECLARE_RTCOMMAND(load_data, "load data")
+private:
+    CompassRoot& root_;
+
+    DECLARE_RTCOMMAND(load_data, "loads the data from the database into the Views, as the Load button")
     DECLARE_RTCOMMAND_NOOPTIONS
 };
 
 // export vp report
 struct RTCommandExportViewPointsReport : public rtcommand::RTCommand
 {
+    explicit RTCommandExportViewPointsReport(CompassRoot& root);
+
     std::string filename_;
 
     virtual rtcommand::IsValid valid() const override;
@@ -142,14 +176,19 @@ struct RTCommandExportViewPointsReport : public rtcommand::RTCommand
 protected:
     virtual bool run_impl() override;
 
+private:
+    CompassRoot& root_;
+
     DECLARE_RTCOMMAND(export_view_points_report,
-                      "export view points report after with given filename, e.g. ’/data/db2/report.tex'")
+                      "exports the view points report to the given filename, e.g. '/data/db2/report.tex'")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
 // export report
 struct RTCommandExportReport : public rtcommand::RTCommand
 {
+    explicit RTCommandExportReport(CompassRoot& root);
+
     std::string                    result_name_;
     std::string                    export_dir_;
     ResultReport::ReportExportMode mode_ = ResultReport::ReportExportMode::LatexPDF;
@@ -159,8 +198,11 @@ struct RTCommandExportReport : public rtcommand::RTCommand
 protected:
     virtual bool run_impl() override;
 
+private:
+    CompassRoot& root_;
+
     DECLARE_RTCOMMAND(export_report,
-                      "export existing report")
+                      "exports an existing report")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -170,10 +212,13 @@ protected:
 struct RTCommandGetExistingReports : public rtcommand::RTCommand
 {
 public:
-    RTCommandGetExistingReports();
+    explicit RTCommandGetExistingReports(CompassRoot& root);
     
 protected:
     virtual bool run_impl() override;
+
+private:
+    CompassRoot& root_;
 
     DECLARE_RTCOMMAND(get_existing_reports, "returns a list of names of all existing reports")
     DECLARE_RTCOMMAND_NOOPTIONS
@@ -185,7 +230,7 @@ protected:
 struct RTCommandGetReport : public rtcommand::RTCommand
 {
 public:
-    RTCommandGetReport();
+    explicit RTCommandGetReport(CompassRoot& root);
 
     virtual rtcommand::IsValid valid() const override;
 
@@ -196,7 +241,34 @@ protected:
     virtual bool run_impl() override;
     virtual bool checkResult_impl() override;
 
-    DECLARE_RTCOMMAND(get_report, "obtain report json data")
+private:
+    CompassRoot& root_;
+
+    DECLARE_RTCOMMAND(get_report, "retrieves report data as JSON: the section IDs of the report, or the given section")
+    DECLARE_RTCOMMAND_OPTIONS
+};
+
+/**
+ * get_report_figure
+ */
+struct RTCommandGetReportFigure : public rtcommand::RTCommand
+{
+public:
+    explicit RTCommandGetReportFigure(CompassRoot& root);
+
+    virtual rtcommand::IsValid valid() const override;
+
+    std::string result_name;
+    std::string section;
+    std::string figure;
+
+protected:
+    virtual bool run_impl() override;
+
+private:
+    CompassRoot& root_;
+
+    DECLARE_RTCOMMAND(get_report_figure, "retrieves the stored view points of the figures in a report section")
     DECLARE_RTCOMMAND_OPTIONS
 };
 
@@ -216,6 +288,8 @@ protected:
 // reconfigure
 struct RTCommandReconfigure : public rtcommand::RTCommand
 {
+    explicit RTCommandReconfigure(CompassRoot& root);
+
     std::string path;
     std::string json_config;
 
@@ -224,6 +298,9 @@ struct RTCommandReconfigure : public rtcommand::RTCommand
 protected:
     virtual bool run_impl() override;
 
+private:
+    CompassRoot& root_;
+
     DECLARE_RTCOMMAND(reconfigure, "reconfigures the given configurable")
     DECLARE_RTCOMMAND_OPTIONS
 };
@@ -231,8 +308,13 @@ protected:
 // get_events
 struct RTCommandClientInfo : public rtcommand::RTCommand
 {
+    explicit RTCommandClientInfo(CompassRoot& root);
+
 protected:
     virtual bool run_impl() override;
+
+private:
+    CompassRoot& root_;
 
     DECLARE_RTCOMMAND(client_info, "retrieves information about the running compass client")
     DECLARE_RTCOMMAND_NOOPTIONS

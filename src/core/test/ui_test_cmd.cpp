@@ -27,16 +27,22 @@
 
 #include <QMainWindow>
 #include <QDialog>
-
-REGISTER_RTCOMMAND(ui_test::RTCommandUISet)
-REGISTER_RTCOMMAND(ui_test::RTCommandUIGet)
-REGISTER_RTCOMMAND(ui_test::RTCommandUIGetJSON)
-REGISTER_RTCOMMAND(ui_test::RTCommandUIInject)
-REGISTER_RTCOMMAND(ui_test::RTCommandUIRefresh)
-REGISTER_RTCOMMAND(ui_test::RTCommandUIFileDialog)
+#include <QPixmap>
 
 namespace ui_test
 {
+
+/**
+ */
+void initUITestCommands(rtcommand::RTCommandRegistry& registry)
+{
+    registry.registerCommand<RTCommandUISet>();
+    registry.registerCommand<RTCommandUIGet>();
+    registry.registerCommand<RTCommandUIGetJSON>();
+    registry.registerCommand<RTCommandUIInject>();
+    registry.registerCommand<RTCommandUIRefresh>();
+    registry.registerCommand<RTCommandUIFileDialog>();
+}
 
 /***************************************************************************************
  * RTCommandObject
@@ -49,7 +55,7 @@ void RTCommandUIObject::collectOptions_impl(OptionsDescription& options,
 {
     //add basic command options here
     ADD_RTCOMMAND_OPTIONS(options)
-        ("object,o", po::value<std::string>()->default_value(""), "name of an ui element, object names separated by '.', e.g. 'mainwindow.window1.geographicview1.toolbar'");
+        ("object,o", po::value<std::string>()->default_value(""), "name of a UI element, object names separated by '.', e.g. 'mainwindow.window1.geographicview1.toolbar'");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "object")
 }
@@ -95,7 +101,7 @@ void RTCommandUIInjection::assignVariables_impl(const VariablesMap& variables)
  */
 bool RTCommandUISet::run_impl()
 {
-    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *compass_);
+    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *host_);
     if (receiver.first != rtcommand::FindObjectErrCode::NoError)
     {
         setResultMessage("Object '" + obj.toStdString() + "' not found");
@@ -121,7 +127,7 @@ void RTCommandUISet::collectOptions_impl(OptionsDescription& options,
     RTCommandUIInjection::collectOptions_impl(options, positional);
 
     ADD_RTCOMMAND_OPTIONS(options)
-        ("value,v", po::value<std::string>()->default_value(""), "new value to set, content depending on the addressed ui element");
+        ("value,v", po::value<std::string>()->default_value(""), "new value to set, content depending on the addressed UI element");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "value")
 }
@@ -144,7 +150,7 @@ void RTCommandUISet::assignVariables_impl(const VariablesMap& variables)
  */
 bool RTCommandUIGet::run_impl()
 {
-    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *compass_);
+    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *host_);
     if (receiver.first != rtcommand::FindObjectErrCode::NoError)
     {
         setResultMessage("Object '" + obj.toStdString() + "' not found");
@@ -177,6 +183,95 @@ bool RTCommandUIGet::run_impl()
         //retrieve the style sheet, e.g. to check invalid-input coloring
         result_string = receiver.second->styleSheet().toStdString();
         result        = result_string;
+    }
+    else if (what == "geometry")
+    {
+        //position in the parent widget and size, in the pixels of the layout (not of the screen)
+        const QRect geometry = receiver.second->geometry();
+
+        nlohmann::json v;
+        v[ "x"      ] = geometry.x();
+        v[ "y"      ] = geometry.y();
+        v[ "width"  ] = geometry.width();
+        v[ "height" ] = geometry.height();
+
+        result        = v;
+        result_string = v.dump();
+    }
+    else if (what == "screen_geometry")
+    {
+        //position on the screen and size, in layout pixels, e.g. to crop a desktop screenshot
+        //(OpenGL widgets are missing in a QWidget::grab() image)
+        const QPoint top_left = receiver.second->mapToGlobal(QPoint(0, 0));
+
+        nlohmann::json v;
+        v[ "x"      ] = top_left.x();
+        v[ "y"      ] = top_left.y();
+        v[ "width"  ] = receiver.second->width();
+        v[ "height" ] = receiver.second->height();
+
+        //the part not clipped by the parents, e.g. of a widget inside a scroll area. Not
+        //visibleRegion(), it also leaves out the area covered by the children. A window, e.g. a popup,
+        //is not clipped by the widget it belongs to
+        QRect visible(top_left, receiver.second->size());
+        for (QWidget* p = receiver.second->isWindow() ? nullptr : receiver.second->parentWidget(); p; p = p->parentWidget())
+        {
+            visible &= QRect(p->mapToGlobal(QPoint(0, 0)), p->size());
+            if (p->isWindow())
+                break;
+        }
+
+        v[ "visible" ][ "x"      ] = visible.x();
+        v[ "visible" ][ "y"      ] = visible.y();
+        v[ "visible" ][ "width"  ] = visible.width();
+        v[ "visible" ][ "height" ] = visible.height();
+
+        result        = v;
+        result_string = v.dump();
+    }
+    else if (what == "objects")
+    {
+        //object paths of the named descendant widgets, with class and visibility, to find the
+        //path of a widget
+        nlohmann::json v = nlohmann::json::array();
+
+        for (auto w : receiver.second->findChildren<QWidget*>())
+        {
+            if (w->objectName().isEmpty() || w->objectName().startsWith("qt_"))
+                continue;
+
+            QStringList path;
+            for (QWidget* p = w; p && p != receiver.second; p = p->parentWidget())
+                if (!p->objectName().isEmpty() && !p->objectName().startsWith("qt_"))
+                    path.prepend(p->objectName());
+
+            v.push_back({ { "path", path.join(".").toStdString() },
+                          { "class", w->metaObject()->className() },
+                          { "visible", w->isVisible() } });
+        }
+
+        result        = v;
+        result_string = v.dump(4);
+    }
+    else if (what.startsWith("grab:"))
+    {
+        //save an image of the widget as rendered by the application (no desktop screenshot needed)
+        const QString path = what.mid(5);
+
+        QPixmap pixmap = receiver.second->grab();
+        if (pixmap.isNull() || !pixmap.save(path))
+        {
+            setResultMessage("Image of object '" + obj.toStdString() + "' could not be saved to '" + path.toStdString() + "'");
+            return false;
+        }
+
+        nlohmann::json v;
+        v[ "file"   ] = path.toStdString();
+        v[ "width"  ] = pixmap.width();
+        v[ "height" ] = pixmap.height();
+
+        result        = v;
+        result_string = path.toStdString();
     }
     else
     {
@@ -226,10 +321,10 @@ void RTCommandUIGet::collectOptions_impl(OptionsDescription& options,
     RTCommandUIObject::collectOptions_impl(options, positional);
 
     ADD_RTCOMMAND_OPTIONS(options)
-        ("what,w", po::value<std::string>()->default_value(""), "which value to retrieve from the ui element (empty = default behavior)")
-        ("json", "if present, the result will be returned as a json struct instead of a string")
-        ("visible", "if present, the visibility of the ui element will be returned")
-        ("enabled", "if present, the enabled state of the ui element will be returned");
+        ("what,w", po::value<std::string>()->default_value(""), "which value to retrieve from the UI element (empty = default behavior)")
+        ("json", "if present, the result will be returned as a JSON struct instead of a string")
+        ("visible", "if present, the visibility of the UI element will be returned")
+        ("enabled", "if present, the enabled state of the UI element will be returned");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "what")
 }
@@ -255,7 +350,7 @@ void RTCommandUIGet::assignVariables_impl(const VariablesMap& variables)
  */
 bool RTCommandUIGetJSON::run_impl()
 {
-    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *compass_);
+    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *host_);
     if (receiver.first != rtcommand::FindObjectErrCode::NoError)
     {
         setResultMessage("Object '" + obj.toStdString() + "' not found");
@@ -305,8 +400,8 @@ void RTCommandUIGetJSON::collectOptions_impl(OptionsDescription& options,
     RTCommandUIObject::collectOptions_impl(options, positional);
 
     ADD_RTCOMMAND_OPTIONS(options)
-        ("what,w", po::value<std::string>()->default_value(""), "which value to retrieve from the ui element (empty = default behavior)")
-        ("visible", "if present, the visibility of the ui element will be returned");
+        ("what,w", po::value<std::string>()->default_value(""), "which value to retrieve from the UI element (empty = default behavior)")
+        ("visible", "if present, the visibility of the UI element will be returned");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "what")
 }
@@ -335,7 +430,7 @@ void RTCommandUIGetJSON::assignVariables_impl(const VariablesMap& variables)
  */
 bool RTCommandUIInject::run_impl()
 {
-    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *compass_);
+    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *host_);
     if (receiver.first != rtcommand::FindObjectErrCode::NoError)
     {
         setResultMessage("Object '" + obj.toStdString() + "' not found");
@@ -361,7 +456,7 @@ void RTCommandUIInject::collectOptions_impl(OptionsDescription& options,
     RTCommandUIInjection::collectOptions_impl(options, positional);
 
     ADD_RTCOMMAND_OPTIONS(options)
-        ("event,e", po::value<std::string>()->default_value(""), "event to inject into the ui element");
+        ("event,e", po::value<std::string>()->default_value(""), "event to inject into the UI element");
 
     ADD_RTCOMMAND_POS_OPTION(positional, "event")
 }
@@ -386,7 +481,7 @@ void RTCommandUIInject::assignVariables_impl(const VariablesMap& variables)
  */
 bool RTCommandUIRefresh::run_impl()
 {
-    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *compass_);
+    auto receiver = rtcommand::getCommandReceiverAs<QWidget>(obj.toStdString(), *host_);
     if (receiver.first != rtcommand::FindObjectErrCode::NoError)
     {
         setResultMessage("Object '" + obj.toStdString() + "' not found");

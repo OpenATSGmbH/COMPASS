@@ -17,7 +17,8 @@
 
 #pragma once
 
-#include "eval/requirement/base/positionbaseconfig.h"
+#include "requirement/base/positionbaseconfig.h"
+#include "requirement/position/radar_helpers.h"
 
 class Group;
 class EvaluationStandard;
@@ -30,7 +31,7 @@ namespace ResultReport
 namespace EvaluationRequirement
 {
 
-class PositionRadarRangeConfig : public PositionBaseProbConfig
+class PositionRadarRangeConfig : public PositionBaseValueConfig
 {
 public:
     PositionRadarRangeConfig(nlohmann::json& config,
@@ -42,10 +43,15 @@ public:
     double thresholdValue() const;
     void thresholdValue(double value);
 
+    RadarHelpers::Statistic statistic() const;
+    void statistic(RadarHelpers::Statistic value);
+    const RadarHelpers::StatisticInfo& statisticInfo() const;
+
     virtual void addToReport (std::shared_ptr<ResultReport::Report> report) override;
 
 protected:
     double threshold_value_ {0};
+    unsigned int statistic_ {0}; // RadarHelpers::Statistic
 
     virtual BaseConfigWidget* createWidget() override;
 };

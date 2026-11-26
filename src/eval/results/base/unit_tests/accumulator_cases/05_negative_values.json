@@ -1,0 +1,22 @@
+{
+    "description": "Signed errors (e.g. along track): minimum and maximum of the joined groups.",
+    "groups": [
+        [
+            -3.0,
+            -1.0
+        ],
+        [
+            2.0,
+            0.5
+        ]
+    ],
+    "expected": {
+        "num": 4,
+        "min": -3.0,
+        "max": 2.0,
+        "mean": -0.375,
+        "rms": 1.8874586088176875,
+        "var": 3.421875,
+        "stddev": 1.8498310733685928
+    }
+}

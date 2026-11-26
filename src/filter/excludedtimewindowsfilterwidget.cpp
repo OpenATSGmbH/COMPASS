@@ -31,6 +31,7 @@ ExcludedTimeWindowsFilterWidget::ExcludedTimeWindowsFilterWidget(ExcludedTimeWin
     };
 
     tw_widget_ = new TimeWindowCollectionWidget(filter_.timeWindows(), min_max_func);
+    tw_widget_->setObjectName("filter_time_windows_widget");
 
     int insert_row = child_layout_->rowCount();
 

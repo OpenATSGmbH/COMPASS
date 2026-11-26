@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include "eval/requirement/base/probabilitybaseconfig.h"
-#include "eval/requirement/base/positionbaseconfigwidget.h"
+#include "requirement/base/probabilitybaseconfig.h"
+#include "requirement/base/positionbaseconfigwidget.h"
 #include "evaluationstandardtreeitem.h"
 
 class Group;

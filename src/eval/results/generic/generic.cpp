@@ -15,18 +15,19 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/generic/generic.h"
+#include "results/generic/generic.h"
+#include "results/base/detailcode.h"
 
-#include "eval/results/base/featuredefinitions.h"
+#include "results/base/featuredefinitions.h"
 
-#include "eval/requirement/base/base.h"
-#include "eval/requirement/generic/generic.h"
+#include "requirement/base/base.h"
+#include "requirement/generic/generic.h"
 
 #include "evaluationtargetdata.h"
 #include "evaluationmanager.h"
 
 #include "logger.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "viewpoint.h"
 
 #include "traced_assert.h"
@@ -233,31 +234,6 @@ std::vector<Single::TargetInfo> SingleGeneric::targetInfos() const
 
 /**
 */
-std::vector<std::string> SingleGeneric::detailHeaders() const
-{
-    return { "ToD", "Ref", "Ok", "#Up", "#NoRef", "#PosInside", "#PosOutside", "#Unknown", "#Correct", "#False", "Comment" };
-}
-
-/**
-*/
-nlohmann::json::array_t SingleGeneric::detailValues(const EvaluationDetail& detail,
-                                                    const EvaluationDetail* parent_detail) const
-{
-    return { Utils::Time::toString(detail.timestamp()),
-             detail.getValue(DetailKey::RefExists).toBool(),
-            !detail.getValue(DetailKey::IsNotOk).toBool(),
-             detail.getValue(DetailKey::NumUpdates).toUInt(),
-             detail.getValue(DetailKey::NumNoRef).toUInt(),
-             detail.getValue(DetailKey::NumInside).toUInt(),
-             detail.getValue(DetailKey::NumOutside).toUInt(),
-             detail.getValue(DetailKey::NumUnknownID).toUInt(),
-             detail.getValue(DetailKey::NumCorrectID).toUInt(),
-             detail.getValue(DetailKey::NumFalseID).toUInt(),
-             detail.comments().generalComment() };
-}
-
-/**
-*/
 bool SingleGeneric::detailIsOk(const EvaluationDetail& detail) const
 {
     auto is_not_ok = detail.getValueAs<bool>(DetailKey::IsNotOk);
@@ -406,12 +382,57 @@ FeatureDefinitions JoinedGeneric::getCustomAnnotationDefinitions() const
 {
     FeatureDefinitions defs;
 
-    defs.addDefinition<FeatureDefinitionBinaryGrid>(requirement()->name(), calculator_, "Passed")
+    defs.addDefinition<FeatureDefinitionIssueCountGrid>(requirement()->name(), calculator_, "Issues")
         .addDataSeries(SingleGeneric::DetailKey::IsNotOk, 
                        GridAddDetailMode::AddEvtRefPosition, 
                        true);
 
     return defs;
+}
+
+/**
+ */
+void SingleGeneric::addReportTableColumns(ReportTableDefinition& def) const
+{
+    def.addColumn("ref_exists", PropertyDataType::BOOL, "Reference Exists",
+                  "Reference data exists at the time of the test report");
+    def.addColumn("ok", PropertyDataType::BOOL, "Ok",
+                  "Test report value assessed as correct");
+    def.addColumn("pos_inside", PropertyDataType::BOOL, "Position Inside",
+                  "Test position inside the sector layer");
+
+    DetailCode::Value::addTexts(def);
+}
+
+/**
+ */
+void SingleGeneric::fillReportTableRow(ReportTableRows& rows,
+                                  const EvaluationDetail& detail,
+                                  const EvaluationDetail* parent_detail,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setReportTableValue<bool>(rows, "ref_exists", detail, DetailKey::RefExists);
+    {
+        auto not_ok = detail.getValueAs<bool>(DetailKey::IsNotOk);
+        if (not_ok.has_value())
+            rows.set<bool>("ok", !not_ok.value());
+    }
+    setReportTableValue<bool>(rows, "pos_inside", detail, DetailKey::PosInside);
+}
+
+/**
+ */
+void SingleGeneric::fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                  const Buffer& buffer,
+                                  unsigned int row,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setDetailValue<bool>(detail, DetailKey::RefExists, buffer, "ref_exists", row);
+
+    if (buffer.has<bool>("ok") && !buffer.get<bool>("ok").isNull(row))
+        detail.setValue(DetailKey::IsNotOk, QVariant(!buffer.get<bool>("ok").get(row)));
+
+    setDetailValue<bool>(detail, DetailKey::PosInside, buffer, "pos_inside", row);
 }
 
 }

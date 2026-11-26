@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "json.hpp"
 
 #include <map>
@@ -31,7 +33,7 @@ class View;
 /**
  * Collection of presets for all kinds of views.
  */
-class ViewPresets : public QObject
+class COMPASS_VIEW_API ViewPresets : public QObject
 {
     Q_OBJECT
 public:

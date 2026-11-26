@@ -16,8 +16,10 @@
  */
 
 #include "gridviewconfigwidget.h"
+#include "appstate.h"
 #include "gridviewwidget.h"
-#include "gridviewdatawidget.h"
+#include "gridviewmodel.h"
+#include "gridviewrenderwidget.h"
 #include "gridview.h"
 
 #include "geotiff.h"
@@ -29,7 +31,6 @@
 
 #include "global.h"
 
-#include "compass.h"
 #include "viewmanager.h"
 #include "viewpointgenerator.h"
 #include "geotiff.h"
@@ -38,19 +39,18 @@
 #include "dbcontent.h"
 
 #include "variableselectionwidget.h"
-
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "geographicview.h"
-#endif
+#include "geoimagesink.h"
 
 #include "colorscaleselection.h"
 #include "propertyvalueedit.h"
 
 #include "dbcontentlayer.h"
 #include "viewlayerpanelwidget.h"
+#include "colormodelabel.h"
 #include "viewlayertreemodel.h"
 #include "annotationsrootitem.h"
 
+#include <QCheckBox>
 #include <QComboBox>
 #include <QLineEdit>
 #include <QSpinBox>
@@ -67,31 +67,14 @@
 using namespace Utils;
 using namespace dbContent;
 
-namespace
-{
-    /// Sum aggregator for integer-valued custom columns - ignores invalid
-    /// entries and returns an invalid QVariant if no valid value was found.
-    QVariant sumULongLong(const std::vector<QVariant>& vals)
-    {
-        unsigned long long sum = 0;
-        bool any = false;
-        for (const auto& v : vals)
-        {
-            bool ok = false;
-            unsigned long long n = v.toULongLong(&ok);
-            if (ok) { sum += n; any = true; }
-        }
-        return any ? QVariant((qulonglong)sum) : QVariant();
-    }
-}
-
 /**
 */
 GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
                                            QWidget* parent)
 :   VariableViewConfigWidget(view_widget, view_widget->getView(), parent)
 {
-    view_ = view_widget->getView();
+    view_          = view_widget->getView();
+    render_widget_ = view_widget->renderWidget();
     traced_assert(view_);
 
     auto config_layout = configLayout();
@@ -156,6 +139,15 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
 
     layout->addRow("Color Steps:", color_steps_box_);
 
+    color_log_check_ = new QCheckBox;
+    color_log_check_->setToolTip("Map the values to the colors on a logarithmic scale");
+
+    UI_TEST_OBJ_NAME(color_log_check_, "color_log_scale");
+
+    connect(color_log_check_, &QCheckBox::clicked, this, &GridViewConfigWidget::colorLogScaleChanged);
+
+    layout->addRow("Logarithmic Scale:", color_log_check_);
+
     color_value_min_box_ = new PropertyValueEdit();
     reset_min_button_    = new QPushButton("Reset");
     reset_min_button_->setVisible(false); //@TODO
@@ -192,7 +184,7 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
 
     range_info_label_ = new QLabel;
     range_info_label_->setStyleSheet("QLabel { color : red; }");
-    
+
     layout->addRow("", range_info_label_);
 
     export_button_ = new QPushButton("Export");
@@ -213,76 +205,14 @@ GridViewConfigWidget::GridViewConfigWidget(GridViewWidget* view_widget,
     // the compass icon. The label tracks the current color mode so the
     // default expansion depth (which follows the color mode) is discoverable.
     {
-        color_mode_label_ = new QLabel(this);
-        color_mode_label_->setText("Color Mode: " + colorModeText(view_->compass().colorMode()));
-        config_layout->addWidget(color_mode_label_);
+        config_layout->addWidget(new ColorModeLabel(view_->viewManager().appState(), this));
 
-        connect(&view_->compass(), &COMPASS::colorModeChangedSignal,
-                this, &GridViewConfigWidget::colorModeChangedSlot);
-
-        LayerColumnSpec null_col;
-        null_col.header           = "# Null";
-        null_col.default_width    = 70;
-        null_col.resize_mode      = QHeaderView::Interactive;
-        null_col.alignment        = Qt::AlignRight | Qt::AlignVCenter;
-        null_col.group_aggregator = &sumULongLong;
-
-        layer_panel_     = new ViewLayerPanelWidget({ null_col }, view_->canShowAnnotations(), this);
-        db_content_root_ = layer_panel_->model()->dbContentRootItem();
-
-        auto* data_widget = view_widget->getViewDataWidget();
-        data_widget->attachLayerPanel(db_content_root_, layer_panel_->model());
-
-        // Visibility toggle -> recompute grid (only checked layers contribute).
-        connect(layer_panel_->model(), &LayerTreeModel::hiddenChangedSignal,
-                data_widget, &GridViewDataWidget::layersChangedSlot);
-
-        // Tree was rebuilt -> re-apply default expansion.
-        connect(data_widget, &GridViewDataWidget::layerTreeRebuiltSignal,
-                this, &GridViewConfigWidget::applyDefaultExpansionSlot);
+        layer_panel_ = createLayerPanel({ ViewLayerPanelWidget::nullCountColumn() }, view_->canShowAnnotations());
 
         config_layout->addWidget(layer_panel_);
     }
 
     //showSwitch(0, true);
-}
-
-/**
-*/
-void GridViewConfigWidget::applyDefaultExpansionSlot()
-{
-    if (!db_content_root_ || !layer_panel_)
-        return;
-
-    // Mirror the expansion the other views use - drive depth from the active
-    // COMPASS color mode so the level that differentiates colors in other
-    // views stays visible here too.
-    db_content_root_->applyDefaultExpansionForColorMode(
-        layer_panel_->treeView(), view_->compass().colorMode());
-}
-
-/**
-*/
-void GridViewConfigWidget::colorModeChangedSlot(unsigned int mode)
-{
-    traced_assert(color_mode_label_);
-    color_mode_label_->setText("Color Mode: " + colorModeText(mode));
-
-    applyDefaultExpansionSlot();
-}
-
-/**
-*/
-QString GridViewConfigWidget::colorModeText(unsigned int mode)
-{
-    switch (mode)
-    {
-        case 0: return "DSType";
-        case 1: return "DBContent";
-        case 2: return "Data Source";
-        case 3: return "Data Source + Line";
-        default: return "Unknown";
-    }
 }
 
 /**
@@ -298,10 +228,12 @@ void GridViewConfigWidget::attachExportMenu()
     //attach export menu
     QMenu* menu = new QMenu(export_button_);
 
-#if USE_EXPERIMENTAL_SOURCE == true
-    auto export_geoview_action = menu->addAction("Export to GeographicView");
-    connect(export_geoview_action, &QAction::triggered, this, &GridViewConfigWidget::exportToGeographicView);
-#endif
+    // only if a view accepting geo images exists (checked once, when the menu is created)
+    if (!view_->viewManager().viewsOfType<GeoImageSink>().empty())
+    {
+        auto export_geoview_action = menu->addAction("Export to GeographicView");
+        connect(export_geoview_action, &QAction::triggered, this, &GridViewConfigWidget::exportToGeographicView);
+    }
 
     auto export_geotiff_action = menu->addAction("Export to GeoTIFF");
     connect(export_geotiff_action, &QAction::triggered, this, &GridViewConfigWidget::exportToGeoTiff);
@@ -359,6 +291,16 @@ void GridViewConfigWidget::loadingDone()
 }
 
 /**
+ * Notice: the asynchronous recompute commits the grid after loadingDone()/redrawDone()
+ * and only signals the display change.
+*/
+void GridViewConfigWidget::onDisplayChange_impl()
+{
+    updateExport();
+    checkRanges();
+}
+
+/**
 */
 void GridViewConfigWidget::updateExport()
 {
@@ -368,7 +310,7 @@ void GridViewConfigWidget::updateExport()
     traced_assert(const_view);
 
     //no valid grid no export
-    if (!const_view->isInit() || !const_view->getDataWidget()->hasValidGrid())
+    if (!const_view->isInit() || !const_view->model().hasValidGrid())
     {
         export_button_->setEnabled(false);
         export_button_->setToolTip("No grid data available");
@@ -393,7 +335,7 @@ void GridViewConfigWidget::updateExport()
 
         traced_assert(var_sel_x && var_sel_y);
 
-        auto& dbc_man = view_->compass().dbContentManager();
+        auto& dbc_man = view_->viewManager().dbContentManager();
 
         const auto& metavar_lon = dbc_man.metaVariable(dbcontent_vars::meta_var_longitude_.name());
         const auto& metavar_lat = dbc_man.metaVariable(dbcontent_vars::meta_var_latitude_.name());
@@ -451,6 +393,13 @@ void GridViewConfigWidget::colorStepsChanged()
 
 /**
 */
+void GridViewConfigWidget::colorLogScaleChanged()
+{
+    view_->setColorLogScale(color_log_check_->isChecked(), true);
+}
+
+/**
+*/
 void GridViewConfigWidget::minValueChanged()
 {
     auto v_str = color_value_min_box_->isValid() ? color_value_min_box_->valueAsString() : "";
@@ -497,6 +446,10 @@ void GridViewConfigWidget::updateConfig()
     color_steps_box_->blockSignals(true);
     color_steps_box_->setValue((int)settings.render_color_num_steps);
     color_steps_box_->blockSignals(false);
+
+    color_log_check_->blockSignals(true);
+    color_log_check_->setChecked(settings.render_color_log_scale);
+    color_log_check_->blockSignals(false);
 
     //@TODO: updateDistributedVariable()?
     updateVariableDataType();
@@ -570,31 +523,31 @@ void GridViewConfigWidget::checkRanges()
 
     range_info_label_->setText("");
 
-    if (!const_view->isInit() || !const_view->getDataWidget()->hasValidGrid())
+    if (!const_view->isInit() || !const_view->model().hasValidGrid())
         return;
 
     if (const_view->isInit() && 
-        const_view->getDataWidget()->hasValidGrid() && 
-        const_view->getDataWidget()->customRangeInvalid())
+        const_view->model().hasValidGrid() && 
+        render_widget_->customRangeInvalid())
         range_info_label_->setText("Please enter a valid range");
 }
 
-#if USE_EXPERIMENTAL_SOURCE == true
 namespace
 {
     struct ExportGeoViewConfig
     {
-        GeographicView* view = nullptr;
-        std::string     item_name;
+        GeoImageSink* view = nullptr;
+        std::string   item_name;
     };
 
     /**
     */
     boost::optional<ExportGeoViewConfig> getExportGeoViewConfig(QWidget* parent,
                                                                 const std::string& default_name,
-                                                                COMPASS& compass)
+                                                                ViewManager& view_manager)
     {
-        auto geo_views = compass.viewManager().viewsOfType<GeographicView>();
+        // views accepting geo images (e.g. GeographicView)
+        auto geo_views = view_manager.viewsOfType<GeoImageSink>();
 
         QDialog dlg(parent);
         dlg.setWindowTitle("Export to GeographicView");
@@ -607,7 +560,12 @@ namespace
 
         auto view_sel = new QComboBox;
         for (auto v : geo_views)
-            view_sel->addItem(QString::fromStdString(v->getName()));
+        {
+            auto view = dynamic_cast<const View*>(v);
+            traced_assert(view);
+
+            view_sel->addItem(QString::fromStdString(view->getName()));
+        }
         if (view_sel->count() > 0)
             view_sel->setCurrentIndex(0);
 
@@ -652,7 +610,6 @@ namespace
         return config;
     }
 }
-#endif
 
 /**
 */
@@ -672,22 +629,17 @@ std::string GridViewConfigWidget::exportName() const
 */
 void GridViewConfigWidget::exportToGeographicView()
 {
-#if USE_EXPERIMENTAL_SOURCE == true
-
-    const auto& data_widget = dynamic_cast<const GridView*>(view_)->getDataWidget();
-
-    auto geo_image = data_widget->currentGeoImage();
-    if (!geo_image.has_value())
+    //grid with its render settings: the Geographic View renders it and can change its coloring
+    auto grid = render_widget_->currentGrid();
+    if (!grid.has_value())
     {
         QMessageBox::critical(this, "Error", "No grid available to send");
         return;
     }
 
-    const auto& legend = data_widget->currentLegend();
-
     std::string name = exportName();
 
-    auto export_config = getExportGeoViewConfig(this, name, view_->compass());
+    auto export_config = getExportGeoViewConfig(this, name, view_->viewManager());
     if (!export_config.has_value())
         return;
 
@@ -696,35 +648,29 @@ void GridViewConfigWidget::exportToGeographicView()
 
     ViewPointGenAnnotation anno(export_config->item_name);
 
-    auto geo_image_feat = new ViewPointGenFeatureGeoImage(geo_image->first, 
-                                                          geo_image->second, 
-                                                          legend, 
-                                                          true);
-    anno.addFeature(geo_image_feat);
+    Grid2DLayer layer = grid->first;
+    layer.name = export_config->item_name;
+
+    anno.addFeature(new ViewPointGenFeatureGrid(layer, grid->second));
 
     nlohmann::json j;
     anno.toJSON(j);
 
     export_config->view->addInternalAnnotation(j);
-#else
-    QMessageBox::critical(this, "Error", "Geographic View not part of installation");
-#endif
 }
 
 /**
 */
 void GridViewConfigWidget::exportToGeoTiff()
 {
-    const auto& data_widget = dynamic_cast<const GridView*>(view_)->getDataWidget();
-
-    auto geo_image = data_widget->currentGeoImage();
+    auto geo_image = render_widget_->currentGeoImage();
     if (!geo_image.has_value())
     {
         QMessageBox::critical(this, "Error", "No grid available to send");
         return;
     }
 
-    std::string fn_default = view_->compass().lastUsedPath() + "/" + exportName() + ".tif";
+    std::string fn_default = view_->viewManager().appState().lastUsedPath() + "/" + exportName() + ".tif";
 
     auto fn = QFileDialog::getSaveFileName(this, "Export to GeoTIFF", QString::fromStdString(fn_default), "*.tif");
     if (fn.isEmpty())

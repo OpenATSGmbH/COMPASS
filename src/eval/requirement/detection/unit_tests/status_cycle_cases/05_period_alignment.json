@@ -1,0 +1,77 @@
+{
+    "description": "Reference periods [2.5, 12.3] and [15, 30], cycles every 1 s from 0 to 20 s. The first period starts at the first cycle in the reference period (3 s), the part before it and the part after the last full period (12 to 12.3 s) are not counted: 9 periods [3, 4] to [11, 12], all missed (the test report at 2.7 s is before the first cycle). The second reference period ends after the last cycle: 5 periods [15, 16] to [19, 20], all detected.",
+    "update_interval_s": 1.0,
+    "cycle_series": [
+        [
+            0,
+            20,
+            1
+        ]
+    ],
+    "ref_periods": [
+        [
+            2.5,
+            12.3
+        ],
+        [
+            15,
+            30
+        ]
+    ],
+    "tst": [
+        [
+            2.7,
+            "ok"
+        ]
+    ],
+    "tst_series": [
+        [
+            15.5,
+            19.5,
+            1
+        ]
+    ],
+    "expected": {
+        "cycles_per_period": 1,
+        "sum_expected": 14,
+        "sum_missed": 9,
+        "misses": [
+            [
+                3,
+                4
+            ],
+            [
+                4,
+                5
+            ],
+            [
+                5,
+                6
+            ],
+            [
+                6,
+                7
+            ],
+            [
+                7,
+                8
+            ],
+            [
+                8,
+                9
+            ],
+            [
+                9,
+                10
+            ],
+            [
+                10,
+                11
+            ],
+            [
+                11,
+                12
+            ]
+        ]
+    }
+}

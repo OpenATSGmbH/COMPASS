@@ -1,0 +1,43 @@
+{
+    "description": "Data gap from 1 s to 20 s: no empty window, the next window starts at 20 s.",
+    "window_s": 5.0,
+    "samples": [
+        [
+            0,
+            2.0,
+            0.0
+        ],
+        [
+            1,
+            2.0,
+            0.0
+        ],
+        [
+            20,
+            0.0,
+            3.0
+        ],
+        [
+            21,
+            0.0,
+            3.0
+        ],
+        [
+            22,
+            0.0,
+            3.0
+        ]
+    ],
+    "expected_windows": [
+        {
+            "num": 2,
+            "mean_distance": 2.0,
+            "span_s": 1.0
+        },
+        {
+            "num": 3,
+            "mean_distance": 3.0,
+            "span_s": 2.0
+        }
+    ]
+}

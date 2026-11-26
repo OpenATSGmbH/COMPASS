@@ -21,7 +21,6 @@
 #include "rtcommand_defs.h"
 
 #include "logger.h"
-#include "compass.h"
 
 #include <QApplication>
 #include <QMainWindow>
@@ -33,6 +32,8 @@
 #include <QAbstractItemModel>
 #include <QAbstractItemView>
 #include <QContextMenuEvent>
+#include <QWheelEvent>
+#include <QMouseEvent>
 #include <QDateTimeEdit>
 #include <QComboBox>
 #include <QTabWidget>
@@ -53,6 +54,33 @@
 namespace ui_test
 {
 
+namespace
+{
+
+/**
+ * A shortcut with the default window context (e.g. Escape ending a view tool) fires only in the
+ * active window. Headless runs (offscreen platform, Xvfb without a window manager) have no active
+ * window, so the window of the target widget is made the active one before a key is injected.
+ * Popups are left alone: an open popup takes the keys itself and must stay open.
+ */
+void activateWindowOf(QWidget* widget)
+{
+    if (!widget)
+        return;
+
+    QWidget* window = widget->window();
+
+    if (!window || window->windowType() == Qt::Popup || QApplication::activePopupWidget())
+        return;
+
+    if (QApplication::activeWindow() == window)
+        return;
+
+    QApplication::setActiveWindow(window);
+}
+
+}
+
 /**
  * Injects key clicks into a widget.
 */
@@ -70,6 +98,7 @@ bool injectKeyEvent(QWidget* root,
 
     loginf << "injecting key " << QKeySequence(key).toString(QKeySequence::NativeText).toStdString();
 
+    activateWindowOf(w.second);
     QTest::keyClick(w.second, key, Qt::NoModifier, delay);
 
     return true;
@@ -94,6 +123,8 @@ bool injectKeysEvent(QWidget* root,
     //nothing to do?
     if (keys.isEmpty())
         return true;
+
+    activateWindowOf(w.second);
 
     //split text at page breaks
     //@TODO: Add Qt::KeepEmptyParts in future Qt version
@@ -180,6 +211,7 @@ bool injectKeyCmdEvent(QWidget* root,
     if (obj.second->isWidgetType())
     {
         injectionMsg("widget");
+        activateWindowOf(dynamic_cast<QWidget*>(obj.second));
         QTest::keyClick(dynamic_cast<QWidget*>(obj.second), key, modifier, delay);
     }
     else //window
@@ -239,7 +271,8 @@ bool injectClickEvent(QWidget* root,
                       int x, 
                       int y, 
                       Qt::MouseButton button, 
-                      int delay)
+                      int delay,
+                      Qt::KeyboardModifiers modifiers)
 {
     auto obj = findObject(root, obj_name);
     if (obj.first != rtcommand::FindObjectErrCode::NoError)
@@ -278,15 +311,125 @@ bool injectClickEvent(QWidget* root,
             w = scroll_area->viewport();
         
         injectionMsg("widget");
-        QTest::mouseClick(w, button, Qt::NoModifier, pos, delay);
+        QTest::mouseClick(w, button, modifiers, pos, delay);
     }
     else //window
     {
         injectionMsg("window");
-        QTest::mouseClick(dynamic_cast<QWindow*>(obj.second), button, Qt::NoModifier, pos, delay);
+        QTest::mouseClick(dynamic_cast<QWindow*>(obj.second), button, modifiers, pos, delay);
     }
 
     return true;
+}
+
+/**
+ * Injects a mouse double click into widgets or windows.
+ */
+bool injectDblClickEvent(QWidget* root,
+                         const QString& obj_name,
+                         int x,
+                         int y,
+                         Qt::MouseButton button,
+                         int delay)
+{
+    auto obj = findObject(root, obj_name);
+    if (obj.first != rtcommand::FindObjectErrCode::NoError)
+    {
+        logObjectError("injectDblClickEvent", obj_name, obj.first);
+        return false;
+    }
+
+    if (!obj.second->isWidgetType() && !obj.second->isWindowType())
+    {
+        logObjectError("injectDblClickEvent", obj_name, rtcommand::FindObjectErrCode::WrongType);
+        return false;
+    }
+
+    //by default the click will by applied to the widget/window center...
+    QPoint pos;
+
+    //...but we can provide values
+    if (x >= 0 && y >= 0)
+        pos = QPoint(x, y);
+
+    loginf << "injecting mouse button '" << (int)button << "' double click at ("
+           << std::to_string(x) << "," << std::to_string(y) << ")";
+
+    if (obj.second->isWidgetType())
+    {
+        auto w = dynamic_cast<QWidget*>(obj.second);
+
+        //!for scroll areas we have to send the events to its viewport!
+        auto scroll_area = dynamic_cast<QAbstractScrollArea*>(w);
+        if (scroll_area)
+            w = scroll_area->viewport();
+
+        QTest::mouseDClick(w, button, Qt::NoModifier, pos, delay);
+    }
+    else //window
+    {
+        QTest::mouseDClick(dynamic_cast<QWindow*>(obj.second), button, Qt::NoModifier, pos, delay);
+    }
+
+    return true;
+}
+
+/**
+ * Injects a mouse wheel event into a widget, as a regular QWheelEvent sent
+ * through the widget's event path. 'delta' is in eighths of a degree, one
+ * wheel notch = 120, positive = scrolled away from the user.
+ */
+bool injectWheelEvent(QWidget* root,
+                      const QString& obj_name,
+                      int x,
+                      int y,
+                      int delta)
+{
+    auto obj = findObjectAs<QWidget>(root, obj_name);
+    if (obj.first != rtcommand::FindObjectErrCode::NoError)
+    {
+        logObjectError("injectWheelEvent", obj_name, obj.first);
+        return false;
+    }
+
+    QWidget* w = obj.second;
+
+    //!for scroll areas we have to send the events to its viewport!
+    auto scroll_area = dynamic_cast<QAbstractScrollArea*>(w);
+    if (scroll_area)
+        w = scroll_area->viewport();
+
+    QPoint pos = w->rect().center();
+
+    if (x >= 0 && y >= 0)
+        pos = QPoint(x, y);
+
+    loginf << "injecting mouse wheel delta " << delta
+           << " at (" << pos.x() << "," << pos.y() << ")";
+
+    // the AppImage builds against Qt 5.11 (Debian 10), which lacks the modern
+    // constructor; on newer Qt the old one is deprecated - use each where valid
+#if QT_VERSION >= QT_VERSION_CHECK(5, 12, 0)
+    QWheelEvent event(QPointF(pos), QPointF(w->mapToGlobal(pos)),
+                      QPoint(), QPoint(0, delta),
+                      Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase, false);
+#else
+    QWheelEvent event(QPointF(pos), QPointF(w->mapToGlobal(pos)),
+                      QPoint(), QPoint(0, delta), delta, Qt::Vertical,
+                      Qt::NoButton, Qt::NoModifier, Qt::NoScrollPhase);
+#endif
+
+    return QApplication::sendEvent(w, &event);
+}
+
+/**
+ * QTest::mouseMove only sets the cursor position for widgets (Qt 5), so a drag with a held
+ * button never reaches the widget: send the move event directly.
+ */
+static void sendMouseMove(QWidget* w, const QPoint& pos, Qt::MouseButton button, Qt::KeyboardModifiers modifiers)
+{
+    QMouseEvent event(QEvent::MouseMove, pos, w->mapToGlobal(pos), Qt::NoButton, button, modifiers);
+    QApplication::sendEvent(w, &event);
 }
 
 /**
@@ -298,7 +441,8 @@ bool injectRectEvent(QWidget* root,
                      int x1, 
                      int y1,
                      Qt::MouseButton button, 
-                     int delay)
+                     int delay,
+                     Qt::KeyboardModifiers modifiers)
 {
     auto obj = findObject(root, obj_name);
     if (obj.first != rtcommand::FindObjectErrCode::NoError)
@@ -331,16 +475,80 @@ bool injectRectEvent(QWidget* root,
             w = scroll_area->viewport();
 
         injectionMsg("widget");
-        QTest::mousePress(w, button, Qt::NoModifier, pos0, 0);
-        QTest::mouseMove(w, pos1, 0);
-        QTest::mouseRelease(w, button, Qt::NoModifier, pos1, 0);
+        QTest::mousePress(w, button, modifiers, pos0, 0);
+        sendMouseMove(w, pos1, button, modifiers);
+        QTest::mouseRelease(w, button, modifiers, pos1, 0);
     }
     else //window
     {
         injectionMsg("window");
-        QTest::mousePress(dynamic_cast<QWindow*>(obj.second), button, Qt::NoModifier, pos0, 0);
+        QTest::mousePress(dynamic_cast<QWindow*>(obj.second), button, modifiers, pos0, 0);
         QTest::mouseMove(dynamic_cast<QWindow*>(obj.second), pos1, 0);
-        QTest::mouseRelease(dynamic_cast<QWindow*>(obj.second), button, Qt::NoModifier, pos1, 0);
+        QTest::mouseRelease(dynamic_cast<QWindow*>(obj.second), button, modifiers, pos1, 0);
+    }
+
+    return true;
+}
+
+/**
+ * Injects a single mouse press, move or release, e.g. a press and a move without a release,
+ * so that a rubber band of a drag stays on screen.
+ */
+bool injectMouseStepEvent(QWidget* root,
+                          const QString& obj_name,
+                          QEvent::Type type,
+                          int x,
+                          int y,
+                          Qt::MouseButton button,
+                          Qt::KeyboardModifiers modifiers)
+{
+    auto obj = findObject(root, obj_name);
+    if (obj.first != rtcommand::FindObjectErrCode::NoError)
+    {
+        logObjectError("injectMouseStepEvent", obj_name, obj.first);
+        return false;
+    }
+
+    if (!obj.second->isWidgetType() && !obj.second->isWindowType())
+    {
+        logObjectError("injectMouseStepEvent", obj_name, rtcommand::FindObjectErrCode::WrongType);
+        return false;
+    }
+
+    QPoint pos(x, y);
+
+    loginf << "injecting mouse event type " << (int)type << " button " << (int)button << " at (" << x << "," << y << ")";
+
+    if (obj.second->isWidgetType())
+    {
+        auto w = dynamic_cast<QWidget*>(obj.second);
+
+        //!for scroll areas we have to send the events to its viewport!
+        auto scroll_area = dynamic_cast<QAbstractScrollArea*>(w);
+        if (scroll_area)
+            w = scroll_area->viewport();
+
+        if (type == QEvent::MouseButtonPress)
+            QTest::mousePress(w, button, modifiers, pos, 0);
+        else if (type == QEvent::MouseMove)
+            sendMouseMove(w, pos, button, modifiers);
+        else if (type == QEvent::MouseButtonRelease)
+            QTest::mouseRelease(w, button, modifiers, pos, 0);
+        else
+            return false;
+    }
+    else //window
+    {
+        auto win = dynamic_cast<QWindow*>(obj.second);
+
+        if (type == QEvent::MouseButtonPress)
+            QTest::mousePress(win, button, modifiers, pos, 0);
+        else if (type == QEvent::MouseMove)
+            QTest::mouseMove(win, pos, 0);
+        else if (type == QEvent::MouseButtonRelease)
+            QTest::mouseRelease(win, button, modifiers, pos, 0);
+        else
+            return false;
     }
 
     return true;
@@ -662,6 +870,116 @@ bool injectMenuEvent(QWidget* root,
 }
 
 /**
+ * Opens a menu bar menu or a path of submenus of a menu without triggering an action,
+ * e.g. for a screenshot of an open menu. Each path entry must be a menu.
+ */
+bool injectOpenMenuEvent(QWidget* root,
+                         const QString& obj_name,
+                         const QStringList& path_to_menu)
+{
+    auto obj = findObject(root, obj_name);
+    if (obj.first != rtcommand::FindObjectErrCode::NoError)
+    {
+        logObjectError("injectOpenMenuEvent", obj_name, obj.first);
+        return false;
+    }
+
+    QWidget* current = dynamic_cast<QWidget*>(obj.second);
+    if (!dynamic_cast<QMenuBar*>(current) && !dynamic_cast<QMenu*>(current))
+    {
+        logObjectError("injectOpenMenuEvent", obj_name, rtcommand::FindObjectErrCode::WrongType);
+        return false;
+    }
+
+    for (const QString& part : path_to_menu)
+    {
+        QString p = part.trimmed();
+
+        QAction* action = nullptr;
+        for (auto a : current->actions())
+        {
+            if (a && !a->isSeparator() && a->menu() && a->isVisible() && normalizedMenuName(a->text()) == p)
+            {
+                action = a;
+                break;
+            }
+        }
+
+        if (!action)
+        {
+            loginf << "menu '" << p.toStdString() << "' not found";
+            return false;
+        }
+
+        //setActiveAction opens the menu, its first entry stays unselected
+        if (auto menu_bar = dynamic_cast<QMenuBar*>(current))
+        {
+            menu_bar->setActiveAction(action);
+        }
+        else
+        {
+            dynamic_cast<QMenu*>(current)->setActiveAction(action);
+        }
+
+        current = action->menu();
+        QApplication::processEvents();
+    }
+
+    return true;
+}
+
+/**
+ * Resolves a tree item via a path of display texts (or item names, see ItemNameRole),
+ * expanding the parents on the way and scrolling to the item. Returns an invalid
+ * index if a part is not found.
+ */
+static QModelIndex resolveTreeItem(QTreeView* tree, const QStringList& path_to_item)
+{
+    QAbstractItemModel* model = tree->model();
+
+    if (!model || path_to_item.empty())
+        return QModelIndex();
+
+    //traverse the model along the given display text path
+    QModelIndex current; //invalid index = root
+    for (const QString& p : path_to_item)
+    {
+        QString part = p.trimmed();
+
+        QModelIndex found;
+        int nrows = model->rowCount(current);
+        for (int role : { (int)Qt::DisplayRole, ItemNameRole })
+        {
+            for (int r = 0; r < nrows && !found.isValid(); ++r)
+            {
+                QModelIndex idx = model->index(r, 0, current);
+                if (idx.isValid() && idx.data(role).toString().trimmed() == part)
+                    found = idx;
+            }
+
+            if (found.isValid())
+                break;
+        }
+
+        if (!found.isValid())
+        {
+            loginf << "item text '" << part.toStdString() << "' not found";
+            return QModelIndex();
+        }
+
+        current = found;
+
+        //expand parents so the final item obtains a valid visual rect
+        if (model->hasChildren(current))
+            tree->expand(current);
+    }
+
+    tree->scrollTo(current);
+
+    return current;
+}
+
+/**
  * Selects an item of a tree view via a path of display texts, by expanding
  * the parent items and injecting a click event onto the item.
  */
@@ -678,43 +996,10 @@ bool injectTreeViewEvent(QWidget* root,
     }
 
     QTreeView* tree = obj.second;
-    QAbstractItemModel* model = tree->model();
 
-    if (!model || path_to_item.empty())
+    QModelIndex current = resolveTreeItem(tree, path_to_item);
+    if (!current.isValid())
         return false;
-
-    //traverse the model along the given display text path
-    QModelIndex current; //invalid index = root
-    for (const QString& p : path_to_item)
-    {
-        QString part = p.trimmed();
-
-        QModelIndex found;
-        int nrows = model->rowCount(current);
-        for (int r = 0; r < nrows; ++r)
-        {
-            QModelIndex idx = model->index(r, 0, current);
-            if (idx.isValid() && idx.data(Qt::DisplayRole).toString().trimmed() == part)
-            {
-                found = idx;
-                break;
-            }
-        }
-
-        if (!found.isValid())
-        {
-            loginf << "item text '" << part.toStdString() << "' not found";
-            return false;
-        }
-
-        current = found;
-
-        //expand parents so the final item obtains a valid visual rect
-        if (model->hasChildren(current))
-            tree->expand(current);
-    }
-
-    tree->scrollTo(current);
 
     QRect r = tree->visualRect(current);
     if (!r.isValid())
@@ -725,14 +1010,50 @@ bool injectTreeViewEvent(QWidget* root,
 }
 
 /**
+ * Clicks the check box of a tree item (path of display texts), for delegates which draw it
+ * at the start of the item, one font height wide (e.g. the view layer trees). The click
+ * toggles the check state.
+ */
+bool injectTreeItemCheckClickEvent(QWidget* root,
+                                   const QString& obj_name,
+                                   const QStringList& path_to_item,
+                                   int delay)
+{
+    auto obj = findObjectAs<QTreeView>(root, obj_name);
+    if (obj.first != rtcommand::FindObjectErrCode::NoError)
+    {
+        logObjectError("injectTreeItemCheckClickEvent", obj_name, obj.first);
+        return false;
+    }
+
+    QTreeView* tree = obj.second;
+
+    QModelIndex current = resolveTreeItem(tree, path_to_item);
+    if (!current.isValid())
+        return false;
+
+    QRect r = tree->visualRect(current);
+    if (!r.isValid())
+        return false;
+
+    const int x = r.left() + QFontMetrics(QApplication::font()).height() / 2;
+
+    return injectClickEvent(tree, "", x, r.center().y(), Qt::LeftButton, delay);
+}
+
+/**
  * Posts a context menu event to the given widget. For item views the event is
- * posted at the current item, otherwise at the widget center.
+ * posted at the given item (path of display texts, tree views only), else at the
+ * current item, otherwise at the widget center. The item path avoids a click,
+ * which a delegate may consume (e.g. a visibility toggle) without making the
+ * item current.
  * The event is posted (not sent), so this returns before a context menu shown
  * via QMenu::exec() blocks - the resulting popup menu can then be driven via
  * injectPopupMenuEvent.
  */
 bool injectContextMenuEvent(QWidget* root,
                             const QString& obj_name,
+                            const QStringList& path_to_item,
                             int delay)
 {
     auto obj = findObjectAs<QWidget>(root, obj_name);
@@ -747,8 +1068,26 @@ bool injectContextMenuEvent(QWidget* root,
 
     if (auto* view = dynamic_cast<QAbstractItemView*>(target))
     {
-        //for item views: target the current item inside the viewport
-        QModelIndex idx = view->currentIndex();
+        QModelIndex idx;
+
+        if (!path_to_item.empty())
+        {
+            auto* tree = dynamic_cast<QTreeView*>(view);
+            if (!tree)
+            {
+                loginf << "item path given for a non-tree view";
+                return false;
+            }
+
+            idx = resolveTreeItem(tree, path_to_item);
+            if (!idx.isValid())
+                return false;
+
+            view->setCurrentIndex(idx);
+        }
+        else
+            idx = view->currentIndex(); //for item views: target the current item inside the viewport
+
         if (idx.isValid())
         {
             view->scrollTo(idx);
@@ -1281,11 +1620,21 @@ bool injectCheckBoxEvent(QWidget* root,
     if (obj.second->isChecked() == on)
         return true;
 
-    //toggle check state
-    if (!injectClickEvent(obj.second, "", 2, 2, Qt::LeftButton, delay))
+    //toggle check state with a click on the indicator, as a user does. the
+    //indicator position depends on the style (e.g. not at the corner on Windows)
+    QStyleOptionButton opt;
+    opt.initFrom(obj.second);
+    opt.text     = obj.second->text();
+    opt.icon     = obj.second->icon();
+    opt.iconSize = obj.second->iconSize();
+
+    QRect indicator = obj.second->style()->subElementRect(QStyle::SE_CheckBoxIndicator, &opt, obj.second);
+    QPoint click_pos = indicator.isValid() ? indicator.center() : QPoint(2, 2);
+
+    if (!injectClickEvent(obj.second, "", click_pos.x(), click_pos.y(), Qt::LeftButton, delay))
         return false;
 
-    //style sheets may exclude the corner from the clickable area - retry at
+    //style sheets may exclude the indicator from the clickable area - retry at
     //the widget center
     if (obj.second->isChecked() != on &&
         !injectClickEvent(obj.second, "", -1, -1, Qt::LeftButton, delay))

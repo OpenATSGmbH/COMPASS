@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include <json.hpp>
 
 #include <QWidget>
@@ -42,7 +44,7 @@ namespace context
  * The editable field defaults to the value from whichever context has
  * the later "modified" timestamp.
  */
-class FieldMergeWidget : public QWidget
+class COMPASS_CORE_API FieldMergeWidget : public QWidget
 {
     Q_OBJECT
 

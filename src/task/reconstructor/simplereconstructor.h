@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include "reconstructorbase.h"
 #include "global.h"
 #include "reconstructortarget.h"
@@ -39,7 +41,7 @@ class SimpleReconstructorSettings : public ReconstructorBaseSettings
 
 class SimpleReconstructorWidget;
 
-class SimpleReconstructor : public ReconstructorBase
+class COMPASS_TASK_API SimpleReconstructor : public ReconstructorBase
 {
     Q_OBJECT
 
@@ -61,6 +63,7 @@ class SimpleReconstructor : public ReconstructorBase
     virtual const SimpleReconstructorSettings& settings() const override;
 
     SimpleReconstructorWidget* widget(); // ownage by caller
+    virtual QWidget* createWidget() override; // ownage by caller
 
     virtual void updateWidgets() override;
 

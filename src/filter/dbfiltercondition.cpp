@@ -128,20 +128,11 @@ FilterClause DBFilterCondition::sqlFor(
         variable_suffix = ")";
     }
 
-    std::string db_expression = resolver.variableDBExpression(
-        dbcontent_name, variable_name, variable_dbcontent_name);
-
-    std::string db_item_str;
-
-    if (db_expression.size())
-        db_item_str = resolver.variableDBColumnName(
-            dbcontent_name, variable_name, variable_dbcontent_name);
-    else
-        db_item_str = resolver.variableDBTableName(
-                          dbcontent_name, variable_name, variable_dbcontent_name)
-                      + "."
-                      + resolver.variableDBColumnName(
-                          dbcontent_name, variable_name, variable_dbcontent_name);
+    std::string db_item_str = resolver.variableDBTableName(
+                                  dbcontent_name, variable_name, variable_dbcontent_name)
+                              + "."
+                              + resolver.variableDBColumnName(
+                                  dbcontent_name, variable_name, variable_dbcontent_name);
 
     string val_str;
     bool null_contained;
@@ -192,9 +183,10 @@ FilterClause DBFilterCondition::sqlFor(
 
     clause.sql = ss.str();
 
-    // a DB-expression (computed column) needs its source variable read; a plain column is
-    // read directly, so only expressions contribute a required var (matches the old path)
-    if (db_expression.size())
+    // a plain column is read directly. A Report Variable lives in a joined Report Table and the
+    // join is generated from the read set (SQLGenerator::getReportTableJoinClause), so it is
+    // a required var
+    if (resolver.reportVariableExistsIn(variable_name, variable_dbcontent_name, dbcontent_name))
         resolver.addVariableToReadSet(dbcontent_name, variable_name, variable_dbcontent_name,
                                       clause.required_vars);
 
@@ -220,20 +212,11 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
 
     traced_assert(hasVariable(dbcontent_name));
 
-    std::string db_expression = var_resolver_.variableDBExpression(
-        dbcontent_name, variable_name_, variable_dbcontent_name_);
-
-    std::string db_item_str;
-
-    if (db_expression.size())
-        db_item_str = var_resolver_.variableDBColumnName(
-            dbcontent_name, variable_name_, variable_dbcontent_name_);
-    else
-        db_item_str = var_resolver_.variableDBTableName(
-                          dbcontent_name, variable_name_, variable_dbcontent_name_)
-                      + "."
-                      + var_resolver_.variableDBColumnName(
-                          dbcontent_name, variable_name_, variable_dbcontent_name_);
+    std::string db_item_str = var_resolver_.variableDBTableName(
+                                  dbcontent_name, variable_name_, variable_dbcontent_name_)
+                              + "."
+                              + var_resolver_.variableDBColumnName(
+                                  dbcontent_name, variable_name_, variable_dbcontent_name_);
 
     if (!first)
     {
@@ -285,15 +268,6 @@ std::string DBFilterCondition::getConditionString(const std::string& dbcontent_n
     if (ss.str().size())
         loginf << instanceName() << ": '" << ss.str()
                << "'";
-
-    if (db_expression.size()
-        && !var_resolver_.readSetHasVariable(dbcontent_name, variable_name_,
-                                             variable_dbcontent_name_, read_set))
-    {
-        loginf << "db expression, adding var " << variable_name_ << " to read set";
-        var_resolver_.addVariableToReadSet(dbcontent_name, variable_name_,
-                                           variable_dbcontent_name_, read_set);
-    }
 
     return ss.str();
 }
@@ -359,6 +333,11 @@ bool DBFilterCondition::variableResolvable(
             return false;
 
         return resolver.metaVariableExistsIn(variable_name, dbcontent_name);
+    }
+    else if (resolver.reportVariableExistsIn(variable_name, variable_dbcontent_name, dbcontent_name))
+    {
+        //a Report Variable is joined onto the host data content, so the names differ
+        return true;
     }
     else
     {
@@ -440,8 +419,21 @@ bool DBFilterCondition::checkValueInvalid(const std::string& new_value)
     }
     else
     {
-        traced_assert(hasVariable(variable_dbcontent_name_));
-        dbcontent_names.push_back(variable_dbcontent_name_);
+        // a Report Variable is named by its report, its values are checked for its host data contents
+        dbcontent_names = var_resolver_.reportVariableDBContentNames(variable_name_, variable_dbcontent_name_);
+
+        if (dbcontent_names.empty())
+        {
+            if (!hasVariable(variable_dbcontent_name_))
+            {
+                // e.g. a Report Variable of a report that is not in the database
+                logwrn << instanceName() << ": variable '" << variable_name_ << "' of '"
+                       << variable_dbcontent_name_ << "' not available, value invalid";
+                return true;
+            }
+
+            dbcontent_names.push_back(variable_dbcontent_name_);
+        }
     }
 
     bool invalid = true;

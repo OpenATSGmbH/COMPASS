@@ -1,0 +1,90 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include "requirement/latency/adsblatencyconfig.h"
+#include "requirement/latency/adsblatencyconfigwidget.h"
+#include "requirement/latency/adsblatency.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
+
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
+
+#include "comparisontype.h"
+
+using namespace std;
+
+namespace EvaluationRequirement
+{
+
+ADSBLatencyConfig::ADSBLatencyConfig(
+        nlohmann::json& config,
+        Group* parent)
+    : ProbabilityBaseConfig(config, parent)
+{
+    registerParameter("max_value_s", &max_value_s_, 0.6f);
+}
+
+ADSBLatencyConfig::~ADSBLatencyConfig()
+{
+}
+
+std::shared_ptr<Base> ADSBLatencyConfig::createRequirement()
+{
+    shared_ptr<ADSBLatency> req = make_shared<ADSBLatency>(
+                name_, short_name_, group_.name(), prob_, prob_check_type_, calculator_,
+                max_value_s_);
+
+    return req;
+}
+
+float ADSBLatencyConfig::maxValue() const
+{
+    return max_value_s_;
+}
+
+void ADSBLatencyConfig::maxValue(float value)
+{
+    max_value_s_ = value;
+}
+
+BaseConfigWidget* ADSBLatencyConfig::createWidget()
+{
+    return new ADSBLatencyConfigWidget(*this);
+}
+
+void ADSBLatencyConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
+{
+    BaseConfig::addToReport(report);
+
+    auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
+
+    auto& table = section.getTable("req_table");
+
+    table.addRow({"Probability [%]", "Probability of acceptable latency",
+                  probabilityPercent(prob_)});
+    table.addRow({"Probability Check Type", "",
+                  comparisonTypeString(prob_check_type_)});
+
+    table.addRow({"Maximum Value [s]",
+                  "Maximum acceptable latency (Time of Report Transmission minus"
+                  " Time of Message Reception for Position)",
+                  max_value_s_});
+}
+
+}

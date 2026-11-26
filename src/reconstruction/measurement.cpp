@@ -590,10 +590,10 @@ bool Measurement::setFromCovMat(const Eigen::MatrixXd& C, unsigned char flags)
 
 /**
 */
-std::pair<unsigned long, boost::posix_time::ptime> Measurement::uniqueID() const
+std::pair<std::uint64_t, boost::posix_time::ptime> Measurement::uniqueID() const
 {
     traced_assert(source_id.has_value());
-    return std::pair<unsigned long, boost::posix_time::ptime>(source_id.value(), t);
+    return std::pair<std::uint64_t, boost::posix_time::ptime>(source_id.value(), t);
 }
 
 /**
@@ -686,7 +686,7 @@ bool Measurement::fromJSON(const nlohmann::json& j)
     }
 
     if (j.contains(FieldSourceID))
-        source_id = j[ FieldSourceID ].get<unsigned long>();
+        source_id = j[ FieldSourceID ].get<std::uint64_t>();
 
     t = Utils::Time::fromString(j[ FieldTS ].get<std::string>());
 

@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/acrossconfig.h"
-#include "eval/requirement/position/acrossconfigwidget.h"
-#include "eval/requirement/position/across.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/positionbase.h"
+#include "requirement/position/acrossconfig.h"
+#include "requirement/position/acrossconfigwidget.h"
+#include "requirement/position/across.h"
+#include "requirement/group.h"
+#include "requirement/base/positionbase.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 using namespace std;
 
@@ -68,19 +68,19 @@ BaseConfigWidget* PositionAcrossConfig::createWidget()
 
 void PositionAcrossConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
+    PositionBaseProbConfig::addToReport(report);
+
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
-    auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& table = section.getTable("req_table");
 
-    table.addRow({"Probability [1]", "Probability of acceptable across-track position",
-                  roundf(prob_ * 10000.0) / 100.0});
+    table.addRow({"Probability [%]", "Probability of acceptable across-track position",
+                  probabilityPercent(prob_)});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
     table.addRow({"Maximum Absolute Value [m]",
                   "Maximum absolute across-track position difference between the test and the reference",
-                  roundf(prob_ * 10000.0) / 100.0});
-
-    PositionBaseProbConfig::addToReport(report);
+                  max_abs_value_});
 }
 
 }

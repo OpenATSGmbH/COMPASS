@@ -27,6 +27,7 @@ The categories COMPASS supports (`data/jasterix_definitions/categories/categorie
 | 020 | MLAT target reports | one report per MLAT update |
 | 021 | **ADS-B target reports** | air-derived position/velocity from Mode S ES |
 | 023 | CNS/ATM ground station status | ADS-B/VDL ground station health |
+| 025 | CNS/ATM ground system status | service/system status of a ground system (e.g. MLAT, ADS-B) - imported as status-only DBContent |
 | 034 | **Monoradar service messages** (sector crossings, north markers, status) | the sibling of 048 |
 | 048 | **Monoradar target reports** (PSR/SSR/Mode S) | one plot per radar return - the workhorse |
 | 062 | **System track messages** (multi-sensor tracker output, e.g. ARTAS) | smoothed tracks fused from many sensors |
@@ -300,6 +301,27 @@ Code in `src/task/import/asterix/` and `src/import/asterix/`:
 4. `ASTERIXPostProcessJob` (`asterixpostprocessjob.h`) fixes ToD wrap/offset, applies SAC/SIC overrides, computes derived fields, then hands buffers off for DuckDB insertion.
 5. The pipeline runs in parallel via JobManager + TBB, with the `num_packets_overload` / `max_packets_in_processing` knobs in `task_import_asterix.json` keeping memory bounded for large files or sustained live feeds.
 
+**Live simulation (network replay)**: the network import can be fed from IOSS-framed
+recordings instead of real sensors, without leaving the production code path.
+`ASTERIXNetworkReplaySender` (`asterixnetworkreplaysender.cpp`) walks the IOSS frames of a
+recording, paces by the frame header times (speed factor supported) and sends each frame's
+content as one UDP datagram to a configured network line endpoint of the active context.
+Multiple recordings are replayed simultaneously (one sender each, sharing the earliest
+first frame time as common pacing base so their relative timing is kept) -
+from the socket onward everything (UDP receivers, decode batching, live insert, display) is
+the normal live path. The context's network lines are used unchanged: multicast groups are
+sent host-local (multicast loopback enabled, hops 0, so the replayed recording never reaches
+a real network), non-multicast listen addresses (e.g. "0.0.0.0") are redirected to
+127.0.0.1. Limitation: a line with a `sender_ip` filter drops the replayed data (source
+address cannot be spoofed) - a warning is logged. Started via
+`import_asterix_network --replay_file '<file1>;<file2>'` (plus
+`replay_speed`, `replay_line`, `replay_stop_at_end`; also available as
+`--import_asterix_network_replay_*` command line options). Record Time of Day values are
+aligned to the current wall clock via the existing ToD override: unless `time_offset` is
+given explicitly, the offset is computed as current UTC time minus the first frame time.
+Note that faster-than-real-time replay pushes shifted ToD values into the future beyond the
+network import's +3 min check, so speeds > 1 should be paired with `ignore_future_ts`.
+
 The full chain is therefore:
 
 **ASTERIX bytes -> jASTERIX (definitions) -> JSON -> ASTERIXJSONParser (mappings) -> Buffer columns -> DBContent in DuckDB**
@@ -307,6 +329,21 @@ The full chain is therefore:
 with categories chosen at the top of that chain determining what kind of surveillance data ends up in which DBContent table.
 
 What happens *after* the buffers reach DuckDB - the DBContent / Variable / MetaVariable model, the `db_content*.json` schema, ToD wrap and SAC/SIC handling, how loaded data feeds views/filters/eval/reconstruction - is documented in [readme_dbcontent.md](../../db/dbcontent/readme_dbcontent.md).
+
+### Mapping coverage
+
+Everything jASTERIX decodes is mapped into DBContent variables - coverage is complete, not a curated subset. Audited 2026-08-27 with [`scripts/check_asterix_mapping_coverage.py`](../../../scripts/check_asterix_mapping_coverage.py), which reconstructs the flat JSON leaf-key space from the definition files (default edition + default REF edition per category, ~1300 leaf fields across the 14 imported categories) and compares it against the `JSONDataMapping` json_keys:
+
+- **Data item level**: every item of every default edition has at least one active mapping, REFs included.
+- **Leaf field level**: zero unmapped decoded fields. The audit found exactly one gap - the legacy `I020/500.SDH.sigma-gh` (Standard Deviation of Geometric Height) was decoded but only its `REF.PA.SDH` variant was mapped - closed same day by adding the fallback mapping to `Geometric Height StdDev`.
+- Spare bits and FX/extension markers carry no information and are excluded.
+- A small number of mapped keys (~14) lie *outside* the default-edition key space: deliberate multi-edition fallback mappings (e.g. deprecated `I021/030 Time of Day`, DO-260 `I021/090.PA` vs. DO-260A quality indicators, pre-1.21 CAT062 item shapes). They fire only when data in that shape arrives.
+
+Maintenance rules:
+
+- Adding a new edition, REF, or category, or changing mappings: re-run the checker; it exits non-zero when a decoded field has no mapping.
+- The checker audits the **default** editions from `categories.json`. When a category is switched to a non-default edition in the import configuration, the mapping set for that edition is not separately verified - extend the checker if that becomes a recurring case.
+- The two inactive placeholder mappings in `task_import_asterix_cat062.json` (`artas_md5`, `510.Composed Track Number.extend`, empty variable name, `active: false`) are intentional and ignored by the checker.
 
 ## Import result report
 
@@ -333,6 +370,7 @@ The original EUROCONTROL specification PDFs are kept locally under `~/Nextcloud/
 | 010 | 1.1 (March 2007) | `010/cat010-asterix-monoradar-surface-movement-data-part-7.pdf` |
 | 020 | 1.8 (December 2010) | `020/cat020-asterix-p14-v1.8-20101201.pdf` |
 | 020 REF | 1.3 (April 2010) | `020/asterix-cat020-appendix-a-coding-rule-for-reserved-expansion-field-part14-v1.2-042010.pdf` |
+| 025 | 1.5 (July 2021) | `025/eurocontrol-asterix-cat025-pt26-ed15.pdf` (1.1 in `025/20151015-asterix-cat025-part26-v1.1.pdf`) |
 | 021 | 2.6 | `021/asterix-adsbtr-cat021-part12-v2-6.pdf` |
 | 048 | 1.28 | `048/eurocontrol-cat048-pt4-ed128.pdf` |
 | 062 | 1.21 | `062/asterix-cat062-system-track-data-p9-ed1-21.pdf` |
@@ -349,4 +387,4 @@ In-project ASTERIX-related locations:
 | `~/workspace/jasterix/` | jASTERIX library source (sibling repo), holding the canonical definition files under `definitions/` and the spec PDFs at the repo root. Documented in [readme_jasterix.md](/home/sk/workspace/jasterix/readme_jasterix.md) (jasterix skill) |
 | `data/jasterix_definitions/` | The byte-level decoding rules shipped *with* COMPASS - a copy of `~/workspace/jasterix/definitions/`, kept in sync. This is what jASTERIX is constructed against at runtime; the definition file format is documented in [readme_jasterix.md](/home/sk/workspace/jasterix/readme_jasterix.md) |
 | `conf/default/` | The COMPASS-side mappings: `task_import_asterix.json` (master config: framing, chunk sizes, packet overload thresholds, geo/time/Mode-C filters, SAC/SIC/ToD overrides, plus one `ASTERIXCategoryConfig` per category selecting the active edition / REF / SPF), `task_import_asterix_cat<NNN>.json` (one `ASTERIXJSONParser` per category with the JSON-to-`DBContent` `JSONDataMapping` entries), and `db_content.json` + `db_content_cat<NNN>.json` (destination DBContent table definitions) |
-| [`.claude/skills/adsb_accuracy/SKILL.md`](../../../.claude/skills/adsb_accuracy/SKILL.md) | In-depth notes on ADS-B accuracy/integrity indicators: NUCp/NACp/NIC/NACv/SIL/SDA/GVA per MOPS version, the I021/090 → CAT021 DBContent variable mapping, conversion of QI values to position σ in COMPASS, and how `ADSBAccuracyEstimator` consumes them in the reconstructor. Read this whenever the Layer 1 / Layer 4 CAT021 quality fields above need actual numbers or COMPASS-side semantics |
+| [`readme_adsb_accuracy.md`](../../../experimental_src/plugins/probimm/readme_adsb_accuracy.md) | In-depth notes on ADS-B accuracy/integrity indicators: NUCp/NACp/NIC/NACv/SIL/SDA/GVA per MOPS version, the I021/090 → CAT021 DBContent variable mapping, conversion of QI values to position σ in COMPASS, and how `ADSBAccuracyEstimator` consumes them in the reconstructor. Read this whenever the Layer 1 / Layer 4 CAT021 quality fields above need actual numbers or COMPASS-side semantics |

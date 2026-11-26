@@ -17,9 +17,10 @@
 
 #pragma once
 
-#include "eval/results/base/single.h"
-#include "eval/results/base/joined.h"
-#include "eval/results/base/probabilitybase.h"
+#include "results/base/single.h"
+#include "results/base/joined.h"
+#include "results/base/probabilitybase.h"
+#include "results/base/detailcode.h"
 
 #include "valueaccumulator.h"
 
@@ -44,6 +45,15 @@ public:
                  unsigned int num_ref_inaccurate,
                  unsigned int num_passed,
                  unsigned int num_failed);
+    virtual ~PositionBase() = default;
+
+    /// The names of the overview figures (common_getCustomAnnotationDefinitions()).
+    struct OverviewLabels
+    {
+        std::string value_name = "Position Error";
+        std::string unit       = "m";
+        bool        update_check = true; // false: a statistic of all updates is checked, no single update
+    };
 
     unsigned int numPos() const;
     unsigned int numNoRef() const;
@@ -56,6 +66,8 @@ public:
     const ValueAccumulator& accumulator() const;
 
 protected:
+    virtual OverviewLabels overviewLabels() const { return OverviewLabels(); }
+
     unsigned int num_pos_         {0};
     unsigned int num_no_ref_      {0};
     unsigned int num_pos_outside_ {0};
@@ -86,13 +98,6 @@ public:
         Value,          //float
         CheckPassed,    //bool
         PosInside,      //bool
-        NumPos,         //unsigned int
-        NumNoRef,       //unsigned int
-        NumInside,      //unsigned int
-        NumOutside,     //unsigned int
-        NumRefInaccurate,     //unsigned int
-        NumCheckPassed, //unsigned int
-        NumCheckFailed, //unsigned int
         PositionBaseMax
     };
 
@@ -101,6 +106,20 @@ protected:
     unsigned int common_numIssues() const;
     bool common_detailIsOk(const EvaluationDetail& detail,
                            const std::shared_ptr<EvaluationRequirement::Base>& requirement) const;
+
+    /// the value column of the report table, named by the result type
+    ReportTableColumn common_reportTableValueColumn(const std::string& result_type) const;
+    void common_addReportTableColumns(ReportTableDefinition& def,
+                                      const std::string& result_type) const;
+    /// texts of the detail code bits of the result type (DetailCode::addTypeText())
+    virtual void addDetailCodeTexts(ReportTableDefinition& def) const {}
+    void common_fillReportTableRow(ReportTableRows& rows,
+                                   const EvaluationDetail& detail,
+                                   const std::string& result_type) const;
+    void common_fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                             const Buffer& buffer,
+                                             unsigned int row,
+                                             const std::string& result_type) const;
 
     FeatureDefinitions common_getCustomAnnotationDefinitions(const Single& single,
                                                              const EvaluationCalculator& calculator) const;
@@ -138,10 +157,20 @@ protected:
     unsigned int numIssues() const override final;
 
     bool detailIsOk(const EvaluationDetail& detail) const override final;
-    void addAnnotationForDetail(nlohmann::json& annotations_json, 
-                                const EvaluationDetail& detail, 
+    void addAnnotationForDetail(nlohmann::json& annotations_json,
+                                const EvaluationDetail& detail,
                                 TargetAnnotationType type,
                                 bool is_ok) const override final;
+
+    void addReportTableColumns(ReportTableDefinition& def) const override final;
+    void fillReportTableRow(ReportTableRows& rows,
+                            const EvaluationDetail& detail,
+                            const EvaluationDetail* parent_detail,
+                            const EvaluationDetail* prev_detail) const override final;
+    void fillDetailFromReportTableRow(EvaluationDetail& detail,
+                            const Buffer& buffer,
+                            unsigned int row,
+                            const EvaluationDetail* prev_detail) const override final;
 
     virtual FeatureDefinitions getCustomAnnotationDefinitions() const override;
 };
@@ -176,10 +205,20 @@ protected:
     virtual unsigned int numIssues() const override;
 
     virtual bool detailIsOk(const EvaluationDetail& detail) const override;
-    virtual void addAnnotationForDetail(nlohmann::json& annotations_json, 
-                                        const EvaluationDetail& detail, 
+    virtual void addAnnotationForDetail(nlohmann::json& annotations_json,
+                                        const EvaluationDetail& detail,
                                         TargetAnnotationType type,
                                         bool is_ok) const override;
+
+    void addReportTableColumns(ReportTableDefinition& def) const override final;
+    void fillReportTableRow(ReportTableRows& rows,
+                            const EvaluationDetail& detail,
+                            const EvaluationDetail* parent_detail,
+                            const EvaluationDetail* prev_detail) const override final;
+    void fillDetailFromReportTableRow(EvaluationDetail& detail,
+                            const Buffer& buffer,
+                            unsigned int row,
+                            const EvaluationDetail* prev_detail) const override final;
 
     virtual FeatureDefinitions getCustomAnnotationDefinitions() const override;
 };

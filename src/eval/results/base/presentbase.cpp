@@ -15,8 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/base/presentbase.h"
-#include "eval/results/base/featuredefinitions.h"
+#include "results/base/presentbase.h"
+#include "results/base/detailcode.h"
+#include "results/base/featuredefinitions.h"
 
 namespace EvaluationRequirementResult
 {
@@ -184,31 +185,6 @@ std::vector<Single::TargetInfo> SinglePresentBase::targetInfos() const
 
 /**
 */
-std::vector<std::string> SinglePresentBase::detailHeaders() const
-{
-    return { "ToD", "Ref", "Ok", "#Up", "#NoRef", "#PosInside", "#PosOutside", no_ref_value_name_, "#Present", "#Missing", "Comment" };
-}
-
-/**
-*/
-nlohmann::json::array_t SinglePresentBase::detailValues(const EvaluationDetail& detail,
-                                                        const EvaluationDetail* parent_detail) const
-{
-    return { Utils::Time::toString(detail.timestamp()),
-             detail.getValue(DetailKey::RefExists).toBool(),
-            !detail.getValue(DetailKey::IsNotOk).toBool(),
-             detail.getValue(DetailKey::NumUpdates).toUInt(),
-             detail.getValue(DetailKey::NumNoRef).toUInt(),
-             detail.getValue(DetailKey::NumInside).toUInt(),
-             detail.getValue(DetailKey::NumOutside).toUInt(),
-             detail.getValue(DetailKey::NumNoRefVal).toUInt(),
-             detail.getValue(DetailKey::NumPresent).toUInt(),
-             detail.getValue(DetailKey::NumMissing).toUInt(),
-             detail.comments().generalComment() };
-}
-
-/**
-*/
 bool SinglePresentBase::detailIsOk(const EvaluationDetail& detail) const
 {
     auto is_not_ok = detail.getValueAs<bool>(DetailKey::IsNotOk);
@@ -339,12 +315,57 @@ FeatureDefinitions JoinedPresentBase::getCustomAnnotationDefinitions() const
 {
     FeatureDefinitions defs;
 
-    defs.addDefinition<FeatureDefinitionBinaryGrid>(requirement()->name(), calculator_, "Passed")
+    defs.addDefinition<FeatureDefinitionIssueCountGrid>(requirement()->name(), calculator_, "Issues")
         .addDataSeries(SinglePresentBase::DetailKey::IsNotOk, 
                        GridAddDetailMode::AddEvtRefPosition, 
                        true);
 
     return defs;
+}
+
+/**
+ */
+void SinglePresentBase::addReportTableColumns(ReportTableDefinition& def) const
+{
+    def.addColumn("ref_exists", PropertyDataType::BOOL, "Reference Exists",
+                  "Reference data exists at the time of the test report");
+    def.addColumn("ok", PropertyDataType::BOOL, "Ok",
+                  "Test report value assessed as correct");
+    def.addColumn("pos_inside", PropertyDataType::BOOL, "Position Inside",
+                  "Test position inside the sector layer");
+
+    DetailCode::Value::addTexts(def);
+}
+
+/**
+ */
+void SinglePresentBase::fillReportTableRow(ReportTableRows& rows,
+                                  const EvaluationDetail& detail,
+                                  const EvaluationDetail* parent_detail,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setReportTableValue<bool>(rows, "ref_exists", detail, DetailKey::RefExists);
+    {
+        auto not_ok = detail.getValueAs<bool>(DetailKey::IsNotOk);
+        if (not_ok.has_value())
+            rows.set<bool>("ok", !not_ok.value());
+    }
+    setReportTableValue<bool>(rows, "pos_inside", detail, DetailKey::PosInside);
+}
+
+/**
+ */
+void SinglePresentBase::fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                  const Buffer& buffer,
+                                  unsigned int row,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setDetailValue<bool>(detail, DetailKey::RefExists, buffer, "ref_exists", row);
+
+    if (buffer.has<bool>("ok") && !buffer.get<bool>("ok").isNull(row))
+        detail.setValue(DetailKey::IsNotOk, QVariant(!buffer.get<bool>("ok").get(row)));
+
+    setDetailValue<bool>(detail, DetailKey::PosInside, buffer, "pos_inside", row);
 }
 
 }

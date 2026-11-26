@@ -243,7 +243,7 @@ TEST_CASE("NullableVector<unsigned int> null semantics", "[nullablevector][uint]
 TEST_CASE("NullableVector<long int> set and get", "[nullablevector][longint]")
 {
     Buffer buf = makeBuffer("lval", PropertyDataType::LONGINT);
-    auto& nv = buf.get<long int>("lval");
+    auto& nv = buf.get<std::int64_t>("lval");
 
     nv.set(0, -999999999L);
     nv.set(1, 999999999L);
@@ -254,7 +254,7 @@ TEST_CASE("NullableVector<long int> set and get", "[nullablevector][longint]")
 TEST_CASE("NullableVector<long int> null semantics", "[nullablevector][longint]")
 {
     Buffer buf = makeBuffer("lval", PropertyDataType::LONGINT);
-    auto& nv = buf.get<long int>("lval");
+    auto& nv = buf.get<std::int64_t>("lval");
 
     nv.set(4, 42L);
     for (unsigned int i = 0; i < 4; ++i)
@@ -269,7 +269,7 @@ TEST_CASE("NullableVector<long int> null semantics", "[nullablevector][longint]"
 TEST_CASE("NullableVector<unsigned long int> set and get", "[nullablevector][ulongint]")
 {
     Buffer buf = makeBuffer("ulval", PropertyDataType::ULONGINT);
-    auto& nv = buf.get<unsigned long int>("ulval");
+    auto& nv = buf.get<std::uint64_t>("ulval");
 
     nv.set(0, 0UL);
     nv.set(1, 18446744073709551615UL);
@@ -280,7 +280,7 @@ TEST_CASE("NullableVector<unsigned long int> set and get", "[nullablevector][ulo
 TEST_CASE("NullableVector<unsigned long int> null semantics", "[nullablevector][ulongint]")
 {
     Buffer buf = makeBuffer("ulval", PropertyDataType::ULONGINT);
-    auto& nv = buf.get<unsigned long int>("ulval");
+    auto& nv = buf.get<std::uint64_t>("ulval");
 
     nv.set(3, 123UL);
     REQUIRE(nv.isNull(0));

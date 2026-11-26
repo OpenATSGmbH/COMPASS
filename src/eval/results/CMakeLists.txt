@@ -2,6 +2,7 @@
 include("${CMAKE_CURRENT_LIST_DIR}/base/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/detection/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/position/CMakeLists.txt")
+include("${CMAKE_CURRENT_LIST_DIR}/latency/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/speed/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/trackangle/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/identification/CMakeLists.txt")
@@ -21,9 +22,11 @@ target_sources(compass_eval
         "${CMAKE_CURRENT_LIST_DIR}/evaluationdetail.h"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationtaskresult.h"
         "${CMAKE_CURRENT_LIST_DIR}/evalsectionid.h"        
+        "${CMAKE_CURRENT_LIST_DIR}/reporttablecontent.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/evaluationresultsgenerator.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationdetail.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationtaskresult.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/evalsectionid.cpp"        
+        "${CMAKE_CURRENT_LIST_DIR}/reporttablecontent.cpp"
     )

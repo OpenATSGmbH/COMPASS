@@ -472,7 +472,7 @@ void DBContextMergeDialog::showDetail(const MergeItem& mi)
     }
     else if (mi.section == "sectors")
     {
-        unsigned int sec_id = static_cast<unsigned int>(std::stoul(mi.diff->key));
+        unsigned int sec_id = static_cast<unsigned int>(std::stoull(mi.diff->key));
         temp_sector_ = std::make_shared<Sector>(
             sec_id, item_json->at("name"), item_json->at("layer_name"), false);
         temp_sector_->readJSON(*item_json);
@@ -669,7 +669,7 @@ void DBContextMergeDialog::buildMergedContext()
             }
             else if (mi.section == "sectors")
             {
-                unsigned int sec_id = static_cast<unsigned int>(std::stoul(mi.diff->key));
+                unsigned int sec_id = static_cast<unsigned int>(std::stoull(mi.diff->key));
                 auto sector = std::make_shared<Sector>(
                     sec_id, merged_j.at("name"), merged_j.at("layer_name"), false);
                 sector->readJSON(merged_j);
@@ -699,7 +699,7 @@ void DBContextMergeDialog::buildMergedContext()
                 merged_.asterixDecoding().push_back(ASTERIXDecodingConfig::fromJSON(mi.diff->item_b));
             else if (mi.section == "sectors")
             {
-                unsigned int sec_id = static_cast<unsigned int>(std::stoul(mi.diff->key));
+                unsigned int sec_id = static_cast<unsigned int>(std::stoull(mi.diff->key));
                 auto sector = std::make_shared<Sector>(
                     sec_id, mi.diff->item_b.at("name"), mi.diff->item_b.at("layer_name"), false);
                 sector->readJSON(mi.diff->item_b);
@@ -729,14 +729,14 @@ void DBContextMergeDialog::buildMergedContext()
             }
             else if (mi.section == "asterix")
             {
-                unsigned int cat = static_cast<unsigned int>(std::stoul(mi.diff->key));
+                unsigned int cat = static_cast<unsigned int>(std::stoull(mi.diff->key));
                 auto& vec = merged_.asterixDecoding();
                 vec.erase(std::remove_if(vec.begin(), vec.end(),
                     [cat](const ASTERIXDecodingConfig& c) { return c.category() == cat; }), vec.end());
             }
             else if (mi.section == "sectors")
             {
-                unsigned int sec_id = static_cast<unsigned int>(std::stoul(mi.diff->key));
+                unsigned int sec_id = static_cast<unsigned int>(std::stoull(mi.diff->key));
                 auto& vec = merged_.sectors();
                 vec.erase(std::remove_if(vec.begin(), vec.end(),
                     [sec_id](const std::shared_ptr<Sector>& s) { return s->id() == sec_id; }), vec.end());

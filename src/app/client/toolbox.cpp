@@ -17,6 +17,9 @@
 
 #include "toolbox.h"
 #include "toolboxwidget.h"
+#include "toolboxwidth.h"
+#include "deckbutton.h"
+#include "viewdeck.h"
 
 #include "popupmenu.h"
 
@@ -34,11 +37,66 @@
 #include <QFontMetrics>
 #include <QMenu>
 #include <QToolBar>
+#include <QSplitter>
+#include <QSplitterHandle>
+#include <QMouseEvent>
+#include <QSettings>
 
-const int   ToolBox::ToolIconSize      = 50;
-const int   ToolBox::ToolNameFontSize  = 12;
-const int   ToolBox::ToolLabelFontSize = 8;
-const float ToolBox::ExpansionFactor   = 0.75f;
+#include <cmath>
+#include <functional>
+
+namespace
+{
+    QString widthSettingsKey(const std::string& tool_name)
+    {
+        return "WidthPercent/" + QString::fromStdString(tool_name);
+    }
+
+    /**
+     * Does not move during a drag, it only reports the dragged position. The owner sets the
+     * sizes in steps, so the widgets are resized once per step and not once per mouse move.
+     */
+    class StepSplitterHandle : public QSplitterHandle
+    {
+    public:
+        StepSplitterHandle(QSplitter* parent, const std::function<void(int)>& dragged_cb)
+        :   QSplitterHandle(Qt::Horizontal, parent), dragged_cb_(dragged_cb) {}
+
+    protected:
+        void mousePressEvent(QMouseEvent* e) override
+        {
+            press_x_ = e->pos().x();
+            QSplitterHandle::mousePressEvent(e);
+        }
+
+        void mouseMoveEvent(QMouseEvent* e) override
+        {
+            if (!(e->buttons() & Qt::LeftButton))
+                return;
+
+            dragged_cb_(splitter()->mapFromGlobal(e->globalPos()).x() - press_x_);
+        }
+
+    private:
+        std::function<void(int)> dragged_cb_;
+        int                      press_x_ = 0;
+    };
+
+    class StepSplitter : public QSplitter
+    {
+    public:
+        StepSplitter(const std::function<void(int)>& dragged_cb)
+        :   QSplitter(Qt::Horizontal), dragged_cb_(dragged_cb) {}
+
+    protected:
+        QSplitterHandle* createHandle() override { return new StepSplitterHandle(this, dragged_cb_); }
+
+    private:
+        std::function<void(int)> dragged_cb_;
+    };
+}
+
+const int ToolBox::ToolNameFontSize = 12;
 
 /**
  */
@@ -53,16 +111,23 @@ ToolBox::ToolBox(QWidget* parent)
 ToolBox::~ToolBox() = default;
 
 /**
+ * Takes the view area of the View Deck into the splitter. The icon bar of the View Deck is placed by the
+ * main window. The View Deck asks to collapse or to open, the tool box decides and tells the result.
  */
-void ToolBox::setMainContent(QWidget* content)
+void ToolBox::setViewDeck(ViewDeck* view_deck)
 {
+    traced_assert(view_deck);
     traced_assert(!main_content_widget_);
 
-    main_content_widget_ = content;
+    main_content_widget_ = view_deck->viewArea();
     main_content_widget_->setParent(main_widget_);
     main_layout_->addWidget(main_content_widget_);
 
     main_content_widget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
+
+    connect(view_deck, &ViewDeck::collapseRequestedSignal, this, &ToolBox::collapseViewDeckSlot);
+    connect(view_deck, &ViewDeck::openRequestedSignal, this, &ToolBox::openViewDeckSlot);
+    connect(this, &ToolBox::viewDeckCollapsedSignal, view_deck, &ViewDeck::setCollapsedSlot);
 }
 
 /**
@@ -88,8 +153,14 @@ void ToolBox::createUI()
     
     layout->addLayout(icon_bar_layout);
 
+    splitter_ = new StepSplitter([ this ] (int panel_width) { this->handleDragged(panel_width); });
+    splitter_->setChildrenCollapsible(false);
+
+    layout->addWidget(splitter_);
+
     //panel
     panel_widget_ = new QWidget;
+    panel_widget_->setObjectName("toolbox_panel");
     panel_widget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     panel_widget_->setVisible(false); //initially invisible
 
@@ -124,6 +195,7 @@ void ToolBox::createUI()
     tool_bar_->setIconSize(UI_ICON_SIZE);
 
     config_button_ = new QPushButton;
+    config_button_->setObjectName("toolbox_config_button");
     config_button_->setStyleSheet("QPushButton::menu-indicator { image: none; }");
     config_button_->setIcon(Utils::Files::IconProvider::getIcon("edit.png"));
     config_button_->setFixedSize(UI_ICON_SIZE); 
@@ -141,6 +213,7 @@ void ToolBox::createUI()
     shrink_action_->setShortcut(Qt::Key_Minus);
 
     connect(shrink_action_, &QAction::triggered, this, &ToolBox::shrink);
+    tool_bar_default_->widgetForAction(shrink_action_)->setObjectName("toolbox_shrink_button");
 
     grow_action_ = tool_bar_default_->addAction("Increase Width");
     grow_action_->setIcon(Utils::Files::IconProvider::getIcon("arrow_to_right.png"));
@@ -148,11 +221,7 @@ void ToolBox::createUI()
     grow_action_->setShortcut(Qt::Key_Plus);
 
     connect(grow_action_, &QAction::triggered, this, &ToolBox::grow);
-
-    expand_action_ = tool_bar_default_->addAction("Expand");
-    expand_action_->setShortcut(Qt::Key_NumberSign);
-
-    connect(expand_action_, &QAction::triggered, this, &ToolBox::toggleExpansion);
+    tool_bar_default_->widgetForAction(grow_action_)->setObjectName("toolbox_grow_button");
 
     top_layout->addWidget(tool_bar_default_);
     top_layout->addSpacerItem(new QSpacerItem(20, 1, QSizePolicy::Fixed, QSizePolicy::Fixed));
@@ -167,10 +236,11 @@ void ToolBox::createUI()
     panel_content_layout->addLayout(top_layout);
     panel_content_layout->addWidget(widget_stack_);
 
-    layout->addWidget(panel_widget_);
+    splitter_->addWidget(panel_widget_);
 
     //main content
     main_widget_ = new QWidget;
+    main_widget_->setObjectName("toolbox_views");
     main_widget_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
 
     main_layout_ = new QVBoxLayout;
@@ -179,7 +249,7 @@ void ToolBox::createUI()
 
     main_widget_->setLayout(main_layout_);
 
-    layout->addWidget(main_widget_);
+    splitter_->addWidget(main_widget_);
 
     updateToolBar();
     updateButtons();
@@ -191,37 +261,11 @@ void ToolBox::updateMenu()
 {
     config_menu_->clear();
 
-    if (active_tool_idx_ < 0)
+    if (activeTool() < 0)
         return;
 
     // tool specific custom part
-    tools_.at(active_tool_idx_).widget->addToConfigMenu(config_menu_.get());
-
-    if (config_menu_->actions().size() > 0)
-        config_menu_->addSeparator();
-
-    //screen ratio selection
-    {
-        auto sr_menu = config_menu_->addMenu("Screen Ratio");
-
-        QActionGroup* screen_ratio_group = new QActionGroup(config_menu_.get());
-        screen_ratio_group->setExclusive(true);
-
-        auto sr = currentScreenRatio();
-
-        auto addSRAction = [ & ] (const std::string& label, toolbox::ScreenRatio screen_ratio)
-        {
-            auto action = sr_menu->addAction(QString::fromStdString(label));
-            screen_ratio_group->addAction(action);
-
-            action->setCheckable(true);
-            action->setChecked(sr.has_value() && sr.value() == screen_ratio);
-            connect(action, &QAction::triggered, [ this, screen_ratio] () { this->screenRatioChanged(screen_ratio); });
-        };
-
-        for (int i = 0; i < (int)toolbox::ScreenRatio::RatioMax; ++i)
-            addSRAction(toolbox::toString((toolbox::ScreenRatio)i), (toolbox::ScreenRatio)i);
-    }
+    tools_.at(activeTool()).widget->addToConfigMenu(config_menu_.get());
 }
 
 /**
@@ -230,11 +274,11 @@ void ToolBox::updateToolBar()
 {
     tool_bar_->clear();
 
-    if (active_tool_idx_ < 0)
+    if (activeTool() < 0)
         return;
 
     // tool specific custom part
-    tools_.at(active_tool_idx_).widget->addToToolBar(tool_bar_);
+    tools_.at(activeTool()).widget->addToToolBar(tool_bar_);
 
     //if (tool_bar_->actions().size() > 0)
     //    tool_bar_->addSeparator();
@@ -255,35 +299,34 @@ unsigned int ToolBox::addTool(ToolBoxWidget* tool)
 
     std::string label = Utils::String::compress(labels, '\n');
 
-    auto button = new ToolButton;
-
-    auto font = button->font();
-    font.setPointSize(ToolLabelFontSize);
+    auto button = new DeckButton;
+    button->setObjectName(QString::fromStdString("toolbox_" + Utils::Files::normalizeFilename(name, true) + "_button"));
 
     int tool_idx = (int)tools_.size();
 
     button->setIcon(icon);
     button->setText(QString::fromStdString(label));
     button->setToolTip(QString::fromStdString(info) + " [" + QString::number(tool_idx + 1) + "]");
-    button->setToolButtonStyle(Qt::ToolButtonStyle::ToolButtonTextUnderIcon);
-    button->setIconSize(QSize(ToolIconSize, ToolIconSize));
-    button->setCheckable(true);
-    button->setFont(font); 
     button->setShortcut(Qt::Key_1 + tool_idx);
 
     tool->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
-    
-    connect(button, &ToolButton::pressed, [ this, tool_idx ] () { this->toolActivated(tool_idx); });
-    connect(button, &ToolButton::rightClicked, [ tool ] () { tool->rightClicked(); });
+
+    connect(button, &DeckButton::pressed, [ this, tool_idx ] () { this->toolActivated(tool_idx); });
+    connect(button, &DeckButton::rightClickedSignal, [ tool ] () { tool->rightClicked(); });
     connect(tool, &ToolBoxWidget::iconChangedSignal, [ button, tool ] { button->setIcon(tool->toolIcon()); } );
     connect(tool, &ToolBoxWidget::toolsChangedSignal, [ this ] () { this->updateToolBar(); });
 
     unsigned int idx = (unsigned int)tools_.size();
 
+    bool saved_ok = false;
+    int  saved    = QSettings("COMPASS", "ToolBox").value(widthSettingsKey(name)).toInt(&saved_ok);
+
     Tool t;
-    t.idx    = tool_idx;
-    t.widget = tool;
-    t.button = button;
+    t.idx           = tool_idx;
+    t.widget        = tool;
+    t.button        = button;
+    t.width_percent = toolbox::widthPercentOrDefault(saved_ok ? std::optional<int>(saved) : std::nullopt,
+                                                     tool->defaultWidthPercent());
 
     tools_.push_back(t);
     widget_stack_->addWidget(tool);
@@ -322,18 +365,9 @@ void ToolBox::disableTools(std::set<unsigned int> indexes)
  */
 void ToolBox::selectTool(size_t idx)
 {
-    traced_assert(idx >= 0);
     traced_assert(idx < numTools());
 
-    //deactivate any active tool
-    toolActivated(-1);
-
-    //activate new tool
-    tools_.at(idx).button->blockSignals(true);
-    tools_.at(idx).button->setChecked(true);
-    tools_.at(idx).button->blockSignals(false);
-
-    toolActivated((int)idx);
+    setState(deck::opened(deck_layout_, deck::Deck::Flight), (int)idx);
 }
 
 /**
@@ -353,161 +387,219 @@ bool ToolBox::selectTool(const std::string& name)
 }
 
 /**
+ * A press on a tool button: the active tool collapses the Flight Deck, any other tool is shown.
  */
 void ToolBox::toolActivated(int idx)
 {
-    traced_assert(idx < (int)tools_.size());
+    traced_assert(idx >= 0 && idx < (int)tools_.size());
 
-    if (idx < 0 && active_tool_idx_ >= 0)
-        idx = active_tool_idx_;
-
-    if (idx == active_tool_idx_)
-    {
-        //close active tool
-        panel_widget_->setVisible(false);
-        panel_content_widget_->setVisible(false);
-        active_tool_idx_ = -1;
-    }
+    if (idx == activeTool())
+        setState(deck::collapsed(deck_layout_, deck::Deck::Flight), tool_idx_);
     else
+        setState(deck::opened(deck_layout_, deck::Deck::Flight), idx);
+}
+
+/**
+ * A click on the selected view. The Flight Deck opens with its last tool if it is collapsed.
+ */
+void ToolBox::collapseViewDeckSlot()
+{
+    setState(deck::collapsed(deck_layout_, deck::Deck::View), tool_idx_);
+}
+
+/**
+ */
+void ToolBox::openViewDeckSlot()
+{
+    setState(deck::opened(deck_layout_, deck::Deck::View), tool_idx_);
+}
+
+/**
+ * The tool shown in the tool panel, -1 if the Flight Deck is collapsed.
+ */
+int ToolBox::activeTool() const
+{
+    return deck::isOpen(deck_layout_, deck::Deck::Flight) ? tool_idx_ : -1;
+}
+
+/**
+ */
+bool ToolBox::viewDeckOpen() const
+{
+    return deck::isOpen(deck_layout_, deck::Deck::View);
+}
+
+/**
+ * The only place that changes the open decks and the selected tool, and that shows them.
+ */
+void ToolBox::setState(deck::Layout layout, int tool_idx)
+{
+    traced_assert(tool_idx < (int)tools_.size());
+    traced_assert(tool_idx >= 0 || !deck::isOpen(layout, deck::Deck::Flight));
+
+    const int  tool_before           = activeTool();
+    const bool view_deck_open_before = viewDeckOpen();
+
+    deck_layout_ = layout;
+    tool_idx_    = tool_idx;
+
+    const int active_tool = activeTool();
+
+    if (active_tool >= 0)
     {
-        traced_assert(idx >= 0);
+        tool_name_label_->setText(QString::fromStdString(tools_.at(active_tool).widget->toolName()));
 
-        const auto& tool = tools_.at(idx);
+        widget_stack_->setCurrentIndex(active_tool);
 
-        tool_name_label_->setText(QString::fromStdString(tool.widget->toolName()));
-
-        active_tool_idx_ = idx;
-        widget_stack_->setCurrentIndex(idx);
-        panel_widget_->setVisible(true);
-        panel_content_widget_->setVisible(true);
-
-        for (auto& t : tools_)
+        //a stacked widget takes the minimum width of its widest page, so a narrow tool could not be
+        //narrower than the widest tool. Only the shown tool counts.
+        for (int i = 0; i < widget_stack_->count(); ++i)
         {
-            if (t.idx == active_tool_idx_)
-                continue;
-
-            t.button->blockSignals(true);
-            t.button->setChecked(false);
-            t.button->blockSignals(false);
+            const auto policy = i == active_tool ? QSizePolicy::Preferred : QSizePolicy::Ignored;
+            widget_stack_->widget(i)->setSizePolicy(policy, policy);
         }
+        widget_stack_->updateGeometry();
     }
+
+    panel_widget_->setVisible(active_tool >= 0);
+    main_widget_->setVisible(viewDeckOpen());
+
+    for (auto& t : tools_)
+        t.button->setChecked(t.idx == active_tool);
 
     updateToolBar();
     updateButtons();
     adjustSizings();
 
-    emit toolChanged();
+    updateMenu();
+    config_button_->setVisible(!config_menu_->actions().isEmpty());
+
+    if (viewDeckOpen() != view_deck_open_before)
+        emit viewDeckCollapsedSignal(!viewDeckOpen());
+
+    if (active_tool != tool_before)
+        emit toolChanged();
 }
 
 /**
  */
-void ToolBox::finalize()
+QSize ToolBox::buttonSize() const
 {
-    size_t maxrows = 0;
-    int    maxw    = 0;
-    int    maxh    = 0;
+    if (button_size_.isValid())
+        return button_size_;
+
+    std::vector<std::vector<std::string>> labels;
     for (const auto& t : tools_)
-    {
-        auto labels = t.widget->toolLabels();
+        labels.push_back(t.widget->toolLabels());
 
-        if (labels.size() > maxrows)
-            maxrows = labels.size();
+    return DeckButton::sizeForLabels(labels, DeckButton::labelFont());
+}
 
-        for (const auto& l : labels)
-        {
-            QFontMetrics fm(t.button->font());
-            auto r = fm.boundingRect(QString::fromStdString(l));
-            if (r.height() > maxh) maxh = r.height();
-            if (r.width()  > maxw) maxw = r.width();
-        }
-    }
+/**
+ * Notice: tools are added before, the buttons of later tools keep their own size.
+ */
+void ToolBox::setButtonSize(const QSize& size)
+{
+    traced_assert(size.isValid());
 
-    int textw = maxw * 1.1;
-    int texth = maxrows * maxh * 1.3;
-
-    int w = std::max(ToolIconSize + 2, textw);
-    int h = ToolIconSize + 2 + texth;
+    button_size_ = size;
 
     for (auto& t : tools_)
-        t.button->setFixedSize(w, h);
+        t.button->setFixedSize(button_size_);
 }
 
 /**
  */
 void ToolBox::adjustSizings()
 {
-    if (expanded_)
-    {
-        const int x0 = tools_.empty() ? 0 : tools_.at(0).button->width();
-
-        panel_content_widget_->setGeometry(x0, 0, width() * ExpansionFactor, height());
-    }
-    else
-    {
-        std::pair<int, int> stretches(0, 1);
-
-        auto screen_ratio = currentScreenRatio();
-        if (screen_ratio.has_value())
-            stretches = toolbox::toParts(screen_ratio.value());
-
-        QSizePolicy policy_toolbox(screen_ratio.has_value() ? QSizePolicy::Expanding : QSizePolicy::Preferred, QSizePolicy::Expanding);
-        policy_toolbox.setHorizontalStretch(stretches.first);
-
-        QSizePolicy policy_tabwidget(QSizePolicy::Expanding, QSizePolicy::Expanding);
-        policy_tabwidget.setHorizontalStretch(stretches.second);
-
-        panel_widget_->setSizePolicy(policy_toolbox);
-        main_widget_->setSizePolicy(policy_tabwidget);
-    }
+    applyWidthPercent();
 }
 
 /**
+ * Sets the splitter to the width of the active tool. QSplitter distributes its width
+ * in proportion to the given sizes, so the percent values can be passed directly.
  */
-boost::optional<toolbox::ScreenRatio> ToolBox::currentScreenRatio() const
+void ToolBox::applyWidthPercent()
 {
-    if (active_tool_idx_ < 0)
-        return boost::optional<toolbox::ScreenRatio>();
-
-    return tools_.at(active_tool_idx_).widget->screenRatio();
-}
-
-/**
- */
-void ToolBox::screenRatioChanged(toolbox::ScreenRatio screen_ratio)
-{
-    if (active_tool_idx_ < 0)
+    //with the View Deck collapsed the tool panel is alone in the splitter and takes its width
+    if (activeTool() < 0 || !viewDeckOpen())
         return;
-    
-    tools_.at(active_tool_idx_).widget->setScreenRatio(screen_ratio);
+
+    const int percent = tools_.at(activeTool()).width_percent;
+
+    const int total = splitter_->width() - splitter_->handleWidth();
+    if (total <= 0)
+        return;
+
+    //QSplitter does not keep the given ratio if it violates a minimum width, it then falls back to
+    //the size hints. So the pixel width is computed here, within the minimum widths of both sides.
+    const int panel_min = std::max(panel_widget_->minimumSizeHint().width(), panel_widget_->minimumWidth());
+    const int views_min = std::max(main_widget_->minimumSizeHint().width(), main_widget_->minimumWidth());
+
+    int panel_width = (int)std::lround(total * percent / 100.0);
+    panel_width = std::min(panel_width, total - views_min);
+    panel_width = std::max(panel_width, panel_min);
+
+    splitter_->setSizes({ panel_width, std::max(0, total - panel_width) });
+}
+
+/**
+ */
+void ToolBox::setWidthPercent(int percent)
+{
+    if (activeTool() < 0)
+        return;
+
+    auto& tool = tools_.at(activeTool());
+
+    tool.width_percent = toolbox::clampWidthPercent(percent);
+
+    QSettings("COMPASS", "ToolBox").setValue(widthSettingsKey(tool.widget->toolName()), tool.width_percent);
 
     updateButtons();
-    adjustSizings();
+}
+
+/**
+ * The dragged width snaps to the nearest step. The sizes change only when the step changes.
+ */
+void ToolBox::handleDragged(int panel_width)
+{
+    if (activeTool() < 0 || !viewDeckOpen())
+        return;
+
+    const int total = splitter_->width() - splitter_->handleWidth();
+    if (total <= 0)
+        return;
+
+    const int percent = toolbox::snapWidthPercent((int)std::lround(100.0 * panel_width / total));
+
+    if (percent == tools_.at(activeTool()).width_percent)
+        return;
+
+    setWidthPercent(percent);
+    applyWidthPercent();
 }
 
 /**
  */
 void ToolBox::shrink()
 {
-    if (expanded_ || active_tool_idx_ < 0)
+    if (activeTool() < 0 || !viewDeckOpen())
         return;
 
-    auto sr = tools_.at(active_tool_idx_).widget->screenRatio();
-
-    if ((int)sr > 0)
-        screenRatioChanged((toolbox::ScreenRatio)((int)sr - 1));
+    setWidthPercent(toolbox::widthPercentStepDown(tools_.at(activeTool()).width_percent));
+    applyWidthPercent();
 }
 
 /**
  */
 void ToolBox::grow()
 {
-    if (expanded_ || active_tool_idx_ < 0)
+    if (activeTool() < 0 || !viewDeckOpen())
         return;
 
-    auto sr = tools_.at(active_tool_idx_).widget->screenRatio();
-
-    if ((int)sr < (int)toolbox::ScreenRatio::RatioMax - 1)
-        screenRatioChanged((toolbox::ScreenRatio)((int)sr + 1));
+    setWidthPercent(toolbox::widthPercentStepUp(tools_.at(activeTool()).width_percent));
+    applyWidthPercent();
 }
 
 /**
@@ -517,19 +609,17 @@ void ToolBox::updateButtons()
     bool shrink_enabled = true;
     bool grow_enabled   = true;
 
-    if (active_tool_idx_ >= 0)
+    if (activeTool() >= 0)
     {
-        auto sr = tools_.at(active_tool_idx_).widget->screenRatio();
+        const int percent = tools_.at(activeTool()).width_percent;
 
-        shrink_enabled = (int)sr > 0;
-        grow_enabled   = (int)sr < (int)toolbox::ScreenRatio::RatioMax - 1;
+        shrink_enabled = percent > toolbox::WidthMinPercent;
+        grow_enabled   = percent < toolbox::WidthMaxPercent;
     }
 
-    shrink_action_->setEnabled(shrink_enabled && !expanded_);
-    grow_action_->setEnabled(grow_enabled && !expanded_);
-
-    expand_action_->setIcon(Utils::Files::IconProvider::getIcon(expanded_ ? "fd_shrink.png" : "fd_expand.png"));
-    expand_action_->setToolTip(QString(expanded_ ? "Collapse" : "Expand") + " Flight Deck [#]");
+    //no width to set while the tool panel is alone in the splitter
+    shrink_action_->setEnabled(shrink_enabled && viewDeckOpen());
+    grow_action_->setEnabled(grow_enabled && viewDeckOpen());
 }
 
 /**
@@ -554,53 +644,9 @@ void ToolBox::loadingDone()
 
 /**
  */
-void ToolBox::toggleExpansion()
-{
-    if (active_tool_idx_ < 0)
-        return;
-
-    bool is_expanded  = expanded_;
-    bool reshow_panel = false;
-
-    if (is_expanded)
-    {
-        //de-expand
-        panel_content_widget_->setAutoFillBackground(false);
-        panel_content_widget_->setParent(panel_widget_);
-        panel_layout_->addWidget(panel_content_widget_);
-
-        main_widget_->setEnabled(true);
-    }
-    else
-    {
-        //expand
-        main_widget_->setEnabled(false);
-
-        panel_content_widget_->setVisible(false);
-        panel_layout_->removeWidget(panel_content_widget_);
-        panel_content_widget_->setParent(this);
-        panel_content_widget_->raise();
-        panel_content_widget_->setAutoFillBackground(true);
-
-        reshow_panel = true;
-    }
-
-    expanded_ = !is_expanded;
-
-    adjustSizings();
-    updateButtons();
-
-    //reshow panel after adjusting sizings
-    if (reshow_panel)
-        panel_content_widget_->show();
-}
-
-/**
- */
 void ToolBox::resizeEvent(QResizeEvent* event)
 {
     QWidget::resizeEvent(event);
 
-    if (expanded_)
-        adjustSizings();
+    adjustSizings();
 }

@@ -1,0 +1,48 @@
+
+target_include_directories(compass_core PUBLIC
+    "${CMAKE_CURRENT_LIST_DIR}"
+    )
+
+target_sources(compass_core
+    PUBLIC
+        "${CMAKE_CURRENT_LIST_DIR}/representation.h"
+        "${CMAKE_CURRENT_LIST_DIR}/variable.h"
+        "${CMAKE_CURRENT_LIST_DIR}/variablewidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/variableset.h"
+        "${CMAKE_CURRENT_LIST_DIR}/variableorderedset.h"
+        "${CMAKE_CURRENT_LIST_DIR}/variableorderedsetwidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/variabledatatypecombobox.h"
+        "${CMAKE_CURRENT_LIST_DIR}/variableselectionwidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/variableselectiondialog.h"
+        "${CMAKE_CURRENT_LIST_DIR}/variableeditdialog.h"
+        "${CMAKE_CURRENT_LIST_DIR}/variablecreatedialog.h"
+        "${CMAKE_CURRENT_LIST_DIR}/variabledetailwidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/metavariable.h"
+        "${CMAKE_CURRENT_LIST_DIR}/reportvariable.h"
+        "${CMAKE_CURRENT_LIST_DIR}/selectionfiller.h"
+        "${CMAKE_CURRENT_LIST_DIR}/calculationplan.h"
+        "${CMAKE_CURRENT_LIST_DIR}/calculationfunctions.h"
+        "${CMAKE_CURRENT_LIST_DIR}/metavariablewidget.h"
+        "${CMAKE_CURRENT_LIST_DIR}/metavariabledetailwidget.h"
+    PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/representation.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/variable.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/variablewidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/variableset.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/variableorderedset.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/variableorderedsetwidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/variableselectionwidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/variableselectiondialog.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/variableeditdialog.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/variablecreatedialog.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/variabledetailwidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/metavariable.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/reportvariable.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/selectionfiller.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/calculationplan.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/calculationfunctions.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/metavariablewidget.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/metavariabledetailwidget.cpp"
+)
+
+

@@ -15,17 +15,21 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/trackangle/trackangleconfig.h"
-#include "eval/requirement/trackangle/trackangleconfigwidget.h"
-#include "eval/requirement/trackangle/trackangle.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
+#include "requirement/trackangle/trackangleconfig.h"
+#include "requirement/trackangle/trackangleconfigwidget.h"
+#include "requirement/trackangle/trackangle.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
+
+#include "stringconv.h"
+#include "number.h"
 
 using namespace std;
+using namespace Utils;
 
 namespace EvaluationRequirement
 {
@@ -97,15 +101,29 @@ BaseConfigWidget* TrackAngleConfig::createWidget()
 
 void TrackAngleConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
-    //auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
+    BaseConfig::addToReport(report);
 
-    //   auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
-    //    table.addRow({"Name", "Requirement name", name_});
-    //    table.addRow({"Short Name", "Requirement short name", short_name_});
-    //    table.addRow({"Comment", "", comment_});
+    auto& table = section.getTable("req_table");
 
-    // prob & check type added in subclass
+    table.addRow({"Probability [%]", "Probability of acceptable track angle",
+                  probabilityPercent(prob_)});
+    table.addRow({"Probability Check Type", "",
+                  comparisonTypeString(prob_check_type_)});
+    table.addRow({"Track Angle Offset Value [deg]",
+                  "Maximum allowed track angle difference between the test and the reference",
+                  Number::floatToDouble(threshold_)});
+    table.addRow({"Use Minimum Speed",
+                  "If test target reports with a reference speed below the minimum speed are not counted",
+                  String::boolToString(use_minimum_speed_)});
+    table.addRow({"Minimum Speed [m/s]", "Minimum reference speed", Number::floatToDouble(minimum_speed_)});
+    table.addRow({"Threshold Value Check Type",
+                  "Track angle difference comparison operator with the given threshold",
+                  comparisonTypeString(threshold_value_check_type_)});
+    table.addRow({"Failed Values are of Interest",
+                  "If the track angle differences of interest are the ones not passing the check",
+                  String::boolToString(failed_values_of_interest_)});
 }
 
 bool TrackAngleConfig::useMinimumSpeed() const

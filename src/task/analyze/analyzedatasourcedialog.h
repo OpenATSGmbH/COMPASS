@@ -33,6 +33,7 @@ class QWidget;
 class QPushButton;
 class QLineEdit;
 class QComboBox;
+class QLabel;
 
 class AnalyzeDataSourceDialog : public QDialog
 {
@@ -78,8 +79,11 @@ private:
     {
         QTreeWidgetItem* item = nullptr;
         DataSourceInspectorBase* inspector = nullptr;
+        QLabel* reason_label = nullptr;   // unmet prerequisite, on top of the inspector page
     };
     std::vector<InspectorRow> inspector_rows_;
+
+    void updateInspectorRow(InspectorRow& row);
 
     bool updating_ui_ = false;
 };

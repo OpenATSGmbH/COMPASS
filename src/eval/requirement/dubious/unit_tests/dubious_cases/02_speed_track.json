@@ -1,0 +1,45 @@
+{
+    "description": "Dubious Track: only the reported speed is checked. Same updates as case 01: update 1 with 1000 m in 1 s is not dubious. 2 of 4 updates dubious.",
+    "params": {
+        "use_max_groundspeed": true,
+        "max_groundspeed_kts": 1333.0,
+        "check_calculated_speed": false,
+        "use_max_acceleration": false,
+        "max_acceleration": 29.43,
+        "use_max_turnrate": false,
+        "max_turnrate": 30.0,
+        "use_max_rocd": false,
+        "max_rocd": 100.0,
+        "min_comparison_time": 1.0,
+        "max_comparison_time": 30.0
+    },
+    "updates": [
+        {
+            "time": 0.0,
+            "speed": 700.0,
+            "expected": {
+                "reported_speed_ms": 700.0
+            }
+        },
+        {
+            "time": 1.0,
+            "speed": 200.0,
+            "distance": 1000.0,
+            "expected": {}
+        },
+        {
+            "time": 2.0,
+            "speed": 200.0,
+            "distance": 100.0,
+            "expected": {}
+        },
+        {
+            "time": 3.0,
+            "speed": 800.0,
+            "distance": 100.0,
+            "expected": {
+                "reported_speed_ms": 800.0
+            }
+        }
+    ]
+}

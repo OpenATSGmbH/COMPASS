@@ -19,18 +19,22 @@
 #include "evaluationcalculator.h"
 #include "evaluationmanager.h"
 #include "evalsectionid.h"
-#include "eval/results/base/single.h"
-#include "eval/results/base/joined.h"
+#include "results/base/single.h"
+#include "results/base/joined.h"
+#include "results/reporttablecontent.h"
 
-#include "task/result/report/sectioncontentfigure.h"
-#include "task/result/report/sectioncontenttable.h"
-#include "task/result/report/section.h"
-#include "task/taskdefs.h"
-#include "taskmanager.h"
-#include "radarplotpositioncalculatortask.h"
+#include "report/sectioncontentfigure.h"
+#include "report/sectioncontenttable.h"
+#include "report/section.h"
+#include "taskdefs.h"
+#include "itaskprovider.h"
 
-#include "compass.h"
+#include "dbinterface.h"
 #include "dbcontentmanager.h"
+#include "buffer.h"
+#include "viewpoint.h"
+#include "viewpointgenerator.h"
+#include "timeconv.h"
 #include "targetmodel.h"
 #include "targetlistwidget.h"
 
@@ -49,11 +53,15 @@ const std::string EvaluationTaskResult::FieldTargetInfo = "info";
 /**
  */
 EvaluationTaskResult::EvaluationTaskResult(unsigned int id,
-                                           TaskManager& task_man,
-                                           COMPASS& compass)
+                                           ITaskProvider& task_man,
+                                           EvaluationManager& eval_man)
 :   TaskResult(id, task_man)
-,   compass_(compass)
+,   eval_man_(eval_man)
 {
+    //connected here and not during init or finalization: a result whose content is not read yet
+    //must still follow the update and lock state of the evaluation manager
+    connect(&eval_man_, &EvaluationManager::resultsNeedUpdate,
+            this, &EvaluationTaskResult::informUpdateEvalResult);
 }
 
 /**
@@ -81,20 +89,52 @@ void EvaluationTaskResult::injectCalculator(EvaluationCalculator* calculator)
 {
     traced_assert(calculator);
     calculator_.reset(calculator);
+    calculator_failed_ = false;
+}
+
+/**
+ * Creates the calculator on first use. Building it clones the stored configuration and runs a
+ * sector check, so it is deferred until the result is actually used.
+ */
+EvaluationCalculator* EvaluationTaskResult::calculator() const
+{
+    if (calculator_)
+        return calculator_.get();
+
+    if (calculator_failed_)
+        return nullptr;
+
+    //set upfront, so neither a failed nor a re-entered creation is run twice
+    calculator_failed_ = true;
+
+    auto res = const_cast<EvaluationTaskResult*>(this)->createCalculator();
+
+    if (!res.ok())
+    {
+        logerr << "could not create calculator for result '" << name() << "': " << res.error();
+        return nullptr;
+    }
+
+    calculator_failed_ = false;
+
+    return calculator_.get();
 }
 
 /**
  */
 Result EvaluationTaskResult::createCalculator()
 {
+    //the configuration is part of the result content
+    ensureContentLoaded();
+
     calculator_.reset();
 
     loginf << "creating calculator for result '" << name() << "' with config: " << config_.dump();
 
     //clone calculator from config
-    auto res = EvaluationCalculator::clone(compass_.evaluationManager(),
-                                              compass_.dbContentManager(),
-                                              config_);
+    auto res = EvaluationCalculator::clone(eval_man_,
+                                           eval_man_.dbContentManager(),
+                                           config_);
     if (!res.ok())
         return res;
 
@@ -117,15 +157,7 @@ Result EvaluationTaskResult::createCalculator()
  */
 Result EvaluationTaskResult::initResult_impl()
 {
-    //create calculator
-    auto res = createCalculator();
-    if (!res.ok())
-        return res;
-
-    //connect to eval manager
-    auto& eval_manager = compass_.evaluationManager();
-    connect(&eval_manager, &EvaluationManager::resultsNeedUpdate, this, &EvaluationTaskResult::informUpdateEvalResult);
-
+    //the calculator is created on first use, see calculator()
     return Result::succeeded();
 }
 
@@ -140,10 +172,7 @@ Result EvaluationTaskResult::prepareResult_impl()
  */
 Result EvaluationTaskResult::finalizeResult_impl()
 {
-    //connect to eval manager
-    auto& eval_manager = compass_.evaluationManager();
-    connect(&eval_manager, &EvaluationManager::resultsNeedUpdate, this, &EvaluationTaskResult::informUpdateEvalResult);
-
+    //the eval manager connection is made in the constructor
     return Result::succeeded();
 }
 
@@ -153,34 +182,39 @@ Result EvaluationTaskResult::update_impl(UpdateState state)
 {
     Result res = Result::succeeded();
 
+    auto calc = calculator();
+
+    if (!calc)
+        return Result::failed("Calculator not initialized");
+
     if (state == UpdateState::FullUpdateNeeded ||
         state == UpdateState::Locked)
     {
         // sync: run full evaluation with updated constraints (also needed to remove lock)
         loginf << "running full update";
-        res = calculator_->evaluate();
+        res = calc->evaluate();
 
-        loginf << calculator_->constraintsAsString();
+        loginf << calc->constraintsAsString();
     }
     else if (state == UpdateState::PartialUpdateNeeded)
     {
         // partial update: decide if full update is needed anyways
-        bool needs_recompute = !calculator_->evaluated() || 
-                                calculator_->hasPartialResult(); // if partial results are currently stored: drop them and run a full update anyway
+        bool needs_recompute = !calc->evaluated();
+
         if (needs_recompute)
         {
             // full update needed, because result is yet uninitialized
             loginf << "running initial full update";
-            res = calculator_->evaluate();
+            res = calc->evaluate();
         }
         else
         {
             // only partial update needed
             loginf << "running partial update";
-            calculator_->updateResultsToChanges();
+            calc->updateResultsToChanges();
         }
     }
-    
+
     return res;
 }
 
@@ -189,10 +223,12 @@ Result EvaluationTaskResult::update_impl(UpdateState state)
 Result EvaluationTaskResult::canUpdate_impl(UpdateState state) const
 {
     //true for all kinds of updates
-    if (!calculator_)
+    auto calc = calculator();
+
+    if (!calc)
         return Result::failed("Calculator not initialized");
 
-    auto r = calculator_->canEvaluate();
+    auto r = calc->canEvaluate();
     if (!r.ok())
         return r;
 
@@ -221,18 +257,6 @@ namespace helpers
 {
     /**
      */
-    std::pair<unsigned int, Evaluation::RequirementResultID> singleResultContentProperties(const ResultReport::SectionContent* content)
-    {
-        traced_assert(content);
-
-        auto info = EvaluationRequirementResult::Single::singleContentProperties(*content);
-        traced_assert(info.has_value());
-
-        return std::make_pair(info->first, info->second);
-    }
-
-    /**
-     */
     Evaluation::RequirementResultID joinedResultContentProperties(const ResultReport::SectionContent* content)
     {
         traced_assert(content);
@@ -241,32 +265,6 @@ namespace helpers
         traced_assert(info.has_value());
 
         return info.value();
-    }
-
-    /**
-     */
-    EvaluationRequirementResult::Single* obtainSingleResult(const ResultReport::SectionContent* content,
-                                                            EvaluationCalculator* calculator)
-    {
-        auto info = singleResultContentProperties(content);
-
-        loginf << "obtaining result for" 
-               << " utn " << info.first 
-               << " layer " << info.second.sec_layer_name
-               << " group " << info.second.req_group_name
-               << " req " << info.second.req_name;
-
-        //result already present?
-        auto r = calculator->singleResult(info.second, info.first);
-        if (r)
-            return r;
-
-        //otherwise evaluate for specified utn and requirement
-        //note: if eval fails a nullptr is returned in the next step
-        calculator->reloadNeededData({ info.first }, { info.second });
-        
-        //then return result
-        return calculator->singleResult(info.second, info.first);
     }
 
     /**
@@ -281,16 +279,7 @@ namespace helpers
                << " group " << info.req_group_name
                << " req " << info.req_name;
 
-        //result already present?
-        auto r = calculator->joinedResult(info);
-        if (r)
-            return r;
-
-        //otherwise evaluate for specified requirement
-        //note: if eval fails a nullptr is returned in the next step
-        calculator->reloadNeededData({}, { info });
-
-        //then return result
+        //the result exists in the session, a stored report has no joined results
         return calculator->joinedResult(info);
     }
 
@@ -310,33 +299,173 @@ namespace helpers
 }
 
 /**
+ * Locates the Report Table of an on-demand content of a single result. The content carries the
+ * table key, a report written before the key existed falls back to the key the definition builds
+ * from layer, group and requirement.
+ */
+const ReportTableInfo* EvaluationTaskResult::reportTableFor(const ResultReport::SectionContent& content,
+                                                            EvaluationRequirementResult::Single::ContentInfo& info) const
+{
+    auto content_info = EvaluationRequirementResult::Single::singleContentProperties(content);
+    if (!content_info.has_value())
+        return nullptr;
+
+    info = content_info.value();
+
+    if (!info.report_table_key.empty() && hasReportTable(info.report_table_key))
+        return &reportTable(info.report_table_key);
+
+    auto key = ReportTableDefinition::identifierFrom(info.id.sec_layer_name + "_"
+                                                     + info.id.req_group_name + "_"
+                                                     + info.id.req_name);
+
+    if (hasReportTable(key))
+        return &reportTable(key);
+
+    logerr << "no report table for"
+           << " utn " << info.utn
+           << " layer " << info.id.sec_layer_name
+           << " group " << info.id.req_group_name
+           << " req " << info.id.req_name;
+
+    return nullptr;
+}
+
+/**
+ * Reads the rows of one target from a Report Table, ordered by time.
+ */
+std::shared_ptr<Buffer> EvaluationTaskResult::loadReportTableRows(const ReportTableInfo& table,
+                                                                   unsigned int utn) const
+{
+    const std::string table_name = table.tableName(id());
+
+    const std::string filter = "\"" + ReportTableDefinition::UTNColumnName + "\" = " + std::to_string(utn)
+                             + " ORDER BY \"" + ReportTableDefinition::TimestampColumnName + "\"";
+
+    auto res = eval_man_.dbInterface().select(table_name, table.propertyList(), filter);
+
+    if (!res.ok())
+    {
+        logerr << "could not read table '" << table_name << "': " << res.error();
+        return nullptr;
+    }
+
+    return res.result();
+}
+
+/**
+ * Viewable of one target, built from the rows of its Report Table. The base viewable loads the
+ * target, the annotations show the rows, and one row is highlighted on demand.
+ */
+std::shared_ptr<nlohmann::json::object_t> EvaluationTaskResult::createTargetViewable(
+    const ReportTableInfo& table,
+    const Buffer& buffer,
+    const EvaluationRequirementResult::Single::ContentInfo& info,
+    boost::optional<unsigned int> highlight_row) const
+{
+    auto calc = calculator();
+    if (!calc)
+        return nullptr;
+
+    auto viewable = calc->getViewableForUTN(info.utn);
+    if (!viewable)
+        return nullptr;
+
+    const double zoom = calc->settings().result_detail_zoom_;
+
+    if (highlight_row.has_value())
+    {
+        auto positions = ReportTableContent::rowPositions(table, buffer, highlight_row.value());
+
+        if (positions.valid())
+        {
+            (*viewable)[ ViewPointKeys::VP_POS_LAT_KEY     ] = positions.event->first;
+            (*viewable)[ ViewPointKeys::VP_POS_LON_KEY     ] = positions.event->second;
+            (*viewable)[ ViewPointKeys::VP_POS_WIN_LAT_KEY ] = zoom;
+            (*viewable)[ ViewPointKeys::VP_POS_WIN_LON_KEY ] = zoom;
+        }
+
+        auto timestamp = ReportTableContent::rowTimestamp(buffer, highlight_row.value());
+        if (timestamp.has_value())
+            (*viewable)[ ViewPointKeys::VP_LOAD_DATA_KEY ][ ViewPointKeys::VP_TIMESTAMP_KEY ] =
+                Utils::Time::toString(timestamp.value());
+    }
+    else
+    {
+        auto bounds = ReportTableContent::failedRowBounds(table, buffer);
+
+        if (!bounds.isEmpty() && !bounds.isNull())
+        {
+            (*viewable)[ ViewPointKeys::VP_POS_LAT_KEY ] = bounds.center().x();
+            (*viewable)[ ViewPointKeys::VP_POS_LON_KEY ] = bounds.center().y();
+
+            (*viewable)[ ViewPointKeys::VP_POS_WIN_LAT_KEY ] = std::max(bounds.width() , zoom);
+            (*viewable)[ ViewPointKeys::VP_POS_WIN_LON_KEY ] = std::max(bounds.height(), zoom);
+        }
+    }
+
+    //root annotation of the requirement, the same id the result objects use
+    (*viewable)[ ViewPointKeys::VP_ANNOTATION_KEY ] = nlohmann::json::array();
+    auto& annotations = (*viewable)[ ViewPointKeys::VP_ANNOTATION_KEY ];
+
+    ViewPointGenAnnotation root_annotation("Evaluation:" + info.id.req_name + ":UTN" + std::to_string(info.utn));
+
+    nlohmann::json root_annotation_json;
+    root_annotation.toJSON(root_annotation_json);
+
+    annotations.push_back(root_annotation_json);
+
+    auto& result_annotations = ViewPointGenAnnotation::getChildrenJSON(annotations.at(0));
+
+    ReportTableContent::createOverviewAnnotations(result_annotations, table, buffer);
+
+    if (highlight_row.has_value())
+        ReportTableContent::createHighlightAnnotations(result_annotations, table, buffer, highlight_row.value());
+
+    return std::make_shared<nlohmann::json::object_t>(*viewable);
+}
+
+/**
+ * The target report details table only reads the rows of its target from the database and the const
+ * report table catalog. The target overview figure and the targets table use the calculator, which is
+ * created on first use and holds the evaluation data.
+ */
+bool EvaluationTaskResult::loadOnDemandOffMainThread(const ResultReport::SectionContent& content) const
+{
+    return content.contentType() == ResultReport::SectionContentType::Table &&
+           content.name() == EvaluationRequirementResult::Single::TRDetailsTableName;
+}
+
+/**
  */
 bool EvaluationTaskResult::loadOnDemandFigure_impl(ResultReport::SectionContentFigure* figure) const
 {
-    if (!calculator_)
-        return false;
-
     try
     {
         if (figure->name() == EvaluationRequirementResult::Single::TargetOverviewID)
         {
-            //get result for section
-            auto result = helpers::obtainSingleResult(figure, calculator_.get());
-            if (!result)
-            {
-                logerr << "result could not be obtained";
-                return false;
-            }
+            EvaluationRequirementResult::Single::ContentInfo info;
 
-            //add overview to figure
-            if (!result->addOverviewToFigure(*figure))
-            {
-                logerr << "error configuring content";
+            auto table = reportTableFor(*figure, info);
+            if (!table)
                 return false;
-            }
+
+            auto buffer = loadReportTableRows(*table, info.utn);
+            if (!buffer)
+                return false;
+
+            auto viewable = createTargetViewable(*table, *buffer, info, boost::optional<unsigned int>());
+            if (!viewable)
+                return false;
+
+            figure->setViewableFunc([ viewable ] () { return viewable; });
 
             return true;
         }
+    }
+    catch(const std::exception& ex)
+    {
+        logerr << "critical error during load: " << ex.what();
     }
     catch(...)
     {
@@ -350,28 +479,35 @@ bool EvaluationTaskResult::loadOnDemandFigure_impl(ResultReport::SectionContentF
  */
 bool EvaluationTaskResult::loadOnDemandTable_impl(ResultReport::SectionContentTable* table) const
 {
-    if (!calculator_)
-        return false;
-
     try
     {
         if (table->name() == EvaluationRequirementResult::Single::TRDetailsTableName)
         {
-            //target reports details table in single result section
+            //target report details table in single result section, read from the report table
 
-            //get result for section
-            auto result = helpers::obtainSingleResult(table, calculator_.get());
-            if (!result)
-            {
-                logerr << "result could not be obtained";
-                return false;
-            }
+            EvaluationRequirementResult::Single::ContentInfo info;
 
-            //add table details
-            if (!result->addDetailsToTable(*table))
-            {
-                logerr << "error configuring content";
+            auto report_table = reportTableFor(*table, info);
+            if (!report_table)
                 return false;
+
+            auto buffer = loadReportTableRows(*report_table, info.utn);
+            if (!buffer)
+                return false;
+
+            for (unsigned int row = 0; row < buffer->size(); ++row)
+            {
+                auto values = ReportTableContent::detailsTableValues(*report_table, *buffer, row);
+
+                if (values.size() != table->numColumns())
+                {
+                    logerr << "table '" << report_table->key << "' columns " << values.size()
+                           << " expected " << table->numColumns();
+                    return false;
+                }
+
+                table->addRow(values, ResultReport::SectionContentViewable().setOnDemand(), "", "",
+                              QPoint((int)row, -1));
             }
 
             return true;
@@ -379,13 +515,21 @@ bool EvaluationTaskResult::loadOnDemandTable_impl(ResultReport::SectionContentTa
         else if (table->name() == EvaluationData::TargetsTableName)
         {
             //evaluation targets table
+            auto calc = calculator();
+
+            if (!calc)
+                return false;
 
             //fill table with target info
-            calculator_->data().fillTargetsTable(targets_, *table, 
+            calc->data().fillTargetsTable(targets_, *table,
                 [ this ] (const Evaluation::RequirementSumResultID& id) { return this->interestFactorEnabled(id); });
 
             return true;
         }
+    }
+    catch(const std::exception& ex)
+    {
+        logerr << "critical error during load: " << ex.what();
     }
     catch(...)
     {
@@ -402,32 +546,44 @@ bool EvaluationTaskResult::loadOnDemandViewable_impl(const ResultReport::Section
                                                      const QVariant& index,
                                                      unsigned int row) const
 {
-    if (!calculator_)
-        return false;
-
     if (content.contentType() == ResultReport::SectionContent::ContentType::Table)
     {
         if (content.name() == EvaluationRequirementResult::Single::TRDetailsTableName)
         {
-            //get result for section
-            auto result = helpers::obtainSingleResult(&content, calculator_.get());
-            if (!result)
-            {
-                logerr << "result could not be obtained";
-                return false;
-            }
+            //highlight of one row, read from the report table
 
-            //configure detail highlight viewable 
-            if (!result->addHighlightToViewable(viewable, index))
-            {
-                logerr << "error configuring content";
+            if (!index.isValid())
                 return false;
-            }
+
+            const QPoint row_index = index.toPoint();
+            if (row_index.x() < 0)
+                return false;
+
+            EvaluationRequirementResult::Single::ContentInfo info;
+
+            auto report_table = reportTableFor(content, info);
+            if (!report_table)
+                return false;
+
+            auto buffer = loadReportTableRows(*report_table, info.utn);
+            if (!buffer || (unsigned int)row_index.x() >= buffer->size())
+                return false;
+
+            auto v = createTargetViewable(*report_table, *buffer, info, (unsigned int)row_index.x());
+            if (!v)
+                return false;
+
+            viewable.setCallback(*v);
 
             return true;
         }
         else if (content.name() == EvaluationData::TargetsTableName)
         {
+            auto calc = calculator();
+
+            if (!calc)
+                return false;
+
             const ResultReport::SectionContentTable* table = dynamic_cast<const ResultReport::SectionContentTable*>(&content);
             traced_assert(table);
 
@@ -435,7 +591,7 @@ bool EvaluationTaskResult::loadOnDemandViewable_impl(const ResultReport::Section
             auto utn = helpers::utnFromTable(table, row);
 
             //configure viewable
-            auto content = calculator_->getViewableForUTN(utn);
+            auto content = calc->getViewableForUTN(utn);
             nlohmann::json j_content = *content;
             viewable.setCallback(j_content);
 
@@ -466,7 +622,7 @@ bool EvaluationTaskResult::customContextMenu_impl(QMenu& menu,
         
         loginf << "context menu requested for utn " << utn;
 
-        if (calculator_ && !isLocked())
+        if (calculator() && !isLocked())
         {
             auto action_show_utn = menu.addAction("Show Full UTN");
             QObject::connect (action_show_utn, &QAction::triggered, [ = ] () { this->showFullUTN(utn); });
@@ -477,7 +633,7 @@ bool EvaluationTaskResult::customContextMenu_impl(QMenu& menu,
             auto usage_menu = menu.addMenu("Target Usage");
 
             const auto& target             = targets_.at(utn);
-            auto        target_list_widget = compass_.dbContentManager().targetListWidget();
+            auto        target_list_widget = eval_man_.dbContentManager().targetListWidget();
 
             target_list_widget->createTargetEvalMenu(*usage_menu, 
                                                      target,
@@ -499,7 +655,7 @@ bool EvaluationTaskResult::customContextMenu_impl(QMenu& menu,
 
         loginf << "context menu requested for utn " << utn;
 
-        if (calculator_ && !isLocked())
+        if (calculator() && !isLocked())
         {
             auto action_show_utn = menu.addAction("Show Full UTN");
             QObject::connect (action_show_utn, &QAction::triggered, [ = ] () { this->showFullUTN(utn); });
@@ -511,10 +667,10 @@ bool EvaluationTaskResult::customContextMenu_impl(QMenu& menu,
         //no harm showing this one in locked state
         createRequirementLinkMenu(utn, menu);
 
-        if (calculator_ && !isLocked())
+        if (calculator() && !isLocked())
         {
             auto usage_menu = menu.addMenu("Target Usage");
-            compass_.dbContentManager().targetListWidget()->createTargetEvalMenu(*usage_menu, { utn }, true);
+            eval_man_.dbContentManager().targetListWidget()->createTargetEvalMenu(*usage_menu, { utn }, true);
         }
 
         return true;
@@ -528,7 +684,7 @@ bool EvaluationTaskResult::customContextMenu_impl(QMenu& menu,
 bool EvaluationTaskResult::customMenu_impl(QMenu& menu, 
                                            ResultReport::SectionContent* content)
 {
-    if (!calculator_)
+    if (!calculator())
         return false;
 
     if (content->contentType() == ResultReport::SectionContent::ContentType::Table)
@@ -566,7 +722,10 @@ void EvaluationTaskResult::postprocessTable_impl(ResultReport::SectionContentTab
     else if (table->name() == EvaluationData::TargetsTableName)
     {
         //evaluation target table
-        calculator_->data().postprocessTargetsTable(*table);
+        auto calc = calculator();
+
+        if (calc)
+            calc->data().postprocessTargetsTable(*table);
     }
 }
 
@@ -579,7 +738,9 @@ bool EvaluationTaskResult::hasCustomTooltip_impl(const ResultReport::SectionCont
     if (table->name() == EvaluationData::TargetsTableName)
     {
         //evaluation target table
-        return calculator_->data().hasTargetTableTooltip(col);
+        auto calc = calculator();
+
+        return calc ? calc->data().hasTargetTableTooltip(col) : false;
     }
 
     return false;
@@ -598,7 +759,12 @@ std::string EvaluationTaskResult::customTooltip_impl(const ResultReport::Section
 
         const auto& target = targets_.at(utn);
 
-        return calculator_->data().targetTableToolTip(target, col,
+        auto calc = calculator();
+
+        if (!calc)
+            return "";
+
+        return calc->data().targetTableToolTip(target, col,
             [ this ] (const Evaluation::RequirementSumResultID& id) { return this->interestFactorEnabled(id); });
     }
 
@@ -609,7 +775,7 @@ std::string EvaluationTaskResult::customTooltip_impl(const ResultReport::Section
  */
 void EvaluationTaskResult::updateTargets()
 {
-    auto& dbcontent_man = compass_.dbContentManager();
+    auto& dbcontent_man = eval_man_.dbContentManager();
 
     for (auto& t : targets_)
         EvaluationTargetData::updateTarget(dbcontent_man, t.second);
@@ -619,20 +785,24 @@ void EvaluationTaskResult::updateTargets()
  */
 void EvaluationTaskResult::showUTN(unsigned int utn) const
 {
-    if (!calculator_)
+    auto calc = calculator();
+
+    if (!calc)
         return;
 
-    calculator_->showUTN(utn);
+    calc->showUTN(utn);
 }
 
 /**
  */
 void EvaluationTaskResult::showFullUTN(unsigned int utn) const
 {
-    if (!calculator_)
+    auto calc = calculator();
+
+    if (!calc)
         return;
 
-    calculator_->showFullUTN(utn);
+    calc->showFullUTN(utn);
 }
 
 /**
@@ -645,10 +815,12 @@ void EvaluationTaskResult::showSurroundingData(unsigned int utn) const
         return;
     }
 
-    if (!calculator_)
+    auto calc = calculator();
+
+    if (!calc)
         return;
 
-    calculator_->showSurroundingData(targets_.at(utn));
+    calc->showSurroundingData(targets_.at(utn));
 }
 
 /**
@@ -672,6 +844,9 @@ void EvaluationTaskResult::updateInterestSwitches()
  */
 const std::map<std::string, bool>& EvaluationTaskResult::interestSwitches() const
 {
+    //the switches are filled when the calculator is created
+    calculator();
+
     return interest_factor_enabled_;
 }
 
@@ -853,7 +1028,7 @@ void EvaluationTaskResult::jumpToRequirement(const Evaluation::RequirementSumRes
                                              unsigned int utn, 
                                              bool show_image)
 {
-    if (!calculator_ || !report_)
+    if (!calculator() || !report_)
         return;
 
     std::string sum_id = EvalSectionID::requirementResultSumID(id);

@@ -15,15 +15,17 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/trackangle/trackangle.h"
-#include "eval/results/trackangle/trackangle.h"
-#include "eval/standard/evaluationstandard.h"
+#include "requirement/trackangle/trackangle.h"
+#include "requirement/trackangle/trackangle_helpers.h"
+#include "results/trackangle/trackangle.h"
+#include "results/base/detailcode.h"
+#include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "logger.h"
 
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "sectorlayer.h"
-#include "util/number.h"
+#include "number.h"
 #include "global.h"
 
 #include <ogr_spatialref.h>
@@ -37,6 +39,8 @@ using namespace boost::posix_time;
 
 namespace EvaluationRequirement
 {
+
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
 
 TrackAngle::TrackAngle(
         const std::string& name, const std::string& short_name, const std::string& group_name,
@@ -117,7 +121,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
     bool comp_passed;
 
     unsigned int num_trackangle_comp {0};
-    string comment;
 
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
 
@@ -137,29 +140,29 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
                             const QVariant& num_pos_outside,
                             const QVariant& num_comp_failed,
                             const QVariant& num_comp_passed,
-                            const std::string& comment)
+                            std::uint32_t code)
     {
-        details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
+        details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside)
                                              .setValue(Result::DetailKey::Offset, offset)
                                              .setValue(Result::DetailKey::CheckPassed, check_passed)
                                              .setValue(Result::DetailKey::ValueRef, value_ref)
                                              .setValue(Result::DetailKey::ValueTst, value_tst)
                                              .setValue(Result::DetailKey::SpeedRef, speed_ref)
-                                             .setValue(Result::DetailKey::NumPos, num_pos)
-                                             .setValue(Result::DetailKey::NumNoRef, num_no_ref)
-                                             .setValue(Result::DetailKey::NumInside, num_pos_inside)
-                                             .setValue(Result::DetailKey::NumOutside, num_pos_outside)
-                                             .setValue(Result::DetailKey::NumCheckFailed, num_comp_failed)
-                                             .setValue(Result::DetailKey::NumCheckPassed, num_comp_passed)
                                              .addPosition(ref_pos)
+                                             .addCode(code));
                                              //.addLines(lines)
-                                             .generalComment(comment));
     };
 
 //    QColor ref_line_color = QColor("#ffa500");
 //    QColor tst_line_color = QColor("#00BBBB");
 
 //    std::vector<EvaluationDetail::Line> lines;
+
+    TrackAngleHelpers::Params angle_params;
+    angle_params.threshold         = threshold_;
+    angle_params.use_minimum_speed = use_minimum_speed_;
+    angle_params.minimum_speed     = minimum_speed_;
+    angle_params.check_type        = threshold_value_check_type_;
 
     for (const auto& tst_id : tst_data)
     {
@@ -177,11 +180,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                           {}, //lines, // ref_pos, lines
-                          {}, {}, comp_passed, // pos_inside, value, check_passed
+                          {}, {}, {}, // pos_inside, value, check_passed
                           {}, {}, {}, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed,
-                          "No reference data");
+                          num_comp_failed, num_comp_passed, DetailCode::NoRefData);
 
             ++num_no_ref;
             continue;
@@ -194,11 +196,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                           {}, //lines, // ref_pos, lines
-                          {}, {}, comp_passed, // pos_inside, value, check_passed
+                          {}, {}, {}, // pos_inside, value, check_passed
                           {}, {}, {}, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed,
-                          "No reference position");
+                          num_comp_failed, num_comp_passed, DetailCode::NoRefPosition);
 
             ++num_no_ref;
             continue;
@@ -212,11 +213,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                           {}, //lines, // ref_pos, lines
-                          is_inside, {}, comp_passed, // pos_inside, value, check_passed
+                          is_inside, {}, {}, // pos_inside, value, check_passed
                           {}, {}, {}, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed,
-                          "Outside sector");
+                          num_comp_failed, num_comp_passed, 0);
 
             ++num_pos_outside;
             continue;
@@ -229,11 +229,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                           {}, //lines, // ref_pos, lines
-                          {}, {}, comp_passed, // pos_inside, value, check_passed
+                          {}, {}, {}, // pos_inside, value, check_passed
                           {}, {}, {}, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed,
-                          "No reference speed");
+                          num_comp_failed, num_comp_passed, DetailCode::NoRefSpeed);
 
             ++num_no_ref;
             continue;
@@ -243,16 +242,20 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
 
         // ref_spd ok
 
-        if (use_minimum_speed_ && ref_spd->speed_ < minimum_speed_)
+        ref_trackangle_deg = ref_spd->track_angle_;
+        tst_trackangle_deg = target_data.tstChain().trackAngle(tst_id);
+
+        auto angle_check = TrackAngleHelpers::check(ref_spd->speed_, ref_trackangle_deg, tst_trackangle_deg, angle_params);
+
+        if (angle_check.outcome == TrackAngleHelpers::Outcome::RefSpeedTooLow)
         {
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                           {}, //lines, // ref_pos, lines
-                          {}, {}, comp_passed, // pos_inside, value, check_passed
+                          {}, {}, {}, // pos_inside, value, check_passed
                           {}, {}, ref_spd->speed_, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed,
-                          "Reference speed too low");
+                          num_comp_failed, num_comp_passed, angle_check.code);
 
             ++num_pos_ref_spd_low;
 
@@ -261,25 +264,21 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
             continue;
         }
 
-        ref_trackangle_deg = ref_spd->track_angle_;
-        tst_trackangle_deg = target_data.tstChain().trackAngle(tst_id);
-
-        if (!tst_trackangle_deg.has_value())
+        if (angle_check.outcome == TrackAngleHelpers::Outcome::NoTstValue)
         {
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                           {}, //lines, // ref_pos, lines
-                          {}, {}, comp_passed, // pos_inside, value, check_passed
+                          {}, {}, {}, // pos_inside, value, check_passed
                           {}, {}, ref_spd->speed_, // value_ref, value_tst, speed_ref
                           num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                          num_comp_failed, num_comp_passed,
-                          "No tst speed");
+                          num_comp_failed, num_comp_passed, angle_check.code);
 
             ++num_no_tst_value;
             continue;
         }
 
-        trackangle_min_diff = Number::calculateMinAngleDifference(ref_trackangle_deg, *tst_trackangle_deg);
+        trackangle_min_diff = angle_check.diff;
 
         // tst vector
         //lines.emplace_back(tst_pos, getPositionAtAngle(tst_pos, tst_trackangle_deg, ref_spd.speed_), tst_line_color);
@@ -292,28 +291,22 @@ std::shared_ptr<EvaluationRequirementResult::Single> TrackAngle::evaluate (
 
         ++num_trackangle_comp;
 
-        if (compareValue(fabs(trackangle_min_diff), threshold_, threshold_value_check_type_))
+        if (angle_check.outcome == TrackAngleHelpers::Outcome::Passed)
         {
             comp_passed = true;
             ++num_comp_passed;
-            comment = "Passed";
         }
         else
         {
             ++num_comp_failed;
-            comment = "Failed";
         }
-
-//        comment += " tst_track ref " +to_string(ref_trackangle_deg)
-//                + " tst " + to_string(tst_trackangle_deg) + " diff " + to_string(trackangle_min_diff);
 
         addDetail(timestamp, tst_pos,
                   ref_pos, //lines, // ref_pos, lines
                   is_inside, trackangle_min_diff, comp_passed, // pos_inside, value, check_passed
                   ref_trackangle_deg, *tst_trackangle_deg, ref_spd->speed_, // value_ref, value_tst, speed_ref
                   num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                  num_comp_failed, num_comp_passed,
-                  comment);
+                  num_comp_failed, num_comp_passed, 0);
     }
 
     //        logdbg << "'" << name_ << "': utn " << target_data.utn_

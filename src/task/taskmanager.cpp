@@ -18,7 +18,6 @@
 #include "taskmanager.h"
 #include "taskresultswidget.h"
 
-#include "compass.h"
 #include "dialogs.h"
 #include "createartasassociationstask.h"
 #include "jsonimporttask.h"
@@ -28,18 +27,21 @@
 //#include "gpsimportcsvtask.h"
 #include "reconstructortask.h"
 #include "analyzedatasourcetask.h"
-#include "mainwindow.h"
 #include "viewabledataconfig.h"
 #include "viewmanager.h"
 #include "dbinterface.h"
+#include "dbcontentmanager.h"
+#include "dbcontent/variable/reportvariable.h"
 #include "asynctask.h"
 
 #include "asteriximporttask.h"
 #include "asteriximporttaskwidget.h"
 
 #include "taskresult.h"
+#include "taskresultdb.h"
 #include "taskresultswidget.h"
 
+#include "section.h"
 #include "reportexport.h"
 #include "reportexportdialog.h"
 
@@ -50,7 +52,6 @@
 
 #include <QCoreApplication>
 #include <QApplication>
-#include <QMainWindow>
 #include <QThread>
 #include <QProgressDialog>
 #include <QMessageBox>
@@ -59,17 +60,26 @@
 
 using namespace Utils;
 
-const bool TaskManager::CleanupDBIfNeeded = true;
-
 /**
  */
 // TaskManager::TaskManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass)
 //     : Configurable(class_name, instance_name, compass, "task.json") ...
 
-TaskManager::TaskManager(nlohmann::json& config, COMPASS& compass)
-    : Configurable(config, &compass), compass_(compass)
+TaskManager::TaskManager(nlohmann::json& config,
+                         Configurable& parent,
+                         AppState& app_state,
+                         LogStore& log_store,
+                         DBInterface& db_interface,
+                         DBContentManager& dbcont_man)
+    : Configurable(config, &parent),
+      app_state_(app_state),
+      log_store_(log_store),
+      db_interface_(db_interface),
+      dbcont_man_(dbcont_man)
 {
     setObjectName("TaskManager");
+
+    result_db_.reset(new TaskResultDB(db_interface_, *this));
 
     createSubConfigurables();
 }
@@ -82,8 +92,117 @@ TaskManager::~TaskManager()
 }
 
 /**
+ * Sets the peer managers, called by the composition root after all managers and the DB context manager were created.
  */
-void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
+void TaskManager::setManagers(ViewManager& view_manager,
+                              EvaluationManager& eval_manager,
+                              FilterManager& filter_manager,
+                              context::DBContextManager& ctx_man,
+                              JobManager& job_manager,
+                              UnitManager& unit_manager,
+                              ProjectionManager& proj_man,
+                              LicenseManager& license_manager)
+{
+    view_manager_    = &view_manager;
+    eval_manager_    = &eval_manager;
+    filter_manager_  = &filter_manager;
+    ctx_man_         = &ctx_man;
+    job_manager_     = &job_manager;
+    unit_manager_    = &unit_manager;
+    proj_man_        = &proj_man;
+    license_manager_ = &license_manager;
+}
+
+/**
+ * Notice: the main window is set later and not checked.
+ */
+bool TaskManager::checkWired() const
+{
+    return view_manager_    &&
+           eval_manager_    &&
+           filter_manager_  &&
+           ctx_man_         &&
+           job_manager_     &&
+           unit_manager_    &&
+           proj_man_        &&
+           license_manager_;
+}
+
+/**
+ */
+LicenseManager& TaskManager::licenseManager()
+{
+    traced_assert(license_manager_);
+    return *license_manager_;
+}
+
+/**
+ */
+context::DBContextManager& TaskManager::dbContextManager()
+{
+    traced_assert(ctx_man_);
+    return *ctx_man_;
+}
+
+/**
+ */
+JobManager& TaskManager::jobManager()
+{
+    traced_assert(job_manager_);
+    return *job_manager_;
+}
+
+/**
+ */
+UnitManager& TaskManager::unitManager()
+{
+    traced_assert(unit_manager_);
+    return *unit_manager_;
+}
+
+/**
+ */
+ProjectionManager& TaskManager::projectionManager()
+{
+    traced_assert(proj_man_);
+    return *proj_man_;
+}
+
+/**
+ */
+IMainWindow& TaskManager::mainWindow()
+{
+    traced_assert(main_window_);
+    return *main_window_;
+}
+
+/**
+ */
+ViewManager& TaskManager::viewManager()
+{
+    traced_assert(view_manager_);
+    return *view_manager_;
+}
+
+/**
+ */
+EvaluationManager& TaskManager::evaluationManager()
+{
+    traced_assert(eval_manager_);
+    return *eval_manager_;
+}
+
+/**
+ */
+FilterManager& TaskManager::filterManager()
+{
+    traced_assert(filter_manager_);
+    return *filter_manager_;
+}
+
+/**
+ */
+GenerateResult TaskManager::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -125,7 +244,7 @@ void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
     else if (class_name == "RadarPlotPositionCalculatorTask")
     {
         traced_assert(!radar_plot_position_calculator_task_);
-        radar_plot_position_calculator_task_.reset(new RadarPlotPositionCalculatorTask(child_json, this, compass_));
+        radar_plot_position_calculator_task_.reset(new RadarPlotPositionCalculatorTask(child_json, this));
         traced_assert(radar_plot_position_calculator_task_);
         addTask(class_name, radar_plot_position_calculator_task_.get());
 
@@ -162,17 +281,26 @@ void TaskManager::generateSubConfigurable(nlohmann::json& child_json)
         traced_assert(analyze_adsb_data_source_task_);
         addTask(class_name, analyze_adsb_data_source_task_.get());
     }
+    else if (class_name == "AnalyzeSMRDataSourceTask")
+    {
+        traced_assert(!analyze_smr_data_source_task_);
+        analyze_smr_data_source_task_.reset(
+            new AnalyzeDataSourceTask(child_json, this, "SMR", "AnalyzeSMRDataSourceTask"));
+        traced_assert(analyze_smr_data_source_task_);
+        addTask(class_name, analyze_smr_data_source_task_.get());
+    }
     else if (class_name == "ReportExport")
     {
         traced_assert(!report_export_);
-        report_export_.reset(new ResultReport::ReportExport(child_json, this));
+        report_export_.reset(new ResultReport::ReportExport(child_json, this, *this));
         traced_assert(report_export_);
     }
     else
     {
-        throw std::runtime_error("TaskManager: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
     }
+
+    return GenerateResult::Generated;
 }
 
 /**
@@ -190,69 +318,76 @@ void TaskManager::checkSubConfigurables()
 {
     if (!asterix_importer_task_)
     {
-        generateSubConfigurableFromConfig("ASTERIXImportTask", "ASTERIXImportTask0");
+        createSubConfigurableFromConfig("ASTERIXImportTask", "ASTERIXImportTask0");
         traced_assert(asterix_importer_task_);
     }
 
     if (!view_points_import_task_)
     {
-        generateSubConfigurableFromConfig("ViewPointsImportTask", "ViewPointsImportTask0");
+        createSubConfigurableFromConfig("ViewPointsImportTask", "ViewPointsImportTask0");
         traced_assert(view_points_import_task_);
     }
 
     if (!json_import_task_)
     {
-        generateSubConfigurableFromConfig("JSONImportTask", "JSONImportTask0");
+        createSubConfigurableFromConfig("JSONImportTask", "JSONImportTask0");
         traced_assert(json_import_task_);
     }
 
     if (!gps_trail_import_task_)
     {
-        generateSubConfigurableFromConfig("GPSTrailImportTask", "GPSTrailImportTask0");
+        createSubConfigurableFromConfig("GPSTrailImportTask", "GPSTrailImportTask0");
         traced_assert(gps_trail_import_task_);
     }
 
     // if (!gps_import_csv_task_)
     // {
-    //     generateSubConfigurable("GPSImportCSVTask", "GPSImportCSVTask0");
+    //     createSubConfigurableFromConfig("GPSImportCSVTask", "GPSImportCSVTask0");
     //     traced_assert(gps_import_csv_task_);
     // }
 
     if (!radar_plot_position_calculator_task_)
     {
-        generateSubConfigurableFromConfig("RadarPlotPositionCalculatorTask",
+        createSubConfigurableFromConfig("RadarPlotPositionCalculatorTask",
                                         "RadarPlotPositionCalculatorTask0");
         traced_assert(radar_plot_position_calculator_task_);
     }
 
     if (!create_artas_associations_task_)
     {
-        generateSubConfigurableFromConfig("CreateARTASAssociationsTask", "CreateARTASAssociationsTask0");
+        createSubConfigurableFromConfig("CreateARTASAssociationsTask", "CreateARTASAssociationsTask0");
         traced_assert(create_artas_associations_task_);
     }
 
     if (!reconstruct_references_task_)
     {
-        generateSubConfigurableFromConfig("ReconstructorTask", "ReconstructorTask0");
+        createSubConfigurableFromConfig("ReconstructorTask", "ReconstructorTask0");
         traced_assert(reconstruct_references_task_);
     }
 
     if (!analyze_mlat_data_source_task_)
     {
-        generateSubConfigurableFromConfig("AnalyzeDataSourceTask", "AnalyzeDataSourceTask0");
+        createSubConfigurableFromConfig("AnalyzeDataSourceTask", "AnalyzeDataSourceTask0");
         traced_assert(analyze_mlat_data_source_task_);
     }
 
     if (!analyze_adsb_data_source_task_)
     {
-        generateSubConfigurableFromConfig("AnalyzeADSBDataSourceTask",
-                                          "AnalyzeADSBDataSourceTask0");
+        createSubConfigurableFromConfig("AnalyzeADSBDataSourceTask",
+                                        "AnalyzeADSBDataSourceTask0");
         traced_assert(analyze_adsb_data_source_task_);
+    }
+
+    if (!analyze_smr_data_source_task_)
+    {
+        createSubConfigurableFromConfig("AnalyzeSMRDataSourceTask",
+                                        "AnalyzeSMRDataSourceTask0");
+        traced_assert(analyze_smr_data_source_task_);
     }
 
     if (!report_export_)
     {
-        generateSubConfigurableFromConfig("ReportExport", "ReportExport0");
+        createSubConfigurableFromConfig("ReportExport", "ReportExport0");
         traced_assert(report_export_);
     }
 }
@@ -295,6 +430,7 @@ void TaskManager::shutdown()
     reconstruct_references_task_ = nullptr;
     analyze_mlat_data_source_task_ = nullptr;
     analyze_adsb_data_source_task_ = nullptr;
+    analyze_smr_data_source_task_ = nullptr;
 }
 
 /**
@@ -391,6 +527,27 @@ AnalyzeDataSourceTask& TaskManager::analyzeADSBDataSourceTask() const
 
 /**
  */
+AnalyzeDataSourceTask& TaskManager::analyzeSMRDataSourceTask() const
+{
+    traced_assert(analyze_smr_data_source_task_);
+    return *analyze_smr_data_source_task_;
+}
+
+/**
+ */
+AnalyzeDataSourceTask* TaskManager::analyzeDataSourceTask(const std::string& ds_type) const
+{
+    if (ds_type == "MLAT")
+        return analyze_mlat_data_source_task_.get();
+    if (ds_type == "ADSB")
+        return analyze_adsb_data_source_task_.get();
+    if (ds_type == "SMR")
+        return analyze_smr_data_source_task_.get();
+    return nullptr;
+}
+
+/**
+ */
 TaskResultsWidget* TaskManager::widget()
 {
     if (!widget_)
@@ -414,7 +571,7 @@ std::shared_ptr<TaskResult> TaskManager::createResult(unsigned int id,
     }
     else if (type == task::TaskResultType::Evaluation)
     {
-        result.reset(new EvaluationTaskResult(id, *this, compass_));
+        result.reset(new EvaluationTaskResult(id, *this, evaluationManager()));
     }
     else if (type == task::TaskResultType::DataSourceAnalysis)
     {
@@ -493,17 +650,22 @@ void TaskManager::endTaskResultWriting(bool store_result, bool show_dialog)
 
     traced_assert(res.ok());
 
+    //the report tables were written during the run, keep their catalog or drop them with the run
+    if (store_result)
+        current_result_->finalizeReportTables();
+    else
+        current_result_->discardReportTables();
+
     //store result?
     if (store_result)
     {
         loginf << "Storing result...";
 
         auto result_ptr = current_result_.get();
-        bool cleanup_db = CleanupDBIfNeeded;
 
-        auto cb = [ this, result_ptr, cleanup_db ] (const AsyncTaskState& s, AsyncTaskProgressWrapper& p)
+        auto cb = [ this, result_ptr ] (const AsyncTaskState& s, AsyncTaskProgressWrapper& p)
         {
-            return compass_.dbInterface().saveResult(*result_ptr, cleanup_db);
+            return result_db_->saveResult(*result_ptr);
         };
 
         AsyncFuncTask task(cb, "Save Result", "Saving result", false);
@@ -523,6 +685,8 @@ void TaskManager::endTaskResultWriting(bool store_result, bool show_dialog)
 
     current_result_ = nullptr;
 
+    updateReportContents();
+
     emit taskResultsChangedSignal();
 }
 
@@ -531,7 +695,7 @@ void TaskManager::endTaskResultWriting(bool store_result, bool show_dialog)
 void TaskManager::resultHeaderChanged(const TaskResult& result)
 {
     //update result header upon change
-    auto res = compass_.dbInterface().updateResultHeader(result);
+    auto res = result_db_->updateResultHeader(result);
     traced_assert(res.ok());
 
     emit taskResultHeaderChangedSignal(QString::fromStdString(result.name()));
@@ -542,26 +706,8 @@ void TaskManager::resultHeaderChanged(const TaskResult& result)
 void TaskManager::resultContentChanged(const TaskResult& result)
 {
     //update result content upon change
-    auto res = compass_.dbInterface().updateResultContent(result);
+    auto res = result_db_->updateResultContent(result);
     traced_assert(res.ok());
-}
-
-/**
- */
-MainWindow* TaskManager::getMainWindow()
-{
-    for(QWidget* pWidget : QApplication::topLevelWidgets())
-    {
-        QMainWindow* qt_main_window = qobject_cast<QMainWindow*>(pWidget);
-
-        if (qt_main_window)
-        {
-            MainWindow* main_window = dynamic_cast<MainWindow*>(qt_main_window);
-            traced_assert(main_window);
-            return main_window;
-        }
-    }
-    return nullptr;
 }
 
 /**
@@ -655,11 +801,13 @@ bool TaskManager::removeResult(const std::string& name,
     const auto& result = results_.at(id.value());
     traced_assert(result);
 
-    auto res = compass_.dbInterface().deleteResult(*result, CleanupDBIfNeeded);
+    auto res = result_db_->deleteResult(*result);
     if (!res.ok())
         return false;
 
     results_.erase(id.value());
+
+    updateReportContents();
 
     if (inform_changes)
         emit taskResultsChangedSignal();
@@ -697,7 +845,20 @@ ResultT<nlohmann::json> TaskManager::exportResult(const std::string& name,
  */
 void TaskManager::databaseOpenedSlot()
 {
+    //determine maximum report content id
+    auto max_id = result_db_->getMaxReportContentID();
+    ResultReport::Section::setCurrentContentID(max_id.has_value() ? max_id.value() + 1 : 0);
+
     loadResults();
+}
+
+/**
+ * The report document may still read section contents from the database, also in a worker thread.
+ */
+void TaskManager::databaseAboutToCloseSlot()
+{
+    if (widget_)
+        widget_->releaseReportDocument();
 }
 
 /**
@@ -710,18 +871,19 @@ void TaskManager::databaseClosedSlot()
 /**
  */
 void TaskManager::setViewableDataConfig(const nlohmann::json::object_t& data,
-                                        bool load_blocking)
+                                        bool load_blocking,
+                                        bool open_view_deck)
 {
     viewable_data_cfg_ = std::make_shared<ViewableDataConfig>(data);
 
-    compass_.viewManager().setCurrentViewPoint(viewable_data_cfg_, load_blocking);
+    viewManager().setCurrentViewPoint(viewable_data_cfg_, load_blocking, open_view_deck);
 }
 
 /**
  */
 void TaskManager::unsetViewableDataConfig()
 {
-    compass_.viewManager().unsetCurrentViewPoint();
+    viewManager().unsetCurrentViewPoint();
     viewable_data_cfg_.reset();
 }
 
@@ -740,7 +902,7 @@ std::shared_ptr<ResultReport::SectionContent> TaskManager::loadContent(ResultRep
 
         auto cb = [ this, result_ptr, section, content_id ] (const AsyncTaskState&, AsyncTaskProgressWrapper&) 
         { 
-            *result_ptr = compass_.dbInterface().loadContent(section, content_id);
+            *result_ptr = result_db_->loadContent(section, content_id);
             return true;
         };
 
@@ -750,7 +912,7 @@ std::shared_ptr<ResultReport::SectionContent> TaskManager::loadContent(ResultRep
     else
     {
         //directly run
-        result = compass_.dbInterface().loadContent(section, content_id);
+        result = result_db_->loadContent(section, content_id);
     }
 
     if (!result.ok())
@@ -763,6 +925,40 @@ std::shared_ptr<ResultReport::SectionContent> TaskManager::loadContent(ResultRep
 }
 
 /**
+ * Reads the stored content JSON of a result. Used by TaskResult for its on demand content load.
+ * The read and the JSON parse of a large report take seconds, so they run as an async task and
+ * the result widget is blocked while they run.
+ */
+ResultT<nlohmann::json> TaskManager::loadResultContent(unsigned int result_id) const
+{
+    //already running in a worker thread, e.g. the report loading task of TaskResultsWidget?
+    //then read directly, a dialog and widget calls are only allowed in the main thread
+    if (QThread::currentThread() != QCoreApplication::instance()->thread())
+        return result_db_->loadResultContent(result_id);
+
+    ResultT<nlohmann::json> result;
+
+    if (widget_)
+        widget_->setDisabled(true);
+
+    auto result_ptr = &result;
+
+    auto cb = [ this, result_ptr, result_id ] (const AsyncTaskState&, AsyncTaskProgressWrapper&)
+    {
+        *result_ptr = result_db_->loadResultContent(result_id);
+        return Result::succeeded();
+    };
+
+    AsyncFuncTask task(cb, "Loading", "Loading report content", false);
+    task.runAsyncDialog();
+
+    if (widget_)
+        widget_->setDisabled(false);
+
+    return result;
+}
+
+/**
  */
 void TaskManager::loadResults()
 {
@@ -770,7 +966,7 @@ void TaskManager::loadResults()
 
     results_.clear();
     
-    auto res = compass_.dbInterface().loadResults();
+    auto res = result_db_->loadResults();
     if (!res.ok())
     {
         logerr << "could not load stored results: " << res.error();
@@ -782,6 +978,20 @@ void TaskManager::loadResults()
 
     loginf << "Loaded " << results_.size() << " result(s)";
 
+    //drop report tables no stored result refers to, left behind by an aborted run
+    std::set<std::string> referenced_tables;
+    for (const auto& r : results_)
+    {
+        auto names = r.second->reportTableNames();
+        referenced_tables.insert(names.begin(), names.end());
+    }
+
+    auto num_orphans = db_interface_.removeOrphanReportTables(referenced_tables);
+    if (num_orphans)
+        loginf << "Dropped " << num_orphans << " orphan report table(s)";
+
+    updateReportContents();
+
     emit taskResultsChangedSignal();
 }
 
@@ -792,8 +1002,37 @@ void TaskManager::clearResults()
     traced_assert(!current_result_);
 
     results_.clear();
-    
+
+    updateReportContents();
+
     emit taskResultsChangedSignal();
+}
+
+/**
+ * Offers the Report Tables of the stored results as Report Variables, see
+ * readme_dynamic_dbcontent.md Section 4.3. A report without a record table adds no entry.
+ */
+void TaskManager::updateReportContents()
+{
+    std::vector<std::unique_ptr<dbContent::ReportContent>> contents;
+
+    for (const auto& result_it : results_)
+    {
+        const auto& result = result_it.second;
+
+        if (!result || !result->hasReportTables())
+            continue;
+
+        std::unique_ptr<dbContent::ReportContent> content(
+            new dbContent::ReportContent(result->name(), result->id(), result->reportTables()));
+
+        if (!content->hasVariables())
+            continue;
+
+        contents.push_back(std::move(content));
+    }
+
+    dbcont_man_.setReportContents(std::move(contents));
 }
 
 /**
@@ -810,5 +1049,12 @@ void TaskManager::restoreBackupSection()
 {
     if (widget_)
         widget_->restoreBackupSection();
+}
+
+/**
+ */
+void TaskManager::selectResultID(const std::string& id, bool show_figure)
+{
+    widget()->selectID(id, show_figure);
 }
 

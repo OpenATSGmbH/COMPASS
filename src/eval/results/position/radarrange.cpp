@@ -15,12 +15,13 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/position/radarrange.h"
+#include "results/position/radarrange.h"
+#include "requirement/position/radar_helpers.h"
+#include "requirement/position/radarrange.h"
 #include "stringconv.h"
 
 #include "logger.h"
 
-#include <Eigen/Dense>
 
 #include "traced_assert.h"
 
@@ -28,6 +29,20 @@ using namespace Utils;
 
 namespace EvaluationRequirementResult
 {
+
+namespace
+{
+
+double rangeStatisticValue(const std::shared_ptr<EvaluationRequirement::Base>& requirement,
+                           double stddev, const EvaluationRequirement::RadarHelpers::RangeErrorModel& model)
+{
+    auto req = std::dynamic_pointer_cast<EvaluationRequirement::PositionRadarRange>(requirement);
+    traced_assert(req);
+
+    return EvaluationRequirement::RadarHelpers::statisticValue(req->statistic(), stddev, model.bias_m, model.gain_m_per_nm);
+}
+
+}
 
 /**********************************************************************************************
  * SinglePositionRadarRange
@@ -62,6 +77,15 @@ SinglePositionRadarRange::SinglePositionRadarRange(const std::string& result_id,
 }
 
 /**
+ */
+void SinglePositionRadarRange::addDetailCodeTexts(ReportTableDefinition& def) const
+{
+    DetailCode::addTypeText(def, NoDataSourceInfo, "No data source position");
+    DetailCode::addTypeText(def, RefTransformationError, "Reference position transformation error");
+    DetailCode::addTypeText(def, TstTransformationError, "Test position transformation error");
+}
+
+/**
 */
 std::shared_ptr<Joined> SinglePositionRadarRange::createEmptyJoined(const std::string& result_id)
 {
@@ -83,8 +107,8 @@ nlohmann::json::array_t SinglePositionRadarRange::targetTableValuesCustom() cons
              formatValue(accumulator_.max()),
              formatValue(accumulator_.mean()),
              formatValue(accumulator_.stddev()),
-             range_bias_,
-             range_gain_,
+             range_bias_.is_null() ? range_bias_ : nlohmann::json(formatValue(range_bias_.get<double>())),
+             range_gain_.is_null() ? range_gain_ : nlohmann::json(formatValue(range_gain_.get<double>())),
              num_failed_, 
              num_passed_ }; 
 }
@@ -107,40 +131,15 @@ std::vector<Single::TargetInfo> SinglePositionRadarRange::targetInfos() const
           { "DVar [m^2]"     , "Variance of distance"                     , formatValue(accumulator_.var())    } };
 
     if (!range_bias_.is_null())
-        infos.push_back({ "Range Bias [m]", "Range bias (linear estimation)", formatValue(range_bias_.get<double>()) });
+        infos.push_back({ "Range Bias [m]", "Bias of the range error model (test = (1 + gain) * reference + bias)", formatValue(range_bias_.get<double>()) });
 
     if (!range_gain_.is_null())
-        infos.push_back({ "Range Gain [1]", "Range gain (linear estimation)", formatValue(range_gain_.get<double>()) });
+        infos.push_back({ "Range Gain [m/NM]", "Gain of the range error model (test = (1 + gain) * reference + bias)", formatValue(range_gain_.get<double>()) });
 
     infos.push_back({ "#CF [1]", "Number of updates with failed comparison" , num_failed_});
     infos.push_back({ "#CP [1]", "Number of updates with passed comparison" , num_passed_});
 
     return infos;
-}
-
-/**
-*/
-std::vector<std::string> SinglePositionRadarRange::detailHeaders() const
-{
-    return { "ToD", "NoRef", "PosInside", "#RefPosIn", "Range", "CP", "#CF", "#CP", "Comment" };
-}
-
-/**
-*/
-nlohmann::json::array_t SinglePositionRadarRange::detailValues(const EvaluationDetail& detail,
-                                                               const EvaluationDetail* parent_detail) const
-{
-    bool has_ref_pos = detail.numPositions() >= 2;
-
-    return { Utils::Time::toString(detail.timestamp()),
-            !has_ref_pos,
-             detail.getValue(SinglePositionBaseCommon::DetailKey::PosInside).toBool(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumRefInaccurate).toUInt(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::Value).toFloat(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::CheckPassed).toBool(), 
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckFailed).toUInt(), 
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckPassed).toUInt(), 
-             detail.comments().generalComment() }; 
 }
 
 /**
@@ -153,29 +152,14 @@ boost::optional<double> SinglePositionRadarRange::computeFinalResultValue() cons
     if (accumulator_.numValues() == 0)
         return {};
 
-    // linear regression
-    size_t num_distances = accumulator_.numValues();
+    traced_assert(accumulator_.numValues() == range_values_ref_.size());
 
-    traced_assert(num_distances == range_values_ref_.size());
+    auto model = EvaluationRequirement::RadarHelpers::rangeErrorModel(range_values_ref_, range_values_tst_);
 
-    Eigen::MatrixXd x_mat = Eigen::MatrixXd::Ones(num_distances, 2);
-    Eigen::MatrixXd y_mat = Eigen::MatrixXd::Ones(num_distances, 1);
+    range_gain_ = model.gain_m_per_nm;
+    range_bias_ = model.bias_m;
 
-    for (unsigned int cnt=0; cnt < num_distances; ++cnt)
-    {
-        x_mat(cnt, 0) = range_values_tst_.at(cnt);
-        y_mat(cnt, 0) = range_values_ref_.at(cnt);
-    }
-
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd;
-
-    svd.compute(x_mat, Eigen::ComputeThinV | Eigen::ComputeThinU);
-    Eigen::MatrixXd x = svd.solve(y_mat);
-
-    range_gain_ = x(0, 0);
-    range_bias_ = x(1, 0);
-
-    return accumulator_.mean();
+    return rangeStatisticValue(requirement_, accumulator_.stddev(), model);
 }
 
 /**********************************************************************************************
@@ -210,10 +194,10 @@ std::vector<Joined::SectorInfo> JoinedPositionRadarRange::sectorInfos() const
           { "DVar [m^2]"     , "Variance of distance"                     , formatValue(accumulator_.var())    } };
 
     if (range_bias_.isValid())
-        infos.push_back({ "Range Bias [m]", "Range bias (linear estimation)", formatValue(range_bias_.toDouble()) });
+        infos.push_back({ "Range Bias [m]", "Bias of the range error model (test = (1 + gain) * reference + bias)", formatValue(range_bias_.toDouble()) });
 
     if (range_gain_.isValid())
-        infos.push_back({ "Range Gain [1]", "Range gain (linear estimation)", formatValue(range_gain_.toDouble(), 5) });
+        infos.push_back({ "Range Gain [m/NM]", "Gain of the range error model (test = (1 + gain) * reference + bias)", formatValue(range_gain_.toDouble()) });
 
     infos.push_back({ "#CF [1]", "Number of updates with failed comparison" , num_failed_});
     infos.push_back({ "#CP [1]", "Number of updates with passed comparison" , num_passed_});
@@ -248,28 +232,14 @@ boost::optional<double> JoinedPositionRadarRange::computeFinalResultValue() cons
         range_values_tst.insert(range_values_tst.end(), values_tst.begin(), values_tst.end());
     }
 
-    unsigned int num_distances = accumulator_.numValues();
+    traced_assert(accumulator_.numValues() == range_values_ref.size() && range_values_ref.size() == range_values_tst.size());
 
-    traced_assert(num_distances == range_values_ref.size() && range_values_ref.size() == range_values_tst.size());
+    auto model = EvaluationRequirement::RadarHelpers::rangeErrorModel(range_values_ref, range_values_tst);
 
-    Eigen::MatrixXd x_mat = Eigen::MatrixXd::Ones(num_distances, 2);
-    Eigen::MatrixXd y_mat = Eigen::MatrixXd::Ones(num_distances, 1);
+    range_gain_ = model.gain_m_per_nm;
+    range_bias_ = model.bias_m;
 
-    for (unsigned int cnt=0; cnt < num_distances; ++cnt)
-    {
-        x_mat(cnt, 0) = range_values_tst.at(cnt);
-        y_mat(cnt, 0) = range_values_ref.at(cnt);
-    }
-
-    Eigen::JacobiSVD<Eigen::MatrixXd> svd;
-
-    svd.compute(x_mat, Eigen::ComputeThinV | Eigen::ComputeThinU);
-    Eigen::MatrixXd x = svd.solve(y_mat);
-
-    range_gain_ = x(0, 0);
-    range_bias_ = x(1, 0);
-
-    return accumulator_.mean();
+    return rangeStatisticValue(requirement_, accumulator_.stddev(), model);
 }
 
 }

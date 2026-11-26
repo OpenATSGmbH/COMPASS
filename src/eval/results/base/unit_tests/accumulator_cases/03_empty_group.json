@@ -1,0 +1,19 @@
+{
+    "description": "A target without distances does not change the joined statistics.",
+    "groups": [
+        [],
+        [
+            5.0,
+            7.0
+        ]
+    ],
+    "expected": {
+        "num": 2,
+        "min": 5.0,
+        "max": 7.0,
+        "mean": 6.0,
+        "rms": 6.082762530298219,
+        "var": 1.0,
+        "stddev": 1.0
+    }
+}

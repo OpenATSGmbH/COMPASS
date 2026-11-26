@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "targetreportdefs.h"
 #include "reconstructortarget.h"
 #include "reconstructorbase.h"
@@ -105,7 +106,24 @@ class ReconstructorAssociatorBase
         const boost::optional<unsigned int>& thread_id,
         reconstruction::PredictionStats* stats = nullptr) = 0;
 
-    const std::vector<unsigned long>& unassociatedRecNums() const;
+    const std::vector<std::uint64_t>& unassociatedRecNums() const;
+
+    // why a track number lookup was severed: the position offset check failed
+    // (ghost/seduction case), or the same track number turned out to be reused
+    // by a different ACAD transponder (canAssocByTrackNumber)
+    enum class TrackDisassocReason
+    {
+        PositionOffset = 0,
+        ACADReuse
+    };
+
+    // notification hook: track number lookup was severed; default no-op,
+    // overridden by the ProbIMM associator for dubious reference detection.
+    // Public: the ACAD-reuse severing happens in the targets container, which
+    // notifies through this hook from outside the associator
+    virtual void onTrackNumberDisassociated (
+        const dbContent::targetReport::ReconstructorInfo& tr, unsigned int utn,
+        TrackDisassocReason reason) {}
 
 protected:
 
@@ -113,7 +131,7 @@ protected:
 
     std::map<unsigned int, std::map<unsigned int, std::pair<unsigned int, unsigned int>>> assoc_counts_;
     // ds_id -> dbcont id -> (assoc, unassoc cnt)
-    std::vector<unsigned long> unassoc_rec_nums_;
+    std::vector<std::uint64_t> unassoc_rec_nums_;
     
     unsigned int num_merges_ {0};
 
@@ -128,7 +146,7 @@ protected:
 
     virtual void associateUnreliablePrimaryOnly(unsigned int ds_id,
                                                 const boost::posix_time::ptime& ts,
-                                                const std::vector<unsigned long>& rec_nums,
+                                                const std::vector<std::uint64_t>& rec_nums,
                                                 bool debug);
 
     void selfAssociateNewUTNs();
@@ -138,7 +156,7 @@ protected:
     virtual void postAssociate() {}
     //void checkACADLookup();
     virtual void countUnAssociated();
-    void countUnAssociated(const std::vector<unsigned long>& rec_nums);
+    void countUnAssociated(const std::vector<std::uint64_t>& rec_nums);
 
     struct FindByMACPosDiag
     {
@@ -165,6 +183,16 @@ protected:
     std::vector<ReconstructorAssociatorBase::AssociationOption> findUTNsForTarget (unsigned int utn,
                                                                                    std::map<std::pair<unsigned int, unsigned int>, ReconstructorAssociatorBase::AssociationOption>& assoc_option_cache);
 
+    /**
+     * Targets findUTNsForTarget can actually merge with, which are the ones created in the
+     * current slice. Scanning all accumulated utns instead and rejecting them inside the loop
+     * costs a lookup per target per call, plus result buffers sized to the full target count.
+     * Rebuilt at the start of every self association round, since targets are removed between them.
+     */
+    void updateSelfAssociationCandidates();
+
+    std::vector<unsigned int> self_assoc_candidates_;
+
     virtual bool canGetPositionOffsetTargets(
         const boost::posix_time::ptime& ts,
         const dbContent::ReconstructorTarget& target0,
@@ -181,6 +209,11 @@ protected:
         dbContent::targetReport::ReconstructorInfo& tr, unsigned int utn,
         bool secondary_verified, bool do_debug) = 0;
     // empty if not possible, else check passed or failed returned
+
+    // notification hook: during self-association the reports of from_utn were
+    // merged into to_utn and from_utn is scheduled for removal; default no-op,
+    // overridden by the ProbIMM associator for dubious reference detection
+    virtual void onTargetsMerged (unsigned int from_utn, unsigned int to_utn) {}
     virtual void doOutlierDetection (
         dbContent::targetReport::ReconstructorInfo& tr,
         unsigned int utn, bool do_debug) {};

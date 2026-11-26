@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include <QDialog>
 
 #include "boost/date_time/posix_time/posix_time.hpp"
@@ -26,7 +28,7 @@ class QPushButton;
 class QGridLayout;
 class CreateARTASAssociationsTask;
 
-class CreateARTASAssociationsStatusDialog : public QDialog
+class COMPASS_TASK_API CreateARTASAssociationsStatusDialog : public QDialog
 {
     Q_OBJECT
 

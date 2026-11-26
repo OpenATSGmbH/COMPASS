@@ -19,7 +19,8 @@
 
 #include "configurable.h"
 #include "evaluationstandardtreeitem.h"
-#include "eval/requirement/base/baseconfigwidget.h"
+#include "requirement/base/baseconfigwidget.h"
+#include "requirement/base/targetselection.h"
 
 #include <QObject>
 
@@ -72,12 +73,22 @@ public:
     BaseConfigWidget* widget();
     virtual std::shared_ptr<Base> createRequirement() = 0;
 
+    // creates the requirement and applies the settings common to all requirement types,
+    // use this instead of createRequirement()
+    std::shared_ptr<Base> createRequirementInstance();
+
     std::string comment() const;
     void comment(const std::string& comment);
+
+    TargetSelection targetSelection() const;
+    void targetSelection(TargetSelection selection);
 
     virtual void addToReport (std::shared_ptr<ResultReport::Report> report);
 
 protected:
+    /// probability in percent for the report, rounded to the decimals the value needs (1e-6 gives 0.0001)
+    static double probabilityPercent(double prob);
+
     Group& group_;
     EvaluationStandard& standard_;
     EvaluationCalculator& calculator_;
@@ -86,6 +97,7 @@ protected:
     std::string name_;
     std::string short_name_;
     std::string comment_;
+    std::string target_selection_;
 
     virtual void checkSubConfigurables() override;
     virtual BaseConfigWidget* createWidget(); // creates BaseConfigWidget, override to change

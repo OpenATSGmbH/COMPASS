@@ -17,7 +17,11 @@
 
 #pragma once
 
+#include "compass_filter_export.h"
+
 #include "configurable.h"
+#include "ifilterprovider.h"
+#include "imanager.h"
 #include "appmode.h"
 #include "dbfilter.h"
 #include "dbcontentmanagervariableresolver.h"
@@ -30,8 +34,8 @@
 #include <memory>
 
 class DataSourcesFilter;
-class COMPASS;
 class DBContentManager;
+class DBInterface;
 namespace context { class DBContextManager; }
 class FilterManagerWidget;
 class ViewableDataConfig;
@@ -44,7 +48,7 @@ class VariableSet;
 
 }
 
-class FilterManager : public QObject, public Configurable
+class COMPASS_FILTER_API FilterManager : public QObject, public Configurable, public IFilterProvider, public IManager
 {
     Q_OBJECT
 signals:
@@ -55,6 +59,8 @@ public slots:
     void databaseOpenedSlot();
     void databaseClosedSlot();
     void dataSourcesChangedSlot();
+    /// sector layers or the active context changed, refreshes the Sectors filter
+    void sectorsChangedSlot();
 
     void appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current);
 
@@ -65,17 +71,24 @@ public slots:
 
 public:
     // FilterManager(const std::string& class_name, const std::string& instance_name, COMPASS* compass);
-    FilterManager(nlohmann::json& config, COMPASS& compass);
+    FilterManager(nlohmann::json& config,
+                  Configurable& parent,
+                  DBContentManager& dbcont_man);
     virtual ~FilterManager();
 
-    bool useFilters() const;
+    // peers, set by the composition root after all managers were created
+    void setManagers(context::DBContextManager& ctx_man,
+                     DBInterface& db_interface);
+    bool checkWired() const override;
+
+    bool useFilters() const override;
     void useFilters(bool useFilters);
 
     std::string getSQLCondition(const std::string& dbcontent_name, dbContent::VariableSet& read_set);
 
     // combined WHERE fragment for all active view filters applying to a DBContent, with the
     // referenced vars as required_vars. Replaces getSQLCondition (no read-set side effect).
-    FilterClause viewClause(const std::string& dbcontent_name);
+    FilterClause viewClause(const std::string& dbcontent_name) override;
 
     unsigned int getNumFilters();
     DBFilter* getFilter(unsigned int index);
@@ -85,8 +98,6 @@ public:
     DBFilter* getFilter (const std::string& name);
 
     void deleteFilter(const std::string& name);
-
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
 
     // resets all filters
     void reset();
@@ -98,20 +109,25 @@ public:
     void setConfigInViewPoint (nlohmann::json& data);
     void disableAllFilters ();
 
-    void filterBuffers(std::map<std::string, std::shared_ptr<Buffer>>& data);
+    void filterBuffers(std::map<std::string, std::shared_ptr<Buffer>>& data) override;
 
     void resetToStartupConfiguration();
 
-    COMPASS& compass() { return compass_; }
     DBContentManager& dbContentManager() { return dbcontent_man_; }
     context::DBContextManager& dbContextManager();
+    DBInterface& dbInterface();
 
     IDBVariableResolver& variableResolver() { return var_resolver_; }
 
 protected:
-    COMPASS& compass_;
-    DBContentManager& dbcontent_man_;
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
+    DBContentManager&                dbcontent_man_;
     DBContentManagerVariableResolver var_resolver_;
+
+    // peers, set by the composition root
+    context::DBContextManager* ctx_man_      = nullptr;
+    DBInterface*               db_interface_ = nullptr;
 
     // database id, resets if changed
     std::string db_id_;
@@ -122,6 +138,8 @@ protected:
     std::vector<std::unique_ptr<DBFilter>> filters_;
 
     virtual void checkSubConfigurables();
+
+    void loadNoData();
 
     bool checkDBContent (const std::string& dbcontent_name); // returns true if ok
 };

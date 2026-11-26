@@ -15,8 +15,8 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/generic/genericconfigwidget.h"
-#include "eval/requirement/generic/genericconfig.h"
+#include "requirement/generic/genericconfigwidget.h"
+#include "requirement/generic/genericconfig.h"
 #include "logger.h"
 
 #include <QLineEdit>

@@ -20,7 +20,6 @@
 #include "buffer.h"
 #include "logger.h"
 
-#include <QMessageBox>
 #include <QTableView>
 #include <QTimer>
 #include <QItemSelection>
@@ -49,14 +48,28 @@ void AllBufferTableWidget::show(std::map<std::string, std::shared_ptr<Buffer>> b
     table_->resizeColumnsToContents();
 }
 
+void AllBufferTableWidget::showPrepared(AllBufferTableModel::PreparedData&& prepared)
+{
+    traced_assert(table_);
+    traced_assert(all_buffer_model_);
+
+    all_buffer_model_->applyPrepared(std::move(prepared));
+    table_->resizeColumnsToContents();
+}
+
 void AllBufferTableWidget::selectSelectedRows()
+{
+    traced_assert(all_buffer_model_);
+
+    selectSelectedRows(all_buffer_model_->getSelectedRows());
+}
+
+void AllBufferTableWidget::selectSelectedRows(const std::vector<std::pair<int,int>>& ranges)
 {
     loginf;
 
     traced_assert(table_);
     traced_assert(all_buffer_model_);
-
-    std::vector<std::pair<int,int>> ranges = all_buffer_model_->getSelectedRows();
 
     if (ranges.empty())
     {
@@ -93,7 +106,7 @@ void AllBufferTableWidget::selectSelectedRows()
     QTimer::singleShot(10, [this,first]{table_->scrollTo(first, QAbstractItemView::PositionAtCenter);});
 }
 
-std::vector<std::vector<std::string>> AllBufferTableWidget::getSelectedText()
+std::vector<std::vector<std::string>> AllBufferTableWidget::getSelectedText(unsigned int max_rows)
 {
     std::vector<std::vector<std::string>> data;
 
@@ -114,7 +127,7 @@ std::vector<std::vector<std::string>> AllBufferTableWidget::getSelectedText()
     std::vector<std::string> header_data;
     std::vector<std::string> current_row_data;
 
-    header_data.push_back(model->headerData(previous.column(), Qt::Horizontal).toString().toStdString());
+    header_data.push_back(model->headerData(previous.column(), Qt::Horizontal, BaseBufferTableModel::VariableNameRole).toString().toStdString());
     current_row_data.push_back(model->data(previous).toString().toStdString());
     indexes.removeFirst();
 
@@ -130,13 +143,9 @@ std::vector<std::vector<std::string>> AllBufferTableWidget::getSelectedText()
 
             ++row_count;
 
-            if (row_count == 999)
+            if (max_rows && row_count >= max_rows)
             {
-                QMessageBox m_warning(
-                            QMessageBox::Warning, "Too Many Rows Selected",
-                            "If more than 1000 lines are selected, only the first 1000 are copied.",
-                            QMessageBox::Ok);
-                m_warning.exec();
+                logwrn << "selection truncated to " << max_rows << " rows";
                 break;
             }
         }
@@ -144,7 +153,7 @@ std::vector<std::vector<std::string>> AllBufferTableWidget::getSelectedText()
         current_row_data.push_back(model->data(current).toString().toStdString());
 
         if (!row_count)  // first row
-            header_data.push_back(model->headerData(current.column(), Qt::Horizontal).toString().toStdString());
+            header_data.push_back(model->headerData(current.column(), Qt::Horizontal, BaseBufferTableModel::VariableNameRole).toString().toStdString());
 
         previous = current;
     }
@@ -168,7 +177,7 @@ std::vector<std::vector<std::string>> AllBufferTableWidget::getText(unsigned int
     std::vector<std::string> header_data;
     std::vector<std::string> current_row_data;
 
-    header_data.push_back(model->headerData(previous_index.column(), Qt::Horizontal).toString().toStdString());
+    header_data.push_back(model->headerData(previous_index.column(), Qt::Horizontal, BaseBufferTableModel::VariableNameRole).toString().toStdString());
     current_row_data.push_back(model->data(previous_index).toString().toStdString());
 
     QModelIndex current_index;
@@ -213,7 +222,7 @@ std::vector<std::vector<std::string>> AllBufferTableWidget::getText(unsigned int
             current_row_data.push_back(model->data(current_index).toString().toStdString());
 
             if (!row_count)  // first row
-                header_data.push_back(model->headerData(current_index.column(), Qt::Horizontal).toString().toStdString());
+                header_data.push_back(model->headerData(current_index.column(), Qt::Horizontal, BaseBufferTableModel::VariableNameRole).toString().toStdString());
 
             previous_index = current_index;
         }

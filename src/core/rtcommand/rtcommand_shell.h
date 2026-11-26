@@ -15,7 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#pragma once 
+#pragma once
+
+#include "compass_core_export.h"
 
 #include <vector>
 
@@ -35,7 +37,7 @@ namespace rtcommand
 /**
  * 
  */
-class RTCommandBacklogWidget : public QWidget
+class COMPASS_CORE_API RTCommandBacklogWidget : public QWidget
 {
     Q_OBJECT
 public:

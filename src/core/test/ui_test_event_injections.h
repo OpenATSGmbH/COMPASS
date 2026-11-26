@@ -22,7 +22,9 @@
 #include <functional>
 
 #include <QString>
+#include <QStringList>
 #include <QKeySequence>
+#include <QEvent>
 
 class QObject;
 class QWidget;
@@ -65,15 +67,35 @@ namespace ui_test
                           int x = -1, 
                           int y = -1, 
                           Qt::MouseButton button = Qt::LeftButton, 
-                          int delay = -1);
+                          int delay = -1,
+                          Qt::KeyboardModifiers modifiers = Qt::NoModifier);
     bool injectRectEvent(QWidget* root,
-                         const QString& obj_name, 
-                         int x0 = -1, 
-                         int y0 = -1, 
-                         int x1 = -1, 
+                         const QString& obj_name,
+                         int x0 = -1,
+                         int y0 = -1,
+                         int x1 = -1,
                          int y1 = -1,
-                         Qt::MouseButton button = Qt::LeftButton, 
-                         int delay = -1);
+                         Qt::MouseButton button = Qt::LeftButton,
+                         int delay = -1,
+                         Qt::KeyboardModifiers modifiers = Qt::NoModifier);
+    bool injectMouseStepEvent(QWidget* root,
+                              const QString& obj_name,
+                              QEvent::Type type,
+                              int x,
+                              int y,
+                              Qt::MouseButton button,
+                              Qt::KeyboardModifiers modifiers);
+    bool injectDblClickEvent(QWidget* root,
+                             const QString& obj_name,
+                             int x = -1,
+                             int y = -1,
+                             Qt::MouseButton button = Qt::LeftButton,
+                             int delay = -1);
+    bool injectWheelEvent(QWidget* root,
+                          const QString& obj_name,
+                          int x = -1,
+                          int y = -1,
+                          int delta = 120);
 
     typedef std::function<bool()> EventFunc;
 
@@ -95,14 +117,22 @@ namespace ui_test
                          const QString& obj_name,
                          const QStringList& path_to_action,
                          int delay = -1);
+    bool injectOpenMenuEvent(QWidget* root,
+                             const QString& obj_name,
+                             const QStringList& path_to_menu);
     bool injectPopupMenuEvent(const QStringList& path_to_action,
                               int delay = -1);
     bool injectTreeViewEvent(QWidget* root,
                              const QString& obj_name,
                              const QStringList& path_to_item,
                              int delay = -1);
+    bool injectTreeItemCheckClickEvent(QWidget* root,
+                                       const QString& obj_name,
+                                       const QStringList& path_to_item,
+                                       int delay = -1);
     bool injectContextMenuEvent(QWidget* root,
                                 const QString& obj_name,
+                                const QStringList& path_to_item = QStringList(),
                                 int delay = -1);
     bool injectComboBoxEditEvent(QWidget* root,
                                  const QString& obj_name,

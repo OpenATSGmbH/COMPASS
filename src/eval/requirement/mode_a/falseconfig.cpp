@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/mode_a/falseconfig.h"
-#include "eval/requirement/mode_a/modeafalseconfigwidget.h"
-#include "eval/requirement/mode_a/false.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
+#include "requirement/mode_a/falseconfig.h"
+#include "requirement/mode_a/modeafalseconfigwidget.h"
+#include "requirement/mode_a/false.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 using namespace std;
 
@@ -53,12 +53,14 @@ BaseConfigWidget* ModeAFalseConfig::createWidget()
 
 void ModeAFalseConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
+    BaseConfig::addToReport(report);
+
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
-    auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& table = section.getTable("req_table");
 
-    table.addRow({"Probability [1]", "Probability of false Mode 3/A code",
-                  roundf(prob_ * 10000.0) / 100.0});
+    table.addRow({"Probability [%]", "Probability of false Mode 3/A code",
+                  probabilityPercent(prob_)});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
 

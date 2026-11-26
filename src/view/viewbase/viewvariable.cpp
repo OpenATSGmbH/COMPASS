@@ -22,10 +22,10 @@
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/variable/variableset.h"
 #include "dbcontent/variable/metavariable.h"
+#include "dbcontent/variable/reportvariable.h"
 #include "dbcontent/variable/variableselectionwidget.h"
 
 #include "global.h"
-#include "compass.h"
 #include "viewmanager.h"
 #include "logger.h"
 
@@ -84,10 +84,51 @@ bool ViewVariable::hasVariable () const
     if (settings_.data_var_dbcont.empty() || settings_.data_var_name.empty())
         return false;
 
+    auto& dbcont_man = view_->viewManager().dbContentManager();
+
     if (settings_.data_var_dbcont == META_OBJECT_NAME)
-        return view_->viewManager().compass().dbContentManager().existsMetaVariable(settings_.data_var_name);
-    else
-        return view_->viewManager().compass().dbContentManager().dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name);
+        return dbcont_man.existsMetaVariable(settings_.data_var_name);
+
+    //a Report Variable of a report this database does not hold is not available, the name
+    //stays in the configuration, see readme_dynamic_dbcontent.md decision 19
+    if (dbcont_man.existsReportContent(settings_.data_var_dbcont))
+        return dbcont_man.existsReportVariable(settings_.data_var_dbcont, settings_.data_var_name);
+
+    if (!dbcont_man.existsDBContent(settings_.data_var_dbcont))
+        return false;
+
+    return dbcont_man.dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name);
+}
+
+/**
+ */
+bool ViewVariable::isReportVariable () const
+{
+    if (settings_.data_var_dbcont.empty() || settings_.data_var_dbcont == META_OBJECT_NAME)
+        return false;
+
+    return view_->viewManager().dbContentManager().existsReportContent(settings_.data_var_dbcont);
+}
+
+/**
+ */
+dbContent::ReportVariable& ViewVariable::reportVariable() const
+{
+    traced_assert(isReportVariable());
+
+    auto& dbcont_man = view_->viewManager().dbContentManager();
+
+    return dbcont_man.reportContent(settings_.data_var_dbcont).variable(settings_.data_var_name);
+}
+
+/**
+ */
+dbContent::ReportVariable* ViewVariable::reportVariablePtr() const
+{
+    if (!hasVariable() || !isReportVariable())
+        return nullptr;
+
+    return &reportVariable();
 }
 
 /**
@@ -113,6 +154,9 @@ boost::optional<PropertyDataType> ViewVariable::dataType() const
 
     if (isMetaVariable())
         return metaVariable().dataType();
+
+    if (isReportVariable())
+        return reportVariable().dataType();
 
     return variable().dataType();
 }
@@ -158,9 +202,10 @@ dbContent::Variable& ViewVariable::variable()
 {
     traced_assert(hasVariable());
     traced_assert(!isMetaVariable());
-    traced_assert(view_->viewManager().compass().dbContentManager().dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name));
+    traced_assert(!isReportVariable());
+    traced_assert(view_->viewManager().dbContentManager().dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name));
 
-    return view_->viewManager().compass().dbContentManager().dbContent(settings_.data_var_dbcont).variable(settings_.data_var_name);
+    return view_->viewManager().dbContentManager().dbContent(settings_.data_var_dbcont).variable(settings_.data_var_name);
 }
 
 /**
@@ -169,16 +214,17 @@ const dbContent::Variable& ViewVariable::variable() const
 {
     traced_assert(hasVariable());
     traced_assert(!isMetaVariable());
-    traced_assert(view_->viewManager().compass().dbContentManager().dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name));
+    traced_assert(!isReportVariable());
+    traced_assert(view_->viewManager().dbContentManager().dbContent(settings_.data_var_dbcont).hasVariable(settings_.data_var_name));
 
-    return view_->viewManager().compass().dbContentManager().dbContent(settings_.data_var_dbcont).variable(settings_.data_var_name);
+    return view_->viewManager().dbContentManager().dbContent(settings_.data_var_dbcont).variable(settings_.data_var_name);
 }
 
 /**
 */
 dbContent::Variable* ViewVariable::variablePtr()
 {
-    if (!hasVariable() || isMetaVariable())
+    if (!hasVariable() || isMetaVariable() || isReportVariable())
         return nullptr;
 
     return &variable();
@@ -224,7 +270,7 @@ dbContent::MetaVariable& ViewVariable::metaVariable()
     traced_assert(hasVariable());
     traced_assert(isMetaVariable());
 
-    return view_->viewManager().compass().dbContentManager().metaVariable(settings_.data_var_name);
+    return view_->viewManager().dbContentManager().metaVariable(settings_.data_var_name);
 }
 
 /**
@@ -234,7 +280,7 @@ const dbContent::MetaVariable& ViewVariable::metaVariable() const
     traced_assert(hasVariable());
     traced_assert(isMetaVariable());
 
-    return view_->viewManager().compass().dbContentManager().metaVariable(settings_.data_var_name);
+    return view_->viewManager().dbContentManager().metaVariable(settings_.data_var_name);
 }
 
 /**
@@ -331,6 +377,16 @@ dbContent::Variable* ViewVariable::getFor(const std::string& dbcontent_name)
 
         var = &meta_var.getFor(dbcontent_name);
     }
+    else if (isReportVariable())
+    {
+        auto& report_var = reportVariable();
+
+        //a Report Table references one or two host data contents, the others get nothing
+        if (!report_var.existsIn(dbcontent_name))
+            return nullptr;
+
+        var = &report_var.getFor(dbcontent_name);
+    }
     else
     {
         if (settings_.data_var_dbcont != dbcontent_name)
@@ -362,6 +418,15 @@ const dbContent::Variable* ViewVariable::getFor(const std::string& dbcontent_nam
             return nullptr;
 
         var = &meta_var_unconst.getFor(dbcontent_name);
+    }
+    else if (isReportVariable())
+    {
+        auto& report_var = reportVariable();
+
+        if (!report_var.existsIn(dbcontent_name))
+            return nullptr;
+
+        var = &report_var.getFor(dbcontent_name);
     }
     else
     {
@@ -404,6 +469,13 @@ void ViewVariable::addToSet(dbContent::VariableSet& set,
             if (meta_var.existsIn(dbcontent_name) && !set.hasVariable(meta_var.getFor(dbcontent_name)))
                 set.add(meta_var.getFor(dbcontent_name));
         }
+        else if (isReportVariable())
+        {
+            dbContent::ReportVariable& report_var = reportVariable();
+
+            if (report_var.existsIn(dbcontent_name) && !set.hasVariable(report_var.getFor(dbcontent_name)))
+                set.add(report_var.getFor(dbcontent_name));
+        }
         else
         {
             dbContent::Variable& var = variable();
@@ -423,6 +495,12 @@ void ViewVariable::setVariable(const dbContent::VariableSelectionWidget& selecti
         setVariable(selection.selectedVariable(), notify_changes);
     else if (selection.hasMetaVariable())
         setMetaVariable(selection.selectedMetaVariable(), notify_changes);
+    else if (selection.hasReportVariable())
+    {
+        // the content name of a Report Variable is its report name
+        auto names = selection.selectionAsString();
+        set(names.first, names.second, notify_changes);
+    }
     else
         setEmpty(notify_changes);
 }
@@ -444,11 +522,25 @@ void ViewVariable::configureWidget(dbContent::VariableSelectionWidget& selection
  */
 void ViewVariable::updateWidget(dbContent::VariableSelectionWidget& selection)
 {
-    if (!hasVariable())
+    //the widget always shows the stored variable, the one the view uses
+    if (isEmpty())
+    {
+        if (selection.showEmptyVariable())
+            selection.selectEmptyVariable();
         return;
+    }
+
+    //stored, but not in this database (e.g. a Report Variable of a report this database does not hold)
+    if (!hasVariable())
+    {
+        selection.selectedUnavailableVariable(settings_.data_var_dbcont, settings_.data_var_name);
+        return;
+    }
 
     if (isMetaVariable())
         selection.selectedMetaVariable(metaVariable());
+    else if (isReportVariable())
+        selection.selectedReportVariable(reportVariable());
     else
         selection.selectedVariable(variable());
 }

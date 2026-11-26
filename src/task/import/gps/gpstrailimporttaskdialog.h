@@ -17,12 +17,14 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include <QDialog>
 
 class GPSTrailImportTask;
 class GPSTrailImportTaskWidget;
 
-class GPSTrailImportTaskDialog: public QDialog
+class COMPASS_TASK_API GPSTrailImportTaskDialog: public QDialog
 {
     Q_OBJECT
 

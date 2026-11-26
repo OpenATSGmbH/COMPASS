@@ -17,11 +17,10 @@
                     "parameters": {
                         "auto_label": true,
                         "auto_lod": true,
-                        "blend_mode_name": "contour",
-                        "connect_height_none": false,
                         "connect_last_layer": false,
                         "current_lod": 1.0,
                         "declutter_labels": true,
+                        "declutter_labels_smart": true,
                         "extra_lines_opacity": 0.5,
                         "filter_mode3a_active": false,
                         "filter_mode3a_values": "7000,7777",
@@ -38,6 +37,7 @@
                         "groundspeed_period": 1,
                         "height_offset_factor": 0.0,
                         "height_scale_factor": 2.0,
+                        "item_grouping": "Aircraft Address",
                         "label_bg_color": "#000000",
                         "label_config": {
                             "CAT001": {
@@ -147,9 +147,7 @@
                         "label_directions": {},
                         "label_ds_ids": {},
                         "label_lines": {},
-                        "label_opacity": 0.8999999761581421,
-                        "label_placement_forcedir": 2,
-                        "label_placement_method": 1,
+                        "label_opacity": 0.8,
                         "layer_config": {
                             "ffts": {
                                 "show_fft": {
@@ -191,21 +189,17 @@
                                 "show_layers": {}
                             }
                         },
-                        "layer_mode": "DBContent:DS ID:Line ID:Aircraft Address",
                         "map_name": "minimal_2d.earth",
                         "map_opacity": 0.0,
-                        "max_declutter_labels": 200,
                         "name": "Geographic View 0",
                         "null_height_offset": 0.0,
                         "num_accuracy_ellipse_points_factor": 16.0,
                         "num_accuracy_ellipse_points_max": 32.0,
-                        "num_overload_packets": 4,
                         "offline_text": "Offline",
                         "offline_text_color_str": "#FF0000",
                         "online_text": "Online",
                         "online_text_color_str": "#00FF00",
                         "overlay_text_color_invert": false,
-                        "overload_max_latency_seconds": -1.0,
                         "overload_text_color_str": "#FF0000",
                         "position_accuracy_vars_scale": 2.0,
                         "selection_color": "#FFFF00",

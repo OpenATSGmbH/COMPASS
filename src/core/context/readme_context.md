@@ -148,6 +148,8 @@ Sector objects live in `src/core/sector/`. Stored as `shared_ptr<Sector>` in DBC
 
 `DBContextManager` caches sectors as `SectorLayer` objects (grouped by `layer_name`), rebuilt on context change via `rebuildSectorLayers()`.
 
+Edits of existing sectors from the views go through `renameSector`, `setSectorPoints`, `setSectorColor` and `setSectorLayerColor`. They apply the change, save to disk and DB and emit `sectorsChangedSignal`. The `Sector` setters `name`, `colorStr` and `points` save through the save callback (`saveSector`, disk and DB) but emit no signal. Their `notify = false` skips that save.
+
 ## File persistence
 
 ### Storage layout

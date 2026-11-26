@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "kalman_defs.h"
 #include "measurement.h"
 
@@ -199,7 +200,7 @@ struct PredictionComparison
  */
 struct MMContribution
 {
-    unsigned long            rec_num;
+    std::uint64_t            rec_num;
     boost::posix_time::ptime t;
 
     bool interpolated       = false;

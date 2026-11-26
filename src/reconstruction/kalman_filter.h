@@ -41,7 +41,16 @@ public:
     typedef std::function<Vector(const Vector&)> ZFunc;
     typedef std::function<Matrix(const Matrix&)> RFunc;
 
-    KalmanFilter(size_t dim_x, 
+    // minimum time step in seconds used to generate the process noise Q:
+    // for near-duplicate measurements (dt in the millisecond range) the process noise of
+    // velocity and acceleration becomes so small against the position variance that the
+    // covariance can no longer be inverted in double precision (e.g. in the RTS smoother)
+    static constexpr double MinProcessNoiseDt = 0.1;
+
+    // returns the time step to use for the process noise Q
+    static double processNoiseDt(double dt) { return dt < MinProcessNoiseDt ? MinProcessNoiseDt : dt; }
+
+    KalmanFilter(size_t dim_x,
                  size_t dim_z);
     virtual ~KalmanFilter();
 
@@ -147,6 +156,8 @@ public:
     virtual double xyCov(const kalman::Matrix& P) const;
     virtual boost::optional<double> xVel(const kalman::Vector& x_vec) const { return boost::optional<double>(); }
     virtual boost::optional<double> yVel(const kalman::Vector& x_vec) const { return boost::optional<double>(); }
+    virtual boost::optional<double> vxVar(const kalman::Matrix& P) const { return boost::optional<double>(); }
+    virtual boost::optional<double> vyVar(const kalman::Matrix& P) const { return boost::optional<double>(); }
     virtual boost::optional<double> xAcc(const kalman::Vector& x_vec) const { return boost::optional<double>(); }
     virtual boost::optional<double> yAcc(const kalman::Vector& x_vec) const { return boost::optional<double>(); }
 
@@ -154,6 +165,11 @@ public:
     virtual size_t numSubmodels() const { return 0; }
     virtual KalmanFilter* subModel(size_t idx) { return nullptr; }
     virtual const KalmanFilter* subModel(size_t idx) const { return nullptr; }
+
+    // force a static (zero-movement) motion model based on exogenous
+    // standstill knowledge (e.g. ADS-B SGV STP bit, fixed targets);
+    // no-op for filters without a static sub-model
+    virtual void setForceStaticModel(bool ok) {}
 
     bool isDebug() const { return debug_; }
     
@@ -170,9 +186,7 @@ public:
     static boost::optional<double> mahalanobisSqr(const Vector& dx, const Matrix& P, bool P_is_inv);
     
 protected:
-#if USE_EXPERIMENTAL_SOURCE
-    friend class KalmanFilterIMM;
-#endif
+    friend class KalmanFilterIMM; // composite filter (ProbIMM plugin), calls the protected steps of its sub-models
 
     void updateInternalMatrices(double dt, double Q_var);
     void fixEstimate(const Vector& x,

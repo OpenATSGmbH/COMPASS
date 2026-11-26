@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/results/position/positionbase.h"
+#include "results/position/positionbase.h"
 
 namespace EvaluationRequirementResult
 {
@@ -46,10 +46,22 @@ public:
 
     virtual std::shared_ptr<Joined> createEmptyJoined(const std::string& result_id) override;
 
+    /// type bits of the detail code
+    enum CodeBit : std::uint32_t
+    {
+        NoDataSourceInfo       = DetailCode::typeBit(0),
+        RefTransformationError = DetailCode::typeBit(1),
+        TstTransformationError = DetailCode::typeBit(2)
+    };
+
     const std::vector<double>& rangeValuesRef() const { return range_values_ref_; }
     const std::vector<double>& rangeValuesTst() const { return range_values_tst_; }
 
 protected:
+    virtual void addDetailCodeTexts(ReportTableDefinition& def) const override;
+
+    virtual OverviewLabels overviewLabels() const override { return { "Range Error", "m", true }; }
+
     virtual boost::optional<double> computeFinalResultValue() const override;
 
     virtual std::vector<std::string> targetTableHeadersCustom() const override;
@@ -57,9 +69,6 @@ protected:
     virtual std::string targetTableCustomSortColumn() const override { return "#CF"; }
     virtual Qt::SortOrder targetTableSortOrder() const override { return Qt::SortOrder::DescendingOrder; }
     virtual std::vector<TargetInfo> targetInfos() const override;
-    virtual std::vector<std::string> detailHeaders() const override;
-    virtual nlohmann::json::array_t detailValues(const EvaluationDetail& detail,
-                                                 const EvaluationDetail* parent_detail) const override;
 
 private:
     mutable nlohmann::json range_bias_;
@@ -79,6 +88,8 @@ public:
                              const SectorLayer& sector_layer,
                              EvaluationCalculator& calculator);
 protected:
+    virtual OverviewLabels overviewLabels() const override { return { "Range Error", "m", true }; }
+
     virtual boost::optional<double> computeFinalResultValue() const override;
 
     virtual std::vector<SectorInfo> sectorInfos() const override;

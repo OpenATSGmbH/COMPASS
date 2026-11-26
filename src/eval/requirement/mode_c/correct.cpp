@@ -15,13 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/mode_c/correct.h"
-#include "eval/results/mode_c/correct.h"
-#include "eval/standard/evaluationstandard.h"
+#include "requirement/mode_c/correct.h"
+#include "requirement/base/correcthelpers.h"
+#include "results/mode_c/correct.h"
+#include "results/base/detailcode.h"
+#include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
 
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "logger.h"
 
 using namespace std;
@@ -30,6 +32,8 @@ using namespace boost::posix_time;
 
 namespace EvaluationRequirement
 {
+
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
 
 ModeCCorrect::ModeCCorrect(
         const std::string& name, const std::string& short_name, const std::string& group_name,
@@ -85,15 +89,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCCorrect::evaluate (
     boost::optional<dbContent::TargetPosition> ref_pos;
     //bool ok;
 
-    string comment;
-
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
     bool skip_detail;
 
     ValueComparisonResult cmp_res_mc;
-    string cmp_res_mc_comment;
-    bool mc_no_ref;
-    bool mc_correct_failed;
 
     bool result_ok;
 
@@ -109,26 +108,19 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCCorrect::evaluate (
                             const QVariant& num_pos_outside,
                             const QVariant& num_correct,
                             const QVariant& num_not_correct,
-                            const std::string& comment)
+                            std::uint32_t code)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::RefExists, ref_exists)
-                                             .setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
+                                             .setValue(Result::DetailKey::PosInside, pos_inside)
                                              .setValue(Result::DetailKey::IsNotCorrect, is_not_correct)
-                                             .setValue(Result::DetailKey::NumUpdates, num_updates)
-                                             .setValue(Result::DetailKey::NumNoRef, num_no_ref)
-                                             .setValue(Result::DetailKey::NumInside, num_pos_inside)
-                                             .setValue(Result::DetailKey::NumOutside, num_pos_outside)
-                                             .setValue(Result::DetailKey::NumCorrect, num_correct)
-                                             .setValue(Result::DetailKey::NumNotCorrect, num_not_correct)
                                              .addPosition(ref_pos)
-                                             .generalComment(comment));
+                                             .addCode(code));
     };
 
     for (const auto& tst_id : tst_data)
     {
         ref_exists = false;
         is_inside = false;
-        comment = "";
 
         skip_detail = false;
 
@@ -143,7 +135,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCCorrect::evaluate (
                 addDetail(timestamp, pos_current, {},
                             false, {}, false, // ref_exists, pos_inside, is_not_correct
                             num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                            num_correct, num_not_correct, "No reference data");
+                            num_correct, num_not_correct, 0);
 
             ++num_no_ref_pos;
             continue;
@@ -160,7 +152,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCCorrect::evaluate (
                 addDetail(timestamp, pos_current, {},
                             false, {}, false, // ref_exists, pos_inside, is_not_correct
                             num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                            num_correct, num_not_correct, "No reference position");
+                            num_correct, num_not_correct, DetailCode::NoRefPosition);
 
             ++num_no_ref_pos;
             continue;
@@ -176,41 +168,31 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCCorrect::evaluate (
                 addDetail(timestamp, pos_current, ref_pos,
                             ref_exists, is_inside, false, // ref_exists, pos_inside, is_not_correct
                             num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                            num_correct, num_not_correct, "Outside sector");
+                            num_correct, num_not_correct, 0);
 
             ++num_pos_outside;
             continue;
         }
         ++num_pos_inside;
 
-        tie(cmp_res_mc, cmp_res_mc_comment) = compareModeC(tst_id, target_data, max_ref_time_diff, max_distance_ft_);
+        cmp_res_mc = compareModeC(tst_id, target_data, max_ref_time_diff, max_distance_ft_);
 
-        mc_no_ref = cmp_res_mc == ValueComparisonResult::Unknown_NoRefData;
+        auto report_class = CorrectHelpers::classify({cmp_res_mc}, false);
 
-        if (mc_no_ref) // none has a reference
+        if (report_class == CorrectHelpers::ReportClass::NoRefValue)
         {
             if (!skip_no_data_details)
                 addDetail(timestamp, pos_current, ref_pos,
                             ref_exists, is_inside, false, // ref_exists, pos_inside, is_not_correct
                             num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                            num_correct, num_not_correct, "No reference Mode C");
+                            num_correct, num_not_correct, DetailCode::Value::NoRefValue);
 
             ++num_no_ref_id;
 
             continue;
         }
 
-        mc_correct_failed = cmp_res_mc == ValueComparisonResult::Unknown_NoTstData
-                || cmp_res_mc == ValueComparisonResult::Different;
-
-        if (mc_correct_failed)
-        {
-            if (comment.size())
-                comment += ", ";
-            comment += "MC failed (" + cmp_res_mc_comment + ")";
-        }
-
-        result_ok = !mc_correct_failed;
+        result_ok = report_class == CorrectHelpers::ReportClass::Correct;
 
         if (result_ok)
             ++num_correct;
@@ -221,7 +203,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCCorrect::evaluate (
             addDetail(timestamp, pos_current, ref_pos,
                         ref_exists, is_inside, !result_ok,
                         num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                        num_correct, num_not_correct, comment);
+                        num_correct, num_not_correct, comparisonCode(cmp_res_mc, DetailCode::Value::ModeCDiffers, DetailCode::Value::ModeCMissing));
     }
 
     logdbg << "'" << name_ << "': utn " << target_data.utn_

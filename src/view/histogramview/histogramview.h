@@ -17,12 +17,16 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "variableview.h"
-#include "histogram_raw.h"
+#include "histogramdisplaydata.h"
+
+#include <memory>
 
 class HistogramViewWidget;
 class HistogramViewDataSource;
-class HistogramViewDataWidget;
+class HistogramViewModel;
 
 namespace dbContent 
 {
@@ -32,7 +36,7 @@ namespace dbContent
 
 /**
 */
-class HistogramView : public VariableView
+class COMPASS_VIEW_API HistogramView : public VariableView
 {
     Q_OBJECT
 public:
@@ -52,8 +56,6 @@ public:
     /// @brief Destructor
     virtual ~HistogramView() override;
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
-
     /// @brief Returns the used data source
     HistogramViewDataSource* getDataSource()
     {
@@ -63,11 +65,19 @@ public:
 
     virtual void accept(LatexVisitor& v) override;
 
+    QIcon deckIcon() const override;
+
     virtual bool canShowAnnotations() const override final { return true; }
     virtual std::set<std::string> acceptedAnnotationFeatureTypes() const override;
 
     bool useLogScale() const;
     void useLogScale(bool value, bool notify_changes);
+
+    HistogramViewModel& model() { return *model_; }
+    const HistogramViewModel& model() const { return *model_; }
+
+    /// the render options of the render widget, from the settings of the view
+    HistogramRenderOptions renderOptions() const;
 
     static const std::string ParamUseLogScale;
 
@@ -78,6 +88,8 @@ signals:
 
 protected:
     friend class LatexVisitor;
+
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
 
     virtual void checkSubConfigurables() override;
     virtual void updateSelection_impl() override;
@@ -91,9 +103,11 @@ protected:
 
     virtual dbContent::VariableSet getBaseSet(const std::string& dbcontent_name) override;
 
-    HistogramViewDataWidget* getDataWidget();
-    const HistogramViewDataWidget* getDataWidget() const;
+    /// the display data can carry its own log scale, the setting follows it
+    void displayDataChanged();
 
+    /// For data processing, lives longer than the widget
+    std::unique_ptr<HistogramViewModel> model_;
     /// For data display
     HistogramViewWidget* widget_{nullptr};
     /// For data loading

@@ -80,14 +80,14 @@ TEST_CASE("ModeCFilter getConditionString basic", "[filter][modec]")
     CHECK(sql.find("3000") != std::string::npos);
 }
 
-TEST_CASE("ModeCFilter getConditionString CAT062 adds baro_alt and fl_measured", "[filter][modec]")
+TEST_CASE("ModeCFilter getConditionString CAT062 searches every candidate of the selection", "[filter][modec]")
 {
     auto mock = createStandardMock();
     auto cfg = makeFilterConfig("ModeCFilter", "Mode C Codes", {
         {"active", true},
         {"min_value", -1000.0},
         {"max_value", 3000.0},
-        {"null_wanted", false}
+        {"null_wanted", true}
     });
 
     ModeCFilter filter(cfg, nullptr, mock);
@@ -96,9 +96,11 @@ TEST_CASE("ModeCFilter getConditionString CAT062 adds baro_alt and fl_measured",
     bool first = true;
     std::string sql = filter.getConditionString("CAT062", read_set, first);
 
-    CHECK(sql.find("modec_code_ft BETWEEN") != std::string::npos);
-    CHECK(sql.find("baro_alt BETWEEN") != std::string::npos);
-    CHECK(sql.find("fl_measured BETWEEN") != std::string::npos);
+    // any candidate in range, the chosen value alone is not searched
+    CHECK(sql.find("modec_code_ft") == std::string::npos);
+    CHECK(sql.find("(mode_c_code_lm BETWEEN -1000 AND 3000) OR (baro_alt BETWEEN -1000 AND 3000) OR (fl_measured BETWEEN -1000 AND 3000)") != std::string::npos);
+    // null when no candidate has a value
+    CHECK(sql.find("(mode_c_code_lm IS NULL AND baro_alt IS NULL AND fl_measured IS NULL)") != std::string::npos);
 }
 
 TEST_CASE("ModeCFilter null_wanted adds IS NULL", "[filter][modec]")

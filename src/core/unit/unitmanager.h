@@ -19,7 +19,6 @@
 
 #include "configurable.h"
 
-class COMPASS;
 class Dimension;
 
 /**
@@ -28,7 +27,7 @@ class Dimension;
 class UnitManager : public Configurable
 {
   public:
-    UnitManager(nlohmann::json& config, COMPASS* parent);
+    UnitManager(nlohmann::json& config, Configurable* parent);
     virtual ~UnitManager();
 
     bool hasDimension(const std::string& name) { return dimensions_.count(name) > 0; }
@@ -40,9 +39,9 @@ class UnitManager : public Configurable
     }
     const std::map<std::string, Dimension*>& dimensions() { return dimensions_; }
 
-    void generateSubConfigurable(nlohmann::json& child_json) override;
-
   protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
     std::map<std::string, Dimension*> dimensions_;
 
     void checkSubConfigurables() override;

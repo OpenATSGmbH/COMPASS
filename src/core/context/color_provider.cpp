@@ -17,7 +17,7 @@
 
 #include "color_provider.h"
 
-#include "compass.h"
+#include "appstate.h"
 #include "data_source.h"
 #include "db_context.h"
 #include "db_context_manager.h"
@@ -59,6 +59,31 @@ std::mt19937& rng()
 } // anonymous
 
 // ============================================================
+// Modes
+// ============================================================
+
+std::string ColorProvider::modeName(Mode mode)
+{
+    switch (mode)
+    {
+        case Mode::DSType:         return "DSType";
+        case Mode::DBContent:      return "DBContent";
+        case Mode::DataSource:     return "Data Source";
+        case Mode::DataSourceLine: return "Data Source + Line";
+    }
+    return "Unknown";
+}
+
+const std::vector<ColorProvider::Mode>& ColorProvider::modes()
+{
+    static const std::vector<Mode> modes = { Mode::DSType,
+                                             Mode::DataSource,
+                                             Mode::DataSourceLine,
+                                             Mode::DBContent };
+    return modes;
+}
+
+// ============================================================
 // Default palettes
 // ============================================================
 
@@ -66,7 +91,7 @@ const std::map<std::string, QColor>& ColorProvider::defaultDSTypeColors()
 {
     static const std::map<std::string, QColor> palette = {
         {"Radar",   QColor(Qt::green)},
-        {"ADSB",    QColor(Qt::blue)},
+        {"ADSB",    QColor(QStringLiteral("#62A0EA"))}, // light blue
         {"MLAT",    QColor(Qt::red)},
         {"Tracker", QColor(QStringLiteral("#DDDDDD"))}, // light gray (avoid pure white)
         {"RefTraj", QColor(QStringLiteral("#FFA500"))}, // orange
@@ -300,13 +325,13 @@ QColor resolveSeriesColor(const std::string& ds_type,
                           const std::string& ds_name,
                           int line_index,
                           const std::string& dbcontent_name,
-                          COMPASS& compass,
+                          DBContextManager& ctx_man,
                           std::function<QColor(const std::string&)> hashed_fallback)
 {
     const unsigned int line_id = (line_index >= 0 && line_index < 4) ? (unsigned int)line_index : 0;
 
-    auto& ctx_mgr = compass.dbContextManager();
-    const auto mode = (ColorProvider::Mode)compass.colorMode();
+    auto& ctx_mgr = ctx_man;
+    const auto mode = (ColorProvider::Mode)ctx_man.appState().colorMode();
 
     auto derive_line_shade = [line_id](const QColor& base) {
         auto shades = ColorProvider::autoLineColors(base);

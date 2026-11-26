@@ -1,0 +1,40 @@
+{
+    "description": "Mode A and ACID, the reference has only one of them. A value without reference value is not judged, the report is decided by the other value. Before CorrectHelpers a value without reference value counted as correct without require correctness of all, so the 2nd and 3rd report were correct. Without any reference value the report is left out. PID = 1 / 3.",
+    "require_all_correct": false,
+    "reports": [
+        {
+            "cmp": [
+                "no_ref",
+                "same"
+            ],
+            "class": "correct"
+        },
+        {
+            "cmp": [
+                "no_ref",
+                "different"
+            ],
+            "class": "not_correct"
+        },
+        {
+            "cmp": [
+                "no_ref",
+                "no_tst"
+            ],
+            "class": "not_correct"
+        },
+        {
+            "cmp": [
+                "no_ref",
+                "no_ref"
+            ],
+            "class": "no_ref_val"
+        }
+    ],
+    "expected": {
+        "no_ref_val": 1,
+        "correct": 1,
+        "not_correct": 2,
+        "probability": 0.3333333333333333
+    }
+}

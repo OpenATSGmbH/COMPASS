@@ -6,14 +6,30 @@ When the application is started for the first time, the main window is shown as 
 \begin{figure}[H]
   \centering
   \hspace*{-2.5cm}
-    \includegraphics[width=19cm]{figures/main_window.png}
+    \includegraphics[width=19cm,frame]{figures/main_window.png}
   \caption{Main Window}
 \end{figure}
 
+Below the \nameref{sec:ui_main_menu_bar}, the main window has two parts:
+\begin{itemize}
+ \item \nameref{sec:ui_flight_deck}: On the left side, the tools to select, filter and inspect data
+ \item \nameref{sec:ui_view_deck}: On the right side, the Views that show the loaded data
+\end{itemize}
+\  \\
+
+Both decks work the same way. Each deck has an icon bar at the window edge. A click on an icon shows the tool or the View. A deck can be collapsed to its icon bar, so the other deck gets the full width. \\
+
+\begin{figure}[H]
+  \centering
+  \hspace*{-2.5cm}
+    \includegraphics[width=19cm,frame]{figures/ui_decks.png}
+  \caption{Main Window: Flight Deck icon bar (left) and View Deck icon bar (right)}
+\end{figure}
+
 In the simplest use case, the \nameref{sec:ui_main_menu_bar} allows opening or creating a database and importing data (using a given Data Context).
-After this step, data of interest can be chosen using tools located in the so-called \nameref{sec:ui_flight_deck}, 
-and loaded from the database using the 'Load' button of the \nameref{sec:ui_main_status_bar}. 
-The loaded data is then shown in Views located either in the \nameref{sec:ui_main_view_bar}, or in other windows. \\
+After this step, data of interest can be chosen using the tools of the Flight Deck,
+and loaded from the database using the 'Load' button of the \nameref{sec:ui_main_status_bar}.
+The loaded data is then shown in Views located either in the View Deck of the main window, or in other windows. \\
 
 The values set in the 'Data Sources' and 'Filter' tools of the Flight Deck define the dataset loaded from the database into memory (RAM). 
 Only the data required by the application is loaded into memory. \\
@@ -93,9 +109,20 @@ The following tools exist in the Flight Deck:
 The individual tools will be described in more detail in Chapter \nameref{chap:flight_deck}. \\
 
 A tool can be selected by clicking its respective icon. This will also show the Flight Deck again if it was previously closed.
-Clicking the icon of a selected tool again will close the Flight Deck. Switching between tools can also be achieved by pressing
+Clicking the icon of a selected tool again will collapse the Flight Deck to its icon bar, and the \nameref{sec:ui_view_deck} gets the full width.
+If the View Deck was collapsed before, it opens again with its last View. Switching between tools can also be achieved by pressing
 the number keys on the keyboard. Pressing the respective number key will show the tool (and possibly show the Flight Deck again),
-pressing it again will hide the Flight Deck. Table \ref{table:ui_flight_deck_tools} lists the assigned number hotkeys. \\
+pressing it again will collapse the Flight Deck. Table \ref{table:ui_flight_deck_tools} lists the assigned number hotkeys. \\
+
+The width of the Flight Deck is set per tool, in percent of the main window width next to the icon bar:
+
+\begin{itemize}
+\item Drag the separator between the Flight Deck and the View Deck: the width changes in steps of 10 percent
+\item 'Decrease Width' \includegraphics[width=0.5cm,frame]{../../data/icons/arrow_to_left.png} and 'Increase Width' \includegraphics[width=0.5cm,frame]{../../data/icons/arrow_to_right.png} buttons at the top of each tool, or the keys '-' and '+': change the width by 10 percent
+\item The width is between 10 and 70 percent, also limited by the minimum widths of the tool and the Views
+\item Each tool keeps its own width, also after a restart of the application
+\end{itemize}
+\ \\
 
 When selecting a tool, the tools content will be shown with a decoration bar on top. The bar will show the selected tool's name 
 and various action buttons for configuring the tool.
@@ -107,43 +134,52 @@ and various action buttons for configuring the tool.
     \textbf{Icon} & \textbf{Shortcut} &\textbf{Text} & \textbf{Description} \\ \hline
     \includegraphics[width=0.5cm,frame]{../../data/icons/arrow_to_left.png} & - & Decrease Width & Decrease Flight Deck width for the selected tool \\ \hline
     \includegraphics[width=0.5cm,frame]{../../data/icons/arrow_to_right.png} & + & Increase Width & Increase Flight Deck width for the selected tool \\ \hline
-    \includegraphics[width=0.5cm,frame]{../../data/icons/fd_expand.png}/\includegraphics[width=0.5cm,frame]{../../data/icons/fd_shrink.png} & \# & Expand/Collapse Flight Deck & Enable/Disable Expansion Mode \\ \hline
     \includegraphics[width=0.5cm,frame]{../../data/icons/edit.png} & & & Open the selected tool's configuration menu \\ \hline
   \end{tabular}
   \caption{Toolbar: Available actions}
 \end{table}
 
-\paragraph{Expansion Mode} Expansion Mode can be enabled by pressing the \includegraphics[width=0.5cm,frame]{../../data/icons/fd_expand.png} 
-button or the \# key. In this mode the Flight Deck will overlap all opened Views and use almost the whole Main Window's width.
-This mode can be used for a more detailed inspection of a tool's contents (e.g. tables). Pressing the 
-\includegraphics[width=0.5cm,frame]{../../data/icons/fd_shrink.png} button or again the \# key will collapse the Flight Deck
-back to the selected tool's width. \\
-
-Please \textbf{note} that expanding the Flight Deck will deactivate interaction with the Main Window's Views until the Flight Deck
-is collapsed again.
-
-\paragraph{Tool Configuration Menu} Pressing the \includegraphics[width=0.5cm,frame]{../../data/icons/edit.png} button will 
-open a menu with tool-specific configuration options. Common to all menus is the 'Screen Ratio' option, where the width the 
-Flight Deck occupies in the Main Window can be set by hand for the selected tool, alternatively to pressing 
-\includegraphics[width=0.5cm,frame]{../../data/icons/arrow_to_left.png}/\includegraphics[width=0.5cm,frame]{../../data/icons/arrow_to_right.png}.
+\paragraph{Tool Configuration Menu} Pressing the \includegraphics[width=0.5cm,frame]{../../data/icons/edit.png} button will
+open a menu with tool-specific configuration options.
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=14cm,frame]{figures/ui_flight_deck_config.png}
+  \hspace*{-0.5cm}
+  \includegraphics[width=15cm,frame]{figures/ui_flight_deck_config.png}
   \caption{Flight Deck: Tool configuration menu}
 \end{figure}
 
-\subsection{Main Viewbar}
-\label{sec:ui_main_view_bar}
+\subsection{View Deck}
+\label{sec:ui_view_deck}
 
-The Main Viewbar is a tab bar containing the Views added to the Main Window. \\
+The \textbf{View Deck} holds the Views of a window. It works the same way as the Flight Deck. Its icon bar is at the right edge of the window. \\
 
-To add additional views, the \includegraphics[width=0.5cm,frame]{../../data/icons/crosshair_fat.png} button can be used. 
-Views can be added either to the window in which the button was clicked ('Add Here') or in a new window ('Add In New Window'). \\
+\begin{itemize}
+ \item View icons: Each View has an icon in the icon bar
+ \begin{itemize}
+  \item The icon shows the type of the View
+  \item The short name below the icon gives the type and the number of the View, e.g. 'Geo 0' or 'Table 0'
+  \item The tooltip shows the full name of the View
+ \end{itemize}
+ \item Show a View: Click its icon
+ \item Collapse the View Deck: Click the icon of the shown View again
+ \begin{itemize}
+  \item The View Deck collapses to its icon bar, and the Flight Deck gets the full width
+  \item If the Flight Deck was collapsed before, it opens again with its last tool
+  \item A click on any View icon opens the View Deck again
+ \end{itemize}
+ \item Add a View: Click the \includegraphics[width=0.5cm,frame]{../../data/icons/crosshair_fat.png} button at the end of the icon bar
+ \begin{itemize}
+  \item 'Add Here': Adds the View to the View Deck of this window
+  \item 'Add In New Window': Adds the View to a new window
+ \end{itemize}
+ \item Close a View: Move the mouse over its icon and click the \includegraphics[width=0.5cm,frame]{../../data/icons/delete.png} button ('Close View') at the top right of the icon
+\end{itemize}
+\  \\
 
-A single View can be removed by clicking the \includegraphics[width=0.5cm,frame]{../../data/icons/edit.png} button in its tab (next to the Views name) and selecting 'Close'. \\
+The Flight Deck and the View Deck are never collapsed at the same time. \\
 
-\textbf{Note} that this also applies to the View tab bars of other COMPASS windows. \\
+Other COMPASS windows also have a View Deck. These windows have no Flight Deck, so a click on the icon of the shown View does not collapse the View Deck. \\
 
 See section \nameref{sec:ui_views} for more details about Views.
 

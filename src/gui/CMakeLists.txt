@@ -1,14 +1,16 @@
-add_library(compass_gui "")
+add_library(compass_gui SHARED "")
+
+# COMPASS_GUI_API for the classes with signals (top-level CMakeLists.txt)
+generate_export_header(compass_gui
+    EXPORT_MACRO_NAME COMPASS_GUI_API
+    EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/compass_gui_export.h")
+target_include_directories(compass_gui PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 
 target_sources(compass_gui
     PUBLIC
+        "${CMAKE_CURRENT_LIST_DIR}/apppalette.h"
         "${CMAKE_CURRENT_LIST_DIR}/autoresumedialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/invalidqlineedit.h"
-        "${CMAKE_CURRENT_LIST_DIR}/textfieldhexvalidator.h"
-        "${CMAKE_CURRENT_LIST_DIR}/textfieldoctvalidator.h"
-        "${CMAKE_CURRENT_LIST_DIR}/rangeedit.h"
-        "${CMAKE_CURRENT_LIST_DIR}/rangeslider.h"
-        "${CMAKE_CURRENT_LIST_DIR}/rangeslider_p.h"
         "${CMAKE_CURRENT_LIST_DIR}/formatselectionwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/datatypeformatselectionwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/groupbox.h"
@@ -18,16 +20,14 @@ target_sources(compass_gui
         "${CMAKE_CURRENT_LIST_DIR}/colorscaleselection.h"
         "${CMAKE_CURRENT_LIST_DIR}/propertyvalueedit.h"
         "${CMAKE_CURRENT_LIST_DIR}/logwidget.h"
-        "${CMAKE_CURRENT_LIST_DIR}/popupmenu.h"
         "${CMAKE_CURRENT_LIST_DIR}/timewindowcollectionwidget.h"
         "${CMAKE_CURRENT_LIST_DIR}/timewindowdialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/noscrollqspinbox.h"
-        "${CMAKE_CURRENT_LIST_DIR}/questiondialog.h"
-        "${CMAKE_CURRENT_LIST_DIR}/dialogs.h"
+        "${CMAKE_CURRENT_LIST_DIR}/styledlabel.h"
+        "${CMAKE_CURRENT_LIST_DIR}/test_plot.h"
     PRIVATE
+        "${CMAKE_CURRENT_LIST_DIR}/apppalette.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/autoresumedialog.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/rangeedit.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/rangeslider.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/formatselectionwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/datatypeformatselectionwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/groupbox.cpp"
@@ -37,11 +37,10 @@ target_sources(compass_gui
         "${CMAKE_CURRENT_LIST_DIR}/colorscaleselection.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/propertyvalueedit.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/logwidget.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/popupmenu.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/timewindowcollectionwidget.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/timewindowdialog.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/questiondialog.cpp"
-        "${CMAKE_CURRENT_LIST_DIR}/dialogs.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/styledlabel.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/test_plot.cpp"
 )
 
 target_include_directories(compass_gui PUBLIC "${CMAKE_CURRENT_LIST_DIR}")

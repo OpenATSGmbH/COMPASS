@@ -18,6 +18,7 @@
 #pragma once
 
 #include <QObject>
+#include <QPointer>
 
 #include <memory>
 #include <string>
@@ -25,7 +26,7 @@
 
 #include <QPointer>
 
-class COMPASS;
+class ViewManager;
 class LoadOperation;
 class QProgressDialog;
 
@@ -50,8 +51,14 @@ class LoadController : public QObject
     Q_OBJECT
 
 public:
-    LoadController(COMPASS& compass, QObject* parent = nullptr);
+    LoadController(ViewManager& view_manager,
+                   QObject* parent = nullptr);
     virtual ~LoadController();
+
+    // paints a dialog synchronously the moment it gets shown (see the filter install
+    // sites): both dialogs appear via deferred shows, and the first paint event can
+    // starve behind long queued work - the window then maps black for a second
+    bool eventFilter(QObject* watched, QEvent* event) override;
 
     // op has started running (post-wait): show the dialog (sized from the op's target set)
     // + wait cursor, and subscribe to the op's dataChangedSignal to advance the load phase.
@@ -59,7 +66,23 @@ public:
     void begin(const LoadOperation& op);
 
     void beginViewPhase(unsigned int num_views); // view loop starting: switch to 50..100
-    void advanceViewPhase();                // one view finished
+    // one view FINISHED updating (not merely dispatched - a view processing
+    // asynchronously reports here once its work is committed)
+    void advanceViewPhase();
+
+    // busy state for asynchronous view processing OUTSIDE a load cycle (interactive
+    // redraws and reloads): an application-modal busy dialog, so the user cannot
+    // mutate view state or close views while workers still read them - the same
+    // protection the load dialog provides during a load. No-ops while a load cycle
+    // is active (its own dialog covers that).
+    void beginViewProcessing();
+    void endViewProcessing();
+
+    // suppress both progress dialogs (wait cursor stays): used during report export,
+    // where each figure triggers a load + view processing cycle - the modal export
+    // dialog already blocks user interaction, and the popping dialogs steal OS focus
+    // from other applications
+    void setDialogsSuppressed(bool suppressed) { dialogs_suppressed_ = suppressed; }
     // load finished: close dialog + cursor. drain pumps the event loop before closing, so a
     // deferred view redraw runs while the dialog is still up (the normal completion path);
     // pass false when ending from inside another emit, where pumping would re-enter.
@@ -81,9 +104,9 @@ private slots:
     void opFinishedSlot();
 
 private:
-    COMPASS& compass_;
+    ViewManager& view_manager_;
 
-    // QPointer, not unique_ptr: the dialog is parented to the main window, so Qt
+    // QPointer, not unique_ptr: the dialog is parented to the active window, so Qt
     // deletes it together with that window (application shutdown, or the window closing
     // under a load). An owning pointer cannot see that and is left dangling, which a
     // late view completion then dereferences - the guarded pointer nulls itself instead.
@@ -100,7 +123,7 @@ private:
     // The guard ensures at most one setValue pump is ever on the stack; nested calls
     // only accumulate value_, the single active pump paints the final value. It also
     // marks "Qt is currently executing inside dialog_": an end() reached through the
-    // pump must NOT delete the dialog - a deleteLater posted from nested event
+    // pump must NOT deleteLater the dialog - a deleteLater posted from nested event
     // delivery carries an inflated scope level, so the pump still running inside
     // setValue delivers the DeferredDelete before setValue returns, and Qt then
     // touches the freed progress bar (crashed in QProgressBar::maximum on 2026-08-17
@@ -117,4 +140,10 @@ private:
     const LoadOperation*    op_ {nullptr}; // the running op (non-owning, valid for the cycle)
     QMetaObject::Connection op_conn_;      // op.dataChangedSignal -> opDataChangedSlot
     QMetaObject::Connection op_fin_conn_;  // op.finishedSignal    -> opFinishedSlot
+
+    // the interactive view-processing busy dialog (see beginViewProcessing); QPointer
+    // for the same parenting reason as dialog_
+    QPointer<QProgressDialog> busy_dialog_;
+
+    bool dialogs_suppressed_ {false}; // see setDialogsSuppressed()
 };

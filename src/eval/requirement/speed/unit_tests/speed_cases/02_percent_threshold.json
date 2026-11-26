@@ -1,0 +1,45 @@
+{
+    "description": "ED-87 RVA at higher speeds: 10% of 80 m/s is 8 m/s, of 100 m/s 10 m/s, both above 5 m/s. At 50 m/s, 10% equals the fixed 5 m/s. The test speed below the reference also counts (absolute difference). Probability 3 / 4.",
+    "params": {
+        "threshold_value": 5.0,
+        "threshold_percent": 10.0,
+        "use_percent_if_higher": true,
+        "check_type": "<"
+    },
+    "reports": [
+        {
+            "ref": 80,
+            "tst": 87,
+            "outcome": "passed",
+            "diff": 7,
+            "threshold": 8
+        },
+        {
+            "ref": 80,
+            "tst": 88,
+            "outcome": "failed",
+            "diff": 8,
+            "threshold": 8
+        },
+        {
+            "ref": 50,
+            "tst": 54,
+            "outcome": "passed",
+            "diff": 4,
+            "threshold": 5
+        },
+        {
+            "ref": 100,
+            "tst": 91,
+            "outcome": "passed",
+            "diff": 9,
+            "threshold": 10
+        }
+    ],
+    "expected": {
+        "passed": 3,
+        "failed": 1,
+        "no_tst": 0,
+        "probability": 0.75
+    }
+}

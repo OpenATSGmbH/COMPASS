@@ -52,7 +52,7 @@ The structure of the 'reply' object will depend on the specific command.
 
 \textbf{Note} that some commands might not send reply data. \\
 
-\textit{Example}: The \textbf{netcat} tool can be used in a terminal to connect to a running COMPASS instance as follows.
+\textit{Example}: The \textbf{netcat} tool can be used in a terminal to connect to a running COMPASS instance as follows. Netcat is part of most Linux distributions, but not of Windows. On both operating systems, the \nameref{sec:rtcommand_python_example} can be used instead.
 
 \begin{lstlisting}[basicstyle=\small\ttfamily]
 > netcat 127.0.0.1 27960
@@ -166,20 +166,20 @@ retrieving data such as evaluation results, etc. \\
 Below is a list of all available commands and their arguments. \\
 
 \textbf{calculate\_artas\_tr\_usage} \\
-\textit{associate target reports based on ARTAS usage} \\
+\textit{associates target reports based on the ARTAS track usage} \\
 
 \textbf{calculate\_radar\_plot\_positions} \\
-\textit{calculate radar plot positions} \\
+\textit{runs the Calculate Radar Plot Positions task} \\
 
 \textbf{client\_info} \\
 \textit{retrieves information about the running compass client} \\
 
 \textbf{close\_db} \\
-\textit{closes a currently opened database} \\
+\textit{closes the opened database} \\
 strict \dots fail if no database was opened \\
 
 \textbf{create\_db} \\
-\textit{creates and opens new database file with given filename, e.g. "/data/file1.db"} \\
+\textit{creates and opens a new database file with the given filename, e.g. "/data/file1.db"} \\
 filename \dots given filename, e.g. "/data/file1.db" \\
 
 \textbf{delete\_all\_data\_sources} \\
@@ -187,29 +187,35 @@ filename \dots given filename, e.g. "/data/file1.db" \\
 
 \textbf{delete\_data} \\
 \textit{deletes data from the database} \\
-delete\_info \dots Delete info JSON array, e.g. '[{"dbcontent": "CAT021", "data\_sources": [{"ds\_id": 510, "line\_ids": [0, 1]}]}]' \\
+delete\_info \dots JSON array of delete entries, each with optional 'dbcontent' and optional 'data\_sources' (list of objects with 'ds\_id' and optional 'line\_ids'), a missing key means all, e.g. '[{"dbcontent": "CAT021", "data\_sources": [{"ds\_id": 510, "line\_ids": [0, 1]}]}]' \\
 
 \textbf{evaluate} \\
-\textit{run evaluation} \\
-config \dots evaluation configuration as json string. Note that 'dbcontent\_name\_ref' cannot be CAT001 or CAT048, as these do not provide the maximum X/Y standard deviation required for reference accuracy filtering \\
+\textit{runs the evaluation, replies with the name of the stored report} \\
+config \dots evaluation configuration as JSON string. Note that 'dbcontent\_name\_ref' cannot be CAT001 or CAT048, as these do not provide the maximum X/Y standard deviation required for reference accuracy filtering \\
 result \dots name under which the evaluation result will be stored \\
 run\_filter \dots run evaluation filter before evaluation \\
 
 \textbf{export\_report} \\
-\textit{export existing report} \\
+\textit{exports an existing report} \\
 report \dots report name, e.g. "EUROCAE ED-87E Evaluation" \\
 dir \dots export directory, e.g. "/data/db2/" \\
 mode \dots export mode, one of "DocX", "JSON", "Latex", "PDF" \\
 
 \textbf{export\_view\_points\_report} \\
-\textit{export view points report after with given filename, e.g. "/data/db2/report.tex"} \\
+\textit{exports the view points report to the given filename, e.g. "/data/db2/report.tex"} \\
 filename \dots given filename, e.g. "/data/db2/report.tex" \\
+
+\textbf{filter\_eval\_targets} \\
+\textit{set the evaluation target filter and run it on the target usage, replies with the number of targets, used targets and not used targets} \\
+config \dots target filter parameters as JSON string, e.g. '\{"exclude\_target\_categories": true, "exclude\_target\_category\_values": \{"Vehicle": true\}\}' \\
+use\_all \dots use all targets before the filter runs. The filter only disables targets. \\
+no\_run \dots do not run the filter, only apply config and use\_all \\
 
 \textbf{get\_data\_sources} \\
 \textit{retrieves descriptions of data sources in the active context} \\
 
 \textbf{get\_data\_source\_counts} \\
-\textit{retrieves per data source per dbcontent per line inserted record counts} \\
+\textit{retrieves the inserted record counts per data source, DBContent and line} \\
 The reply is a JSON object of the form
 \texttt{\{"<ds\_id>":\{"<dbcontent>":\{"<line\_id>":count\}\}\}} - one entry per
 data source that has had records inserted in the open database, useful to
@@ -219,9 +225,9 @@ resolve a data source's actual DBContent at runtime (e.g. to drive the
 \textbf{get\_dbcontent\_data} \\
 \textit{retrieves dbcontent data from the database} \\
 dbcontent \dots DBContent to retrieve data for, e.g. "CAT021" \\
-variables \dots variables to retrieve data for, '|'-separated, e.g. "pos\_lat\_deg|pos\_lon\_deg" \\
+variables \dots variables to retrieve, separated by '|', e.g. "pos\_lat\_deg|pos\_lon\_deg" \\
 utn \dots UTN to retrieve data for \\
-max\_size \dots maximum number of results rows \\
+max\_size \dots maximum number of result rows \\
 
 \textbf{get\_eval\_standards} \\
 \textit{retrieves available evaluation standards with their requirement groups and requirements} \\
@@ -236,10 +242,17 @@ the \textbf{evaluate} command's \texttt{config} JSON
 \textit{returns a list of names of all existing reports} \\
 
 \textbf{get\_report} \\
-\textit{obtain report json data} \\
+\textit{retrieves report data as JSON: the section IDs of the report, or the given section} \\
 report \dots name of the report to retrieve, e.g. 'EUROCAE ED-87E Evaluation' \\
 section \dots optional ID of the section to retrieve, e.g. 'Report:Results:Overview:Results' \\
 See section \nameref{sec:get_report} for more details. \\
+
+\textbf{get\_report\_figure} \\
+\textit{retrieves the stored view points of the figures in a report section} \\
+report \dots name of the report, e.g. 'EUROCAE ED-87E Evaluation' \\
+section \dots ID of the section, e.g. 'Report:Results:Overview:Results' \\
+figure \dots optional name of a figure in the section, all figures if not set \\
+Returns a list \texttt{figures}. Each entry has \texttt{name}, \texttt{caption} and \texttt{view\_point} (the view point JSON that the figure shows). \\
 
 \textbf{get\_target} \\
 \textit{retrieves a target description for the given UTN} \\
@@ -249,39 +262,39 @@ utn \dots UTN of the target to retrieve information for \\
 \textit{retrieves statistics for the current targets} \\
 
 \textbf{get\_utns} \\
-\textit{retrieves UTNs with (optional) target descriptions} \\
-nodesc \dots Return a list of existing UTNs without target descriptions \\
+\textit{retrieves the UTNs with their target descriptions (optional)} \\
+nodesc \dots returns only the UTNs, without target descriptions \\
 
 \textbf{help} \\
-\textit{the help command, generates help information} \\
+\textit{lists all commands, or describes the given command, with -{}-details also their options} \\
 command \dots command to retrieve help information for \\
 details	\dots obtain detailed information such as parameter lists \\
 
 \textbf{import\_asterix\_file} \\
-\textit{imports ASTERIX file with given filename, e.g. "/data/file1.ff"} \\
-filename \dots given filename, e.g. "/data/file1.json" \\
-framing \dots imports ASTERIX file with given  ASTERIX framing, e.g. "none", "ioss", "ioss\_seq", "rff" \\
-line \dots imports ASTERIX file with given line e.g. "L2" \\
-date \dots imports ASTERIX file with given date, in YYYY-MM-DD format e.g. "2020-04-20" \\
-time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ \\
+\textit{imports an ASTERIX file with the given filename, e.g. "/data/file1.ff"} \\
+filename \dots given filename, e.g. "/data/file1.ff" \\
+framing \dots ASTERIX framing, e.g. "none", "ioss", "ioss\_seq", "rff" \\
+line \dots line to import the data into, e.g. "L2" \\
+date \dots date of the data, in YYYY-MM-DD format, e.g. "2020-04-20" \\
+time\_offset \dots Time of Day offset, in HH:MM:SS.ZZZ format, e.g. "00:00:10.000" \\
 ignore\_time\_jumps \dots ignore 24h time jumps \\
 config \dots import configuration as JSON string, overrides existing settings or other provided parameters (see \nameref{sec:rtcommand_asterix_import_config}) \\
 
 \textbf{import\_asterix\_files} \\
-\textit{imports multiple ASTERIX files with given filenames, e.g. '/data/file1.ff;/data/file2.ff'} \\
+\textit{imports multiple ASTERIX files with the given filenames, e.g. '/data/file1.ff;/data/file2.ff'} \\
 filenames \dots given filenames, e.g. '/data/file1.ff;/data/file2.ff' \\
-framing \dots imports ASTERIX file with given  ASTERIX framing, e.g. "none", "ioss", "ioss\_seq", "rff" \\
-line \dots imports ASTERIX file with given line e.g. "L2" \\
-date \dots imports ASTERIX file with given date, in YYYY-MM-DD format e.g. "2020-04-20" \\
-time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ \\
+framing \dots ASTERIX framing, e.g. "none", "ioss", "ioss\_seq", "rff" \\
+line \dots line to import the data into, e.g. "L2" \\
+date \dots date of the data, in YYYY-MM-DD format, e.g. "2020-04-20" \\
+time\_offset \dots Time of Day offset, in HH:MM:SS.ZZZ format, e.g. "00:00:10.000" \\
 ignore\_time\_jumps \dots ignore 24h time jumps \\
 config \dots import configuration as JSON string, overrides existing settings or other provided parameters (see \nameref{sec:rtcommand_asterix_import_config}) \\
 
 \textbf{import\_asterix\_network} \\
-\textit{imports ASTERIX from defined network UDP streams} \\
-time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ \\
+\textit{imports ASTERIX from the configured network UDP streams} \\
+time\_offset \dots Time of Day offset, in HH:MM:SS.ZZZ format, e.g. "00:00:10.000" \\
 max\_lines (-m) \dots maximum number of lines per data source during ASTERIX network import, 1..4 \\
-ignore\_future\_ts \dots keep target reports with future timestamps, skips the future timestamp check \\
+ignore\_future\_ts \dots keeps target reports with future timestamps, skips the future timestamp check \\
 config \dots import configuration as JSON string, overrides existing settings or other provided parameters (see \nameref{sec:rtcommand_asterix_import_config}) \\
 
 \textbf{import\_asterix\_network\_pause} \\
@@ -293,63 +306,63 @@ The command is the same as the 'Pause' button in the status bar. The application
 The command is the same as the 'Resume' button in the status bar. The application mode changes back to 'Live Mode: Running'. \\
 
 \textbf{import\_asterix\_network\_stop} \\
-\textit{stops import ASTERIX from network} \\
+\textit{stops the ASTERIX network import} \\
 The command is the same as the 'Stop' button in the status bar. The application mode changes to 'Offline Mode'. \\
 
 \textbf{import\_asterix\_pcap\_file} \\
-\textit{imports ASTERIX PCAP file with given filename, e.g. '/data/file1.pcap'} \\
-filename \dots given filename, e.g. "/data/file1.json" \\
-line \dots imports ASTERIX file with given line e.g. "L2" \\
-date \dots imports ASTERIX file with given date, in YYYY-MM-DD format e.g. "2020-04-20" \\
-time\_offset \dots imports ASTERIX file with given Time of Day override, in HH:MM:SS.ZZZ \\
+\textit{imports an ASTERIX PCAP file with the given filename, e.g. '/data/file1.pcap'} \\
+filename \dots given filename, e.g. "/data/file1.pcap" \\
+line \dots line to import the data into, e.g. "L2" \\
+date \dots date of the data, in YYYY-MM-DD format, e.g. "2020-04-20" \\
+time\_offset \dots Time of Day offset, in HH:MM:SS.ZZZ format, e.g. "00:00:10.000" \\
 ignore\_time\_jumps \dots ignore 24h time jumps \\
 config \dots import configuration as JSON string, overrides existing settings or other provided parameters (see \nameref{sec:rtcommand_asterix_import_config}) \\
 
 \textbf{import\_asterix\_pcap\_files} \\
-\textit{imports multiple ASTERIX PCAP files with given filenames, e.g. '/data/file1.pcap;/data/file2.pcap'} \\
+\textit{imports multiple ASTERIX PCAP files with the given filenames, e.g. '/data/file1.pcap;/data/file2.pcap'} \\
 filenames \dots given filenames, e.g. '/data/file1.pcap;/data/file2.pcap' \\
-line \dots imports ASTERIX PCAP file with given line e.g. "L2" \\
-date \dots imports ASTERIX PCAP file with given date, in YYYY-MM-DD format e.g. "2020-04-20" \\
-time\_offset \dots imports ASTERIX PCAP file with given Time of Day override, in HH:MM:SS.ZZZ \\
+line \dots line to import the data into, e.g. "L2" \\
+date \dots date of the data, in YYYY-MM-DD format, e.g. "2020-04-20" \\
+time\_offset \dots Time of Day offset, in HH:MM:SS.ZZZ format, e.g. "00:00:10.000" \\
 ignore\_time\_jumps \dots ignore 24h time jumps \\
 config \dots import configuration as JSON string, overrides existing settings or other provided parameters (see \nameref{sec:rtcommand_asterix_import_config}) \\
 
 \textbf{import\_data\_sources} \\
-\textit{imports data sources JSON file with given filename, e.g. '/data/ds1.json'} \\
+\textit{imports a data sources JSON file with the given filename, e.g. '/data/ds1.json'} \\
 filename \dots given filename, e.g. "/data/file1.json" \\
 
 \textbf{import\_gps\_trail} \\
-\textit{imports gps trail NMEA with given filename, e.g. "/data/file2.txt"} \\
+\textit{imports a GPS trail NMEA file with the given filename, e.g. "/data/file2.txt"} \\
 filename \dots given filename, e.g. "/data/file1.nmea" \\
 name \dots optional data source name, e.g. "GPS Trail" \\
-sac \dots optional sac, e.g. 255 \\
-sic \dots optional sic, e.g. 0 \\
-tod\_offset \dots optional time of day offset, e.g. -10000.0 \\
+sac \dots optional SAC, e.g. 255 \\
+sic \dots optional SIC, e.g. 0 \\
+tod\_offset \dots optional Time of Day offset in seconds, e.g. -10000.0 \\
 date \dots optional override date, e.g. "2025-01-01" \\
-mode3a \dots optional mode3a code in octal, e.g.  \\
+mode3a \dots optional Mode 3/A code in octal, e.g. "7000" \\
 address \dots optional aircraft address in hex, e.g. "0xffffff" \\
 id \dots optional aircraft identification, e.g. "ENTE" \\
 config \dots import configuration as JSON string, overrides existing settings or other provided parameters \\
 
 \textbf{import\_json} \\
-\textit{imports JSON file with given filename, e.g. "/data/file1.json"} \\
+\textit{imports a JSON file with the given filename, e.g. "/data/file1.json"} \\
 filename \dots given filename, e.g. "/data/file1.json" \\
 
 \textbf{import\_sectors\_json} \\
-\textit{imports exported sectors JSON with given filename, e.g. "/data/sectors.json"} \\ 
+\textit{imports an exported sectors JSON file with the given filename, e.g. "/data/sectors.json"} \\ 
 filename \dots given filename, e.g. "/data/file1.json" \\
 
 \textbf{import\_view\_points} \\
-\textit{imports view points JSON file with given filename, e.g. '/data/file1.json'} \\
+\textit{imports a view points JSON file with the given filename, e.g. '/data/file1.json'} \\
 filename \dots given filename, e.g. "/data/file1.json" \\
 
 \textbf{load\_data} \\
 \textit{loads data for the currently selected dbcontents and variables from the open database into memory} \\
 
 \textbf{open\_db} \\
-\textit{opens existing database file with given filename, e.g. "/data/file1.db"} \\
+\textit{opens an existing database file with the given filename, e.g. "/data/file1.db"} \\
 filename \dots given filename, e.g. "/data/file1.db" \\
-assure\_open \dots Only opens the file if it is not already opened \\
+assure\_open \dots succeeds without action if the file is already opened \\
 
 \textbf{open\_recent\_db} \\
 \textit{opens a database file from the recent file history} \\
@@ -360,17 +373,17 @@ index \dots index in the recent file history \\
 \textit{quits the application} \\
 
 \textbf{reconstruct\_references} \\
-\textit{reconstruct references} \\
+\textit{runs the Reconstruct References task} \\
 config \dots optional reconstructor configuration as JSON string, e.g. '\{"current\_reconstructor\_str": "Scoring + UMKalman"\}' \\
-disable\_sensors \dots optional list of sensor names to disable, e.g. "GPS Trail 1;GPS Trail 2" \\
+disable\_sensors \dots optional list of sensor names to disable, separated by ';', e.g. "GPS Trail 1;GPS Trail 2" \\
 
 \textbf{set\_data\_sources} \\
 \textit{sets data source descriptions} \\
-data\_sources \dots Data sources JSON definition \\
+data\_sources \dots data sources JSON definition \\
 
 \textbf{set\_view\_point} \\
-\textit{sets defined view point} \\
-view\_point \dots View point JSON definition \\
+\textit{sets the given view point} \\
+view\_point \dots view point JSON definition \\
 See section \nameref{sec:appendix_view_points} for how the JSON definition has to be structured. \\
 
 \subsubsection{ASTERIX Import Configuration Parameters}
@@ -384,7 +397,7 @@ A rectangular position filter (given as minimum and maximum latitude and longitu
   "filter_position_rec_active": true,
   "filter_rec_latitude_min": 49.686,
   "filter_rec_latitude_max": 50.3898,
-  "filter_rec_longitude_min": 8.0115,
+  "filter_rec_longitude_min": 8.0115, 
   "filter_rec_longitude_max": 9.1129,
   "filter_modec_active": true,
   "filter_modec_max": 500,
@@ -655,6 +668,7 @@ Fetched JSON data: \\
 \end{lstlisting}
 
 \subsection{Python Example}
+\label{sec:rtcommand_python_example}
 
 The following example will make use of the python class \textit{COMPASSInstance}, 
 which makes it quite easy to start a COMPASS instance, connect to it, send commands,

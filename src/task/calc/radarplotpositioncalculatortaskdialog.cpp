@@ -46,12 +46,14 @@ RadarPlotPositionCalculatorTaskDialog::RadarPlotPositionCalculatorTaskDialog(Rad
     QHBoxLayout* button_layout = new QHBoxLayout();
 
     QPushButton* cancel_button = new QPushButton("Cancel");
+    cancel_button->setObjectName("cancel_button");
     connect(cancel_button,  &QPushButton::clicked, this, &QDialog::reject);
     button_layout->addWidget(cancel_button);
 
     button_layout->addStretch();
 
     QPushButton* ok_button_ = new QPushButton("OK");
+    ok_button_->setObjectName("ok_button");
     connect(ok_button_, &QPushButton::clicked, this, &QDialog::accept);
     button_layout->addWidget(ok_button_);
 

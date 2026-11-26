@@ -15,13 +15,14 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/base/intervalbase.h"
-#include "eval/results/base/featuredefinitions.h"
+#include "results/base/intervalbase.h"
+#include "results/base/detailcode.h"
+#include "results/base/featuredefinitions.h"
 
-#include "eval/results/evaluationdetail.h"
+#include "results/evaluationdetail.h"
 
-#include "eval/requirement/base/base.h"
-#include "eval/requirement/base/intervalbase.h"
+#include "requirement/base/base.h"
+#include "requirement/base/intervalbase.h"
 
 #include "evaluationtargetdata.h"
 #include "evaluationmanager.h"
@@ -121,27 +122,6 @@ std::vector<Single::TargetInfo> SingleIntervalBase::targetInfos() const
         infos.emplace_back("Reference Period", "Time inside sector", "None");
 
     return infos;
-}
-
-/**
-*/
-std::vector<std::string> SingleIntervalBase::detailHeaders() const
-{
-    return {"ToD", "DToD", "#MUIs", "Comment"};
-}
-
-/**
-*/
-nlohmann::json::array_t SingleIntervalBase::detailValues(const EvaluationDetail& detail,
-                                                         const EvaluationDetail* parent_detail) const
-{
-    auto d_tod     = detail.getValue(DetailKey::DiffTOD);
-    auto d_tod_str = d_tod.isValid() ? nlohmann::json(String::timeStringFromDouble(d_tod.toFloat())) : nlohmann::json();
-
-    return { Utils::Time::toString(detail.timestamp()),
-             d_tod_str,
-             detail.getValue(DetailKey::MissedUIs).toUInt(),
-             detail.comments().generalComment() };
 }
 
 /**
@@ -255,11 +235,88 @@ FeatureDefinitions JoinedIntervalBase::getCustomAnnotationDefinitions() const
 {
     FeatureDefinitions defs;
 
-    defs.addDefinition<FeatureDefinitionBinaryGrid>(requirement()->name(), calculator_, "Passed")
+    defs.addDefinition<FeatureDefinitionIssueCountGrid>(requirement()->name(), calculator_, "Issues")
         .addDataSeries(SingleIntervalBase::DetailKey::MissOccurred, 
                        GridAddDetailMode::AddPositionsAsPolyLine, 
                        true);
     return defs;
+}
+
+/**
+ */
+void SingleIntervalBase::addReportTableColumns(ReportTableDefinition& def) const
+{
+    def.addColumn("missed_updates", PropertyDataType::DOUBLE, "Missed Updates",
+                  "Missed update intervals inside the gap, missed seconds in time ratio mode");
+    def.addColumn("invalid_updates", PropertyDataType::UINT, "Invalid Updates",
+                  "Test reports inside the gap without a valid value");
+
+    DetailCode::Gap::addTexts(def);
+    DetailCode::Value::addValueTexts(def);
+}
+
+/**
+ */
+void SingleIntervalBase::fillReportTableRow(ReportTableRows& rows,
+                                  const EvaluationDetail& detail,
+                                  const EvaluationDetail* parent_detail,
+                                  const EvaluationDetail* prev_detail) const
+{
+    // the detail carries the cumulative missed amount, the row the amount of its gap
+    auto missed = detail.getValueAs<double>(DetailKey::MissedUIs);
+    if (missed.has_value())
+    {
+        double prev = prev_detail ? prev_detail->getValueAs<double>(DetailKey::MissedUIs).value_or(0.0) : 0.0;
+        rows.set<double>("missed_updates", missed.value() - prev);
+    }
+
+    setReportTableValue<unsigned int>(rows, "invalid_updates", detail, DetailKey::InvalidUpdates);
+}
+
+/**
+ */
+void SingleIntervalBase::fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                  const Buffer& buffer,
+                                  unsigned int row,
+                                  const EvaluationDetail* prev_detail) const
+{
+    // every stored row is a gap, the detail carries the cumulative missed amount
+    detail.setValue(DetailKey::MissOccurred, QVariant(true));
+
+    setDetailValue<double>(detail, DetailKey::DiffTOD, buffer, "duration_s", row);
+
+    double prev = prev_detail ? prev_detail->getValueAs<double>(DetailKey::MissedUIs).value_or(0.0) : 0.0;
+
+    if (buffer.has<double>("missed_updates") && !buffer.get<double>("missed_updates").isNull(row))
+        detail.setValue(DetailKey::MissedUIs, QVariant(prev + buffer.get<double>("missed_updates").get(row)));
+    else
+        detail.setValue(DetailKey::MissedUIs, QVariant(prev));
+
+    setDetailValue<unsigned int>(detail, DetailKey::InvalidUpdates, buffer, "invalid_updates", row);
+}
+
+/**
+ */
+bool SingleIntervalBase::reportTableRowWanted(const EvaluationDetail& detail,
+                                 const EvaluationDetail* parent_detail) const
+{
+    return detail.getValueAs<bool>(DetailKey::MissOccurred).value_or(false);
+}
+
+/**
+ * The gap ends at the detail timestamp and lasts the time difference of the detail.
+ */
+boost::optional<std::pair<boost::posix_time::ptime, boost::posix_time::ptime>>
+SingleIntervalBase::reportTableGapBounds(const EvaluationDetail& detail) const
+{
+    auto d_tod = detail.getValueAs<double>(DetailKey::DiffTOD);
+    if (!d_tod.has_value() || d_tod.value() <= 0.0)
+        return boost::none;
+
+    auto end   = detail.timestamp();
+    auto begin = end - boost::posix_time::microseconds(static_cast<long long>(d_tod.value() * 1e6));
+
+    return std::make_pair(begin, end);
 }
 
 }

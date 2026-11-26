@@ -17,6 +17,7 @@
 
 #pragma once
 
+#include <cstdint>
 #include "dbcontent/target/targetreportchain.h"
 #include "evaluationdefs.h"
 #include "timewindow.h"
@@ -107,6 +108,15 @@ public:
 
     void updateConstraints() const;
     bool use() const;
+
+    /// true if the target was ever detected in ADS-B data (CAT021), from any data source
+    bool hasADSBData() const;
+
+    /// ignore state set by the current standard after loading, not persisted in the target
+    bool ignoredByStandard() const;
+    const std::string& ignoredByStandardReason() const;
+    void setIgnoredByStandard(const std::string& reason) const;
+
     const Utils::TimeWindowCollection& excludedTimeWindows() const;
     bool isTimeStampNotExcluded(const boost::posix_time::ptime& ts) const;
 
@@ -128,12 +138,21 @@ public:
     std::string mopsVersionStr() const;
 
     // ref
+    /// reference entries within d_max of the test report, see withinMaxGap(), the reference
+    /// position may still be missing (mappedRefPos())
     bool hasMappedRefData(const dbContent::TargetReport::Chain::DataID& tst_id,
                           boost::posix_time::time_duration d_max) const;
     std::pair<boost::posix_time::ptime, boost::posix_time::ptime> mappedRefTimes(
             const dbContent::TargetReport::Chain::DataID& tst_id,
             boost::posix_time::time_duration d_max) const;
     // lower/upper times, {} if not existing
+
+    // precomputed reference mapping of the test id (bracketing reference ids, interpolated position)
+    const dbContent::TargetReport::DataMapping& mappedRefMapping(
+            const dbContent::TargetReport::Chain::DataID& tst_id) const;
+    // record numbers of the reference updates bracketing the test id, none if not existing
+    std::pair<boost::optional<std::uint64_t>, boost::optional<std::uint64_t>> mappedRefRecordNumbers(
+            const dbContent::TargetReport::Chain::DataID& tst_id) const;
 
     boost::optional<dbContent::TargetPosition> mappedRefPos(
             const dbContent::TargetReport::Chain::DataID& tst_id) const;
@@ -258,6 +277,12 @@ protected:
     mutable bool has_adsb_info_ {false};
     mutable bool has_mops_versions_ {false};
     mutable std::set<unsigned int> mops_versions_;
+
+    mutable bool has_adsb_data_ {false};
+
+    // set by the current standard after loading, never persisted in the target
+    mutable bool ignored_by_std_ {false};
+    mutable std::string ignored_by_std_reason_;
 
     mutable dbContent::TargetEvalConstraints constraints_;
 

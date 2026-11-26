@@ -16,14 +16,16 @@
  */
 
 #include "reconstructortask.h"
+#include "logmodel.h"
+#include "appstate.h"
 #include "dialogs.h"
 
-#include "compass.h"
 #include "reconstructortaskdialog.h"
 #include "db_context_manager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "dbcontent/dbcontentdataengine.h"
+#include "dbcontent/dbcontentdb.h"
 #include "dbcontent/loadoperation.h"
 #include "dbcontent/variable/variableset.h"
 #include "filtermanager.h"
@@ -41,22 +43,19 @@
 #include "number.h"
 #include "dbinterface.h"
 #include "metavariable.h"
-#include "util/async.h"
+#include "async.h"
 #include "evaluationmanager.h"
 #include "viewpointgenerator.h"
 #include "projectionmanager.h"
+#include "dbcontent/variable/calculationplan.h"
 #include "projection.h"
 #include "licensemanager.h"
 #include "sectorlayer.h"
+#include "system.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
-
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "probimmreconstructor.h"
-#include "complexaccuracyestimator.h"
-#endif
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 #include <QApplication>
 #include <QMessageBox>
@@ -66,7 +65,6 @@
 #include <QLabel>
 #include <QElapsedTimer>
 
-#include <malloc.h>
 
 #include <future>
 
@@ -75,10 +73,30 @@ using namespace Utils;
 using namespace dbContent;
 
 const std::string ReconstructorTask::ScoringUMReconstructorName {"Scoring + UMKalman"};
-
-#if USE_EXPERIMENTAL_SOURCE == true
 const std::string ReconstructorTask::ProbImmReconstructorName {"Probabilistic + IMM"};
-#endif
+
+namespace
+{
+
+std::unique_ptr<ReconstructorBase> createSimpleReconstructor(nlohmann::json& config, ReconstructorTask& task)
+{
+    std::unique_ptr<AccuracyEstimatorBase> acc_estimator(new SimpleAccuracyEstimator());
+
+    return std::unique_ptr<ReconstructorBase>(new SimpleReconstructor(config, std::move(acc_estimator), &task));
+}
+
+} // namespace
+
+/**
+ * Built-in reconstructors, plus the plugin reconstructors without creator (set by their plugin's initCore(), e.g. ProbIMM).
+ */
+ReconstructorTask::reconstructorFactoryType& ReconstructorTask::reconstructorFactory()
+{
+    static reconstructorFactoryType factory = { { "SimpleReconstructor",  &createSimpleReconstructor, ScoringUMReconstructorName },
+                                                { "ProbIMMReconstructor", nullptr,                    ProbImmReconstructorName,
+                                                  "", CreationSource::Plugin } };
+    return factory;
+}
 
 ReconstructorTask::ReconstructorTask(nlohmann::json& config, TaskManager* parent)
     : Task(*parent),
@@ -94,12 +112,7 @@ ReconstructorTask::ReconstructorTask(nlohmann::json& config, TaskManager* parent
 
     registerParameter("skip_reference_data_writing", &skip_reference_data_writing_, false);
 
-    if (!current_reconstructor_str_.size()
-        || (current_reconstructor_str_ != ScoringUMReconstructorName
-#if USE_EXPERIMENTAL_SOURCE == true
-            && current_reconstructor_str_ != ProbImmReconstructorName
-#endif
-            ))
+    if (reconstructorClassName(current_reconstructor_str_).empty())
         current_reconstructor_str_ = ScoringUMReconstructorName;
 
     registerParameter("debug", &debug_settings_.debug_, debug_settings_.debug_);
@@ -155,38 +168,15 @@ ReconstructorTask::~ReconstructorTask()
 {
 }
 
-void ReconstructorTask::generateSubConfigurable(nlohmann::json& child_json)
+void ReconstructorTask::childCreated(Configurable* child)
 {
-    const auto& class_name = Configuration::getClassName(child_json);
-    if (class_name == "SimpleReconstructor")
-    {
-        traced_assert(!simple_reconstructor_);
+    auto rec = dynamic_cast<ReconstructorBase*>(child);
+    traced_assert(rec);
+    traced_assert(!reconstructor(rec->className()));
 
-        std::unique_ptr<AccuracyEstimatorBase> acc_estimator;
-        acc_estimator.reset(new SimpleAccuracyEstimator());
+    reconstructors_.emplace_back(rec);
 
-        simple_reconstructor_.reset(new SimpleReconstructor(child_json, std::move(acc_estimator), this));
-        traced_assert(simple_reconstructor_);
-
-        connect(simple_reconstructor_.get(), &ReconstructorBase::configChanged, this, &ReconstructorTask::configChanged);
-    }
-    else if (class_name == "ProbIMMReconstructor")
-    {
-#if USE_EXPERIMENTAL_SOURCE == true
-
-        traced_assert(!probimm_reconstructor_);
-
-        std::unique_ptr<AccuracyEstimatorBase> acc_estimator;
-        acc_estimator.reset(new ComplexAccuracyEstimator());
-
-        probimm_reconstructor_.reset(new ProbIMMReconstructor(child_json, std::move(acc_estimator), this));
-        traced_assert(probimm_reconstructor_);
-
-        connect(probimm_reconstructor_.get(), &ReconstructorBase::configChanged, this, &ReconstructorTask::configChanged);
-#endif
-    }
-    else
-        throw std::runtime_error("ReconstructorTask: generateSubConfigurable: unknown class_name " + class_name);
+    connect(rec, &ReconstructorBase::configChanged, this, &ReconstructorTask::configChanged);
 }
 
 void ReconstructorTask::initTask()
@@ -195,11 +185,15 @@ void ReconstructorTask::initTask()
 
 void ReconstructorTask::checkReconstructor()
 {
-    const auto& license_manager = manager().compass().licenseManager();
+    const auto& license_manager = manager().licenseManager();
 
-    if (!license_manager.componentEnabled(license::License::ComponentProbIMMReconstructor) && currentReconstructorStr() == ProbImmReconstructorName)
+    // licensed and its plugin present
+    const bool probimm_usable = license_manager.componentEnabled(license::License::ComponentProbIMMReconstructor) &&
+                                !reconstructorClassName(ProbImmReconstructorName).empty();
+
+    if (!probimm_usable && currentReconstructorStr() == ProbImmReconstructorName)
         currentReconstructorStr(ScoringUMReconstructorName);
-    else if (license_manager.componentEnabled(license::License::ComponentProbIMMReconstructor) && currentReconstructorStr() != ProbImmReconstructorName)
+    else if (probimm_usable && currentReconstructorStr() != ProbImmReconstructorName)
         currentReconstructorStr(ProbImmReconstructorName);
 }
 
@@ -212,7 +206,7 @@ bool ReconstructorTask::canRun()
 {
     traced_assert(currentReconstructor());
 
-    bool has_data       = manager().compass().dbContentManager().hasData();
+    bool has_data       = manager().dbContentManager().hasData();
     bool has_next_slice = has_data && currentReconstructor()->hasNextTimeSlice();
 
     loginf << "has_data " << has_data << " has_next_slice " << has_next_slice;
@@ -220,7 +214,10 @@ bool ReconstructorTask::canRun()
     return has_data && has_next_slice;
 }
 
-void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_progress)
+/**
+ * Notice: queued callers pass slice_idx explicitly, current_slice_idx_ may have moved on until the slot runs.
+ */
+void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_progress, int slice_idx)
 {
     logdbg << "slice " << add_slice_progress
            << " dialog " << (progress_dialog_ != nullptr);
@@ -228,8 +225,11 @@ void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_pr
     if (!progress_dialog_)
         return;
 
+    if (slice_idx < 0)
+        slice_idx = (int)current_slice_idx_;
+
     int ns   = currentReconstructor()->numSlices();
-    int sidx = std::max(0, std::min((int)current_slice_idx_, ns - 1));
+    int sidx = std::max(0, std::min(slice_idx, ns - 1));
 
     if (done_)
         sidx = ns - 1;
@@ -284,8 +284,8 @@ void ReconstructorTask::updateProgressSlot(const QString& msg, bool add_slice_pr
 
         const auto& counts = currentReconstructor()->assocCounts();
 
-        auto& ctx_man = manager().compass().dbContextManager();
-        DBContentManager& dbcont_man = manager().compass().dbContentManager();
+        auto& ctx_man = manager().dbContextManager();
+        DBContentManager& dbcont_man = manager().dbContentManager();
 
         if (counts.size())
         {
@@ -368,47 +368,46 @@ std::string ReconstructorTask::currentReconstructorStr() const
 
 void ReconstructorTask::currentReconstructorStr(const std::string& value)
 {
-
-#if USE_EXPERIMENTAL_SOURCE == true
-    traced_assert(value == ReconstructorTask::ScoringUMReconstructorName
-           || value == ReconstructorTask::ProbImmReconstructorName);
-#else
-    traced_assert(value == ReconstructorTask::ScoringUMReconstructorName);
-#endif
+    traced_assert(!reconstructorClassName(value).empty());
 
     current_reconstructor_str_ = value;
 }
 
+/**
+ * Returns the class name of the reconstructor with the given name (= factory display name),
+ * or an empty string if unknown.
+ */
+std::string ReconstructorTask::reconstructorClassName(const std::string& reconstructor_name) const
+{
+    const auto& factory = reconstructorFactory();
+
+    for (const auto& class_name : factory.classNames())
+        if (factory.displayName(class_name) == reconstructor_name)
+            return class_name;
+
+    return {};
+}
+
 ReconstructorBase* ReconstructorTask::currentReconstructor() const
 {
-#if USE_EXPERIMENTAL_SOURCE == true
-    traced_assert(current_reconstructor_str_ == ReconstructorTask::ScoringUMReconstructorName
-           || current_reconstructor_str_ == ReconstructorTask::ProbImmReconstructorName);
+    auto rec = reconstructor(reconstructorClassName(current_reconstructor_str_));
+    traced_assert(rec);
 
-    if (current_reconstructor_str_ == ReconstructorTask::ScoringUMReconstructorName)
-        return dynamic_cast<ReconstructorBase*> (simple_reconstructor_.get());
-    else
-        return dynamic_cast<ReconstructorBase*> (probimm_reconstructor_.get());
-#else
-    traced_assert(current_reconstructor_str_ == ReconstructorTask::ScoringUMReconstructorName);
-
-    return dynamic_cast<ReconstructorBase*> (simple_reconstructor_.get());
-#endif
+    return rec;
 }
 
-SimpleReconstructor* ReconstructorTask::simpleReconstructor() const
+/**
+ * Returns the reconstructor of the given class, or nullptr if not existing.
+ */
+ReconstructorBase* ReconstructorTask::reconstructor(const std::string& class_name) const
 {
-    return simple_reconstructor_.get();
+    for (const auto& rec : reconstructors_)
+        if (rec->className() == class_name)
+            return rec.get();
+
+    return nullptr;
 }
 
-#if USE_EXPERIMENTAL_SOURCE == true
-
-ProbIMMReconstructor* ReconstructorTask::probIMMReconstructor() const
-{
-    return probimm_reconstructor_.get();
-}
-
-#endif
 
 std::set<unsigned int> ReconstructorTask::disabledDataSources() const
 {
@@ -419,7 +418,7 @@ std::set<unsigned int> ReconstructorTask::disabledDataSources() const
 
     if (current_reconstructor_str_ == ScoringUMReconstructorName)
     {
-        for (const auto& [ds_id, ds] : manager().compass().dbContextManager().activeContext().dataSources())
+        for (const auto& [ds_id, ds] : manager().dbContextManager().activeContext().dataSources())
         {
             if (ds.name() == "CalcRef")
                 disabled_ds.insert(ds.id());
@@ -451,18 +450,18 @@ void ReconstructorTask::run()
     delassocs_future_ = {};
     process_future_ = {};
 
-    ReconstructorBase::TargetsContainer::unspecific_acids_ = manager().compass().unspecificACIDs();
+    ReconstructorBase::TargetsContainer::unspecific_acids_ = manager().appState().settings().unspecific_acids;
 
-    manager().compass().dbContentManager().clearAssociationsIdentifier();
-    manager().compass().dbInterface().startPerformanceMetrics();
+    manager().dbContentManager().clearAssociationsIdentifier();
+    manager().dbInterface().startPerformanceMetrics();
 
-    manager().compass().taskManager().beginTaskResultWriting(
+    manager().beginTaskResultWriting(
         "Reconstruct References "+String::lineStrFrom(currentReconstructor()->settings().ds_line),
          task::TaskResultType::Generic);
 
-    manager().compass().logInfo("Reconstructor") << "running " << current_reconstructor_str_;
+    manager().logStore().logInfo("Reconstructor") << "running " << current_reconstructor_str_;
 
-    Projection& projection = manager().compass().projectionManager().currentProjection();
+    Projection& projection = manager().projectionManager().currentProjection();
     projection.clearCoordinateSystems();
     projection.addAllCoordinateSystems();
 
@@ -471,7 +470,7 @@ void ReconstructorTask::run()
     run_start_time_ = boost::posix_time::microsec_clock::local_time();
     run_start_time_after_del_ = {};
 
-    auto& section = manager().compass().taskManager().currentReport()->getSection("Overview");
+    auto& section = manager().currentReport()->getSection("Overview");
     section.addTable("Info", 3, {"Name", "Value", "Comment"}, false);
 
     auto& table = section.getTable("Info");
@@ -482,13 +481,18 @@ void ReconstructorTask::run()
 
     progress_dialog_.reset(new QProgressDialog("Reconstructing...", "Cancel", 0, 100,
                                                Dialogs::statusDialogParent()));
+    progress_dialog_->setObjectName("reconstruction_progress_dialog");
     progress_dialog_->setWindowTitle("Reconstructing References");
     progress_dialog_->setMinimumWidth(600);
     progress_dialog_->setLabel(tmp_label);
     progress_dialog_->setAutoClose(false);
     progress_dialog_->setAutoReset(false);
     progress_dialog_->setCancelButton(nullptr);
-    progress_dialog_->setModal(true);
+    // modal only for interactive runs: modality makes the window manager re-assert
+    // focus on the dialog whenever its geometry changes, and the label (elapsed/
+    // remaining times, association table) resizes it on every progress update -
+    // in batch runs that steals os focus from other applications all the time
+    progress_dialog_->setModal(allow_user_interactions_);
     // do not steal os focus from other applications when popping up
     progress_dialog_->setAttribute(Qt::WA_ShowWithoutActivating, true);
 
@@ -499,9 +503,9 @@ void ReconstructorTask::run()
 
     updateProgressSlot("Deleting Previous References", false);
 
-    manager().compass().viewManager().clearDataInViews();
+    manager().viewManager().clearDataInViews();
 
-    manager().compass().evaluationManager().clearData(); // in case there are previous results
+    manager().evaluationManager().clearData(); // in case there are previous results
 
     delcalcref_future_ = std::async(std::launch::async, [&] {
         {
@@ -528,7 +532,7 @@ void ReconstructorTask::deleteCalculatedReferencesDoneSlot()
 
     updateProgressSlot("Deleting Previous Targets", false);
 
-    DBContentManager& cont_man = manager().compass().dbContentManager();
+    DBContentManager& cont_man = manager().dbContentManager();
 
     deltgts_future_ = std::async(std::launch::async, [&] {
         {
@@ -555,7 +559,7 @@ void ReconstructorTask::deleteTargetsDoneSlot()
 
     updateProgressSlot("Deleting Previous Associations", false);
 
-    DBContentManager& cont_man = manager().compass().dbContentManager();
+    DBContentManager& cont_man = manager().dbContentManager();
 
     delassocs_future_ = std::async(std::launch::async, [&] {
         {
@@ -569,7 +573,7 @@ void ReconstructorTask::deleteTargetsDoneSlot()
                                                   Q_ARG(const QString&, "Deleting Previous Associations"),
                                                   Q_ARG(bool, false));
 
-                        manager().compass().dbInterface().clearAssociations(*dbcont_it.second);
+                        manager().dbContentManager().contentDB().clearAssociations(*dbcont_it.second);
                     }
                 }
 
@@ -590,13 +594,20 @@ void ReconstructorTask::deleteAssociationsDoneSlot()
 {
     loginf;
 
-    // enable canceling
-
+    // enable canceling - interactive runs only: in batch runs a stray keystroke
+    // landing in the (focus-stealing) dialog hit the cancel button / Escape-reject
+    // and silently cancelled the whole run (observed 2026-08-19)
     traced_assert(progress_dialog_);
-    progress_dialog_->setCancelButton(new QPushButton("Cancel"));
 
-    connect(progress_dialog_.get(), &QProgressDialog::canceled,
-            this, &ReconstructorTask::runCancelledSlot);
+    if (allow_user_interactions_)
+    {
+        QPushButton* cancel_button = new QPushButton("Cancel");
+        cancel_button->setObjectName("cancel_button");
+        progress_dialog_->setCancelButton(cancel_button);
+
+        connect(progress_dialog_.get(), &QProgressDialog::canceled,
+                this, &ReconstructorTask::runCancelledSlot);
+    }
 
     updateProgressSlot("Initializing", false);
 
@@ -633,7 +644,7 @@ void ReconstructorTask::loadDataSlice()
 
     if (use_sectors_extend_)
     {
-        auto& ctx = manager().compass().dbContextManager();
+        auto& ctx = manager().dbContextManager();
 
         bool first = true;
         double tmp_lat_min{0}, tmp_lat_max{0}, tmp_long_min{0}, tmp_long_max{0};
@@ -676,7 +687,7 @@ void ReconstructorTask::loadDataSlice()
         }
     }
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
 
     std::set<std::string> targets;
     for (auto& dbcont_it : dbcontent_man)
@@ -722,8 +733,8 @@ std::string ReconstructorTask::loadFilterClause(
     const std::string& dbcontent_name, bool has_bbox,
     double lat_min, double lat_max, double long_min, double long_max)
 {
-    IDBVariableResolver& resolver   = manager().compass().filterManager().variableResolver();
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    IDBVariableResolver& resolver   = manager().filterManager().variableResolver();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
 
     std::vector<FilterClause> parts;
 
@@ -795,29 +806,50 @@ void ReconstructorTask::loadingDoneSlot()
     if (cancelled_)
         return;
 
-    // check if not already processing
-    unsigned int cnt{0};
-    while (currentReconstructor()->processing() || processing_data_slice_)
-    {
-        if (cancelled_)
-            return;
+    processLoadedSliceIfReady();
+}
 
-        if (cnt % 100 == 0)
-            logdbg << "waiting on reconst processing "
-                << currentReconstructor()->processing()
-                << " data slice proc " << processing_data_slice_;
-
-        QCoreApplication::processEvents();
-        QThread::msleep(10);
-        ++cnt;
-    }
-
+/**
+ * Starts the processing of the loaded slice if the previous slice is done. Never waits: this
+ * slot can run inside the event loop of a pending insert (DBContentDataEngine::insert waits
+ * for running loads), and waiting here for the processing, which itself waits for that
+ * insert, deadlocks. If not ready, processingDoneSlot() or writeDoneSlot() calls it again.
+ */
+void ReconstructorTask::processLoadedSliceIfReady()
+{
     if (cancelled_)
         return;
 
+    if (!loading_slice_ || !loading_slice_->loading_done_)
+        return; // nothing loaded yet
+
+    // check if not already processing
+    if (currentReconstructor()->processing() || processing_data_slice_)
+    {
+        logdbg << "waiting on reconst processing "
+               << currentReconstructor()->processing()
+               << " data slice proc " << processing_data_slice_;
+        return;
+    }
+
+    // a slice without data is marked processed at once, which needs the current write to end
+    if (!loading_slice_->has_data_ && writing_slice_)
+    {
+        logdbg << "waiting on writing slice";
+        return;
+    }
+
+    bool last_slice = loading_slice_->is_last_slice_;
+
     loginf << "calling process";
 
-    updateProgressSlot("Processing Slice", true);
+    // queued: on the modal dialog setValue() processes events, a queued processLoadedSliceIfReady()
+    // would run nested in this half-done transition and load the next slice twice;
+    // the slice index is passed, the slot runs after the increment below
+    QMetaObject::invokeMethod(this, "updateProgressSlot", Qt::QueuedConnection,
+                              Q_ARG(const QString&, "Processing Slice"),
+                              Q_ARG(bool, true),
+                              Q_ARG(int, (int)current_slice_idx_));
     ++current_slice_idx_;
 
     traced_assert(!processing_data_slice_);
@@ -854,6 +886,10 @@ void ReconstructorTask::loadingDoneSlot()
 
         if (cancelled_)
             return;
+
+        // the previous slice load must be finished, the engine's wait for a running load
+        // processes events and the old load's done slot would fill the new slice
+        traced_assert(!manager().dbContentManager().dataEngine().isLoading());
 
         loadDataSlice();
     }
@@ -928,12 +964,8 @@ void ReconstructorTask::processDataSlice()
         //no data no processing => immediately mark as done
         processing_slice_->processing_done_ = true;
 
-        //wait for current write to end
-        while (writing_slice_ && !cancelled_)
-        {
-            QCoreApplication::processEvents();
-            QThread::msleep(10);
-        }
+        //no current write, guaranteed by processLoadedSliceIfReady()
+        traced_assert(!writing_slice_);
 
         //directly skip to processing done
         processingDoneSlot();
@@ -966,6 +998,9 @@ void ReconstructorTask::processingDoneSlot()
     writing_slice_ = std::move(processing_slice_);
 
     writeDataSlice(); // starts the async jobs
+
+    // a loaded slice may wait for the processing to end, queued so it never runs inside a wait
+    QMetaObject::invokeMethod(this, [ this ] { processLoadedSliceIfReady(); }, Qt::QueuedConnection);
 }
 
 void ReconstructorTask::writeDataSlice()
@@ -974,7 +1009,7 @@ void ReconstructorTask::writeDataSlice()
 
     traced_assert(writing_slice_);
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
 
     if (skip_reference_data_writing_)
     {
@@ -1019,6 +1054,9 @@ void ReconstructorTask::writeDataSlice()
 
         loginf << "references dbcontent slice idx " << writing_slice_->slice_count_;
 
+        // the calculated variables, X/Y StdDev Max
+        dbContent::CalculationPlan::create(dbcontent_man)->run(writing_slice_->reftraj_data_);
+
         dbcontent_man.insertData(writing_slice_->reftraj_data_);
     }
     else if (last_slice_ && last_slice_->has_data_)
@@ -1040,6 +1078,8 @@ void ReconstructorTask::writeDataSlice()
         }
 
         loginf << "references dbcontent (overlap) slice idx " << last_slice_->slice_count_;
+
+        dbContent::CalculationPlan::create(dbcontent_man)->run(last_slice_->reftraj_data_glue_);
 
         dbcontent_man.insertData(last_slice_->reftraj_data_glue_);
     }
@@ -1083,7 +1123,11 @@ void ReconstructorTask::writeDoneSlot()
     }
 
     // release unused memory
-    malloc_trim(0);
+    Utils::System::trimMemory();
+
+    // a loaded slice without data may wait for this write to end
+    if (!was_last)
+        QMetaObject::invokeMethod(this, [ this ] { processLoadedSliceIfReady(); }, Qt::QueuedConnection);
 
     // doneSignal must mean "all cleanup is complete" so that the RT-command
     // gating on it (RTCommandReconstructReferences) doesn't release the
@@ -1101,17 +1145,21 @@ void ReconstructorTask::endReconstruction()
 {
     loginf << "ending reconstruction...";
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
 
     disconnect(&dbcontent_man, &DBContentManager::insertDoneSignal,
                this, &ReconstructorTask::writeDoneSlot);
+
+    // run-end analysis (e.g. dubious reference detection) - must happen before
+    // saveTargets() (feeds target info) and before reset() below (wipes state)
+    currentReconstructor()->finalizeAnalysis();
 
     currentReconstructor()->saveTargets();
 
     currentReconstructor()->finalizePersistence();
 
-    manager().compass().dbContextManager().saveCountsToDB();
-    manager().compass().dbInterface().saveProperties();
+    manager().dbContextManager().saveCountsToDB();
+    manager().dbInterface().saveProperties();
 
     done_ = true;
 
@@ -1139,20 +1187,20 @@ void ReconstructorTask::endReconstruction()
            << String::timeStringFromDouble(time_elapsed_s, false)
            << ", after deletion " << String::timeStringFromDouble(time_elapsed_s_after_del, false);
 
-    loginf << manager().compass().dbInterface().stopPerformanceMetrics().asString();
+    loginf << manager().dbInterface().stopPerformanceMetrics().asString();
 
-    manager().compass().logInfo("Reconstructor") << "done using " << current_reconstructor_str_
+    manager().logStore().logInfo("Reconstructor") << "done using " << current_reconstructor_str_
                                                  << " after " << String::timeStringFromDouble(time_elapsed_s, false);
 
     // report: info
-    auto& section = manager().compass().taskManager().currentReport()->getSection("Overview");
+    auto& section = manager().currentReport()->getSection("Overview");
 
     {
         auto& table = section.getTable("Info");
         table.addRow({"End", Time::toString(boost::posix_time::microsec_clock::local_time()), ""});
         table.addRow({"Elapsed", String::timeStringFromDouble(time_elapsed_s, false), ""});
         table.addRow({"Elapsed After Deletion", String::timeStringFromDouble(time_elapsed_s_after_del, false), ""});
-        table.addRow({"Number of Targets", manager().compass().dbContentManager().numTargets(), ""});
+        table.addRow({"Number of Targets", manager().dbContentManager().numTargets(), ""});
     }
 
     // report: assoc counts
@@ -1165,8 +1213,8 @@ void ReconstructorTask::endReconstruction()
 
         const auto& counts = currentReconstructor()->assocCounts();
 
-        auto& ctx_man = manager().compass().dbContextManager();
-        DBContentManager& dbcont_man = manager().compass().dbContentManager();
+        auto& ctx_man = manager().dbContextManager();
+        DBContentManager& dbcont_man = manager().dbContentManager();
 
         if (counts.size())
         {
@@ -1201,16 +1249,13 @@ void ReconstructorTask::endReconstruction()
     currentReconstructor()->reset();
 
     if (!skip_reference_data_writing_)
-        manager().compass().dbContentManager().setAssociationsIdentifier("All");
+        manager().dbContentManager().setAssociationsIdentifier("All");
 
-    manager().compass().taskManager().endTaskResultWriting(true, true);
-
-    //cleanup db after reconstruction
-    manager().compass().dbInterface().cleanupDB(true);
+    manager().endTaskResultWriting(true, true);
 
     if (!allow_user_interactions_)
     {
-        //auto-close dialog and immediately cleanup db
+        //auto-close dialog
         progress_dialog_->close();
     }
 }
@@ -1219,9 +1264,9 @@ void ReconstructorTask::sectorsChangedSlot()
 {
     used_sectors_.clear();
 
-    if (manager().compass().dbContextManager().sectorsLoaded())
+    if (manager().dbContextManager().sectorsLoaded())
     {
-        auto& sectors_layers = manager().compass().dbContextManager().sectorLayers();
+        auto& sectors_layers = manager().dbContextManager().sectorLayers();
 
         use_sectors_extend_ = sectors_layers.size();
 
@@ -1275,7 +1320,7 @@ void ReconstructorTask::runCancelledSlot()
 
     Async::waitAndProcessEventsFor(50);
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
 
     if (dbcontent_man.dataEngine().isLoading())
         dbcontent_man.dataEngine().cancelLoad();
@@ -1297,7 +1342,7 @@ void ReconstructorTask::runCancelledSlot()
 
     loginf << "all done";
 
-    manager().compass().logInfo("Reconstructor") << "canceled by user";
+    manager().logStore().logInfo("Reconstructor") << "canceled by user";
 
     currentReconstructor()->reset();
 
@@ -1308,12 +1353,12 @@ void ReconstructorTask::runCancelledSlot()
     last_slice_ = nullptr;
 
     done_ = true;
-    malloc_trim(0); // release unused memory
+    Utils::System::trimMemory(); // release unused memory
 
     msg_box->close();
     delete msg_box;
 
-    manager().compass().taskManager().endTaskResultWriting(false);
+    manager().endTaskResultWriting(false);
 
     emit doneSignal();
 }
@@ -1369,7 +1414,7 @@ std::set<unsigned int> ReconstructorTask::unusedDSIDs() const
 {
     std::set<unsigned int> unused_ds = disabledDataSources();
 
-    for (const auto& [ds_id, ds] : manager().compass().dbContextManager().activeContext().dataSources())
+    for (const auto& [ds_id, ds] : manager().dbContextManager().activeContext().dataSources())
     {
         if (unused_ds.count(ds.id()))
             continue;
@@ -1387,7 +1432,7 @@ std::map<unsigned int, std::set<unsigned int>> ReconstructorTask::unusedDSIDLine
 
     std::map<unsigned int, std::set<unsigned int>> unused_lines;
 
-    for (const auto& [ds_id, ds] : manager().compass().dbContextManager().activeContext().dataSources())
+    for (const auto& [ds_id, ds] : manager().dbContextManager().activeContext().dataSources())
     {
         if (unused_ds.count(ds.id()))
             continue;
@@ -1434,39 +1479,20 @@ const ReconstructorBase::DataSlice& ReconstructorTask::processingSlice() const
     return *processing_slice_;
 }
 
-std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpoint(const std::string& name, const std::string& type, bool* created) const
+std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpoint(const std::string& name, const std::string& type) const
 {
-    auto key_str = std::pair<std::string,std::string>(name,type);
-
-    // if (created)
-    //     *created = false;
-
-    // if (!debug_viewpoints_.count(key_str))
-    // {
-    //    std::unique_ptr<ViewPointGenVP> vp(new ViewPointGenVP(name, 0, type));
-    //     debug_viewpoints_[ key_str ] = std::move(vp);
-
-    //     if (created)
-    //         *created = true;
-    // }
-
-    // return debug_viewpoints_.at(key_str).get();
-
-    std::unique_ptr<ViewPointGenVP> ptr;
-    ptr.reset(new ViewPointGenVP(name, 0, type));
-
-    return ptr;
+    return std::make_unique<ViewPointGenVP>(name, 0, type);
 }
 
-std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointNoData(const std::string& name, const std::string& type)
+std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointWithData(const std::string& name, const std::string& type) const
 {
     auto vp = getDebugViewpoint(name, type);
-    vp->noDataLoaded(true);
+    vp->enableDataLoading();
 
     return vp;
 }
 
-std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsigned long utn, const std::string& name_prefix) const
+std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(std::uint64_t utn, const std::string& name_prefix) const
 {
     string name;
 
@@ -1477,7 +1503,7 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsig
 
     auto vp = getDebugViewpoint(name, "UTN");
 
-    vp->filters().addFilter(std::unique_ptr<ViewPointGenFilterUTN>(new ViewPointGenFilterUTN(utn)));
+    vp->enableDataLoading().filters().addFilter(std::unique_ptr<ViewPointGenFilterUTN>(new ViewPointGenFilterUTN(utn)));
 
     return vp;
 }
@@ -1493,7 +1519,7 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsig
 // {
 //     loginf;
 
-//     manager().compass().viewManager().clearViewPoints();
+//     manager().viewManager().clearViewPoints();
 
 //     std::vector <nlohmann::json> view_points;
 
@@ -1505,7 +1531,7 @@ std::unique_ptr<ViewPointGenVP> ReconstructorTask::getDebugViewpointForUTN(unsig
 //         view_points.emplace_back(j);
 //     }
 
-//     manager().compass().viewManager().addViewPoints(view_points);
+//     manager().viewManager().addViewPoints(view_points);
 
 //     debug_viewpoints_.clear();
 // }
@@ -1518,23 +1544,6 @@ bool ReconstructorTask::skipReferenceDataWriting() const
 void ReconstructorTask::skipReferenceDataWriting(bool value)
 {
     skip_reference_data_writing_ = value;
-}
-
-void ReconstructorTask::checkSubConfigurables()
-{
-    if (!simple_reconstructor_)
-    {
-        generateSubConfigurableFromConfig("SimpleReconstructor", "SimpleReconstructor0");
-        traced_assert(simple_reconstructor_);
-    }
-
-#if USE_EXPERIMENTAL_SOURCE == true
-    if (!probimm_reconstructor_)
-    {
-        generateSubConfigurableFromConfig("ProbIMMReconstructor", "ProbIMMReconstructor0");
-        traced_assert(probimm_reconstructor_);
-    }
-#endif
 }
 
 Result ReconstructorTask::applyJSONParameters(const nlohmann::json& params_json)
@@ -1572,11 +1581,9 @@ void ReconstructorTask::deleteCalculatedReferences() // called in async
     loginf << "delete_all_calc_reftraj "
            << currentReconstructor()->settings().delete_all_calc_reftraj;
 
-    DBContentManager& dbcontent_man = manager().compass().dbContentManager();
+    DBContentManager& dbcontent_man = manager().dbContentManager();
 
     loginf << "deleting";
-
-    //cleanup db on delete (for re-compression)
 
     if (currentReconstructor()->settings().delete_all_calc_reftraj)
         dbcontent_man.dbContent("RefTraj").deleteDBContentData(
@@ -1598,7 +1605,7 @@ void ReconstructorTask::deleteCalculatedReferences() // called in async
         QThread::msleep(1000);
     }
 
-    auto& ctx_man_del = manager().compass().dbContextManager();
+    auto& ctx_man_del = manager().dbContextManager();
 
     unsigned int ds_id = Number::dsIdFrom(currentReconstructor()->settings().ds_sac,
                                           currentReconstructor()->settings().ds_sic);

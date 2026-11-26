@@ -24,6 +24,7 @@ class QCheckBox;
 class QSpinBox;
 
 class EvaluationCalculator;
+class ReportFigureSettingsWidget;
 
 /**
  */
@@ -57,4 +58,6 @@ protected:
     QSpinBox*  grid_num_cells_x_box_  = nullptr;
     QSpinBox*  grid_num_cells_y_box_  = nullptr;
     QSpinBox*  grid_pix_per_cell_box_ = nullptr;
+
+    ReportFigureSettingsWidget* figure_settings_widget_ = nullptr;
 };

@@ -1,0 +1,40 @@
+{
+    "description": "Mode A and ACID with require correctness of all. Only a report with both values the same as the reference is correct. A missing or different value makes it not correct. PID = 1 / 4.",
+    "require_all_correct": true,
+    "reports": [
+        {
+            "cmp": [
+                "same",
+                "same"
+            ],
+            "class": "correct"
+        },
+        {
+            "cmp": [
+                "same",
+                "no_tst"
+            ],
+            "class": "not_correct"
+        },
+        {
+            "cmp": [
+                "no_tst",
+                "same"
+            ],
+            "class": "not_correct"
+        },
+        {
+            "cmp": [
+                "different",
+                "same"
+            ],
+            "class": "not_correct"
+        }
+    ],
+    "expected": {
+        "no_ref_val": 0,
+        "correct": 1,
+        "not_correct": 3,
+        "probability": 0.25
+    }
+}

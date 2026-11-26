@@ -1,9 +1,24 @@
 target_sources(compass_tests PRIVATE
+    ${CMAKE_CURRENT_LIST_DIR}/test_report_table_definition.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_cpp17.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_number.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_target_report_mapping.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_latex_image.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_latex_document.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_creator_registry.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_projection.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_nullablevector.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_buffer.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_dict_nullable_vector.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_timeconv.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_int64_conversion.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_utf8_paths.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_sector_inside.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_sector_inside_cache.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_sector_points.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_logger.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_stacktrace_format.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_colormap.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_rtcommand_string.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_toolbox_width.cpp
 )

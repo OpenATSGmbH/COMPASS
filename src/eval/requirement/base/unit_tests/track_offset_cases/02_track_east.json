@@ -1,0 +1,26 @@
+{
+    "description": "Reference track 90 deg (east). Test 30 m east: 30 m ahead. Test 20 m north: 20 m left (across -20). Test 10 m south: 10 m right.",
+    "offsets": [
+        {
+            "distance": 30.0,
+            "offset_angle_deg": 0.0,
+            "track_angle_deg": 90.0,
+            "along": 30.0,
+            "across": 0.0
+        },
+        {
+            "distance": 20.0,
+            "offset_angle_deg": 90.0,
+            "track_angle_deg": 90.0,
+            "along": 0.0,
+            "across": -20.0
+        },
+        {
+            "distance": 10.0,
+            "offset_angle_deg": -90.0,
+            "track_angle_deg": 90.0,
+            "along": 0.0,
+            "across": 10.0
+        }
+    ]
+}

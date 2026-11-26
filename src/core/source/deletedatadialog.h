@@ -27,6 +27,7 @@
 #include <vector>
 
 namespace context { class DBContextManager; }
+class DBContentManager;
 class QCheckBox;
 class QTreeWidget;
 class QTreeWidgetItem;
@@ -36,7 +37,9 @@ class DeleteDataDialog : public QDialog
     Q_OBJECT
 
 public:
-    DeleteDataDialog(context::DBContextManager& ctx_man, QWidget* parent = nullptr);
+    DeleteDataDialog(context::DBContextManager& ctx_man,
+                     DBContentManager& dbcont_man,
+                     QWidget* parent = nullptr);
     virtual ~DeleteDataDialog() = default;
 
     nlohmann::json selectedDeleteInfo() const;
@@ -75,6 +78,7 @@ private:
                            std::vector<SelectedDS>& data_sources) const;
 
     context::DBContextManager& ctx_man_;
+    DBContentManager&          dbcont_man_;
 
     std::map<std::string, QCheckBox*> dbcontent_checks_;
     QTreeWidget* ds_tree_{nullptr};

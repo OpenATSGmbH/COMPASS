@@ -17,13 +17,13 @@
 
 #include "intervalbaseconfig.h"
 
-#include "eval/requirement/group.h"
+#include "requirement/group.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
-#include "util/stringconv.h"
+#include "stringconv.h"
 
 namespace EvaluationRequirement 
 {
@@ -46,6 +46,8 @@ IntervalBaseConfig::IntervalBaseConfig(nlohmann::json& config,
     registerParameter("miss_tolerance", &miss_tolerance_s_, 0.01f);
 
     registerParameter("hold_for_any_target", &hold_for_any_target_, false);
+
+    registerParameter("exclude_detection_misses", &exclude_detection_misses_, false);
 }
 
 /**
@@ -73,14 +75,14 @@ BaseConfigWidget* IntervalBaseConfig::createWidget()
 */
 void IntervalBaseConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
-    auto& section = report->getSection("Appendix:Requirements:" + group_.name() + ":" + name_);
+    BaseConfig::addToReport(report);
 
-    section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& section = report->getSection("Appendix:Requirements:" + group_.name() + ":" + name_);
 
     auto& table = section.getTable("req_table");
 
     table.addRow({"Probability [%]", probabilityDescription(),
-                  roundf(prob_ * 10000.0) / 100.0});
+                  probabilityPercent(prob_)});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
 
@@ -115,6 +117,12 @@ void IntervalBaseConfig::addToReport (std::shared_ptr<ResultReport::Report> repo
     {
         table.addRow({"Must hold for any Target", "Must hold for any target (every single target)",
                     Utils::String::boolToString(hold_for_any_target_)});
+    }
+
+    if (config_flags_ & ConfigFlags::UseExclDetMisses)
+    {
+        table.addRow({"Exclude Detection Misses", "Only update intervals with a test target report are counted",
+                      Utils::String::boolToString(exclude_detection_misses_)});
     }
 
     addCustomTableEntries(table);
@@ -230,6 +238,20 @@ bool IntervalBaseConfig::holdForAnyTarget() const
 void IntervalBaseConfig::holdForAnyTarget(bool value)
 {
     hold_for_any_target_ = value;
+}
+
+/**
+*/
+bool IntervalBaseConfig::excludeDetectionMisses() const
+{
+    return exclude_detection_misses_;
+}
+
+/**
+*/
+void IntervalBaseConfig::excludeDetectionMisses(bool value)
+{
+    exclude_detection_misses_ = value;
 }
 
 } // namespace EvaluationRequirement

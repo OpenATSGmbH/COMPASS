@@ -21,10 +21,8 @@
 #include "dbcontent/dbcontent.h"
 #include "buffer/buffer.h"
 #include "logger.h"
-//#include "stringconv.h"
 
 using namespace std;
-//using namespace Utils;
 using namespace nlohmann;
 using namespace dbContent;
 
@@ -47,79 +45,36 @@ bool ModeCFilter::filters(const std::string& dbcont_name)
     return variableResolver().metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_mc_);
 }
 
+std::vector<std::string> ModeCFilter::searchedCandidates(IDBVariableResolver& resolver,
+                                                         const std::string& dbcontent_name)
+{
+    // a selection, CAT062 "Mode C Code", is searched in every candidate: a filter is a search,
+    // the chosen value alone would hide a match in another candidate
+
+    return resolver.variableSelectionCandidateVariables(
+                dbcontent_name, dbcontent_vars::meta_var_mc_.name(), META_OBJECT_NAME);
+}
+
 std::string ModeCFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont " << dbcontent_name << " active " << active_;
 
-    auto& resolver = variableResolver();
+    if (!active_)
+        return "";
 
-    if (!resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_))
+    FilterClause clause = sqlFor(variableResolver(), min_value_, max_value_, null_wanted_, dbcontent_name);
+
+    if (clause.sql.empty())
         return "";
 
     stringstream ss;
 
-    if (active_)
-    {
-        { // first check always to enforce if null_wanted_
-            string col_name = resolver.metaGetVariableDBColumn(
-                dbcontent_name, dbcontent_vars::meta_var_mc_);
+    if (!first)
+        ss << " AND";
 
-            if (!first)
-                ss << " AND";
+    ss << " " << clause.sql;
 
-            ss << " (" << col_name << " BETWEEN " << min_value_ << " AND " << max_value_;
-
-            if (null_wanted_)
-                ss << " OR " << col_name << " IS NULL";
-
-            ss << ")";
-
-            first = false;
-        }
-
-        if (dbcontent_name == "CAT062")
-        {
-            {
-                if (resolver.variableHasDBContent(dbcontent_name, dbcontent_vars::var_cat062_baro_alt_))
-                {
-                    string col_name = resolver.getVariableDBColumn(
-                        dbcontent_name, dbcontent_vars::var_cat062_baro_alt_);
-
-                    if (!first)
-                        ss << " AND";
-
-                    ss << " (" << col_name << " BETWEEN " << min_value_ << " AND " << max_value_;
-
-                    if (null_wanted_)
-                        ss << " OR " << col_name << " IS NULL";
-
-                    ss << ")";
-
-                    first = false;
-                }
-            }
-
-            {
-                if (resolver.variableHasDBContent(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_))
-                {
-                    string col_name = resolver.getVariableDBColumn(
-                        dbcontent_name, dbcontent_vars::var_cat062_fl_measured_);
-
-                    if (!first)
-                        ss << " AND";
-
-                    ss << " (" << col_name << " BETWEEN " << min_value_ << " AND " << max_value_;
-
-                    if (null_wanted_)
-                        ss << " OR " << col_name << " IS NULL";
-
-                    ss << ")";
-
-                    first = false;
-                }
-            }
-        }
-    }
+    first = false;
 
     logdbg << "here '" << ss.str() << "'";
 
@@ -143,42 +98,48 @@ FilterClause ModeCFilter::sqlFor(IDBVariableResolver& resolver,
     if (!resolver.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_))
         return clause;
 
+    std::vector<std::string> columns;
+
+    for (const auto& var_name : searchedCandidates(resolver, dbcontent_name))
+        columns.push_back(resolver.variableDBColumnName(dbcontent_name, var_name, dbcontent_name));
+
+    if (columns.empty()) // no selection, the variable of the Meta Variable
+        columns.push_back(resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_mc_));
+
     // stream-format the bounds to match the legacy default float formatting
-    auto range_frag = [&](const std::string& col) -> std::string {
-        std::stringstream fs;
-        fs << "(" << col << " BETWEEN " << min << " AND " << max;
+    stringstream ss;
+
+    if (columns.size() == 1) // the legacy form of a single column
+    {
+        ss << "(" << columns.front() << " BETWEEN " << min << " AND " << max;
+
         if (null_wanted)
-            fs << " OR " << col << " IS NULL";
-        fs << ")";
-        return fs.str();
-    };
+            ss << " OR " << columns.front() << " IS NULL";
 
-    std::vector<FilterClause> parts;
-
-    {
-        FilterClause c;
-        c.sql = range_frag(resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_mc_));
-        parts.push_back(c);
+        ss << ")";
     }
-
-    if (dbcontent_name == "CAT062")
+    else // any candidate in range, null when no candidate has a value
     {
-        if (resolver.variableHasDBContent(dbcontent_name, dbcontent_vars::var_cat062_baro_alt_))
+        ss << "(";
+
+        for (size_t cnt = 0; cnt < columns.size(); ++cnt)
+            ss << (cnt ? " OR " : "") << "(" << columns.at(cnt) << " BETWEEN " << min << " AND " << max << ")";
+
+        if (null_wanted)
         {
-            FilterClause c;
-            c.sql = range_frag(resolver.getVariableDBColumn(dbcontent_name, dbcontent_vars::var_cat062_baro_alt_));
-            parts.push_back(c);
+            ss << " OR (";
+
+            for (size_t cnt = 0; cnt < columns.size(); ++cnt)
+                ss << (cnt ? " AND " : "") << columns.at(cnt) << " IS NULL";
+
+            ss << ")";
         }
 
-        if (resolver.variableHasDBContent(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_))
-        {
-            FilterClause c;
-            c.sql = range_frag(resolver.getVariableDBColumn(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_));
-            parts.push_back(c);
-        }
+        ss << ")";
     }
 
-    return combineAnd(parts);
+    clause.sql = ss.str();
+    return clause;
 }
 
 DBFilterWidget* ModeCFilter::createWidget()
@@ -240,27 +201,53 @@ std::vector<unsigned int> ModeCFilter::filterBuffer(const std::string& dbcontent
     if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_mc_))
         return to_be_removed;
 
-    string var_name = variableResolver().metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_mc_);
+    // the searched variables present in the buffer
+    std::vector<std::string> var_names = searchedCandidates(variableResolver(), dbcontent_name);
 
-    traced_assert(buffer->has<float> (var_name));
+    if (var_names.empty()) // no selection, the variable of the Meta Variable
+        var_names.push_back(variableResolver().metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_mc_));
 
-    NullableVector<float>& data_vec = buffer->get<float> (var_name);
+    std::vector<NullableVector<float>*> vectors;
 
-    float value;
+    for (const auto& var_name : var_names)
+    {
+        if (buffer->has<float>(var_name))
+            vectors.push_back(&buffer->get<float>(var_name));
+    }
+
+    if (vectors.empty())
+    {
+        logerr << "content " << dbcontent_name << " has no Mode C variable in the buffer";
+        return to_be_removed;
+    }
 
     for (unsigned int cnt=0; cnt < buffer->size(); ++cnt)
     {
-        if (data_vec.isNull(cnt))
+        bool any_value = false;
+        bool in_range = false;
+
+        for (NullableVector<float>* vec : vectors)
+        {
+            if (vec->isNull(cnt))
+                continue;
+
+            any_value = true;
+
+            float value = vec->get(cnt);
+
+            if (value >= min_value_ && value <= max_value_)
+            {
+                in_range = true;
+                break;
+            }
+        }
+
+        if (!any_value) // null, kept only when null is wanted
         {
             if (!null_wanted_)
                 to_be_removed.push_back(cnt);
-
-            continue;
         }
-
-        value = data_vec.get(cnt);
-
-        if (value < min_value_ || value > max_value_)
+        else if (!in_range)
             to_be_removed.push_back(cnt);
     }
 
@@ -300,4 +287,3 @@ void ModeCFilter::nullWanted(bool null_wanted)
 {
     null_wanted_ = null_wanted;
 }
-

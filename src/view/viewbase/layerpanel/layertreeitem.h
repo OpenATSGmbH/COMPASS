@@ -17,15 +17,20 @@
 
 #pragma once
 
+#include "json_fwd.hpp"
+
 #include <QColor>
 #include <QIcon>
 #include <QVariant>
 
+#include <functional>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
 class LayerTreeModel;
+class QAction;
 class QMenu;
 
 /**
@@ -57,15 +62,43 @@ public:
 
     /// takes ownership, propagates model_ down
     LayerTreeItem* appendChild(std::unique_ptr<LayerTreeItem> child);
+    /// as appendChild(), at the given row
+    LayerTreeItem* insertChild(int row, std::unique_ptr<LayerTreeItem> child);
+    /// moves the child at row from to row to (its final row)
+    void moveChild(int from, int to);
     void clearChildren();
 
     /// Remove and destroy a single child by row index.
     void removeChildAt(int row);
+    /// removes and destroys the children in the row range [first, last]
+    void removeChildrenAt(int first, int last);
 
-    /// Transfer all children out as a flat vector, detaching their parent
-    /// pointers. Used to build a subtree that will be reattached via
-    /// LayerTreeModel::refreshSubtree.
-    std::vector<std::unique_ptr<LayerTreeItem>> moveChildrenOut();
+    /// structural changes with model notification if attached (plain operations otherwise)
+    LayerTreeItem* appendChildNotified(std::unique_ptr<LayerTreeItem> child);
+    /// the removed subtree is forgotten
+    void removeChildNotified(int row);
+    /// notifies a changed display of the item (e.g. name), if attached
+    void notifyChanged();
+
+    // ---- update in place ---------------------------------------------------
+
+    /// Updates the subtree from the domain: dynamic items (childKeys()) keep their children which still
+    /// exist, drop the vanished ones (forgotten) and create the new ones; static items pass the update on.
+    /// Notified via LayerTreeModel::updateSubtree() if attached, plain operations otherwise.
+    void update();
+
+    /// desired child keys (updateKey() of the children) in display order, nullopt => static children
+    virtual std::optional<std::vector<std::string>> childKeys() const { return std::nullopt; }
+    /// creates the detached child for a key not present yet (its subtree is filled by its own update)
+    virtual std::unique_ptr<LayerTreeItem> createChild(const std::string& key) { (void)key; return nullptr; }
+    /// refreshes a kept child from the domain, true if its display changed
+    virtual bool updateChild(LayerTreeItem& child) { (void)child; return false; }
+    /// called after the item's subtree was updated (bottom-up), e.g. to recompute derived display
+    virtual void onSubtreeUpdated() {}
+
+    /// identifies the item among its siblings on updates, default stateKeyId(), else the name
+    /// Notice: separate from stateKey(), e.g. a session-only id matches while the persisted key stays
+    virtual std::string updateKey() const;
 
     /// model attachment; LayerTreeModel calls setModel on the invisible root
     /// which propagates to every descendant.
@@ -75,11 +108,22 @@ public:
     // ---- identity / persistence -------------------------------------------
 
     const std::string& name() const { return name_; }
+    /// plain name change, for detached items or items whose key does not follow the name
     void setName(const std::string& name) { name_ = name; }
+    /// renames an attached item: moves the item configs of its subtree to the new key, notifies the change
+    void rename(const std::string& name);
 
     /// Stable identifier used for viewpoint round-trip of hidden state. Empty
     /// string means "do not persist".
     virtual std::string persistenceId() const { return {}; }
+
+    /// identifier of the item among its siblings (plain, escaped by stateKey()), empty => the name
+    virtual std::string stateKeyId() const { return persistenceId(); }
+
+    /// Unique key of the item state across rebuilds: the parent's key plus the item's escaped segment
+    /// (stateKeyId(), else the name with "#n" for repeated sibling names) => keys start with their parent's key.
+    /// Notice: also called on items about to be removed.
+    std::string stateKey() const;
 
     // ---- display -----------------------------------------------------------
 
@@ -94,14 +138,23 @@ public:
     virtual bool isExpandable() const { return true; }
     virtual bool isReorderable() const { return false; }
 
+    /// shows outdated content (e.g. data being reloaded), painted as configured in LayerTreeItemDelegate
+    virtual bool isStale() const { return false; }
+
     // ---- color (display only, no editing) ---------------------------------
 
     QColor color() const { return color_; }
     void setColor(const QColor& color);
+    /// a click on the icon, true if handled (e.g. an item owning its color opens a color dialog)
+    virtual bool iconClicked() { return false; }
 
     // ---- visibility --------------------------------------------------------
 
     virtual bool canHide() const { return true; }
+    /// the checkbox column is kept (empty if the item cannot hide), aligns the icon with checkable siblings
+    virtual bool reservesCheckboxSpace() const { return canHide(); }
+    /// false => shown greyed out, the checkbox and the item's context menu are inactive
+    virtual bool isEnabled() const { return true; }
     bool hidden() const { return hidden_; }
     /// self or any ancestor hidden
     bool effectiveHidden() const;
@@ -118,10 +171,43 @@ public:
     void hideSubtree(bool emit_signal = true);
     void showSubtree(bool emit_signal = true);
 
+    // ---- item config -------------------------------------------------------
+
+    /// true => the hidden state is written to config(), set per subtree via persistsSubtreeToConfig()
+    bool persistHiddenStateToConfig() const;
+    /// true => this item and all items below persist their hidden state to the config
+    virtual bool persistsSubtreeToConfig() const { return false; }
+
+    /// the item's entry in the model's config, created on first access
+    /// Notice: only after attach, the key depends on the parent chain
+    nlohmann::json& config();
+    /// read-only, an empty object if there is no entry or not attached (none is created)
+    const nlohmann::json& config() const;
+
+    // ---- panel handover ----------------------------------------------------
+
+    /**
+     * View state a destroyed panel leaves on the item for the next panel on the same model.
+     */
+    struct ViewHandover
+    {
+        bool expanded = false;
+        bool selected = false;
+        bool current  = false; // the tree view's current row
+    };
+
+    void setViewHandover(const ViewHandover& handover) { view_handover_ = handover; }
+    const std::optional<ViewHandover>& viewHandover() const { return view_handover_; }
+    void clearViewHandover() { view_handover_.reset(); }
+
     // ---- context menu -----------------------------------------------------
 
     /// Append this item's own actions to `menu`. Default: no-op.
     virtual void buildContextMenu(QMenu& menu) { (void)menu; }
+
+    /// runs func on the item with this item's key when the action is triggered, nothing if there is none
+    /// Notice: menus may stay open across rebuilds (QMenu::exec()) => never capture the item itself
+    void connectItemAction(QAction* action, const std::function<void(LayerTreeItem&)>& func) const;
 
     // ---- hooks -------------------------------------------------------------
 
@@ -129,12 +215,37 @@ public:
     /// Subclasses override to push state to owned data (e.g. chart series).
     virtual void onEffectiveHiddenChanged() {}
 
+    /// called once after the item got attached to a model (e.g. config-dependent setup)
+    /// Notice: may run inside model insert/reset notifications => no structural changes
+    virtual void onAttached() {}
+    /// called after the model's config was replaced (e.g. preset applied)
+    virtual void onConfigChanged() {}
+
 protected:
+    friend class LayerTreeModel; // applies the config to attached items
+
     /// Recompute rounded-square color icon (14x14) from color_.
     void rebuildColorIcon();
 
     /// Apply updateHidden hook to self and all descendants.
     void cascadeEffectiveHidden();
+
+    /// writes the hidden state to the config of persisted subtrees
+    void storeHiddenState();
+    /// hidden state from the config, if persisted there
+    std::optional<bool> configuredHidden() const;
+
+    /// update() of the subtree, true if the display of the subtree changed
+    bool updateChildren();
+    /// reconciles the own children with the keys, collects the kept ones
+    bool reconcileChildren(const std::vector<std::string>& keys,
+                           std::vector<LayerTreeItem*>& kept,
+                           bool& kept_changed);
+
+    /// structural changes with model notification if attached (plain operations otherwise)
+    void insertChildrenNotified(int row, std::vector<std::unique_ptr<LayerTreeItem>> children);
+    void moveChildNotified(int from, int to);
+    void removeChildrenNotified(int first, int last);
 
     std::string    name_;
     QColor         color_;
@@ -145,4 +256,6 @@ protected:
     LayerTreeModel* model_{nullptr};
 
     std::vector<std::unique_ptr<LayerTreeItem>> children_;
+
+    std::optional<ViewHandover> view_handover_; // see setViewHandover()
 };

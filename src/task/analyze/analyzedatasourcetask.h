@@ -18,12 +18,19 @@
 #pragma once
 
 #include "configurable.h"
+#include "inspectorsettingsbase.h"
+#include "subconfigurablefactory.h"
 #include "task.h"
 #include "global.h"
+#include "gridbackgroundsettings.h"
+#include "reportfigureoptions.h"
+
+#include "creatorregistry.h"
 #include "json_fwd.hpp"
 
 #include <QObject>
 
+#include <functional>
 #include <map>
 #include <memory>
 #include <set>
@@ -31,25 +38,10 @@
 #include <vector>
 
 class TaskManager;
-class COMPASS;
 class DataSourceInspectorBase;
-class InspectorSettingsBase;
 class SectorLayer;
 
 class AnalysisDataset;
-
-class MLATDataItemInspectorSettings;
-class MLATCoverageInspectorSettings;
-
-class ADSBDataItemInspectorSettings;
-class ADSBCoverageInspectorSettings;
-
-#if USE_EXPERIMENTAL_SOURCE == true
-class MLATAccuracyInspectorSettings;
-class MLATRUCoverageInspectorSettings;
-class MLATRUEffectInspectorSettings;
-class ADSBAccuracyInspectorSettings;
-#endif
 
 namespace ResultReport { class Section; }
 
@@ -58,17 +50,66 @@ class AnalyzeDataSourceTask : public Task, public Configurable
     Q_OBJECT
 
 public:
-    /// `ds_type_default` binds this task instance to a DSType ("MLAT" or "ADSB"):
-    /// it sets the default for the `ds_type` parameter and selects which
-    /// inspector set is registered. `object_name` distinguishes the two
+    /**
+     * Slot of an inspector in the inspector registry: the hundreds are the DS type (1 MLAT, 2 ADSB, 3 SMR), the value
+     * is the position in the dialog and the report. Plugins add theirs from the DS type's plugin slot on (pluginSlot()).
+     */
+    enum class InspectorSlot : unsigned int
+    {
+        MLATDataItem = 110,
+        MLATCoverage = 120,
+        MLATPlugin   = 130, // plugin inspectors 130..199
+
+        ADSBDataItem = 210,
+        ADSBCoverage = 220,
+        ADSBPlugin   = 230, // plugin inspectors 230..299
+
+        SMRDataItem  = 310,
+        SMRCoverage  = 320,
+        SMRPlugin    = 330  // plugin inspectors 330..399
+    };
+
+    typedef std::function<std::unique_ptr<DataSourceInspectorBase>(AnalyzeDataSourceTask& task,
+                                                                   InspectorSettingsBase& settings)> InspectorCreator;
+
+    /**
+     * Inspector in the inspector registry: its settings class (created by inspectorSettingsFactory()) and its creator.
+     */
+    struct InspectorEntry
+    {
+        std::string      settings_class;
+        InspectorCreator creator;
+
+        explicit operator bool() const { return !settings_class.empty() && creator; } // valid (CreatorRegistry)
+    };
+
+    /// Settings of all inspectors: built-in types with creator, plugin types listed without (filled by the plugin).
+    DECLARE_SUBCONFIGURABLE_FACTORY(inspectorSettingsFactory, InspectorSettingsBase, AnalyzeDataSourceTask, None)
+    /// Inspectors by slot: the built-in ones, plus those added by plugins.
+    DECLARE_CREATOR_REGISTRY(inspectorRegistry, InspectorSlot, InspectorEntry)
+
+    /// Slot of the index-th plugin inspector of a DS type, plugin_slot one of the *Plugin slots.
+    static InspectorSlot pluginSlot(InspectorSlot plugin_slot, unsigned int index);
+    /// DS type of a slot ("MLAT", "ADSB" or "SMR").
+    static std::string slotDSType(InspectorSlot slot);
+
+    /// Creator for inspectors with the common constructor Inspector(AnalyzeDataSourceTask&, Settings&).
+    template<typename Inspector, typename Settings>
+    static std::unique_ptr<DataSourceInspectorBase> createInspector(AnalyzeDataSourceTask& task,
+                                                                    InspectorSettingsBase& settings)
+    {
+        return std::unique_ptr<DataSourceInspectorBase>(new Inspector(task, static_cast<Settings&>(settings)));
+    }
+
+    /// `ds_type_default` binds this task instance to a DSType ("MLAT", "ADSB"
+    /// or "SMR"): it sets the default for the `ds_type` parameter and selects
+    /// which inspector set is registered. `object_name` distinguishes the
     /// instances (one per DSType menu entry). The defaults preserve the
     /// original MLAT-only behavior.
     AnalyzeDataSourceTask(nlohmann::json& config, TaskManager* parent,
                           const std::string& ds_type_default = "MLAT",
                           const std::string& object_name = "AnalyzeDataSourceTask");
     ~AnalyzeDataSourceTask() override;
-
-    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     /// Accept JSON-injected configuration. Extends the base behavior with a
     /// top-level `inspector_settings` key shaped as `{<InspectorClassName>:
@@ -77,13 +118,18 @@ public:
     /// applied to the task's own registered parameters.
     Result applyJSONParameters(const nlohmann::json& params_json) override;
 
+    /// Apply a configuration stored in an analysis report (the Configurable
+    /// JSON written by `generateJSON()`): the task parameters and the
+    /// parameters of every inspector settings sub-configuration.
+    Result applyStoredConfiguration(const nlohmann::json& config);
+
     void initTask() override final;
     bool canRun() override;
     void run() override;
 
     void showDialog();
 
-    /// DSType this task instance analyzes ("MLAT" or "ADSB").
+    /// DSType this task instance analyzes ("MLAT", "ADSB" or "SMR").
     const std::string& dsType() const { return ds_type_; }
 
     /// Per-data-source enable flags (test side).
@@ -94,6 +140,23 @@ public:
 
     /// IDs of selected test data sources of `ds_type_` (filters to existing DS only).
     std::set<unsigned int> selectedDataSourceIDs() const;
+
+    /// True if the data source qualifies as a test source of this task's
+    /// DSType. MLAT and ADSB compare the context DSType. SMR has no DSType
+    /// string of its own: an SMR is always a Radar data source, so the rule is
+    /// context DSType Radar with CAT010 data present (asterixInfo).
+    bool dataSourceMatches(unsigned int ds_id) const;
+
+    /// All existing data sources matching this DSType, before the per-source
+    /// enable flag is applied.
+    std::set<unsigned int> testDataSourceCandidateIDs() const;
+
+    /// Human-readable description of the candidate rule, e.g. "data sources of
+    /// type MLAT" or "Radar data sources with CAT010 data" (for the dialog).
+    std::string testDataSourceRequirementText() const;
+
+    /// True if the cumulative ASTERIX info of the data source has the category.
+    bool dataSourceHasCategory(unsigned int ds_id, unsigned int cat) const;
 
     /// Common test-side line ID (0..3, displayed as L1..L4).
     unsigned int lineIDTst() const { return line_id_tst_; }
@@ -142,6 +205,11 @@ public:
     void  setUseMaxFL(bool v)      { use_max_fl_ = v; }
     void  setMaxFL(float v)        { max_fl_ = v; }
 
+    /// Apply the data exclusions of the evaluation (targets with the use flag off,
+    /// excluded time windows per target and global), see EvaluationConstraints.
+    bool  useEvalExclusions() const { return use_eval_exclusions_; }
+    void  setUseEvalExclusions(bool v) { use_eval_exclusions_ = v; }
+
     /// Limit the analysis to reports inside the selected sector layers (precise
     /// per-report inside test, as in the evaluation). When off, all data is used.
     bool  limitBySectors() const { return limit_by_sectors_; }
@@ -180,9 +248,19 @@ public:
     /// True if any selected data source has CAT020 reports (asterixInfo lookup).
     bool selectionContainsCAT020() const;
 
-    /// Inspector enabled / ticked state, keyed by inspector className().
+    /// Inspector enabled / ticked state, keyed by inspector className(). This is
+    /// the user's choice, kept while the inspector's prerequisites are not met.
     bool inspectorEnabled(const std::string& inspector_class) const;
     void inspectorEnabled(const std::string& inspector_class, bool value);
+
+    /// True if the inspector runs: enabled and its prerequisites are met.
+    /// `reason_out`, when given, holds the unmet prerequisite.
+    bool inspectorActive(const DataSourceInspectorBase& inspector,
+                         std::string* reason_out = nullptr) const;
+
+    /// True if the configuration allows a run: at least one active inspector,
+    /// and a selected sector layer when limited by sectors.
+    bool canRunConfiguration(std::string* reason_out = nullptr) const;
 
     /// Inspectors registered with this task. Pointers are owned by the task.
     const std::vector<std::unique_ptr<DataSourceInspectorBase>>& inspectors() const { return inspectors_; }
@@ -190,29 +268,33 @@ public:
     /// Returns the inspector with the given class name, or nullptr.
     DataSourceInspectorBase* inspector(const std::string& class_name) const;
 
-    MLATDataItemInspectorSettings& dataItemSettings() const;
-    MLATCoverageInspectorSettings& coverageSettings()  const;
-
-    ADSBDataItemInspectorSettings& adsbDataItemSettings() const;
-    ADSBCoverageInspectorSettings& adsbCoverageSettings() const;
-
-#if USE_EXPERIMENTAL_SOURCE == true
-    MLATAccuracyInspectorSettings&   accuracySettings()   const;
-    MLATRUCoverageInspectorSettings& ruCoverageSettings() const;
-    MLATRUEffectInspectorSettings&   ruEffectSettings()   const;
-    ADSBAccuracyInspectorSettings&   adsbAccuracySettings() const;
-#endif
-
     /// True if the active license enables Professional features.
     bool professionalLicenseEnabled() const;
 
-    COMPASS& compass() const;
+    /// Stored background set of the report figures, edited in the dialog. The default sector selection hides
+    /// all sector layers.
+    ReportFigureBackground reportFigureBackgroundConfig() const;
+    void reportFigureBackgroundConfig(const ReportFigureBackground& background);
+    /// Sector layers that are hidden in the default sector selection: all
+    std::set<std::string> reportFigureDefaultHiddenLayers() const;
+
+    /// Stored options of the report figures (histogram log scale, export layout size), edited in the dialog.
+    /// The inspectors write the log scale into their histograms of one data series.
+    ReportFigureOptions reportFigureOptionsConfig() const;
+    void reportFigureOptionsConfig(const ReportFigureOptions& options);
 
 protected:
+    /// Takes over the inspector settings created by inspectorSettingsFactory().
+    void childCreated(Configurable* child) override;
+    /// Creates the missing settings of the inspectors of this task's DS type.
     void checkSubConfigurables() override;
 
 private:
     void registerInspectors();
+
+    /// writes the stored export layout size into the report figures below the section, and the stored background
+    /// set into the ones that have a geographic grid
+    void addReportFigureSettings(ResultReport::Section& section) const;
 
     std::string ds_type_;
 
@@ -235,21 +317,15 @@ private:
     bool         use_max_fl_         = false;
     float        max_fl_             = 600.0f;
 
+    bool         use_eval_exclusions_ = false;
+
     bool           limit_by_sectors_ = false;
     nlohmann::json used_sectors_;     // sector-layer name -> bool (unlisted = true)
 
-    std::unique_ptr<MLATDataItemInspectorSettings> data_item_settings_;
-    std::unique_ptr<MLATCoverageInspectorSettings> coverage_settings_;
+    nlohmann::json report_figure_background_; // ReportFigureBackground
+    nlohmann::json report_figure_options_;    // ReportFigureOptions
 
-    std::unique_ptr<ADSBDataItemInspectorSettings> adsb_data_item_settings_;
-    std::unique_ptr<ADSBCoverageInspectorSettings> adsb_coverage_settings_;
+    std::map<std::string, std::unique_ptr<InspectorSettingsBase>> inspector_settings_; // settings class -> settings
 
-#if USE_EXPERIMENTAL_SOURCE == true
-    std::unique_ptr<MLATAccuracyInspectorSettings>   accuracy_settings_;
-    std::unique_ptr<MLATRUCoverageInspectorSettings> ru_coverage_settings_;
-    std::unique_ptr<MLATRUEffectInspectorSettings>   ru_effect_settings_;
-    std::unique_ptr<ADSBAccuracyInspectorSettings>   adsb_accuracy_settings_;
-#endif
-
-    std::vector<std::unique_ptr<DataSourceInspectorBase>> inspectors_;
+    std::vector<std::unique_ptr<DataSourceInspectorBase>> inspectors_; // hold references to inspector_settings_
 };

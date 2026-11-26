@@ -21,6 +21,11 @@
 
 #include <json.hpp>
 
+#include <boost/lexical_cast.hpp>
+#include <boost/uuid/uuid.hpp>
+#include <boost/uuid/uuid_generators.hpp>
+#include <boost/uuid/uuid_io.hpp>
+
 #include <cmath>
 
 using namespace std;
@@ -36,7 +41,13 @@ static const string mode_s_address_key = "mode_s_address";
 static const string mode_3a_code_key = "mode_3a_code";
 static const string mode_c_code_key = "mode_c_code";
 
-FFT::FFT() = default;
+/**
+ * Notice: every constructed FFT gets a new runtime id, copies keep it.
+ */
+FFT::FFT()
+:   runtime_id_(boost::lexical_cast<std::string>(boost::uuids::random_generator()()))
+{
+}
 
 bool FFT::hasPosition() const
 {
@@ -77,6 +88,14 @@ double FFT::altitude() const
 void FFT::altitude(double value)
 {
     info_[altitude_key] = value;
+}
+
+double FFT::maxPlotDistanceM() const
+{
+    if (info_.contains("max_plot_distance_m"))
+        return info_.at("max_plot_distance_m").get<double>();
+
+    return DefaultMaxPlotDistanceM;
 }
 
 bool FFT::hasModeSAddress() const
@@ -160,7 +179,10 @@ pair<bool, float> FFT::matches(double latitude_deg, double longitude_deg,
         secondary_matched = true;
     }
 
-    // mode C code check, confirmation only
+    // mode C code check. It only confirms a match the Mode 3/A code has
+    // established, it never qualifies one on its own - a report is never taken
+    // for the FFT on position and Mode C alone, since an aircraft overflying
+    // the FFT position at the same level would match that way
     if (hasModeCCode() && mode_c_code)
     {
         if (modeCCode() != *mode_c_code)
@@ -175,7 +197,8 @@ pair<bool, float> FFT::matches(double latitude_deg, double longitude_deg,
     // position check
     if (hasPosition())
     {
-        // approximate distance check using GeographicLib or simple haversine
+        // flat earth approximation, accurate enough over the few kilometers the
+        // maximum plot distance covers
         double dlat = latitude_deg - latitude();
         double dlon = longitude_deg - longitude();
 
@@ -183,7 +206,7 @@ pair<bool, float> FFT::matches(double latitude_deg, double longitude_deg,
         double cos_lat = cos(latitude_deg * M_PI / 180.0);
         double dist_m = sqrt(dlat * dlat + dlon * dlon * cos_lat * cos_lat) * 111000.0;
 
-        if (dist_m > max_plot_distance_m_)
+        if (dist_m > maxPlotDistanceM())
             return {false, 0};
     }
 

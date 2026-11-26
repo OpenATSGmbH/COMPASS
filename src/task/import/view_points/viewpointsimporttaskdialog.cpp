@@ -50,12 +50,14 @@ ViewPointsImportTaskDialog::ViewPointsImportTaskDialog(ViewPointsImportTask& tas
     QHBoxLayout* button_layout = new QHBoxLayout();
 
     QPushButton* cancel_button = new QPushButton("Cancel");
+    cancel_button->setObjectName("cancel_button");
     connect(cancel_button,  &QPushButton::clicked, this, &QDialog::reject);
     button_layout->addWidget(cancel_button);
 
     button_layout->addStretch();
 
     QPushButton* import_button = new QPushButton("Import");
+    import_button->setObjectName("import_button");
     connect(import_button, &QPushButton::clicked, this, &QDialog::accept);
     button_layout->addWidget(import_button);
 

@@ -5,13 +5,14 @@
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=14cm,frame]{figures/eval_req_speed.png}
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_speed.png}
   \caption{Evaluation Speed requirement}
 \end{figure}
 
 The 'Speed' requirement is used to calculate the probability of a target report having a speed error smaller than a defined threshold. The difference of the speed (test speed vs. speed based on reference positions) is calculated, and if its absolute value is smaller or equal than the defined threshold, the target report is counted for the calculated probability PCP (probability of check passed). The PCP must be greater or equal than the defined 'Probability' for the requirement to pass. \\
 
-In another variation, if the 'Use Percent Threshold if Higher' checkbox is set, the check is changed for faster speeds. If the 'Threshold Percent' value times the calculated speed is larger or equal the defined threshold value, then the threshold value is changed to the value of the 'Threshold Percent' value times the calculated speed. This means that for higher speeds, an accuracy with the given percentage is required. \\
+In another variation, if the 'Use Percent Threshold if Higher' checkbox is set, the check is changed for faster speeds. If the 'Threshold Percent' percentage of the reference speed is larger than the defined threshold value, the threshold value is replaced by that percentage of the reference speed. This means that for higher speeds, an accuracy with the given percentage is required. \\
 
 \begin{itemize}  
 \item Probability [1]: Probability of correct speed
@@ -95,7 +96,8 @@ Also, a table is given for all single targets, sorted by PCP.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=14cm,frame]{figures/eval_req_track_angle.png}
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_track_angle.png}
   \caption{Evaluation Track Angle requirement}
 \end{figure}
 
@@ -133,11 +135,11 @@ The 'Track Angle' requirement is used to calculate the probability of a target r
     \#PosInside [1] & Number of updates inside sector & 581133 \\ \hline
     \#PosOutside [1] & Number of updates outside sector & 295 \\ \hline
     \#NoTstData [1] & Number of updates without tst trackangle data & 0 \\ \hline
-    OMin [m/s] & Minimum of trackangle offset & -179.3 \\ \hline
-    OMax [m/s] & Maximum of trackangle offset & 179.98 \\ \hline
-    OAvg [m/s] & Average of trackangle offset & -0.01 \\ \hline
-    OSDev [m/s] & Standard Deviation of trackangle offset & 5.25 \\ \hline
-    OVar [$m^2$/$s^2$] & Variance of trackangle offset & 27.53 \\ \hline
+    OMin [deg] & Minimum of track angle offset & -179.3 \\ \hline
+    OMax [deg] & Maximum of track angle offset & 179.98 \\ \hline
+    OAvg [deg] & Average of track angle offset & -0.01 \\ \hline
+    OSDev [deg] & Standard Deviation of track angle offset & 5.25 \\ \hline
+    OVar [$deg^2$] & Variance of track angle offset & 27.53 \\ \hline
     \#CF [1] & Number of updates with failed comparison & 2670 \\ \hline
     \#CP [1] & Number of updates with passed comparison & 577009 \\ \hline
     PCP [\%] & Probability of passed comparison & 99.54 \\ \hline
@@ -162,11 +164,11 @@ Also, a table is given for all single targets, sorted by PCP.
     \#PosInside [1] & Number of updates inside sector & 813 \\ \hline
     \#PosOutside [1] & Number of updates outside sector & 0 \\ \hline
     \#NoTstData [1] & Number of updates without tst trackangle data & 0 \\ \hline
-    OMin [m/s] & Minimum of trackangle offset & -7.82 \\ \hline
-    OMax [m/s] & Maximum of trackangle offset & 7.92 \\ \hline
-    OAvg [m/s] & Average of trackangle offset & 0.05 \\ \hline
-    OSDev [m/s] & Standard Deviation of trackangle offset & 0.66 \\ \hline
-    OVar [$m^2$/$s^2$] & Variance of trackangle offset & 0.44 \\ \hline
+    OMin [deg] & Minimum of track angle offset & -7.82 \\ \hline
+    OMax [deg] & Maximum of track angle offset & 7.92 \\ \hline
+    OAvg [deg] & Average of track angle offset & 0.05 \\ \hline
+    OSDev [deg] & Standard Deviation of track angle offset & 0.66 \\ \hline
+    OVar [$deg^2$] & Variance of track angle offset & 0.44 \\ \hline
     \#CF [1] & Number of updates with failed comparison & 0 \\ \hline
     \#CP [1] & Number of updates with passed comparison & 813 \\ \hline
     PCP [\%] & Probability of passed comparison & 100.00 \\ \hline
@@ -184,7 +186,8 @@ Also, a table is given for all single targets, sorted by PCP.
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=14cm,frame]{figures/eval_req_acceleration.png}
+  \hspace*{-0.2cm}
+    \includegraphics[width=14.5cm,frame]{figures/eval_req_acceleration.png}
   \caption{Evaluation Acceleration Correct Requirement}
 \end{figure}
 

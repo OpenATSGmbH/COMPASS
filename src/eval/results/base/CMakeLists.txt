@@ -8,6 +8,7 @@ target_sources(compass_eval
         "${CMAKE_CURRENT_LIST_DIR}/result_defs.h"
         "${CMAKE_CURRENT_LIST_DIR}/base.h"
         "${CMAKE_CURRENT_LIST_DIR}/single.h"
+        "${CMAKE_CURRENT_LIST_DIR}/detailcode.h"
         "${CMAKE_CURRENT_LIST_DIR}/joined.h"
         "${CMAKE_CURRENT_LIST_DIR}/presentbase.h"
         "${CMAKE_CURRENT_LIST_DIR}/falsebase.h"
@@ -25,6 +26,7 @@ target_sources(compass_eval
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/base.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/single.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/detailcode.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/joined.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/presentbase.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/falsebase.cpp"

@@ -22,7 +22,6 @@
 #include "json_tools.h"
 //#include "stringconv.h"
 #include "files.h"
-#include "compass.h"
 #include "dbinterface.h"
 #include "viewpointswidget.h"
 #include "logger.h"
@@ -61,9 +60,9 @@ void ViewPointsTableModel::loadViewPoints()
     beginResetModel();
 
     // load view points
-    if (view_manager_.compass().dbInterface().existsViewPointsTable())
+    if (view_manager_.dbInterface().existsViewPointsTable())
     {
-        for (const auto& vp_it : view_manager_.compass().dbInterface().viewPoints())
+        for (const auto& vp_it : view_manager_.dbInterface().viewPoints())
         {
             //assert (!view_points_.count(vp_it.first));
             traced_assert(!hasViewPoint(vp_it.first));
@@ -160,7 +159,7 @@ QVariant ViewPointsTableModel::data(const QModelIndex& index, int role) const
         //                return QVariant();
 
         // s1.find(s2) != std::string::npos
-//        if (data.is_number() && col_name.find(ViewPoint::VP_TIMESTAMP_KEY) != std::string::npos)
+//        if (data.is_number() && col_name.find(ViewPointKeys::VP_TIMESTAMP_KEY) != std::string::npos)
 //            return Time::toString(data).c_str();
 
         if (data.is_boolean())
@@ -175,14 +174,14 @@ QVariant ViewPointsTableModel::data(const QModelIndex& index, int role) const
     {
         traced_assert(index.column() < table_columns_.size());
 
-        if (table_columns_.at(index.column()).toStdString() == ViewPoint::VP_STATUS_KEY)
+        if (table_columns_.at(index.column()).toStdString() == ViewPointKeys::VP_STATUS_KEY)
         {
             traced_assert(index.row() >= 0);
             traced_assert((unsigned int)index.row() < view_points_.size());
 
             const ViewPoint& vp = view_points_.at(index.row());
 
-            const json& data = vp.data().at(ViewPoint::VP_STATUS_KEY);
+            const json& data = vp.data().at(ViewPointKeys::VP_STATUS_KEY);
             traced_assert(data.is_string());
 
             std::string status = data;
@@ -234,7 +233,7 @@ Qt::ItemFlags ViewPointsTableModel::flags(const QModelIndex &index) const
 
     traced_assert(index.column() < table_columns_.size());
 
-    if (table_columns_.at(index.column()).toStdString() == ViewPoint::VP_COMMENT_KEY)
+    if (table_columns_.at(index.column()).toStdString() == ViewPointKeys::VP_COMMENT_KEY)
         return QAbstractItemModel::flags(index) | Qt::ItemIsEditable;
     else
         return QAbstractItemModel::flags(index);
@@ -324,9 +323,9 @@ void ViewPointsTableModel::updateTypes()
     {
         const nlohmann::json& data = vp_it.data();
 
-        traced_assert(data.contains(ViewPoint::VP_TYPE_KEY));
+        traced_assert(data.contains(ViewPointKeys::VP_TYPE_KEY));
 
-        const string& type = data.at(ViewPoint::VP_TYPE_KEY);
+        const string& type = data.at(ViewPointKeys::VP_TYPE_KEY);
 
         if (!types_.contains(type.c_str()))
             types_.append(type.c_str());
@@ -352,9 +351,9 @@ void ViewPointsTableModel::updateStatuses()
     {
         const nlohmann::json& data = vp_it.data();
 
-        traced_assert(data.contains(ViewPoint::VP_STATUS_KEY));
+        traced_assert(data.contains(ViewPointKeys::VP_STATUS_KEY));
 
-        const string& status = data.at(ViewPoint::VP_STATUS_KEY);
+        const string& status = data.at(ViewPointKeys::VP_STATUS_KEY);
 
         if (!statuses_.contains(status.c_str()))
             statuses_.append(status.c_str());
@@ -404,7 +403,7 @@ unsigned int ViewPointsTableModel::saveNewViewPoint(const nlohmann::json& data, 
     traced_assert(!hasViewPoint(new_id));
 
     nlohmann::json new_data = data;
-    new_data[ViewPoint::VP_ID_KEY] = new_id;
+    new_data[ViewPointKeys::VP_ID_KEY] = new_id;
 
     saveNewViewPoint(new_id, new_data, update); // auto increments max_id
 
@@ -487,7 +486,7 @@ void ViewPointsTableModel::deleteAllViewPoints ()
     beginRemoveRows(QModelIndex(), 0, view_points_.size()-1); // TODO
 
     view_points_.clear();
-    view_manager_.compass().dbInterface().deleteAllViewPoints();
+    view_manager_.dbInterface().deleteAllViewPoints();
 
     endRemoveRows();
 }
@@ -504,14 +503,14 @@ void ViewPointsTableModel::exportViewPoints (const std::string& filename)
 
     json data;
 
-    data[ViewPoint::VP_COLLECTION_CONTENT_TYPE_KEY   ] = ViewPoint::VP_COLLECTION_CONTENT_TYPE;
-    data[ViewPoint::VP_COLLECTION_CONTENT_VERSION_KEY] = ViewPoint::VP_COLLECTION_CONTENT_VERSION;
+    data[ViewPointKeys::VP_COLLECTION_CONTENT_TYPE_KEY   ] = ViewPointKeys::VP_COLLECTION_CONTENT_TYPE;
+    data[ViewPointKeys::VP_COLLECTION_CONTENT_VERSION_KEY] = ViewPointKeys::VP_COLLECTION_CONTENT_VERSION;
 
     //data["view_point_context"] = json::object();
     //json& context = data.at("view_point_context");
 
-    data[ViewPoint::VP_COLLECTION_ARRAY_KEY] = json::array();
-    json& view_points = data.at(ViewPoint::VP_COLLECTION_ARRAY_KEY);
+    data[ViewPointKeys::VP_COLLECTION_ARRAY_KEY] = json::array();
+    json& view_points = data.at(ViewPointKeys::VP_COLLECTION_ARRAY_KEY);
 
     unsigned int cnt = 0;
     for (auto& vp_it : view_points_)

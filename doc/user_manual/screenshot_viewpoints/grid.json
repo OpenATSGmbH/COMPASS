@@ -1,0 +1,65 @@
+{
+    "id": 1,
+    "name": "Grid Example",
+    "type": "Saved",
+    "status": "open",
+    "annotations": [
+        {
+            "name": "My Grid Annotation",
+            "symbol_color": "#0000ff",
+            "hidden": false,
+            "features": [
+                {
+                    "type": "grid",
+                    "grid": {
+                        "data": [
+                            [
+                                0.0,
+                                1.0,
+                                2.0,
+                                3.0
+                            ],
+                            [
+                                4.0,
+                                5.0,
+                                6.0,
+                                7.0
+                            ],
+                            [
+                                8.0,
+                                9.0,
+                                10.0,
+                                11.0
+                            ],
+                            [
+                                12.0,
+                                13.0,
+                                14.0,
+                                15.0
+                            ]
+                        ],
+                        "name": "my grid layer",
+                        "num_cells_x": 4,
+                        "num_cells_y": 4,
+                        "reference": {
+                            "img_origin_x": 0.0,
+                            "img_origin_y": 0.0,
+                            "img_pixel_size_x": 1.0,
+                            "img_pixel_size_y": 1.0,
+                            "is_north_up": true,
+                            "srs": "wgs84",
+                            "srs_is_wkt": false
+                        }
+                    },
+                    "plot_metadata": {
+                        "plot_group": "",
+                        "subtitle": "Just a random grid",
+                        "title": "My Grid",
+                        "x_axis_label": "My X-Axis",
+                        "y_axis_label": "My Y-Axis"
+                    }
+                }
+            ]
+        }
+    ]
+}

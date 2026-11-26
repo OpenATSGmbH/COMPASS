@@ -90,8 +90,6 @@ std::pair<QImage,RasterReference> Grid2DLayerRenderer::render(const Grid2DLayer&
 
     //std::cout << "vmin: " << vmin << ", vmax: " << vmax << std::endl;
 
-    double vrange = vmax - vmin;
-    
     auto getColor = [ & ] (size_t cx, size_t cy)
     {
         //handle cell selection
@@ -109,9 +107,7 @@ std::pair<QImage,RasterReference> Grid2DLayerRenderer::render(const Grid2DLayer&
         if (use_colormap_range)
             return settings.color_map.sampleValue(v);
 
-        double t = (v - vmin) / vrange;
-
-        return settings.color_map.sample(t);
+        return settings.color_map.sample(settings.color_map.factorOfValue(v, vmin, vmax));
     };
 
     for (size_t y = 0, y0 = 0; y < nrows; ++y, y0 += pixels_per_cell)
@@ -127,54 +123,4 @@ std::pair<QImage,RasterReference> Grid2DLayerRenderer::render(const Grid2DLayer&
     }
 
     return std::make_pair(img, ref);
-}
-
-/**
-*/
-QRectF Grid2DLayerRenderer::geoROIOfOpaquePixels(const QImage& img,
-                                                 const RasterReference& ref)
-{
-    // Scan for opaque pixels rather than using the raster's full geographic
-    // extent (RasterReference::getROI). The grid covers the full sampled-bin
-    // range, but with sparse sensor placements most cells are empty and
-    // rendered with alpha 0 (see getColor in render()). Using the full
-    // extent here would make the Geographic View zoom out far enough that
-    // the actual coverage appears as a small blob in the middle of nothing.
-    int px_x_min = img.width(),  px_x_max = -1;
-    int px_y_min = img.height(), px_y_max = -1;
-
-    for (int y = 0; y < img.height(); ++y)
-    {
-        const QRgb* line = reinterpret_cast<const QRgb*>(img.constScanLine(y));
-        for (int x = 0; x < img.width(); ++x)
-        {
-            if (qAlpha(line[x]) > 0)
-            {
-                if (x < px_x_min) px_x_min = x;
-                if (x > px_x_max) px_x_max = x;
-                if (y < px_y_min) px_y_min = y;
-                if (y > px_y_max) px_y_max = y;
-            }
-        }
-    }
-
-    if (px_x_max < px_x_min || px_y_max < px_y_min)
-        return QRectF();
-
-    double lon_min = ref.img_origin_x +  px_x_min      * ref.img_pixel_size_x;
-    double lon_max = ref.img_origin_x + (px_x_max + 1) * ref.img_pixel_size_x;
-    double lat_min, lat_max;
-    if (ref.is_north_up)
-    {
-        lat_max = ref.img_origin_y -  px_y_min      * ref.img_pixel_size_y;
-        lat_min = ref.img_origin_y - (px_y_max + 1) * ref.img_pixel_size_y;
-    }
-    else
-    {
-        lat_min = ref.img_origin_y +  px_y_min      * ref.img_pixel_size_y;
-        lat_max = ref.img_origin_y + (px_y_max + 1) * ref.img_pixel_size_y;
-    }
-
-    return QRectF(lat_min, lon_min,
-                  lat_max - lat_min, lon_max - lon_min);
 }

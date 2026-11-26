@@ -1,0 +1,51 @@
+{
+    "description": "As 17 with 1 s miss tolerance: only the 17 s gap is a miss (17-1=16 s, 2 misses).",
+    "params": {
+        "update_interval_s": 8.0,
+        "miss_tolerance_s": 1.0
+    },
+    "periods": [
+        [
+            0,
+            72
+        ]
+    ],
+    "updates": [
+        [
+            0,
+            "valid"
+        ],
+        [
+            9,
+            "valid"
+        ],
+        [
+            18,
+            "valid"
+        ],
+        [
+            35,
+            "valid"
+        ],
+        [
+            44,
+            "valid"
+        ],
+        [
+            53,
+            "valid"
+        ],
+        [
+            62,
+            "valid"
+        ],
+        [
+            71,
+            "valid"
+        ]
+    ],
+    "expected": {
+        "sum_uis": 9,
+        "misses": 2
+    }
+}

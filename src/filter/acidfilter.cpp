@@ -43,79 +43,41 @@ ACIDFilter::~ACIDFilter() {}
 
 bool ACIDFilter::filters(const std::string& dbcont_name)
 {
-    if (dbcont_name == "CAT062")
-        return true; // acid and callsign fpl
-    else
-        return variableResolver().metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_acid_);
+    return variableResolver().metaCanGetVariable(dbcont_name, dbcontent_vars::meta_var_acid_);
+}
+
+std::vector<std::string> ACIDFilter::searchedCandidates(IDBVariableResolver& resolver,
+                                                        const std::string& dbcontent_name)
+{
+    // a selection, CAT062 "Aircraft Identification*", is searched in every candidate: a filter
+    // is a search, the chosen value alone would hide a match in another candidate
+
+    return resolver.variableSelectionCandidateVariables(
+                dbcontent_name, dbcontent_vars::meta_var_acid_.name(), META_OBJECT_NAME);
 }
 
 std::string ACIDFilter::getConditionString(const std::string& dbcontent_name, dbContent::VariableSet& read_set, bool& first)
 {
     logdbg << "dbcont " << dbcontent_name << " active " << active_;
 
-    if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_))
+    if (!active_)
+        return "";
+
+    FilterClause clause = sqlFor(variableResolver(), values_, null_wanted_, dbcontent_name);
+
+    if (clause.sql.empty())
         return "";
 
     stringstream ss;
 
-    if (active_  && (values_.size() || null_wanted_))
-    {
-        string acid_col = variableResolver().metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_acid_);
+    if (!first)
+        ss << " AND";
 
-        string cs_fpl_col; // only set in cat062
-        bool has_cs_fpl = false;
+    ss << " " << clause.sql;
 
-        if (dbcontent_name == "CAT062")
-        {
-            traced_assert(variableResolver().canGetVariable(
-                        dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_));
+    first = false;
 
-            cs_fpl_col = variableResolver().getVariableDBColumn(
-                        dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_);
-            has_cs_fpl = true;
-        }
-
-        if (!first)
-            ss << " AND";
-
-        ss << " (";
-
-        bool first_val = true;
-
-        for (auto val_it : values_)
-        {
-            if (!first_val)
-                ss << " OR";
-
-             ss << " (" << acid_col  << " LIKE '%" << val_it << "%'";
-
-             if (has_cs_fpl)
-                ss << " OR " << cs_fpl_col  << " LIKE '%" << val_it << "%'";
-
-             ss << ")";
-
-            first_val = false;
-        }
-
-        if (null_wanted_)
-        {
-            if (!first_val)
-                ss << " OR";
-
-            ss << " (" << acid_col  << " IS NULL";
-
-            if (has_cs_fpl)
-               ss << " OR " << cs_fpl_col  << " IS NULL";
-
-            ss << ")";
-        }
-
-        ss << ")";
-
-        first = false;
-    }
-
-    loginf << "here '" << ss.str() << "'";
+    logdbg << "here '" << ss.str() << "'";
 
     return ss.str();
 }
@@ -140,20 +102,13 @@ FilterClause ACIDFilter::sqlFor(IDBVariableResolver& resolver,
     if (!(values.size() || null_wanted))
         return clause;
 
-    string acid_col = resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_acid_);
+    std::vector<std::string> columns;
 
-    string cs_fpl_col; // only set in cat062
-    bool has_cs_fpl = false;
+    for (const auto& var_name : searchedCandidates(resolver, dbcontent_name))
+        columns.push_back(resolver.variableDBColumnName(dbcontent_name, var_name, dbcontent_name));
 
-    if (dbcontent_name == "CAT062")
-    {
-        traced_assert(resolver.canGetVariable(
-                    dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_));
-
-        cs_fpl_col = resolver.getVariableDBColumn(
-                    dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_);
-        has_cs_fpl = true;
-    }
+    if (columns.empty()) // no selection, the variable of the Meta Variable
+        columns.push_back(resolver.metaGetVariableDBColumn(dbcontent_name, dbcontent_vars::meta_var_acid_));
 
     stringstream ss;
 
@@ -161,30 +116,30 @@ FilterClause ACIDFilter::sqlFor(IDBVariableResolver& resolver,
 
     bool first_val = true;
 
-    for (auto val_it : values)
+    for (const auto& val_it : values)
     {
         if (!first_val)
             ss << " OR";
 
-        ss << " (" << acid_col << " LIKE '%" << val_it << "%'";
+        ss << " (";
 
-        if (has_cs_fpl)
-            ss << " OR " << cs_fpl_col << " LIKE '%" << val_it << "%'";
+        for (size_t cnt = 0; cnt < columns.size(); ++cnt)
+            ss << (cnt ? " OR " : "") << columns.at(cnt) << " LIKE '%" << val_it << "%'";
 
         ss << ")";
 
         first_val = false;
     }
 
-    if (null_wanted)
+    if (null_wanted) // no identification in any searched variable
     {
         if (!first_val)
             ss << " OR";
 
-        ss << " (" << acid_col << " IS NULL";
+        ss << " (";
 
-        if (has_cs_fpl)
-            ss << " OR " << cs_fpl_col << " IS NULL";
+        for (size_t cnt = 0; cnt < columns.size(); ++cnt)
+            ss << (cnt ? " AND " : "") << columns.at(cnt) << " IS NULL";
 
         ss << ")";
     }
@@ -194,7 +149,6 @@ FilterClause ACIDFilter::sqlFor(IDBVariableResolver& resolver,
     clause.sql = ss.str();
     return clause;
 }
-
 
 DBFilterWidget* ACIDFilter::createWidget()
 {
@@ -259,70 +213,58 @@ std::vector<unsigned int> ACIDFilter::filterBuffer(const std::string& dbcontent_
     if (!variableResolver().metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_))
         return to_be_removed;
 
-    string acid_var_name = variableResolver().metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_acid_);
+    // the searched variables present in the buffer, a string selection has no column of its own
+    std::vector<std::string> var_names = searchedCandidates(variableResolver(), dbcontent_name);
 
-    traced_assert(buffer->has<string> (acid_var_name));
+    if (var_names.empty()) // no selection, the variable of the Meta Variable
+        var_names.push_back(variableResolver().metaGetVariableName(dbcontent_name, dbcontent_vars::meta_var_acid_));
 
-    NullableVector<string>& acid_vec = buffer->get<string> (acid_var_name);
+    std::vector<NullableVector<string>*> vectors;
 
-    NullableVector<string>* cs_fpl_vec {nullptr}; // only set in cat062
-
-    if (dbcontent_name == "CAT062")
+    for (const auto& var_name : var_names)
     {
-        traced_assert(variableResolver().canGetVariable(
-                    dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_));
-
-        string cs_fpl_var_name = variableResolver().getVariableName(
-                    dbcontent_name, dbcontent_vars::var_cat062_callsign_fpl_);
-
-        traced_assert(buffer->has<string> (cs_fpl_var_name));
-
-        cs_fpl_vec = &buffer->get<string> (cs_fpl_var_name);
+        if (buffer->has<string>(var_name))
+            vectors.push_back(&buffer->get<string>(var_name));
     }
 
-    bool found;
+    if (vectors.empty())
+    {
+        logerr << "content " << dbcontent_name << " has no identification variable in the buffer";
+        return to_be_removed;
+    }
 
     for (unsigned int cnt=0; cnt < buffer->size(); ++cnt)
     {
-        if (acid_vec.isNull(cnt)
-                && (cs_fpl_vec != nullptr ? cs_fpl_vec->isNull(cnt) : true)) // null or not found
+        bool any_value = false;
+        bool found = false;
+
+        for (NullableVector<string>* vec : vectors)
+        {
+            if (vec->isNull(cnt))
+                continue;
+
+            any_value = true;
+
+            for (const auto& val_it : values_)
+            {
+                if (vec->get(cnt).find(val_it) != std::string::npos)
+                {
+                    found = true;
+                    break;
+                }
+            }
+
+            if (found)
+                break;
+        }
+
+        if (!any_value) // null, kept only when null is wanted
         {
             if (!null_wanted_)
                 to_be_removed.push_back(cnt);
-
-            continue;
         }
-        else
-        {
-            found = false;
-
-            if (!acid_vec.isNull(cnt))
-            {
-                for (auto& val_it : values_)
-                {
-                    if (acid_vec.get(cnt).find(val_it) != std::string::npos)
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-            }
-
-            if (cs_fpl_vec && !cs_fpl_vec->isNull(cnt))
-            {
-                for (auto& val_it : values_)
-                {
-                    if (cs_fpl_vec->get(cnt).find(val_it) != std::string::npos)
-                    {
-                        found = true;
-                        break;
-                    }
-                }
-            }
-
-            if (!found)
-                to_be_removed.push_back(cnt);
-        }
+        else if (!found)
+            to_be_removed.push_back(cnt);
     }
 
     loginf << "content " << dbcontent_name << " erase '" << values_str_ << "' num "

@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/requirement/base/probabilitybaseconfig.h"
+#include "requirement/base/probabilitybaseconfig.h"
 
 #include <memory>
 
@@ -65,13 +65,35 @@ public:
     float missTolerance() const;
     void missTolerance(float value);
 
+    bool useTimeRatio() const;
+    void useTimeRatio(bool value);
+
+    bool useGapCount() const;
+    void useGapCount(bool value);
+
+    bool useTRIT() const;
+    void useTRIT(bool value);
+
+    float trit() const;
+    void trit(float value);
+
+    bool useStationaryUI() const;
+    void useStationaryUI(bool value);
+
+    float stationaryUI() const;
+    void stationaryUI(float value);
+
+    float stationarySpeedThreshold() const;
+    void stationarySpeedThreshold(float value);
+
     virtual void addToReport (std::shared_ptr<ResultReport::Report> report) override;
 
     bool holdForAnyTarget() const;
     void holdForAnyTarget(bool value);
 
-    bool ignorePrimaryOnly() const;
-    void ignorePrimaryOnly(bool value);
+
+    std::string pdCalculationMethod() const;
+    void pdCalculationMethod(const std::string& value);
 
   protected:
     float update_interval_s_{0};
@@ -87,9 +109,34 @@ public:
     bool use_miss_tolerance_{false};
     float miss_tolerance_s_{0};
 
+    // time-ratio calculation mode (ED-129C Appendix C "Interarrivaltime" method):
+    // missed time over reference duration instead of missed UIs over expected UIs
+    bool use_time_ratio_{false};
+
+    // gap count mode (ED-117A Section 6.4.8, ED-87E Section 5.3.14): number of gaps
+    // over the number of test reports, instead of missed UIs over expected UIs. Each
+    // gap counts once, independent of its length and of the update interval
+    bool use_gap_count_{false};
+
+    // track initiation time exception (ED-87 TRIT): a gap from the period begin to a first
+    // test report that starts a track is not counted if it is at most trit_s_
+    bool use_trit_{false};
+    float trit_s_{5.0f};
+
+    // speed-dependent update interval for surface targets (ED-129C ORQ 627):
+    // below the speed threshold the stationary update interval applies
+    bool use_stationary_ui_{false};
+    float stationary_ui_s_{10.0f};
+    float stationary_speed_threshold_ms_{0.5f};
+
     bool hold_for_any_target_ {false}; // if requirement must hold for any target (all single targets)
 
-    bool ignore_primary_only_ {false};
+
+    // "status_message": expected periods from the update cycles the test data source
+    // reports (CAT019 / CAT010 start of update cycle), "time_difference": gaps between
+    // test reports against the configured update interval. Falls back to the time
+    // difference method when no cycles are available.
+    std::string pd_calculation_method_ {"time_difference"};
 
     virtual BaseConfigWidget* createWidget() override;
 };

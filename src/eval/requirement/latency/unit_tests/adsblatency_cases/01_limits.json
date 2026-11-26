@@ -1,0 +1,46 @@
+{
+    "description": "Maximum 0.5 s. 0.2 s passes, exactly 0.5 s passes (the maximum is included), 0.75 s is too high, -0.25 s (transmitted before the reception) is negative. A report without Time of Message Reception or without Time of Report Transmission is not counted. Probability 2 / 4.",
+    "max_value_s": 0.5,
+    "reports": [
+        {
+            "tomr": 100.0,
+            "tort": 100.2,
+            "outcome": "passed",
+            "latency": 0.2
+        },
+        {
+            "tomr": 100.0,
+            "tort": 100.5,
+            "outcome": "passed",
+            "latency": 0.5
+        },
+        {
+            "tomr": 100.0,
+            "tort": 100.75,
+            "outcome": "too_high",
+            "latency": 0.75
+        },
+        {
+            "tomr": 100.25,
+            "tort": 100.0,
+            "outcome": "negative",
+            "latency": -0.25
+        },
+        {
+            "tomr": null,
+            "tort": 100.0,
+            "outcome": "no_time_data"
+        },
+        {
+            "tomr": 100.0,
+            "tort": null,
+            "outcome": "no_time_data"
+        }
+    ],
+    "expected": {
+        "passed": 2,
+        "failed": 2,
+        "no_time_data": 2,
+        "probability": 0.5
+    }
+}

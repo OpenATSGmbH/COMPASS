@@ -95,7 +95,7 @@ ASTERIXConfigWidget::~ASTERIXConfigWidget() {}
 
 void ASTERIXConfigWidget::initjASTERIX()
 {
-    std::string jasterix_definition_path = HOME_DATA_DIRECTORY + "jasterix_definitions";
+    std::string jasterix_definition_path = Utils::Files::dataDirectory() + "jasterix_definitions";
 
     logdbg << "jasterix definition path '" << jasterix_definition_path << "'";
     traced_assert(Files::directoryExists(jasterix_definition_path));
@@ -114,7 +114,7 @@ void ASTERIXConfigWidget::updateCategories()
     traced_assert(categories_grid_);
 
     QLayoutItem* child;
-    while (!categories_grid_->isEmpty() && (child = categories_grid_->takeAt(0)) != nullptr)
+    while ((child = categories_grid_->takeAt(0)) != nullptr)
     {
         if (child->widget())
             delete child->widget();
@@ -320,7 +320,7 @@ void ASTERIXConfigWidget::editionChangedSlot(const std::string& cat_str, const s
 {
     loginf << "cat " << cat_str << " edition " << ed_str;
 
-    unsigned int cat = std::stoul(cat_str);
+    unsigned int cat = std::stoull(cat_str);
 
     traced_assert(jasterix_->hasCategory(cat));
 
@@ -334,7 +334,7 @@ void ASTERIXConfigWidget::refEditionChangedSlot(const std::string& cat_str,
 {
     loginf << "cat " << cat_str << " ref '" << ed_str << "'";
 
-    unsigned int cat = std::stoul(cat_str);
+    unsigned int cat = std::stoull(cat_str);
 
     traced_assert(jasterix_->hasCategory(cat));
 
@@ -357,7 +357,7 @@ void ASTERIXConfigWidget::spfEditionChangedSlot(const std::string& cat_str,
 {
     loginf << "cat " << cat_str << " spf '" << ed_str << "'";
 
-    unsigned int cat = std::stoul(cat_str);
+    unsigned int cat = std::stoull(cat_str);
 
     traced_assert(jasterix_->hasCategory(cat));
 
@@ -396,7 +396,7 @@ void ASTERIXConfigWidget::categoryEditionEditSlot()
 
     loginf << "cat " << cat << " path '" << def_path << "'";
 
-    QDesktopServices::openUrl(QUrl(def_path.c_str()));
+    QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(def_path)));
 }
 
 void ASTERIXConfigWidget::categoryREFEditionEditSlot()
@@ -422,7 +422,7 @@ void ASTERIXConfigWidget::categoryREFEditionEditSlot()
 
     loginf << "cat " << cat << " ref path '" << def_path << "'";
 
-    QDesktopServices::openUrl(QUrl(def_path.c_str()));
+    QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(def_path)));
 }
 
 void ASTERIXConfigWidget::categorySPFEditionEditSlot()
@@ -448,5 +448,5 @@ void ASTERIXConfigWidget::categorySPFEditionEditSlot()
 
     loginf << "cat " << cat << " spf path '" << def_path << "'";
 
-    QDesktopServices::openUrl(QUrl(def_path.c_str()));
+    QDesktopServices::openUrl(QUrl::fromLocalFile(QString::fromStdString(def_path)));
 }

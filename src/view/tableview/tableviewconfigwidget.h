@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "viewconfigwidget.h"
 //#include "dbcontent/variable/variable.h"
 //#include "appmode.h"
@@ -28,7 +30,6 @@ namespace dbContent {
 class TableView;
 class TableViewWidget;
 
-class DBContentRootItem;
 class ViewLayerPanelWidget;
 
 class QCheckBox;
@@ -39,7 +40,7 @@ class QPushButton;
  * @brief Widget with configuration elements for a TableView
  *
  */
-class TableViewConfigWidget : public TabStyleViewConfigWidget
+class COMPASS_VIEW_API TableViewConfigWidget : public TabStyleViewConfigWidget
 {
     Q_OBJECT
 public:
@@ -55,12 +56,6 @@ public slots:
     void exportSlot();
     void exportDoneSlot(bool canceled);
 
-    void colorModeChangedSlot(unsigned int mode);
-
-    /// Re-apply default expansion after the data widget rebuilt the DBContent
-    /// subtree. Connected to TableViewDataWidget::layerTreeRebuiltSignal.
-    void applyDefaultExpansionSlot();
-
 signals:
     void exportSignal();
 
@@ -75,11 +70,7 @@ protected:
 
     QPushButton*    export_button_{nullptr};
 
-    QLabel*               color_mode_label_ {nullptr};
     ViewLayerPanelWidget* layer_panel_      {nullptr};
-    DBContentRootItem*    db_content_root_  {nullptr};
 
     dbContent::VariableOrderedSetWidget* set_config_widget_ {nullptr};
-
-    static QString colorModeText(unsigned int mode);
 };

@@ -1,0 +1,50 @@
+{
+    "description": "Gaps of 9 s without miss tolerance: each counts 1 miss (6), the 17 s gap 2 misses.",
+    "params": {
+        "update_interval_s": 8.0
+    },
+    "periods": [
+        [
+            0,
+            72
+        ]
+    ],
+    "updates": [
+        [
+            0,
+            "valid"
+        ],
+        [
+            9,
+            "valid"
+        ],
+        [
+            18,
+            "valid"
+        ],
+        [
+            35,
+            "valid"
+        ],
+        [
+            44,
+            "valid"
+        ],
+        [
+            53,
+            "valid"
+        ],
+        [
+            62,
+            "valid"
+        ],
+        [
+            71,
+            "valid"
+        ]
+    ],
+    "expected": {
+        "sum_uis": 9,
+        "misses": 8
+    }
+}

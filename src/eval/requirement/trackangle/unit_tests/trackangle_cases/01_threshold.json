@@ -1,0 +1,52 @@
+{
+    "description": "ED-87 TCA (<= 15 deg, minimum speed 3 m/s) at 10 m/s: differences of 10 and 15 deg pass, 16 deg fails. The difference is signed (test - reference), the check uses its absolute value, so -15 deg passes. A report without test track angle is not counted. Probability 3 / 4.",
+    "params": {
+        "threshold": 15.0,
+        "use_minimum_speed": true,
+        "minimum_speed": 3.0,
+        "check_type": "<="
+    },
+    "reports": [
+        {
+            "ref_speed": 10,
+            "ref": 90,
+            "tst": 100,
+            "outcome": "passed",
+            "diff": 10
+        },
+        {
+            "ref_speed": 10,
+            "ref": 90,
+            "tst": 105,
+            "outcome": "passed",
+            "diff": 15
+        },
+        {
+            "ref_speed": 10,
+            "ref": 90,
+            "tst": 106,
+            "outcome": "failed",
+            "diff": 16
+        },
+        {
+            "ref_speed": 10,
+            "ref": 90,
+            "tst": 75,
+            "outcome": "passed",
+            "diff": -15
+        },
+        {
+            "ref_speed": 10,
+            "ref": 90,
+            "tst": null,
+            "outcome": "no_tst"
+        }
+    ],
+    "expected": {
+        "passed": 3,
+        "failed": 1,
+        "no_tst": 1,
+        "ref_speed_low": 0,
+        "probability": 0.75
+    }
+}

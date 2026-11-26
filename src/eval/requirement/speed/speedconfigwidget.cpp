@@ -15,10 +15,10 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/speed/speedconfigwidget.h"
-#include "eval/requirement/speed/speedconfig.h"
+#include "requirement/speed/speedconfigwidget.h"
+#include "requirement/speed/speedconfig.h"
 //#include "textfielddoublevalidator.h"
-#include "eval/requirement/base/comparisontypecombobox.h"
+#include "requirement/base/comparisontypecombobox.h"
 #include "logger.h"
 
 #include <QLineEdit>

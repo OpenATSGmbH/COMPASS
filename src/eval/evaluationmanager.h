@@ -17,22 +17,36 @@
 
 #pragma once
 
+#include "compass_eval_export.h"
+
 #include "configurable.h"
+#include "ievalprovider.h"
+#include "imanager.h"
 #include "evaluationdata.h"
 #include "evaluationresultsgenerator.h"
 #include "evaluationcalculator.h"
 #include "viewabledataconfig.h"
 #include "result.h"
-#include "util/timewindow.h"
+#include "timewindow.h"
 
 #include <QObject>
 
 #include "json_fwd.hpp"
 
-class COMPASS;
+class AppState;
+class ViewManager;
+class FilterManager;
 class EvaluationStandard;
 class DBContent;
 class DBContentManager;
+class DBInterface;
+class ProjectionManager;
+class ITaskProvider;
+
+namespace context
+{
+    class DBContextManager;
+}
 class LoadOperation;
 class SectorLayer;
 struct EvaluationSettings;
@@ -47,7 +61,7 @@ class QWidget;
 
 /**
  */
-class EvaluationManager : public QObject, public Configurable
+class COMPASS_EVAL_API EvaluationManager : public QObject, public Configurable, public IEvalProvider, public IManager
 {
     Q_OBJECT
 
@@ -72,7 +86,10 @@ public slots:
     void lockResultsSlot();
 
 public:
-    EvaluationManager(nlohmann::json& config, COMPASS& compass);
+    EvaluationManager(nlohmann::json& config,
+                      Configurable& parent,
+                      AppState& app_state,
+                      DBContentManager& dbcont_man);
     virtual ~EvaluationManager();
 
     const EvaluationCalculator* calculator() const { return calculator_.get(); }
@@ -86,8 +103,8 @@ public:
     Result evaluate(bool show_dialog, const std::string& custom_result_name = "");
 
     //data loading
-    bool needsAdditionalVariables() const;
-    void addVariables(const std::string dbcontent_name, dbContent::VariableSet& read_set);
+    bool needsAdditionalVariables() const override;
+    void addVariables(const std::string& dbcontent_name, dbContent::VariableSet& read_set) override;
 
     //viewables
     void setViewableDataConfig (const nlohmann::json::object_t& data);
@@ -103,27 +120,58 @@ public:
     Utils::TimeWindowCollection& excludedTimeWindows(); // needs to be saved externally
     void saveTimeConstraints();
 
-    bool useTimestampFilter() const;
+    bool useTimestampFilter() const override;
     void useTimestampFilter(bool value);
     std::string timestampFilterStr() const;
 
     bool removeDisabledUTNData() const { return remove_disabled_utn_data_; } // not load disabled utn for performance hack
 
     //standards
-    bool hasCurrentStandard() const;
+    bool hasCurrentStandard() const override;
     const EvaluationStandard& currentStandard() const;
+    std::set<std::string> currentRequirementNames() const override;
+
+    //target list
+    void applyTargetFilter(dbContent::TargetCache& target_data) override;
+
+    void editTargetFilter(dbContent::TargetModel& model, QWidget* parent) override;
+    bool editTimestampConditions(QWidget* parent) override;
+    bool editExcludedTimeWindows(const std::string& utns,
+                                 Utils::TimeWindowCollection& time_windows,
+                                 QWidget* parent) override;
+    bool editExcludedRequirements(const std::string& utns,
+                                  std::set<std::string>& selected_requirements,
+                                  const std::set<std::string>& all_requirements,
+                                  std::string& comment,
+                                  QWidget* parent) override;
 
     //other stuff
     EvaluationTargetFilter& targetFilter() const;
     const std::string& lastResultName() const { return last_result_name_; }
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
-
-    COMPASS& compass() { return compass_; }
+    AppState& appState() { return app_state_; }
     DBContentManager& dbContentManager() { return dbcontent_man_; }
+
+    // peers, set by the composition root
+    void setManagers(ViewManager& view_manager,
+                     FilterManager& filter_manager,
+                     DBInterface& db_interface,
+                     context::DBContextManager& ctx_man,
+                     ProjectionManager& projection_manager,
+                     ITaskProvider& task_provider);
+    bool checkWired() const override;
+
+    ViewManager& viewManager();
+    FilterManager& filterManager();
+    DBInterface& dbInterface();
+    context::DBContextManager& dbContextManager();
+    ProjectionManager& projectionManager();
+    ITaskProvider& taskProvider();
 
 protected:
     friend class EvaluationCalculator;
+
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
 
     virtual void checkSubConfigurables() override;
     virtual void onConfigurationChanged(const std::vector<std::string>& changed_params) override;
@@ -133,6 +181,12 @@ protected:
     void loadData(const EvaluationCalculator& calculator); // blocking; harvested in loadingDone
     std::map<std::string, std::shared_ptr<Buffer>> fetchData();
 
+    // update cycles reported by the test data sources, used by the status-message
+    // PD method. Empty when the sources report none.
+    bool hasStatusCycles(unsigned int ds_id, unsigned int line_id) const;
+    const std::vector<boost::posix_time::ptime>& statusCycles(unsigned int ds_id,
+                                                              unsigned int line_id) const;
+
 private:
     // per-content load WHERE for eval, built from the shared clause toolkit
     // (ROI bbox / UTN set / timestamp bounds) - no global-filter hijack
@@ -140,8 +194,19 @@ private:
                                  const EvaluationCalculator& calculator);
     void loadingDone();
 
-    COMPASS& compass_;
+    // isolated batch load of the start-of-update-cycle messages of the test data sources
+    void loadStatusCycles(const EvaluationCalculator& calculator);
+
+    AppState&         app_state_;
     DBContentManager& dbcontent_man_;
+
+    // peers, set by the composition root
+    ViewManager*               view_manager_       = nullptr;
+    FilterManager*             filter_manager_     = nullptr;
+    DBInterface*               db_interface_       = nullptr;
+    context::DBContextManager* ctx_man_            = nullptr;
+    ProjectionManager*         projection_manager_ = nullptr;
+    ITaskProvider*             task_provider_      = nullptr;
 
     bool initialized_ {false};
 
@@ -155,6 +220,9 @@ private:
     std::shared_ptr<LoadOperation>                 load_op_; // isolated batch load, released after harvest
     std::map<std::string, std::shared_ptr<Buffer>> raw_data_;
     bool                                           raw_data_available_ = false;
+
+    // ds_id -> line_id -> sorted start-of-update-cycle timestamps
+    std::map<unsigned int, std::map<unsigned int, std::vector<boost::posix_time::ptime>>> status_cycles_;
 
     bool                        use_timestamp_filter_ {false}; // enables/disables BOTH application of timestamp load filter and exclusion windows load filter
     boost::posix_time::ptime    load_timestamp_begin_;         // ts filter begin (added to timestamp load filter)

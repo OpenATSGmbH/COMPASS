@@ -15,22 +15,22 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/trackangle/trackangle.h"
+#include "results/trackangle/trackangle.h"
 
-#include "eval/results/base/featuredefinitions.h"
+#include "results/base/featuredefinitions.h"
 
-#include "eval/requirement/base/base.h"
-#include "eval/requirement/trackangle/trackangle.h"
+#include "requirement/base/base.h"
+#include "requirement/trackangle/trackangle.h"
+#include "requirement/trackangle/trackangle_helpers.h"
 
 #include "evaluationtargetdata.h"
 #include "evaluationmanager.h"
 
 #include "logger.h"
-#include "util/stringconv.h"
-#include "util/timeconv.h"
-#include "util/number.h"
+#include "stringconv.h"
+#include "timeconv.h"
+#include "number.h"
 #include "viewpoint.h"
-#include "compass.h"
 
 #include "traced_assert.h"
 #include <algorithm>
@@ -44,6 +44,26 @@ using namespace nlohmann;
 
 namespace EvaluationRequirementResult
 {
+
+namespace
+{
+
+void addErrorHistograms(FeatureDefinitions& defs,
+                        const std::string& value_name,
+                        const EvaluationCalculator& calculator,
+                        const TrackAngleBase& result)
+{
+    // the offset is signed, the requirement checks its absolute value
+    ValueSource<double> abs_offset(SingleTrackAngle::DetailKey::Offset);
+    abs_offset.value_tr_func = [] (const double& v) { return std::fabs(v); };
+
+    defs.addDefinition<FeatureDefinitionStringCategoryHistogram>(value_name, calculator, "Error Count", "Error Count")
+        .addDataSeries("", { "#CF", "#CP" }, { result.numCompFailed(), result.numCompPassed() });
+    defs.addDefinition<FeatureDefinitionHistogram<double>>(value_name, calculator, "Full distribution", "Full distribution [deg]")
+        .addDataSeries("", abs_offset);
+}
+
+}
 
 /***************************************************************************************
  * TrackAngleBase
@@ -226,40 +246,13 @@ std::vector<Single::TargetInfo> SingleTrackAngle::targetInfos() const
              { "#PosOutside [1]", "Number of updates outside sector"             , num_pos_outside_                   },
              { "#PosInside [1]" , "Number of updates inside sector"              , num_pos_inside_                    }, 
              { "#NoTstData [1]" , "Number of updates without tst trackangle data", num_no_tst_value_                  }, 
-             { "OMin [m/s]"     , "Minimum of trackangle offset"                 , formatValue(accumulator_.min())    }, 
-             { "OMax [m/s]"     , "Maximum of trackangle offset"                 , formatValue(accumulator_.max())    }, 
-             { "OAvg [m/s]"     , "Average of trackangle offset"                 , formatValue(accumulator_.mean())   }, 
-             { "OSDev [m/s]"    , "Standard Deviation of trackangle offset"      , formatValue(accumulator_.stddev()) },
-             { "OVar [m^2/s^2]" , "Variance of trackangle offset"                , formatValue(accumulator_.var())    },
+             { "OMin [deg]"     , "Minimum of track angle offset"                 , formatValue(accumulator_.min())    }, 
+             { "OMax [deg]"     , "Maximum of track angle offset"                 , formatValue(accumulator_.max())    }, 
+             { "OAvg [deg]"     , "Average of track angle offset"                 , formatValue(accumulator_.mean())   }, 
+             { "OSDev [deg]"    , "Standard Deviation of track angle offset"      , formatValue(accumulator_.stddev()) },
+             { "OVar [deg^2]"   , "Variance of track angle offset"                , formatValue(accumulator_.var())    },
              { "#CF [1]"        , "Number of updates with failed comparison"     , num_comp_failed_                   }, 
              { "#CP [1]"        , "Number of updates with passed comparison"     , num_comp_passed_                   } };
-}
-
-/**
-*/
-std::vector<std::string> SingleTrackAngle::detailHeaders() const
-{
-    return { "ToD", "NoRef", "PosInside", "Distance", "CP", "Value Ref", "Value Tst", "Speed Ref", "#CF", "#CP", "Comment" };
-}
-
-/**
-*/
-nlohmann::json::array_t SingleTrackAngle::detailValues(const EvaluationDetail& detail,
-                                                       const EvaluationDetail* parent_detail) const
-{
-    bool has_ref_pos = detail.numPositions() >= 2;
-
-    return { Utils::Time::toString(detail.timestamp()),
-            !has_ref_pos,
-             detail.getValue(DetailKey::PosInside).toBool(),
-             detail.getValue(DetailKey::Offset).toFloat(),          // "Distance"
-             detail.getValue(DetailKey::CheckPassed).toBool(),      // CP"
-             detail.getValue(DetailKey::ValueRef).toDouble(),       // "Value Ref"
-             detail.getValue(DetailKey::ValueTst).toDouble(),       // "Value Tst"
-             detail.getValue(DetailKey::SpeedRef).toDouble(),       // "Speed Ref"
-             detail.getValue(DetailKey::NumCheckFailed).toUInt(),   // "#CF",
-             detail.getValue(DetailKey::NumCheckPassed).toUInt(),   // "#CP"
-             detail.comments().generalComment() };
 }
 
 /**
@@ -271,8 +264,10 @@ bool SingleTrackAngle::detailIsOk(const EvaluationDetail& detail) const
 
     bool failed_values_of_interest = req->failedValuesOfInterest();
 
+    // no comparison (no reference, outside, no test value): not an issue
     auto check_passed = detail.getValueAs<bool>(DetailKey::CheckPassed);
-    traced_assert(check_passed.has_value());
+    if (!check_passed.has_value())
+        return true;
 
     return (( failed_values_of_interest &&  check_passed.value()) ||
             (!failed_values_of_interest && !check_passed.value()));
@@ -303,6 +298,17 @@ void SingleTrackAngle::addAnnotationForDetail(nlohmann::json& annotations_json,
     //            line_color = {(float)line_color_qt.redF(), (float)line_color_qt.greenF(), (float)line_color_qt.blueF(), 1.0f};
     //            anno_lines.push_back({get<0>(line_it), get<1>(line_it), line_color});
     //        }
+}
+
+/**
+*/
+FeatureDefinitions SingleTrackAngle::getCustomAnnotationDefinitions() const
+{
+    FeatureDefinitions defs;
+
+    addErrorHistograms(defs, requirement()->name(), calculator_, *this);
+
+    return defs;
 }
 
 /***************************************************************************************
@@ -397,11 +403,11 @@ std::vector<Joined::SectorInfo> JoinedTrackAngle::sectorInfos() const
              { "#PosOutside [1]", "Number of updates outside sector"             , num_pos_outside_                   },
              { "#PosInside [1]" , "Number of updates inside sector"              , num_pos_inside_                    }, 
              { "#NoTstData [1]" , "Number of updates without tst trackangle data", num_no_tst_value_                  }, 
-             { "OMin [m/s]"     , "Minimum of trackangle offset"                 , formatValue(accumulator_.min())    }, 
-             { "OMax [m/s]"     , "Maximum of trackangle offset"                 , formatValue(accumulator_.max())    }, 
-             { "OAvg [m/s]"     , "Average of trackangle offset"                 , formatValue(accumulator_.mean())   }, 
-             { "OSDev [m/s]"    , "Standard Deviation of trackangle offset"      , formatValue(accumulator_.stddev()) },
-             { "OVar [m^2/s^2]" , "Variance of trackangle offset"                , formatValue(accumulator_.var())    },
+             { "OMin [deg]"     , "Minimum of track angle offset"                 , formatValue(accumulator_.min())    }, 
+             { "OMax [deg]"     , "Maximum of track angle offset"                 , formatValue(accumulator_.max())    }, 
+             { "OAvg [deg]"     , "Average of track angle offset"                 , formatValue(accumulator_.mean())   }, 
+             { "OSDev [deg]"    , "Standard Deviation of track angle offset"      , formatValue(accumulator_.stddev()) },
+             { "OVar [deg^2]"   , "Variance of track angle offset"                , formatValue(accumulator_.var())    },
              { "#CF [1]"        , "Number of updates with failed comparison"     , num_comp_failed_                   }, 
              { "#CP [1]"        , "Number of updates with passed comparison"     , num_comp_passed_                   } };
 }
@@ -433,12 +439,65 @@ FeatureDefinitions JoinedTrackAngle::getCustomAnnotationDefinitions() const
 {
     FeatureDefinitions defs;
 
-    defs.addDefinition<FeatureDefinitionBinaryGrid>(requirement()->name(), calculator_, "Passed")
+    defs.addDefinition<FeatureDefinitionIssueCountGrid>(requirement()->name(), calculator_, "Issues")
         .addDataSeries(SingleTrackAngle::DetailKey::CheckPassed, 
-                       GridAddDetailMode::AddEvtRefPosition, 
+                       GridAddDetailMode::AddEvtRefPosition,
                        false);
 
+    addErrorHistograms(defs, requirement()->name(), calculator_, *this);
+
     return defs;
+}
+
+/**
+ */
+void SingleTrackAngle::addReportTableColumns(ReportTableDefinition& def) const
+{
+    def.addColumn("track_angle_offset_deg", PropertyDataType::DOUBLE, "Track Angle Offset",
+                  "Track angle difference between the test report and the reference", "Angle", "Degree");
+    def.addColumn("ref_track_angle_deg", PropertyDataType::DOUBLE, "Reference Track Angle",
+                  "Track angle of the reference", "Angle", "Degree");
+    def.addColumn("tst_track_angle_deg", PropertyDataType::DOUBLE, "Test Track Angle",
+                  "Track angle of the test report", "Angle", "Degree");
+    def.addColumn("ref_speed_mps", PropertyDataType::DOUBLE, "Reference Speed",
+                  "Ground speed of the reference", "Speed", "Meter/Second");
+    def.addColumn("check_passed", PropertyDataType::BOOL, "Check Passed",
+                  "Value within the requirement threshold");
+    def.addColumn("pos_inside", PropertyDataType::BOOL, "Position Inside",
+                  "Test position inside the sector layer");
+
+    DetailCode::addTypeText(def, EvaluationRequirement::TrackAngleHelpers::NoTstTrackAngle, "No test track angle");
+    DetailCode::addTypeText(def, EvaluationRequirement::TrackAngleHelpers::RefSpeedTooLow, "Reference speed too low");
+}
+
+/**
+ */
+void SingleTrackAngle::fillReportTableRow(ReportTableRows& rows,
+                                  const EvaluationDetail& detail,
+                                  const EvaluationDetail* parent_detail,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setReportTableValue<double>(rows, "track_angle_offset_deg", detail, DetailKey::Offset);
+    setReportTableValue<double>(rows, "ref_track_angle_deg", detail, DetailKey::ValueRef);
+    setReportTableValue<double>(rows, "tst_track_angle_deg", detail, DetailKey::ValueTst);
+    setReportTableValue<double>(rows, "ref_speed_mps", detail, DetailKey::SpeedRef);
+    setReportTableValue<bool>(rows, "check_passed", detail, DetailKey::CheckPassed);
+    setReportTableValue<bool>(rows, "pos_inside", detail, DetailKey::PosInside);
+}
+
+/**
+ */
+void SingleTrackAngle::fillDetailFromReportTableRow(EvaluationDetail& detail,
+                                  const Buffer& buffer,
+                                  unsigned int row,
+                                  const EvaluationDetail* prev_detail) const
+{
+    setDetailValue<double>(detail, DetailKey::Offset, buffer, "track_angle_offset_deg", row);
+    setDetailValue<double>(detail, DetailKey::ValueRef, buffer, "ref_track_angle_deg", row);
+    setDetailValue<double>(detail, DetailKey::ValueTst, buffer, "tst_track_angle_deg", row);
+    setDetailValue<double>(detail, DetailKey::SpeedRef, buffer, "ref_speed_mps", row);
+    setDetailValue<bool>(detail, DetailKey::CheckPassed, buffer, "check_passed", row);
+    setDetailValue<bool>(detail, DetailKey::PosInside, buffer, "pos_inside", row);
 }
 
 }

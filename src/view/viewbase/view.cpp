@@ -16,16 +16,17 @@
  */
 
 #include "view.h"
+#include "appstate.h"
 #include "logger.h"
 #include "viewcontainer.h"
 #include "viewmanager.h"
 #include "viewwidget.h"
 #include "viewabledataconfig.h"
-#include "compass.h"
 #include "dbcontentmanager.h"
-#include "viewdatawidget.h"
+#include "viewmodel.h"
 #include "viewconfigwidget.h"
 #include "config.h"
+#include "stringconv.h"
 #include "timeconv.h"
 
 #include <QVBoxLayout>
@@ -38,6 +39,22 @@
 #include <boost/date_time/posix_time/conversion.hpp>
 
 unsigned int View::cnt_ = 0;
+bool View::instant_display_ = false;
+
+/**
+ * Notice: defined here (not inline) so that other libraries do not reference the static data member.
+ */
+bool View::instantDisplay()
+{
+    return instant_display_;
+}
+
+/**
+*/
+void View::setInstantDisplay(bool value)
+{
+    instant_display_ = value;
+}
 
 /**
 @brief Constructor.
@@ -58,7 +75,8 @@ View::View(nlohmann::json& config, ViewContainer* parent)
     loginf << "name '" << name_ << "'";
     traced_assert(name_.size());
 
-    creation_time_ = boost::posix_time::to_time_t(boost::posix_time::microsec_clock::local_time());
+    static std::uint64_t creation_counter = 0;
+    creation_index_ = ++creation_counter;
 
     central_widget_ = new QWidget();
     //central_widget_->setAutoFillBackground(true);
@@ -74,16 +92,6 @@ View::View(nlohmann::json& config, ViewContainer* parent)
 
     //do not write view name to presets
     addJSONExportFilter(Configurable::JSONExportType::Preset, Configurable::JSONExportFilterType::ParamID, "name");
-}
-
-COMPASS& View::compass()
-{
-    return view_manager_.compass();
-}
-
-COMPASS& View::compass() const
-{
-    return view_manager_.compass();
 }
 
 /**
@@ -120,7 +128,7 @@ bool View::init()
     // add view to container widget
     //container_->addView(this);
 
-    app_mode_ = view_manager_.compass().appMode();
+    app_mode_ = view_manager_.appState().appMode();
 
     // invoke derive class (will create subconfigurables, such as view widget)
     if (!init_impl())
@@ -131,6 +139,13 @@ bool View::init()
 
     //init view widget
     w->init();
+
+    // forward the model's asynchronous-processing edges; ViewManager's deferred
+    // load-done edge and the interactive busy state listen on the view-level signals
+    connect(&w->model(), &ViewModel::processingStartedSignal,
+            this, &View::processingStartedSignal);
+    connect(&w->model(), &ViewModel::processingFinishedSignal,
+            this, &View::processingFinishedSignal);
 
     init_ = true;
 
@@ -144,6 +159,8 @@ bool View::init()
 */
 void View::databaseOpened()
 {
+    adaptConfigToDatabase();
+
     if (widget_)
         widget_->databaseOpened();
 
@@ -168,18 +185,32 @@ const std::string& View::getName() const { return name_; }
 
 /**
 */
-void View::enableInTabWidget(bool value)
+void View::enableInViewDeck(bool value)
 {
     traced_assert(container_);
-    container_->enableViewTab(getCentralWidget(), value);
+    container_->enableView(getCentralWidget(), value);
 }
 
 /**
 */
-void View::showInTabWidget()
+void View::showInViewDeck()
 {
     traced_assert(container_);
     container_->showView(getCentralWidget());
+}
+
+/**
+*/
+std::string View::deckNamePrefix() const
+{
+    return ViewContainer::viewFactory().shortName(className());
+}
+
+/**
+*/
+std::string View::deckName() const
+{
+    return deckNamePrefix() + " " + std::to_string(Utils::String::getAppendedInt(instanceName()));
 }
 
 /**
@@ -275,8 +306,8 @@ void View::loadingStarted()
 void View::updateFromSource(const DBContentDataSet& source,
                             const std::vector<std::string>& names, bool reset, bool last)
 {
-    if (widget_ && widget_->getViewDataWidget())
-        widget_->getViewDataWidget()->updateFromSource(source, names, reset, last);
+    if (widget_)
+        widget_->updateFromSource(source, names, reset, last);
 }
 
 /**
@@ -291,12 +322,27 @@ void View::loadingDone()
 
 /**
 */
+bool View::hasPendingProcessing() const
+{
+    return widget_ && widget_->hasPendingProcessing();
+}
+
+/**
+*/
 void View::clearData()
 {
     logdbg;
 
     if (widget_)
         widget_->clearData();
+}
+
+/**
+*/
+void View::beginDataReload()
+{
+    if (widget_)
+        widget_->beginDataReload();
 }
 
 /**
@@ -371,12 +417,12 @@ void View::onModified()
 }
 
 /**
- * Renders the data widget into an image.
+ * Renders the render widget into an image.
  */
 QImage View::renderData() const
 {
-    traced_assert(widget_ && widget_->getViewDataWidget());  
-    return widget_->getViewDataWidget()->renderData();
+    traced_assert(widget_);
+    return widget_->renderData();
 }
 
 /**
@@ -386,31 +432,6 @@ QImage View::renderView() const
 {
     traced_assert(widget_);  
     return widget_->renderContents();
-}
-
-/**
- */
-void View::prepareForRender()
-{
-    traced_assert(widget_ && widget_->getViewDataWidget());
-    widget_->getViewDataWidget()->prepareForRender();
-}
-
-/**
- */
-void View::setExporting(bool ok)
-{
-    traced_assert(widget_ && widget_->getViewDataWidget());
-    return widget_->getViewDataWidget()->isExporting(ok);
-}
-
-/**
- * Asks the data widget if it shows any data.
- */
-bool View::hasScreenshotContent() const
-{
-    traced_assert(widget_ && widget_->getViewDataWidget());  
-    return widget_->getViewDataWidget()->hasScreenshotContent();
 }
 
 /**
@@ -496,13 +517,13 @@ void View::notifyViewUpdateNeeded(int flags, bool add)
     traced_assert(widget_);
 
     //live mode updates are handled immediately in their own way
-    if (view_manager_.compass().appMode() == AppMode::LiveRunning)
+    if (view_manager_.appState().appMode() == AppMode::LiveRunning)
     {
         if (flags & VU_Reload)
         {
-            //in live mode a view handles its reload internally in its data widget
+            //in live mode a view handles its reload internally in its model
             //(not via the global DB based reload)
-            widget_->getViewDataWidget()->liveReload();
+            widget_->liveReload();
         }
         else if (flags & VU_Redraw)
         {
@@ -632,13 +653,13 @@ void View::updateView(int flags)
     if (flags & VU_Reload) //reload = complete update
     {
         //start reload (will reset all cached updates)
-        if (view_manager_.compass().dbOpened())
+        if (view_manager_.appState().dbOpened())
             view_manager_.reload();
     }
     else //handle all other updates
     {
         if (flags & VU_Redraw)
-            widget_->getViewDataWidget()->redrawData(flags & VU_Recompute, true);
+            widget_->redrawData(flags & VU_Recompute, true);
         if (flags & VU_UpdateComponents)
             widget_->updateComponents();
     }
@@ -661,7 +682,7 @@ View::PresetError View::applyPreset(const ViewPresets::Preset& preset,
                                     std::vector<MissingKey>* missing_param_keys,
                                     std::string* error_msg)
 {
-    auto version = view_manager_.compass().config().getString("version");
+    auto version = view_manager_.appState().appVersion();
 
     if (!preset.app_version.empty() && preset.app_version != version)
     {
@@ -670,7 +691,7 @@ View::PresetError View::applyPreset(const ViewPresets::Preset& preset,
         //return PresetError::IncompatibleVersion;
     }
 
-    bool assert_on_errors = !view_manager_.compass().isAppImage();
+    bool assert_on_errors = !AppState::isAppImage();
 
     auto result = reconfigure(preset.view_config, missing_subconfig_keys, missing_param_keys, assert_on_errors);
 

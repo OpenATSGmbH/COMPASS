@@ -12,6 +12,7 @@ target_sources(compass_core
         "${CMAKE_CURRENT_LIST_DIR}/sector_import_utils.h"
     PRIVATE
         "${CMAKE_CURRENT_LIST_DIR}/sector.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/sectorinsidecache.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/sectorlayer.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/airspace.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/sector_edit_widget.cpp"

@@ -52,7 +52,6 @@ TEST_CASE("ACIDFilter filters applicability", "[filter][acid]")
     CHECK(filter.filters("CAT020"));
     CHECK(filter.filters("CAT021"));
     CHECK(filter.filters("CAT048"));
-    // CAT062 always returns true (special case)
     CHECK(filter.filters("CAT062"));
     CHECK(filter.filters("RefTraj"));
     CHECK_FALSE(filter.filters("CAT002"));
@@ -80,14 +79,13 @@ TEST_CASE("ACIDFilter getConditionString", "[filter][acid]")
         CHECK(sql.find("callsign_fpl") == std::string::npos);
     }
 
-    SECTION("CAT062 also checks callsign_fpl")
+    SECTION("CAT062 searches every candidate of the selection")
     {
         VariableSet read_set;
         bool first = true;
         std::string sql = filter.getConditionString("CAT062", read_set, first);
 
-        CHECK(sql.find("target_id LIKE '%AEE%'") != std::string::npos);
-        CHECK(sql.find("callsign_fpl LIKE '%AEE%'") != std::string::npos);
+        CHECK(sql.find("(target_id LIKE '%AEE%' OR callsign_fpl LIKE '%AEE%')") != std::string::npos);
     }
 }
 

@@ -1,0 +1,98 @@
+{
+    "id": 1,
+    "name": "Histogram Example",
+    "type": "Saved",
+    "status": "open",
+    "annotations": [
+        {
+            "name": "My Histogram Annotation",
+            "symbol_color": "#0000ff",
+            "hidden": false,
+            "features": [
+                {
+                    "type": "histogram",
+                    "histogram": {
+                        "log_scale": false,
+                        "dataseries": [
+                            {
+                                "name": "my data series",
+                                "color": "#0000ff",
+                                "histogram": {
+                                    "bins": [
+                                        {
+                                            "count": 1,
+                                            "label": "0.500000",
+                                            "label_min": "0.000000",
+                                            "label_max": "1.000000"
+                                        },
+                                        {
+                                            "count": 2,
+                                            "label": "1.500000",
+                                            "label_min": "1.000000",
+                                            "label_max": "2.000000"
+                                        },
+                                        {
+                                            "count": 3,
+                                            "label": "2.500000",
+                                            "label_min": "2.000000",
+                                            "label_max": "3.000000"
+                                        },
+                                        {
+                                            "count": 4,
+                                            "label": "3.500000",
+                                            "label_min": "3.000000",
+                                            "label_max": "4.000000"
+                                        },
+                                        {
+                                            "count": 5,
+                                            "label": "4.500000",
+                                            "label_min": "4.000000",
+                                            "label_max": "5.000000"
+                                        },
+                                        {
+                                            "count": 6,
+                                            "label": "5.500000",
+                                            "label_min": "5.000000",
+                                            "label_max": "6.000000"
+                                        },
+                                        {
+                                            "count": 7,
+                                            "label": "6.500000",
+                                            "label_min": "6.000000",
+                                            "label_max": "7.000000"
+                                        },
+                                        {
+                                            "count": 8,
+                                            "label": "7.500000",
+                                            "label_min": "7.000000",
+                                            "label_max": "8.000000"
+                                        },
+                                        {
+                                            "count": 9,
+                                            "label": "8.500000",
+                                            "label_min": "8.000000",
+                                            "label_max": "9.000000"
+                                        },
+                                        {
+                                            "count": 10,
+                                            "label": "9.500000",
+                                            "label_min": "9.000000",
+                                            "label_max": "10.000000"
+                                        }
+                                    ]
+                                }
+                            }
+                        ]
+                    },
+                    "plot_metadata": {
+                        "plot_group": "Plot Group 1",
+                        "subtitle": "Just a random histogram",
+                        "title": "My Histogram",
+                        "x_axis_label": "My X-Axis",
+                        "y_axis_label": "My Y-Axis"
+                    }
+                }
+            ]
+        }
+    ]
+}

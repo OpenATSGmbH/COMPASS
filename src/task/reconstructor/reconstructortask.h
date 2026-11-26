@@ -17,7 +17,11 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
+#include <cstdint>
 #include "configurable.h"
+#include "subconfigurablefactory.h"
 #include "reconstructorbase.h"
 #include "task.h"
 #include "global.h"
@@ -33,14 +37,9 @@ class DBContent;
 class LoadOperation;
 class Buffer;
 class ReconstructorBase;
-class SimpleReconstructor;
 
 class ViewPointGenVP;
 class ViewPointGenAnnotation;
-
-#if USE_EXPERIMENTAL_SOURCE == true
-class ProbIMMReconstructor;
-#endif
 
 namespace dbContent
 {
@@ -50,7 +49,7 @@ class MetaVariable;
 
 class QProgressDialog;
 
-class ReconstructorTask : public Task, public Configurable
+class COMPASS_TASK_API ReconstructorTask : public Task, public Configurable
 {
     Q_OBJECT
 
@@ -63,7 +62,7 @@ public:
     struct DebugSettings
     {
         std::set<unsigned int> debug_utns_;
-        std::set<unsigned long> debug_rec_nums_;
+        std::set<std::uint64_t> debug_rec_nums_;
 
         boost::posix_time::ptime debug_timestamp_min_;
         boost::posix_time::ptime debug_timestamp_max_;
@@ -94,7 +93,7 @@ public:
         bool stats_association_ {false};
 
         bool debugUTN(unsigned int utn) { return debug_utns_.count(utn); }
-        bool debugRecNum(unsigned long rec_num) { return debug_rec_nums_.count(rec_num); }
+        bool debugRecNum(std::uint64_t rec_num) { return debug_rec_nums_.count(rec_num); }
 
         double grid_max_resolution_{0.0005};
         unsigned int max_num_grid_cells_ {500};
@@ -117,13 +116,14 @@ public slots:
 
     void runCancelledSlot();
 
-    void updateProgressSlot(const QString& msg, bool add_slice_progress);
+    void updateProgressSlot(const QString& msg, bool add_slice_progress, int slice_idx = -1); // -1 = current_slice_idx_
 
 public:
+    // reconstructors by class name, display name = reconstructor name (current_reconstructor_str_), one instance per class
+    DECLARE_SUBCONFIGURABLE_FACTORY(reconstructorFactory, ReconstructorBase, ReconstructorTask, OnePerClass)
+
     ReconstructorTask(nlohmann::json& config, TaskManager* parent);
     virtual ~ReconstructorTask();
-
-    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     virtual bool canRun() override;
     virtual void run() override;
@@ -132,15 +132,11 @@ public:
     void currentReconstructorStr(const std::string& value);
 
     static const std::string ScoringUMReconstructorName;
-
-    ReconstructorBase* currentReconstructor() const;
-    SimpleReconstructor* simpleReconstructor() const;
-
-#if USE_EXPERIMENTAL_SOURCE == true
     static const std::string ProbImmReconstructorName;
 
-    ProbIMMReconstructor* probIMMReconstructor() const;
-#endif
+    ReconstructorBase* currentReconstructor() const;
+    ReconstructorBase* reconstructor(const std::string& class_name) const;
+    std::string reconstructorClassName(const std::string& reconstructor_name) const;
 
     std::set<unsigned int> disabledDataSources() const;
 
@@ -166,9 +162,9 @@ public:
     ReconstructorBase::DataSlice& processingSlice();
     const ReconstructorBase::DataSlice& processingSlice() const;
 
-    std::unique_ptr<ViewPointGenVP> getDebugViewpoint(const std::string& name, const std::string& type, bool* created = nullptr) const;
-    std::unique_ptr<ViewPointGenVP> getDebugViewpointNoData(const std::string& name, const std::string& type); // w/o sur data
-    std::unique_ptr<ViewPointGenVP> getDebugViewpointForUTN(unsigned long utn, const std::string& name_prefix="") const;
+    std::unique_ptr<ViewPointGenVP> getDebugViewpoint(const std::string& name, const std::string& type) const; // loads no data
+    std::unique_ptr<ViewPointGenVP> getDebugViewpointWithData(const std::string& name, const std::string& type) const; // loads all data
+    std::unique_ptr<ViewPointGenVP> getDebugViewpointForUTN(std::uint64_t utn, const std::string& name_prefix="") const; // loads the UTN
 
     bool skipReferenceDataWriting() const;
     void skipReferenceDataWriting(bool newSkip_reference_data_writing);
@@ -183,7 +179,7 @@ public:
     DebugSettings& debugSettings() { return debug_settings_; }
 
 protected:
-    virtual void checkSubConfigurables() override;
+    virtual void childCreated(Configurable* child) override;
     void deleteCalculatedReferences();
 
     void loadDataSlice();
@@ -192,6 +188,7 @@ protected:
     std::string loadFilterClause(const std::string& dbcontent_name, bool has_bbox,
                                  double lat_min, double lat_max,
                                  double long_min, double long_max);
+    void processLoadedSliceIfReady();
     void processDataSlice();
     void writeDataSlice();
     void endReconstruction();
@@ -206,11 +203,7 @@ protected:
     std::map<std::string, bool> used_sectors_;
     float sector_delta_deg_ {0.1};
 
-    std::unique_ptr<SimpleReconstructor> simple_reconstructor_; // has to be reset after each calculation
-
-#if USE_EXPERIMENTAL_SOURCE == true
-    std::unique_ptr<ProbIMMReconstructor> probimm_reconstructor_; // has to be reset after each calculation
-#endif
+    std::vector<std::unique_ptr<ReconstructorBase>> reconstructors_; // one per factory class, have to be reset after each calculation
 
     std::unique_ptr<QProgressDialog> progress_dialog_;
     boost::posix_time::ptime run_start_time_;

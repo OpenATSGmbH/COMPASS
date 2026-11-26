@@ -6,4 +6,5 @@ target_sources(compass_tests PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/test_propertyvalueedit.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_colorscaleselection.cpp
     ${CMAKE_CURRENT_LIST_DIR}/test_selectdatasources.cpp
+    ${CMAKE_CURRENT_LIST_DIR}/test_styledlabel.cpp
 )

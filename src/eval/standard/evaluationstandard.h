@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_eval_export.h"
+
 #include "configurable.h"
 #include "evaluationstandardtreeitem.h"
 #include "evaluationstandardrootitem.h"
@@ -29,13 +31,14 @@ class EvaluationCalculator;
 class Group;
 class EvaluationStandardWidget;
 class EvaluationStandardTreeModel;
+class EvaluationTargetData;
 
 namespace ResultReport
 {
     class Report;
 }
 
-class EvaluationStandard : public QObject, public Configurable, public EvaluationStandardTreeItem
+class COMPASS_EVAL_API EvaluationStandard : public QObject, public Configurable, public EvaluationStandardTreeItem
 {
     Q_OBJECT
 
@@ -51,8 +54,6 @@ public:
     virtual ~EvaluationStandard();
 
     EvaluationCalculator* parentConfigurable() const;
-
-    void generateSubConfigurable(nlohmann::json& child_json) override;
 
     std::string name() const;
     void name(const std::string &name);
@@ -91,8 +92,23 @@ public:
     void referenceMaxTimeDiff(float value) { reference_max_time_diff_= value; }
     //float referenceMinAccuracy() const { return reference_min_accuracy_; }
     //void referenceMinAccuracy(float value) { reference_min_accuracy_= value; }
-    
+
+    bool ignorePrimaryOnlyTargets() const { return ignore_primary_only_targets_; }
+    void ignorePrimaryOnlyTargets(bool value) { ignore_primary_only_targets_ = value; }
+
+    bool ignoreNonADSBTargets() const { return ignore_non_adsb_targets_; }
+    void ignoreNonADSBTargets(bool value) { ignore_non_adsb_targets_ = value; }
+
+    bool ignoreModeACOnlyTargets() const { return ignore_mode_ac_only_targets_; }
+    void ignoreModeACOnlyTargets(bool value) { ignore_mode_ac_only_targets_ = value; }
+
+    /// checks if a target is to be ignored by this standard, returns the reason
+    /// or an empty string if the target is to be used
+    std::string targetIgnoreReason(const EvaluationTargetData& target) const;
+
 protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
     EvaluationCalculator& calculator_;
     std::string name_;
 
@@ -100,6 +116,12 @@ protected:
 
     float reference_max_time_diff_ {5};
     //float reference_min_accuracy_ {10};
+
+    // target selection: targets not relevant for this standard are ignored after
+    // loading, without changing the persisted target usage flags
+    bool ignore_primary_only_targets_ {false};
+    bool ignore_non_adsb_targets_ {false};
+    bool ignore_mode_ac_only_targets_ {false};
 
     std::vector<std::unique_ptr<Group>> groups_;
 

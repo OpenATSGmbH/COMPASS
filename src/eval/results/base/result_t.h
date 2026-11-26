@@ -17,8 +17,8 @@
 
 #pragma once
 
-#include "eval/results/evaluationdetail.h"
-#include "eval/results/base/base.h"
+#include "results/evaluationdetail.h"
+#include "results/base/base.h"
 #include "traced_assert.h"
 
 namespace EvaluationRequirementResult

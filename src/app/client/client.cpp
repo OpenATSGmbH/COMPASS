@@ -16,6 +16,7 @@
  */
 
 #include "client.h"
+#include "compassroot.h"
 
 #include "compass.h"
 #include "crashbreadcrumbs.h"
@@ -24,6 +25,7 @@
 #include "config.h"
 #include "configurationmanager.h"
 #include "files.h"
+#include "stacktrace_format.h"
 #include "global.h"
 #include "logger.h"
 #include "rtcommand_manager.h"
@@ -32,11 +34,11 @@
 #include "taskmanager.h"
 #include "asteriximporttask.h"
 #include "mainwindow.h"
-#include "util/system.h"
+#include "system.h"
 #include "render.h"
 
 #include "json.hpp"
-#include "util/tbbhack.h"
+#include "tbbhack.h"
 
 #include "traced_assert.h"
 
@@ -45,6 +47,7 @@
 #include <QApplication>
 #include <QScreen>
 #include "questiondialog.h"
+#include "apppalette.h"
 
 #include <QMessageBox>
 #include <QMetaEnum>
@@ -57,7 +60,7 @@
 #include <QFontDatabase>
 #include <QGLFormat>
 
-#include "util/tbbhack.h"
+#include "tbbhack.h"
 
 #include <boost/filesystem.hpp>
 #include <boost/program_options.hpp>
@@ -82,8 +85,6 @@ using namespace Utils;
 
 namespace po = boost::program_options;
 
-std::string APP_FILENAME;
-
 namespace
 {
     std::string jsonParam2RTCommandString(const std::string& param)
@@ -92,7 +93,11 @@ namespace
     }
 }
 
-Client::Client(int& argc, char** argv) : QApplication(argc, argv)
+Client::Client(int& argc,
+               char** argv,
+               const AppHooks& app_hooks)
+:   QApplication(argc, argv)
+,   app_hooks_(app_hooks)
 {
     setlocale(LC_ALL, "C");
 
@@ -179,90 +184,101 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
     po::options_description desc("Allowed options");
     po::options_description hidden_options("Hidden options");
 
-    desc.add_options()("help", "produce help message")
-        ("reset,r", po::bool_switch(&config_and_data_copy_wanted_) ,"reset user configuration and data")
+    desc.add_options()("help", "shows this help message")
+        ("reset,r", po::bool_switch(&config_and_data_copy_wanted_) ,"resets the user configuration and data")
         ("override_cfg_path", po::value<std::string>(&override_cfg_path_),
          "overrides 'default' config subfolder to other value, e.g. 'org'")
-        ("expert_mode", po::bool_switch(&expert_mode_) ,"set expert mode")
+        ("expert_mode", po::bool_switch(&expert_mode_) ,"sets the expert mode")
         ("create_db", po::value<std::string>(&create_new_db_filename_),
-         "creates and opens new DuckDB database with given filename, e.g. '/data/file1.db'")
+         "creates and opens a new DuckDB database with the given filename, e.g. '/data/file1.db'")
         ("open_db", po::value<std::string>(&open_db_filename_),
-         "opens existing DuckDB database with given filename, e.g. '/data/file1.db'")
+         "opens an existing DuckDB database with the given filename, e.g. '/data/file1.db'")
         ("import_data_sources_file", po::value<std::string>(&import_data_sources_filename_),
-         "imports data sources JSON file with given filename, e.g. '/data/ds1.json'")
+         "imports a data sources JSON file with the given filename, e.g. '/data/ds1.json'")
         ("import_view_points", po::value<std::string>(&import_view_points_filename_),
-         "imports view points JSON file with given filename, e.g. '/data/file1.json'")
+         "imports a view points JSON file with the given filename, e.g. '/data/file1.json'")
         ("import_asterix_file", po::value<std::string>(&import_asterix_filename_),
-         "imports ASTERIX file with given filename, e.g. '/data/file1.ff'")
+         "imports an ASTERIX file with the given filename, e.g. '/data/file1.ff'")
         ("import_asterix_files", po::value<std::string>(&import_asterix_filenames_),
-         "imports multiple ASTERIX files with given filenames, e.g. '/data/file1.ff;/data/file2.ff'")
+         "imports multiple ASTERIX files with the given filenames, e.g. '/data/file1.ff;/data/file2.ff'")
         ("import_asterix_pcap_file", po::value<std::string>(&import_asterix_pcap_filename_),
-         "imports ASTERIX PCAP file with given filename, e.g. '/data/file1.pcap'")
+         "imports an ASTERIX PCAP file with the given filename, e.g. '/data/file1.pcap'")
         ("import_asterix_pcap_files", po::value<std::string>(&import_asterix_pcap_filenames_),
-         "imports multiple ASTERIX PCAP files with given filenames, e.g. '/data/file1.pcap;/data/file2.pcap'")
+         "imports multiple ASTERIX PCAP files with the given filenames, e.g. '/data/file1.pcap;/data/file2.pcap'")
         ("import_asterix_file_line", po::value<std::string>(&import_asterix_file_line_),
-         "imports ASTERIX file with given line, e.g. 'L2'")
+         "line to import the ASTERIX data into, e.g. 'L2'")
         ("import_asterix_date", po::value<std::string>(&import_asterix_date_),
-         "imports ASTERIX file with given date, in YYYY-MM-DD format e.g. '2020-04-20'")
+         "date of the imported ASTERIX data, in YYYY-MM-DD format, e.g. '2020-04-20'")
         ("import_asterix_file_time_offset", po::value<std::string>(&import_asterix_file_time_offset_),
-         "used time offset during ASTERIX file import Time of Day override, in HH:MM:SS.ZZZ'")
+         "Time of Day offset for the ASTERIX file import, in HH:MM:SS.ZZZ format, e.g. '00:00:10.000'")
         ("import_asterix_ignore_time_jumps", po::bool_switch(&import_asterix_ignore_time_jumps_),
-         "imports ASTERIX file ignoring 24h time jumps")
+         "ignores 24h time jumps during the ASTERIX file import")
         ("import_asterix_network", po::bool_switch(&import_asterix_network_),
-         "imports ASTERIX from defined network UDP streams")
+         "imports ASTERIX from the configured network UDP streams")
         ("import_asterix_network_time_offset", po::value<std::string>(&import_asterix_network_time_offset_),
-         "additive time offset during ASTERIX network import, in HH:MM:SS.ZZZ'")
+         "Time of Day offset added during the ASTERIX network import, in HH:MM:SS.ZZZ format, e.g. '00:00:10.000'")
         ("import_asterix_network_max_lines", po::value<int>(&import_asterix_network_max_lines_),
          "maximum number of lines per data source during ASTERIX network import, 1..4")
         ("import_asterix_network_ignore_future_ts", po::bool_switch(&import_asterix_network_ignore_future_ts_),
-         "keep target reports with future timestamps during ASTERIX network import, skips the future timestamp check")
+         "keeps target reports with future timestamps during the ASTERIX network import, skips the future timestamp check")
+        ("import_asterix_network_replay_file", po::value<std::string>(&import_asterix_network_replay_file_),
+         "simulates live input by replaying the given IOSS-framed ASTERIX recordings simultaneously "
+         "via UDP to a configured network line, e.g. '/data/file1.ff;/data/file2.ff'")
+        ("import_asterix_network_replay_speed", po::value<float>(&import_asterix_network_replay_speed_),
+         "replay speed factor during ASTERIX network replay, 1.0 replays in recorded time")
+        ("import_asterix_network_replay_line", po::value<std::string>(&import_asterix_network_replay_line_),
+         "network line the replayed data is sent to, L1..L4")
+        ("import_asterix_network_replay_stop_at_end", po::bool_switch(&import_asterix_network_replay_stop_at_end_),
+         "stops the ASTERIX network import when the replay file ends")
         ("asterix_framing", po::value<std::string>(&asterix_framing),
-         "sets ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff'. if not set configuration value is used")
+         "sets ASTERIX framing, e.g. 'none', 'ioss', 'ioss_seq', 'rff', the configured value is used if not set")
         ("asterix_decoder_cfg", po::value<std::string>(&asterix_decoder_cfg),
-         "sets ASTERIX decoder config using JSON string, e.g. ''{\"10\":{\"edition\":\"0.31\"}}''"
+         "sets the ASTERIX decoder configuration as JSON string, e.g. ''{\"10\":{\"edition\":\"0.31\"}}''"
          " (including one pair of single quotes)")
         ("import_asterix_parameters", po::value<std::string>(&import_asterix_parameters_),
          "ASTERIX import parameters as JSON string, e.g. ''{\"filter_modec_active\": true,\"filter_modec_max\": 50000.0,\"filter_modec_min\": -10000.0}'' (including one pair of single quotes)")
         ("import_json", po::value<std::string>(&import_json_filename_),
-         "imports JSON file with given filename, e.g. '/data/file1.json'")
+         "imports a JSON file with the given filename, e.g. '/data/file1.json'")
         ("import_gps_trail", po::value<std::string>(&import_gps_trail_filename_),
-         "imports gps trail NMEA with given filename, e.g. '/data/file2.txt'")
+         "imports a GPS trail NMEA file with the given filename, e.g. '/data/file2.txt'")
         ("import_gps_parameters", po::value<std::string>(&import_gps_parameters_),
-         "import GPS parameters as JSON string, e.g. ''{\"callsign\": \"ENTRPRSE\", \"ds_name\": \"GPS Trail\", \"ds_sac\": 0, \"ds_sic\": 0, \"mode_3a_code\": 961, \"set_callsign\": true, \"set_mode_3a_code\": true, \"set_target_address\": true, \"target_address\": 16702992, \"tod_offset\": 0.0}'' (including one pair of single quotes)")
+         "GPS trail import parameters as JSON string, e.g. ''{\"callsign\": \"ENTRPRSE\", \"ds_name\": \"GPS Trail\", \"ds_sac\": 0, \"ds_sic\": 0, \"mode_3a_code\": 961, \"set_callsign\": true, \"set_mode_3a_code\": true, \"set_target_address\": true, \"target_address\": 16702992, \"tod_offset\": 0.0}'' (including one pair of single quotes)")
         ("import_sectors_json", po::value<std::string>(&import_sectors_filename_),
-         "imports exported sectors JSON with given filename, e.g. '/data/sectors.json'")
+         "imports an exported sectors JSON file with the given filename, e.g. '/data/sectors.json'")
         ("list_contexts", po::bool_switch(&list_contexts_),
          "lists all available data contexts and exits")
         ("set_context", po::value<std::string>(&set_context_name_),
          "sets the active data context, e.g. 'Test'")
         ("calculate_radar_plot_positions", po::bool_switch(&calculate_radar_plot_positions_),
-         "calculate radar plot positions")
-        ("calculate_artas_tr_usage", po::bool_switch(&calculate_artas_tr_usage_), "associate target reports based on ARTAS usage")
+         "runs the Calculate Radar Plot Positions task")
+        ("calculate_artas_tr_usage", po::bool_switch(&calculate_artas_tr_usage_), "associates target reports based on the ARTAS track usage")
         ("reconstruct_references", po::bool_switch(&reconstruct_references_),
-         "reconstruct references from sensor and tracker data")
+         "runs the Reconstruct References task (references from sensor and tracker data)")
         ("reconstruct_references_cfg", po::value<std::string>(&reconstruct_references_cfg_),
          "reconstructor configuration as JSON string, e.g. ''{\"current_reconstructor_str\": \"Scoring + UMKalman\"}''")
         ("analyze_data_source", po::value<std::string>(&analyze_data_source_ds_type_),
-         "analyze data sources of the given DSType, e.g. 'MLAT'")
+         "analyzes the data sources of the given DSType, 'MLAT', 'ADSB' or 'SMR'")
         ("analyze_parameters", po::value<std::string>(&analyze_data_source_cfg_),
          "analyze data source parameters as JSON string, e.g. ''{\"line_id_tst\": 0, \"cell_size_m\": 50.0, \"inspector_settings\": {\"MLATCoverageInspector\": {\"pd_method_int\": 1}}}'' (including one pair of single quotes)")
-        ("load_data", po::bool_switch(&load_data_), "load data after start")
+        ("load_data", po::bool_switch(&load_data_), "loads the data into the Views after the start")
         ("export_view_points_report", po::value<std::string>(&export_view_points_report_filename_),
-         "export view points report after start with given filename, e.g. '/data/db2/report.tex")
-        ("evaluate", po::bool_switch(&evaluate_), "run evaluation")
+         "exports the view points report after the start to the given filename, e.g. '/data/db2/report.tex'")
+        ("evaluate", po::bool_switch(&evaluate_), "runs the evaluation")
         ("evaluation_parameters", po::value<std::string>(&evaluation_parameters_),
          "evaluation parameters as JSON string, e.g. ''{\"current_standard\": \"test\", \"dbcontent_name_ref\": \"CAT062\", \"dbcontent_name_tst\": \"CAT020\"}'' (including one pair of single quotes)")
-        ("evaluate_run_filter", po::bool_switch(&evaluate_run_filter_), "run evaluation filter before evaluation")
+        ("evaluate_run_filter", po::bool_switch(&evaluate_run_filter_), "runs the evaluation filter before the evaluation")
         
-        ("export_report", po::value<std::string>(&export_report_name_), "report name to export, e.g. 'EUROCAE ED-87E Evaluation', PDF per default")
+        ("export_report", po::value<std::string>(&export_report_name_), "name of the report to export, e.g. 'EUROCAE ED-87E Evaluation', as PDF if no export mode is given")
         ("export_report_directory", po::value<std::string>(&export_report_directory_), "export directory, e.g. '/data/report2/'")
-        ("export_report_mode", po::value<std::string>(&export_report_mode_), "export mode, i.e. 'DocX','JSON','Latex','PDF'")
+        ("export_report_mode", po::value<std::string>(&export_report_mode_), "export mode, one of 'DocX', 'JSON', 'Latex', 'PDF'")
         
-         ("no_cfg_save", po::bool_switch(&no_config_save_), "do not save configuration upon quitting")
-        ("open_rt_cmd_port", po::bool_switch(&open_rt_cmd_port_), "open runtime command port (default at 27960)")
-        ("enable_event_log", po::bool_switch(&enable_event_log_), "collect warnings and errors in the event log")
-        ("quit", po::bool_switch(&quit_), "quit after finishing all previous steps")
-        ("no_highdpi", "disable Qt high-DPI scaling (fixes double-sized UI on some systems)")
+         ("no_cfg_save", po::bool_switch(&no_config_save_), "does not save the configuration on quit")
+        ("open_rt_cmd_port", po::bool_switch(&open_rt_cmd_port_), "opens the runtime command port (default 27960)")
+        ("enable_event_log", po::bool_switch(&enable_event_log_), "collects warnings and errors in the event log")
+        ("quit", po::bool_switch(&quit_), "quits after all previous steps are finished")
+        ("no_highdpi", "disables Qt high-DPI scaling (fixes double-sized UI on some systems)")
+        ("bundled_font", po::value<float>(&bundled_font_size_),
+         "uses the bundled Ubuntu font at the given point size, e.g. '11' for reproducible screenshots")
         ;
 
     // add hidden options
@@ -272,6 +288,9 @@ Client::Client(int& argc, char** argv) : QApplication(argc, argv)
         ("numerical_crash", po::bool_switch(&do_numerical_crash_), "")
         ("segfault", po::bool_switch(&do_segfault_), "")
         ("sensor_status_hack", po::bool_switch(&do_sensor_status_hack_), "")
+        // main-thread stall self-reporting (see main_thread_stall in main.cpp):
+        // diagnostic, so opt-in
+        ("stall_watchdog", po::bool_switch(&stall_watchdog_), "")
         ;
 
     // Print full command line for debugging
@@ -431,20 +450,54 @@ bool Client::run ()
 
     try
     {
-        compass_ = std::make_unique<COMPASS>(*config_manager_);
+        root_.reset(new CompassRoot(*config_manager_, app_hooks_));
+        compass_ = &root_->compass();
 
-        applyDarkMode(compass_->darkMode());
+        applyDarkMode(compass_->appState().darkMode());
 
         // make system your application font (applies to all widgets)
-        if (Utils::System::appDir() != nullptr)
+        if (Utils::System::appDir() != nullptr || bundled_font_size_ > 0)
         {
             QFont system_font = QFontDatabase::systemFont(QFontDatabase::GeneralFont);
 
-            system_font.setPointSizeF(system_font.pointSizeF() * compass_->appFontScale());
+            // --bundled_font: the Ubuntu font shipped in data/fonts/ubuntu at a fixed size,
+            // independent of the desktop settings
+            qreal   bundled_font_point_size = bundled_font_size_;
+            QString font_dir = QString::fromStdString(Utils::Files::getFontFilepath("ubuntu/", false));
+
+#ifdef _WIN32
+            // Windows: the Ubuntu font shipped in data/fonts/ubuntu, so COMPASS looks as on Linux,
+            // at the size of the Windows UI font (9 pt by default, follows the Windows text size)
+            if (bundled_font_point_size <= 0)
+                bundled_font_point_size = system_font.pointSizeF();
+            font_dir = QString::fromStdString(system_install_path_ + "data/fonts/ubuntu/");
+#endif
+
+            if (bundled_font_point_size > 0)
+            {
+                bool fonts_loaded = true;
+
+                for (const char* file : { "Ubuntu-R.ttf", "Ubuntu-B.ttf", "Ubuntu-RI.ttf", "Ubuntu-BI.ttf" })
+                {
+                    if (QFontDatabase::addApplicationFont(font_dir + file) < 0)
+                    {
+                        logwrn << "could not load font '" << (font_dir + file).toStdString() << "'";
+                        fonts_loaded = false;
+                    }
+                }
+
+                if (fonts_loaded)
+                {
+                    system_font = QFont("Ubuntu");
+                    system_font.setPointSizeF(bundled_font_point_size);
+                }
+            }
+
+            system_font.setPointSizeF(system_font.pointSizeF() * compass_->appState().settings().app_font_scale);
             setFont(system_font);
         }
 
-        compass_->init(); //here everything created in compass instance should be available
+        root_->init(); //here everything created in compass instance should be available
 
         compass_->projectionManager().test();
     }
@@ -466,12 +519,12 @@ bool Client::run ()
     loginf << "created COMPASS instance";
 
     if (expert_mode_)
-        compass_->expertMode(true);
+        compass_->appState().expertMode(true);
 
     if (do_sensor_status_hack_)
-        compass_->sensorStatusTimeHack(do_sensor_status_hack_);
+        compass_->appState().sensorStatusTimeHack(do_sensor_status_hack_);
 
-    MainWindow& main_window = compass_->mainWindow();
+    MainWindow& main_window = root_->mainWindow();
     main_window.init();
     splash.raise();
 
@@ -545,7 +598,7 @@ bool Client::run ()
         if (import_view_points_filename_.size())
             rt_man.addCommandFromConsole("import_view_points " + import_view_points_filename_);
 
-        TaskManager& task_man = compass_->taskManager();
+        TaskManager& task_man = root_->taskManager();
 
         if (asterix_decoder_cfg.size())
             task_man.asterixImporterTask().asterixDecoderConfig(asterix_decoder_cfg);
@@ -659,6 +712,20 @@ bool Client::run ()
             if (import_asterix_network_ignore_future_ts_)
                 cmd += " --ignore_future_ts";
 
+            if (import_asterix_network_replay_file_.size())
+            {
+                cmd += " --replay_file '" + import_asterix_network_replay_file_ + "'";
+
+                if (import_asterix_network_replay_speed_ != 1.0f)
+                    cmd += " --replay_speed " + to_string(import_asterix_network_replay_speed_);
+
+                if (import_asterix_network_replay_line_.size())
+                    cmd += " --replay_line " + import_asterix_network_replay_line_;
+
+                if (import_asterix_network_replay_stop_at_end_)
+                    cmd += " --replay_stop_at_end";
+            }
+
             rt_man.addCommandFromConsole(cmd);
         }
 
@@ -720,7 +787,7 @@ bool Client::run ()
 
         if (export_report_name_.size())
         {
-            if (export_report_mode_ == "PDF" && !compass_->pdflatexFound())
+            if (export_report_mode_ == "PDF" && !compass_->appState().pdflatexFound())
                 throw runtime_error("Cannot export as PDF: pdflatex not installed");
 
             string cmd = "export_report --report '"+export_report_name_+"'";
@@ -739,7 +806,7 @@ bool Client::run ()
         rt_man.startCommandProcessing();
 
         // finally => set compass as running
-        compass_->setAppState(AppState::Running);
+        compass_->appState().phase(AppPhase::Running);
 
         return true;
     }
@@ -796,6 +863,12 @@ bool Client::notify(QObject* receiver, QEvent* event)
     {
         std::string msg = "Unhandled exception '" + std::string(e.what()) + "' | "
                           + describeNotifyContext(receiver, event);
+
+        // the stack trace of the assertion is taken here, after the unwinding: add the one of the throw
+        const std::string site = stacktrace_format::throwSite(dynamic_cast<const void*>(&e));
+        if (!site.empty())
+            msg += "\n\nStacktrace at throw site:\n" + site;
+
         traced_assert_msg(false, msg.c_str());
     }
     catch (...)
@@ -831,12 +904,7 @@ void Client::applyDarkMode(bool dark)
         // resolved light palette, so every role flips back. Repro requires
         // the AppImage's bundled Qt - the system Qt used in local builds
         // resolves more of the startup palette by default.
-        QStyle* fusion = QStyleFactory::create("Fusion");
-        if (fusion)
-        {
-            QApplication::setPalette(fusion->standardPalette());
-            delete fusion;
-        }
+        QApplication::setPalette(app_palette::light());
         qApp->setStyleSheet(QString());
         return;
     }
@@ -879,6 +947,16 @@ void Client::applyDarkMode(bool dark)
     dark_pal.setColor(QPalette::Disabled, QPalette::HighlightedText, dark_pal.highlightedText().color().darker());
 
     QApplication::setPalette(dark_pal);
+
+    // Fusion paints the menu background as Base.lighter(108) and separators as a
+    // fixed translucent black, which vanishes on the dark Base => lighter Base for
+    // menus only. Must stay above Window.darker(160) (menu frame) to keep the frame
+    // visible. Set after the app palette, since QApplication::setPalette() clears
+    // class-specific palettes (which also resets this on the light path).
+    QPalette menu_pal = dark_pal;
+    menu_pal.setColor(QPalette::Base, QColor(65, 65, 65));
+    QApplication::setPalette(menu_pal, "QMenu");
+
     qApp->setStyleSheet("QToolTip { color: #ffffff; background-color: #2a2a2a; border: 1px solid white; }");
 }
 
@@ -916,6 +994,18 @@ void Client::checkAndSetupConfig()
 
             string gdal_path = string(appdir) + "/compass/data/gdal";
             CPLSetConfigOption("GDAL_DATA", gdal_path.c_str());
+
+            // proj.db of the package: the bundled PROJ cannot read the database of a different PROJ
+            // version, e.g. on the host system => null SRS in osgEarth. PROJ < 9.1 reads PROJ_LIB.
+            string proj_path = string(appdir) + "/proj";
+            qputenv("PROJ_DATA", proj_path.c_str());
+            qputenv("PROJ_LIB", proj_path.c_str());
+
+#ifdef _WIN32
+            // no OSGEARTH_DEFAULT_FONT here: osgEarth reads it when its DLL loads, before main. Its
+            // attempt with arial.ttf then fails ("Error reading file arial.ttf"), harmless: the
+            // geographic view sets times.ttf as default font (GeographicViewRenderWidget)
+#endif
         }
 #endif
 
@@ -948,8 +1038,11 @@ void Client::checkAndSetupConfig()
         string log_config_path = HOME_CONF_DIRECTORY + config.getString("log_properties_file");
         Files::verifyFileExists(log_config_path);
 
-        cout << "COMPASSClient: initializing logger using '" << log_config_path << "'" << endl;
-        Logger::getInstance().init(log_config_path, enable_event_log_);
+        const std::string& log_file = Logger::logFilePath(HOME_LOG_DIRECTORY);
+
+        cout << "COMPASSClient: initializing logger using '" << log_config_path << "', log file '"
+             << log_file << "'" << endl;
+        Logger::getInstance().init(log_config_path, enable_event_log_, log_file);
 
         loginf << "startup version " << VERSION;
         string config_version = config.getString("version");

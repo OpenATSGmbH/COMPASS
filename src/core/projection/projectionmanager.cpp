@@ -22,7 +22,6 @@
 #include "rs2gprojection.h"
 #include "idbvariableresolver.h"
 #include "db_context_manager.h"
-#include "compass.h"
 #include "files.h"
 #include "number.h"
 
@@ -31,7 +30,9 @@
 #include <math.h>
 
 #include <boost/optional/optional_io.hpp>
+#include <boost/algorithm/string.hpp>
 #include <cmath>
+#include <vector>
 
 using namespace std;
 using namespace Utils;
@@ -40,10 +41,9 @@ const string ProjectionManager::RS2G_NAME = "RS2G";
 //const string ProjectionManager::OGR_NAME = "OGR";
 //const string ProjectionManager::GEO_NAME = "Geo";
 
-ProjectionManager::ProjectionManager(nlohmann::json& config, COMPASS* parent)
+ProjectionManager::ProjectionManager(nlohmann::json& config, Configurable* parent)
     : Configurable(config, parent),
-      compass_(*parent),
-      mag_model_("wmm2020", HOME_DATA_DIRECTORY + "wmm") // WMM model (World Magnetic Model)
+      mag_model_("wmm2020", Utils::Files::dataDirectory() + "wmm") // WMM model (World Magnetic Model)
 {
     loginf;
 
@@ -58,7 +58,7 @@ ProjectionManager::ProjectionManager(nlohmann::json& config, COMPASS* parent)
 
     loginf << "loading EGM96 map";
 
-    std::string file_path = HOME_DATA_DIRECTORY + "geoid";
+    std::string file_path = Utils::Files::dataDirectory() + "geoid";
     traced_assert(Files::fileExists(file_path+"/egm96-5.pgm"));
 
     // geoid_.reset(new GeographicLib::Geoid ("egm96-5", file_path));
@@ -101,7 +101,22 @@ ProjectionManager::~ProjectionManager()
     egm96_band_ = nullptr;
 }
 
-void ProjectionManager::generateSubConfigurable(nlohmann::json& child_json)
+/**
+ */
+bool ProjectionManager::checkWired() const
+{
+    return ctx_man_ && var_resolver_;
+}
+
+/**
+ */
+context::DBContextManager& ProjectionManager::dbContextManager()
+{
+    traced_assert(ctx_man_);
+    return *ctx_man_;
+}
+
+GenerateResult ProjectionManager::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -115,12 +130,16 @@ void ProjectionManager::generateSubConfigurable(nlohmann::json& child_json)
     }
     else if (class_name == "OGRProjection")
     {
+        return GenerateResult::Skipped;
     }
     else if (class_name == "GeoProjection")
     {
+        return GenerateResult::Skipped;
     }
     else
-        throw runtime_error("DBContent: generateSubConfigurable: unknown class_name " + class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 void ProjectionManager::checkSubConfigurables()
@@ -129,7 +148,7 @@ void ProjectionManager::checkSubConfigurables()
     {
         auto& child_json = addNewSubConfiguration("RS2GProjection", "RS2GProjection0");
         child_json[Configuration::ParameterSection]["name"] = RS2G_NAME;
-        generateSubConfigurable(child_json);
+        createSubConfigurable(child_json);
     }
 
     // if (!projections_.count(OGR_NAME))
@@ -137,7 +156,7 @@ void ProjectionManager::checkSubConfigurables()
     //     auto configuration = Configuration::create("OGRProjection");
 
     //     configuration->addParameter<string>("name", OGR_NAME);
-    //     generateSubConfigurableFromConfig(std::move(configuration));
+    //     createSubConfigurableFromConfig(std::move(configuration));
     // }
 
     // if (!projections_.count(GEO_NAME))
@@ -145,7 +164,7 @@ void ProjectionManager::checkSubConfigurables()
     //     auto configuration = Configuration::create("GeoProjection");
 
     //     configuration->addParameter<string>("name", GEO_NAME);
-    //     generateSubConfigurableFromConfig(std::move(configuration));
+    //     createSubConfigurableFromConfig(std::move(configuration));
     // }
 }
 
@@ -170,7 +189,7 @@ unsigned int ProjectionManager::calculateRadarPlotPositions (
     // do radar position projection
 
     auto& var_resolver = varResolver();
-    auto& ctx_man = compass_.dbContextManager();
+    auto& ctx_man = dbContextManager();
 
     unsigned int ds_id;
     double azimuth_deg;
@@ -637,7 +656,43 @@ unsigned int ProjectionManager::doXYPositionCalculations (
             continue;
         }
 
+        // rows without a position before the projection, the projection becomes their source
+        unsigned int buffer_size = buffer->size();
+        std::vector<bool> was_null(buffer_size, false);
+
+        for (unsigned int cnt = 0; cnt < buffer_size; ++cnt)
+            was_null[cnt] = latitude_vec.isNull(cnt) || longitude_vec.isNull(cnt);
+
         transformation_errors += doXYPositionCalculations (dbcontent_name, buffer, latitude_vec, longitude_vec);
+
+        // "Latitude*" is a selection with the projection as a candidate, record it per projected row
+        std::string source_var_name =
+            var_resolver.variableSourceVariableName(dbcontent_name, latitude_var_name, dbcontent_name);
+
+        if (source_var_name.empty())
+            continue;
+
+        std::string calculation = "xy_projection_" + boost::algorithm::to_lower_copy(current_projection_name_);
+        unsigned int candidate_index = var_resolver.variableSelectionCandidateIndex(
+            dbcontent_name, latitude_var_name, dbcontent_name, calculation);
+
+        if (!candidate_index)
+        {
+            logwrn << dbcontent_name << " '" << latitude_var_name << "' has no candidate for '"
+                   << calculation << "', source not recorded";
+            continue;
+        }
+
+        if (!buffer->has<unsigned char>(source_var_name))
+            buffer->addProperty(source_var_name, PropertyDataType::UCHAR);
+
+        NullableVector<unsigned char>& source_vec = buffer->get<unsigned char>(source_var_name);
+
+        for (unsigned int cnt = 0; cnt < buffer_size; ++cnt)
+        {
+            if (was_null[cnt] && !latitude_vec.isNull(cnt) && !longitude_vec.isNull(cnt))
+                source_vec.set(cnt, candidate_index);
+        }
     }
 
     return transformation_errors;
@@ -681,9 +736,9 @@ ProjectionManager::doUpdateRadarPlotPositionCalculations (std::map<std::string, 
 
         // copy record number
 
-        NullableVector<unsigned long>& read_rec_num_vec = read_buffer->get<unsigned long> (rec_num_var_name);
+        NullableVector<std::uint64_t>& read_rec_num_vec = read_buffer->get<std::uint64_t> (rec_num_var_name);
 
-        NullableVector<unsigned long>& update_rec_num_vec = update_buffer->get<unsigned long> (rec_num_var_name);
+        NullableVector<std::uint64_t>& update_rec_num_vec = update_buffer->get<std::uint64_t> (rec_num_var_name);
 
         traced_assert(read_rec_num_vec.isNeverNull());
 
@@ -843,7 +898,8 @@ void ProjectionManager::test()
 REDO_LABEL:
 
                 azimuth_rad = Number::randomNumber(-M_PI/2, M_PI/2);
-                slant_range_m = Number::randomNumber(0, 100000);
+                // not 0: at the radar position the azimuth is undefined, the round trip can not match
+                slant_range_m = Number::randomNumber(100, 100000);
 
                 if (Number::randomNumber(1, 100) > 50)
                 {

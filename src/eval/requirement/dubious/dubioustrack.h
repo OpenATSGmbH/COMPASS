@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/requirement/base/probabilitybase.h"
+#include "requirement/base/probabilitybase.h"
 
 #include <boost/date_time/posix_time/posix_time_duration.hpp>
 
@@ -32,8 +32,6 @@ public:
     DubiousTrack(const std::string& name, 
                  const std::string& short_name, 
                  const std::string& group_name,
-                 bool eval_only_single_ds_id, 
-                 unsigned int single_ds_id,
                  float minimum_comparison_time, 
                  float maximum_comparison_time,
                  bool mark_primary_only, 
@@ -79,9 +77,6 @@ public:
     float maxROCD() const;
 
 protected:
-    bool eval_only_single_ds_id_ {false};
-    unsigned int single_ds_id_ {0};
-
     float minimum_comparison_time_ {1.0};
     float maximum_comparison_time_ {30.0};
 

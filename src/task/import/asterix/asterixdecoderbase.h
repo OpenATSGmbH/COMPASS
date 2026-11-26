@@ -32,6 +32,20 @@ class ASTERIXImportTaskSettings;
 class AsyncTaskProgressWrapper;
 
 /**
+ * Progress values of a running decoder, shown in the import progress dialog.
+ * The per file information is read from the import source, not copied in here.
+ */
+struct ASTERIXDecodeStatus
+{
+    float progress           {0}; // percent
+    float elapsed_seconds    {0};
+    float remaining_seconds  {0};
+    float records_per_second {0};
+
+    std::string current_filename; // file being decoded
+};
+
+/**
  * Base class for an ASTERIX decoder.
  */
 class ASTERIXDecoderBase
@@ -59,8 +73,7 @@ public:
     std::string warningMessage() const;
 
     virtual bool hasStatusInfo() const { return false; };
-    virtual std::string statusInfoString() const { return ""; }
-    virtual float statusInfoProgress() const { return 0; } // percent
+    virtual ASTERIXDecodeStatus statusInfo() const { return {}; }
     virtual std::string currentDataSourceName() const { return ""; }
     virtual std::vector<std::string> errors() const;
     virtual std::vector<std::string> warnings() const;

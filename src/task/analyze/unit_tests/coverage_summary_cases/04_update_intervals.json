@@ -1,0 +1,22 @@
+{
+    "description": "Intervals between sorted time stamps 0, 1, 1, 2.5, 302.5, 603 s: 1 s, 0 s (same time, dropped), 1.5 s, 300 s (at the limit, kept), 300.5 s (break, dropped). They are appended to the existing interval 7 s.",
+    "type": "intervals",
+    "times_s": [
+        0.0,
+        1.0,
+        1.0,
+        2.5,
+        302.5,
+        603.0
+    ],
+    "existing": [
+        7.0
+    ],
+    "max_interval_s": 300.0,
+    "expected": [
+        7.0,
+        1.0,
+        1.5,
+        300.0
+    ]
+}

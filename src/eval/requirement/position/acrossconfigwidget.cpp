@@ -15,8 +15,8 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/acrossconfigwidget.h"
-#include "eval/requirement/position/acrossconfig.h"
+#include "requirement/position/acrossconfigwidget.h"
+#include "requirement/position/acrossconfig.h"
 
 #include "logger.h"
 

@@ -15,9 +15,9 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/base/featuredefinition.h"
+#include "results/base/featuredefinition.h"
 
-#include "view/points/viewpointgenerator.h"
+#include "points/viewpointgenerator.h"
 
 namespace EvaluationRequirementResult
 {

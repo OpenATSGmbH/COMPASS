@@ -17,9 +17,9 @@
 
 #pragma once
 
-#include "eval/results/base/base.h"
+#include "results/base/base.h"
 
-#include "view/gridview/grid2d_defs.h"
+#include "gridview/grid2d_defs.h"
 
 #include <fstream>
 
@@ -95,13 +95,14 @@ public:
     static boost::optional<Evaluation::RequirementResultID> joinedContentProperties(const ResultReport::SectionContent& content);
 
     static const std::string SectorOverviewID;
-    static const int         SectorOverviewRenderDelayMSec;
 
     static const std::string SectorTargetsTableName;
     static const std::string SectorOverviewTableName;
 
 protected:
-    bool resultUsed(const std::shared_ptr<Single>& result) const;
+    /// if a single result contributes to the sector sum. Overridden where a result
+    /// without an own value still carries counts for the sector, see JoinedDetection
+    virtual bool resultUsed(const std::shared_ptr<Single>& result) const;
     void iterateSingleResults(const SingleResultFunc& func,
                               const SingleResultFunc& func_used,
                               const SingleResultFunc& func_unused) const;
@@ -140,6 +141,10 @@ protected:
 
     /// returns infos for the sector overview table
     virtual std::vector<SectorInfo> sectorInfos() const = 0;
+
+    /// true if the sector overview figure has data to show, else the sector section gets no overview figure:
+    /// the result defines overview annotations and has a value (an update was assessed).
+    bool hasOverviewData() const;
 
     std::vector<std::shared_ptr<Single>> results_;
 

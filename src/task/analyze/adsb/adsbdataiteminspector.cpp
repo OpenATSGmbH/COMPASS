@@ -20,7 +20,6 @@
 #include "asterixreporthelpers.h"
 #include "asteriximporttask.h"
 
-#include "compass.h"
 #include "db_context_manager.h"
 #include "data_source.h"
 #include "logger.h"
@@ -33,6 +32,13 @@
 #include "json.hpp"
 
 #include <jasterix/jasterix.h>
+#include <cstdio>
+
+#include <QCheckBox>
+#include <QFormLayout>
+#include <QGroupBox>
+#include <QLabel>
+#include <QVBoxLayout>
 
 ADSBDataItemInspectorSettings::ADSBDataItemInspectorSettings(nlohmann::json& config_json,
                                                              Configurable* parent)
@@ -76,8 +82,7 @@ void ADSBDataItemInspector::writeReport(ResultReport::Section& root)
             "Example: I021/210 MOPS Version, count 152340, min 1, max 2."});
     }
 
-    auto& compass = task_.compass();
-    auto& ctx     = compass.dbContextManager();
+    auto& ctx = task_.manager().dbContextManager();
     const auto& info_map = ctx.asterixInfo();
 
     auto& settings = static_cast<ADSBDataItemInspectorSettings&>(settings_);
@@ -96,7 +101,7 @@ void ADSBDataItemInspector::writeReport(ResultReport::Section& root)
     std::shared_ptr<jASTERIX::jASTERIX> jasterix;
     try
     {
-        jasterix = compass.taskManager().asterixImporterTask().jASTERIX();
+        jasterix = task_.manager().asterixImporterTask().jASTERIX();
     }
     catch (...) { /* helper handles a null pointer gracefully */ }
 
@@ -157,4 +162,49 @@ void ADSBDataItemInspector::writeReport(ResultReport::Section& root)
     }
 
     loginf << "ADS-B data-item analysis for " << selected.size() << " data sources written";
+}
+
+/**
+*/
+void ADSBDataItemInspector::addSettingsRows(QFormLayout* form)
+{
+    auto& s = static_cast<ADSBDataItemInspectorSettings&>(settings_);
+
+    auto* group = new QGroupBox("Categories to Include");
+    auto* gl = new QVBoxLayout(group);
+
+    std::set<unsigned int> cats;
+    auto& info_map = task_.manager().dbContextManager().asterixInfo();
+    for (auto ds_id : task_.selectedDataSourceIDs())
+    {
+        auto it = info_map.find(ds_id);
+        if (it == info_map.end())
+            continue;
+        for (const auto& cat_kv : it->second)
+            cats.insert(cat_kv.first);
+    }
+
+    if (cats.empty())
+    {
+        auto* lbl = new QLabel(
+            "(no ASTERIX info available - select test data sources first)");
+        lbl->setStyleSheet("color: gray;");
+        gl->addWidget(lbl);
+    }
+    else
+    {
+        for (auto cat : cats)
+        {
+            char buf[16];
+            std::snprintf(buf, sizeof(buf), "CAT%03u", cat);
+            auto* cb = new QCheckBox(buf);
+            cb->setChecked(s.catIncluded(cat));
+            QObject::connect(cb, &QCheckBox::toggled, [&s, cat](bool on) {
+                s.setCatIncluded(cat, on);
+            });
+            gl->addWidget(cb);
+        }
+    }
+
+    form->addRow(group);
 }

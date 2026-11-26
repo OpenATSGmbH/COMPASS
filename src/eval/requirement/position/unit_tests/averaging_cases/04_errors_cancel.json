@@ -1,0 +1,23 @@
+{
+    "description": "Opposite error vectors cancel: mean distance 0 m.",
+    "window_s": 5.0,
+    "samples": [
+        [
+            0,
+            10.0,
+            0.0
+        ],
+        [
+            1,
+            -10.0,
+            0.0
+        ]
+    ],
+    "expected_windows": [
+        {
+            "num": 2,
+            "mean_distance": 0.0,
+            "span_s": 1.0
+        }
+    ]
+}

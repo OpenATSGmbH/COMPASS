@@ -15,7 +15,7 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/position/distancerms.h"
+#include "results/position/distancerms.h"
 #include "stringconv.h"
 
 #include "logger.h"
@@ -95,31 +95,6 @@ std::vector<Single::TargetInfo> SinglePositionDistanceRMS::targetInfos() const
              { "DVar [m^2]"     , "Variance of distance"                     , formatValue(accumulator_.var())    }, 
              { "#CF [1]"        , "Number of updates with failed comparison" , num_failed_                        }, 
              { "#CP [1]"        , "Number of updates with passed comparison" , num_passed_                        } };
-}
-
-/**
-*/
-std::vector<std::string> SinglePositionDistanceRMS::detailHeaders() const
-{
-    return { "ToD", "NoRef", "PosInside", "#RefPosIn", "Distance", "CP", "#CF", "#CP", "Comment" };
-}
-
-/**
-*/
-nlohmann::json::array_t SinglePositionDistanceRMS::detailValues(const EvaluationDetail& detail,
-                                                                const EvaluationDetail* parent_detail) const
-{
-    bool has_ref_pos = detail.numPositions() >= 2;
-
-    return { Utils::Time::toString(detail.timestamp()),
-            !has_ref_pos,
-             detail.getValue(SinglePositionBaseCommon::DetailKey::PosInside).toBool(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumRefInaccurate).toUInt(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::Value).toFloat(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::CheckPassed).toBool(), 
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckFailed).toUInt(), 
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckPassed).toUInt(), 
-             detail.comments().generalComment() }; 
 }
 
 /**

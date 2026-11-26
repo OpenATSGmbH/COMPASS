@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include "viewcomponent.h"
 #include "viewpresets.h"
 #include "json_fwd.hpp"
@@ -89,7 +91,7 @@ private:
 
 /**
 */
-class ViewPresetItemWidget : public QWidget
+class COMPASS_VIEW_API ViewPresetItemWidget : public QWidget
 {
     Q_OBJECT
 public:
@@ -118,9 +120,11 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void enterEvent(QEvent* event) override;
     void leaveEvent(QEvent* event) override;
+    void changeEvent(QEvent* event) override;
 
 private:
     void createUI();
+    void updateIcon();
 
     void removeButtonPressed();
     void editButtonPressed();
@@ -150,7 +154,7 @@ private:
 
 /**
 */
-class ViewPresetItemListWidget : public QWidget
+class COMPASS_VIEW_API ViewPresetItemListWidget : public QWidget
 {
     Q_OBJECT
 public:
@@ -209,6 +213,7 @@ public:
     nlohmann::json viewInfoJSON() const override final;
 
     static const std::string NumPresetsKey;
+    static const std::string PresetsKey;
 
 protected:
     virtual void viewInfoJSON_impl(nlohmann::json& info) const {}

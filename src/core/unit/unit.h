@@ -52,11 +52,6 @@ class Unit : public Configurable
     /// @brief Destructor
     virtual ~Unit() {}
 
-    void generateSubConfigurable(nlohmann::json& child_json) override
-    {
-        traced_assert(false);
-    }
-
     double factor() const { return factor_; }
 
   private:
@@ -66,5 +61,11 @@ class Unit : public Configurable
     double factor_;
 
   protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override
+    {
+        traced_assert(false);
+        return GenerateResult::Unknown;
+    }
+
     virtual void checkSubConfigurables() {}
 };

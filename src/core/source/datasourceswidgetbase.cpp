@@ -19,9 +19,8 @@
 #include "db_context_manager.h"
 #include "data_source.h"
 
-#include "compass.h"
-#include "dbcontent/dbcontentmanager.h"
-
+#include "logger.h"
+#include "traced_assert.h"
 #include "stringconv.h"
 #include "number.h"
 #include "files.h"
@@ -625,19 +624,18 @@ int DataSourcesWidgetBase::generateDataSource(DataSourceItemBase* item,
             }
         }
 
-        //configure count items
-        // numInsertedLinesMap returns map<unsigned int, unsigned int> (line_id -> count)
-        // We need dbcontent names here - use the dbcontent manager to get dbcontent names with data
-        // Actually the old code used numInsertedSummedLinesMap which returns map<string, unsigned int> (dbcontent -> count)
-        // The new equivalent needs to be built from the context manager
-        // For now, iterate over dbcontent names that have inserts for this ds
-        auto& dbcont_man = ctx_man_.compass().dbContentManager();
+        //configure count items: dbcontent name -> inserted count (summed over lines) of this ds
         std::map<std::string, unsigned int> dbc_counts;
-        for (auto it = dbcont_man.begin(); it != dbcont_man.end(); ++it)
+        const auto& inserted_counts = ctx_man_.insertedCounts();
+        auto ds_counts_it = inserted_counts.find(ds_id);
+        if (ds_counts_it != inserted_counts.end())
         {
-            unsigned int cnt_val = ctx_man_.numInserted(ds_id, it->first);
-            if (cnt_val > 0)
-                dbc_counts[it->first] = cnt_val;
+            for (const auto& [ dbc_name, line_counts ] : ds_counts_it->second)
+            {
+                unsigned int cnt_val = ctx_man_.numInserted(ds_id, dbc_name);
+                if (cnt_val > 0)
+                    dbc_counts[dbc_name] = cnt_val;
+            }
         }
 
         // adjust item count

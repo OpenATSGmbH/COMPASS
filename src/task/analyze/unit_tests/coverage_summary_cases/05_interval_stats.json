@@ -1,0 +1,33 @@
+{
+    "description": "Interval statistics of 1, 1, 1, 2, 2, 3, 10, 20 s: median at index 3.5 = 2, P10 at index 0.7 = 1, P90 at index 6.3 = 0.7 * 10 + 0.3 * 20 = 13, mean 40 / 8 = 5. Histogram maximum 4 s in 4 bins of 1 s: [0,1) none, [1,2) three, [2,3) two, [3,4) one, 10 and 20 s in the overflow bin.",
+    "type": "stats",
+    "intervals": [
+        1,
+        1,
+        1,
+        2,
+        2,
+        3,
+        10,
+        20
+    ],
+    "hist_max_s": 4.0,
+    "num_bins": 4,
+    "fallback_max_s": 15.0,
+    "expected": {
+        "num": 8,
+        "median_s": 2.0,
+        "p10_s": 1.0,
+        "p90_s": 13.0,
+        "mean_s": 5.0,
+        "hist_max_s": 4.0,
+        "hist_bin_width_s": 1.0,
+        "hist_bins": [
+            0,
+            3,
+            2,
+            1
+        ],
+        "hist_overflow": 2
+    }
+}

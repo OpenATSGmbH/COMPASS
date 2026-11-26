@@ -69,7 +69,7 @@ void KalmanFilterUM2D::configureFMat(Matrix& F, double dt) const
 */
 void KalmanFilterUM2D::configureQMat(Matrix& Q, double dt, double Q_var) const
 {
-    KalmanFilter::continuousWhiteNoise(Q, 2, dt, Q_var, 2);
+    KalmanFilter::continuousWhiteNoise(Q, 2, KalmanFilter::processNoiseDt(dt), Q_var, 2);
 }
 
 /**
@@ -115,6 +115,20 @@ double KalmanFilterUM2D::yVar(const kalman::Matrix& P) const
 double KalmanFilterUM2D::xyCov(const kalman::Matrix& P) const
 {
     return P(2, 0);
+}
+
+/**
+*/
+boost::optional<double> KalmanFilterUM2D::vxVar(const kalman::Matrix& P) const
+{
+    return P(1, 1);
+}
+
+/**
+*/
+boost::optional<double> KalmanFilterUM2D::vyVar(const kalman::Matrix& P) const
+{
+    return P(3, 3);
 }
 
 /**

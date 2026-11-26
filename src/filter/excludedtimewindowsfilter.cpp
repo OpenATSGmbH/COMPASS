@@ -19,7 +19,7 @@
 #include "excludedtimewindowsfilterwidget.h"
 #include "idbvariableresolver.h"
 #include "dbcontent/dbcontent.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 
 using namespace std;
 using namespace Utils;

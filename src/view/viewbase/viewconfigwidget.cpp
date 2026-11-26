@@ -17,9 +17,10 @@
 
 #include "viewconfigwidget.h"
 #include "viewwidget.h"
+#include "view.h"
+#include "viewlayerpanelwidget.h"
 #include "viewpresetwidget.h"
 #include "viewmanager.h"
-#include "compass.h"
 
 #include <iostream>
 
@@ -95,7 +96,7 @@ void ViewConfigWidget::configChanged()
 
 /**
  * Reacts on changes in the display (e.g. if display information should be visualized in the config widget).
- * (Note: Only called if both config and data widget exist)
+ * (Note: Only called if both config and render widget exist)
  */
 void ViewConfigWidget::onDisplayChange()
 {
@@ -116,6 +117,21 @@ nlohmann::json ViewConfigWidget::viewInfoJSON() const
     viewInfoJSON_impl(info);
 
     return info;
+}
+
+/**
+ */
+ViewLayerPanelWidget* ViewConfigWidget::createLayerPanel(const std::vector<LayerColumnSpec>& custom_columns,
+                                                         bool show_annotations)
+{
+    auto* layer_panel = new ViewLayerPanelWidget(custom_columns, show_annotations, this);
+
+    // the model fills the data rows and reacts on visibility changes
+    view_widget_->attachLayerPanel(layer_panel->model());
+
+    layer_panel->followColorMode(view_widget_->getView()->viewManager().appState());
+
+    return layer_panel;
 }
 
 /********************************************************************************************
@@ -143,6 +159,7 @@ TabStyleViewConfigWidget::TabStyleViewConfigWidget(ViewWidget* view_widget, QWid
 
     //create tab widget
     tab_widget_ = new QTabWidget(this);
+    tab_widget_->setObjectName("config_tabs");
     //tab_widget_->setStyleSheet("QTabBar::tab { height: "+ QString::number(TabHeight) + "px; }");
     main_layout_->addWidget(tab_widget_);
 }

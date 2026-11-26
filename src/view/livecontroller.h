@@ -17,6 +17,10 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
+#include "liveoverloaddetector.h"
+
 #include <QObject>
 #include <QString>
 
@@ -26,7 +30,6 @@
 #include <memory>
 #include <string>
 
-class COMPASS;
 class ViewManager;
 class LiveDataFeed;
 class Buffer;
@@ -49,13 +52,26 @@ class Buffer;
  * insert completion plus the ASTERIX watchdog. Distribution side-effects (counts,
  * dataDistributedSignal) ride the feed's own dataChangedSignal into
  * ViewManager::sourceDataChangedSlot; only the raw-buffer empty-clear is handled here.
+ *
+ * Ticks are held (the inserts stay staged in the feed) while the application is overloaded
+ * (LiveOverloadDetector, AppState::liveOverloaded()) or the views are still being dispatched to.
+ * So the distributed buffers only change inside a tick that is distributed synchronously,
+ * views never see buffers ahead of their own data.
  */
-class LiveController : public QObject
+class COMPASS_VIEW_API LiveController : public QObject
 {
     Q_OBJECT
 
+signals:
+    // result of the overload check of a tick attempt (latency_s < 0 = no latency)
+    void overloadCheckedSignal(unsigned int packets,
+                               double latency_s,
+                               bool overloaded,
+                               unsigned int held_ticks,
+                               unsigned int hold_ticks);
+
 public:
-    LiveController(COMPASS& compass, ViewManager& view_manager, QObject* parent = nullptr);
+    LiveController(ViewManager& view_manager, QObject* parent = nullptr);
     virtual ~LiveController();
 
     enum class State { Stopped, Running, Paused };
@@ -77,6 +93,7 @@ public:
     // entering a live session: trim the feed to the current window + distribute, WITHOUT a
     // DB delete (the every-tick DB bound resumes on the next real tick). Shows the window
     // start/resumeSession just loaded, with any inserts staged during that load merged in.
+    // Never held, always replaces the views' data (also with an empty window).
     void refreshDisplay();
 
 public slots:
@@ -96,11 +113,18 @@ private:
     // bookend / dialog - a private data fetch, like a batch consumer. title = modal caption.
     void reloadWindow(const QString& title);
 
+    void tryTick();                       // tick unless held (overload, views dispatching)
+    bool checkOverload();                 // true => hold the tick
+    void resetOverload();                 // session transitions
+    void scheduleTickRetry();
+
     void processTick();                   // in-memory tick + raw-buffer empty-clear
 
-    COMPASS&     compass_;
     ViewManager& view_manager_;
 
     std::shared_ptr<LiveDataFeed> feed_;
     State state_ {State::Stopped};        // Running gates ticks; resume load stays Paused
+
+    LiveOverloadDetector overload_detector_;
+    bool                 tick_retry_scheduled_ {false};
 };

@@ -3,6 +3,8 @@
 
 \section{Known Issues}
 
+All known issues in this section concern the Linux AppImage. \\
+
 \subsection{CentOS Fuse Usermount Permissions}
 
 On some operating systems, the following error message is shown when starting the AppImage:
@@ -71,7 +73,7 @@ This is due to the the used graphics libraries OpenSceneGraph and osgEarth depen
 There exists a workaround which might work for you: There exists the issue that in some cases the shaders are supported in the used Mesa graphics driver, but are not detected correctly. One can override the reported OpenGL version for one application using a system variable and start the app in that mode using:
 
 \begin{lstlisting}
-MESA_GL_VERSION_OVERRIDE=3.3 ./COMPASS-release.AppImage
+MESA_GL_VERSION_OVERRIDE=3.3 ./COMPASS_1.1.0-x86_64.AppImage
 \end{lstlisting}
 
 At least on the authors workstation with an Intel graphics card and for some other users this resolved the issue. \\
@@ -127,7 +129,7 @@ plugins.xsettings' does not contain a key named 'antialiasing'
 a possible fix can be to start the application using 
 
 \begin{verbatim}
-GDK_BACKEND=X11 ./NAME_OF_THE_APPIMAGE.AppImage
+GDK_BACKEND=X11 ./COMPASS_1.1.0-x86_64.AppImage
 \end{verbatim}
 
 \section{Reporting Issues}
@@ -146,7 +148,7 @@ Also, if you're planning on using COMPASS, it is of benefit if you register on \
 
 \subsection{Already Reported Issues}
 
-Please refer to \url{https://github.com/hpuhr/COMPASS/issues} for a list of the currently known issues. An issue can be ``Open'' meaning it was not yet fixed, or ``Closed'', meaning it was at least fixed in the source code. If it is closed, it does not mean that the fix is already included in the current AppImage, but that it will be in the next release. \\
+Please refer to \url{https://github.com/hpuhr/COMPASS/issues} for a list of the currently known issues. An issue can be ``Open'' meaning it was not yet fixed, or ``Closed'', meaning it was at least fixed in the source code. If it is closed, it does not mean that the fix is already included in the current release, but that it will be in the next release. \\
 
 Please look through the issues and make sure that yours isn't already listed. If so, you can comment on it to indicate the severity for you. If not, please proceed to the next step.
 
@@ -155,15 +157,114 @@ Please look through the issues and make sure that yours isn't already listed. If
 Basically everything that is needed to reproduce the error should be submitted. Depending on the type of the error, this can differ, but at least the following information should be given:
 
 \begin{itemize}  
-\item Console log of the application
+\item Log file of the session with the error, see \nameref{sec:issues_log_files}
 \item Exact steps taken until the error occured
 \end{itemize} 
 
+\subsubsection{Log Files}
+\label{sec:issues_log_files}
+
+COMPASS writes a log file for each start of the application:
+
+\begin{itemize}
+\item Folder: the subfolder \texttt{log} of the configuration folder (see \nameref{sec:install_config_folder}):
+\begin{itemize}
+\item Linux: \texttt{\textasciitilde/.compass/<version>/log/}, e.g. \texttt{/home/<user>/.compass/1.1.0/log/}
+\item Windows: \texttt{C:\textbackslash Users\textbackslash <user>\textbackslash .compass\textbackslash <version>\textbackslash log\textbackslash}
+\end{itemize}
+\item File name: \texttt{compass\_<date>\_<time>\_<process id>.log}, with the date and time of the start, e.g. \texttt{compass\_2026-11-23\_20-59-53\_21396.log}
+\item Contents:
+\begin{itemize}
+\item The same messages as the console, each with date and time
+\item After a crash: a crash report at the end of the file, with the stack trace (function, source file and line of each step)
+\end{itemize}
+\item Size:
+\begin{itemize}
+\item At most 5 MB per file
+\item A full file is renamed to \texttt{.log.1} and a new file is started, so the file pair holds the last 5 to 10 MB of the session
+\end{itemize}
+\item Only the log files of the last 10 starts are kept, older files are deleted at the start of COMPASS
+\end{itemize}
+\ \\
+
+The console shows the path of the log file at the start of COMPASS, in a line like this (shortened):
+\begin{verbatim}
+COMPASSClient: initializing logger using '...', log file
+'~/.compass/1.1.0/log/compass_2026-11-23_20-59-53_21396.log'
+\end{verbatim}
+
+To report an issue:
+\begin{itemize}
+\item Find the log file of the session with the error, by the start time in the file name
+\item Attach the log file to the report, and the \texttt{.log.1} file of the session if it exists
+\end{itemize}
+\ \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} Please \textbf{note} that the log file of a session is deleted after 10 further starts. Copy the log file of the session with the error to another folder before you start COMPASS again several times. \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} The console log (see \nameref{sec:appendix_logging}) is not changed by the log file, it still shows all messages. \\
+
 \subsubsection{For Application Crashes}
+\label{sec:issues_crashes}
 
-If the application crashed, it would also be of interest to get a stacktrace. While this is most of the time added in the console log, it might be requested to create one manually. This can be achieved by running the application using gdb (\url{https://www.gnu.org/software/gdb/}), which might have to be installed.
+If the application crashes, its crash handler writes a crash report:
 
-Then, the application can be run using ``gdb ./COMPASS-XXX.AppImage''. The output will look similiar to this:
+\begin{itemize}
+\item Contents:
+\begin{itemize}
+\item The type of the error, e.g. an access violation, a signal, a failed internal check or an unhandled error (exception)
+\item The stack trace: the function, source file and line of each step that led to the error
+\item For an unhandled error: also the stack trace of the place where the error occurred
+\end{itemize}
+\item Location: at the end of the log file of the session (see \nameref{sec:issues_log_files}) and in the console
+\item The console shows the path of the log file after the crash report, in a line \texttt{Log file: <path>}
+\end{itemize}
+\ \\
+
+The Linux AppImage and \texttt{compass\_handler.exe} on Windows start the application through a watchdog (\texttt{compass\_handler}). The watchdog shows a message:
+
+\begin{itemize}
+\item If the application crashes (title \textbf{Application Crash})
+\item If the application ends with an error code other than 0, e.g. after a failed internal check (title \textbf{Application Error}). Not with the command line options \texttt{--quit} or \texttt{--open\_rt\_cmd\_port}, so that scripts are not stopped by the message.
+\end{itemize}
+\ \\
+
+The message shows:
+
+\begin{itemize}
+\item The crash or error code of the application
+\item The path of the log file with the report
+\item \textbf{Open Log File}: Opens the log file with the default text editor
+\item \textbf{Open Log Folder}: Opens the folder of the log files
+\item \textbf{Close}: Closes the message
+\end{itemize}
+\ \\
+
+\begin{figure}[H]
+    \center
+    \includegraphics[width=10cm,frame]{figures/crash_message_windows.png}
+    \caption{Crash message on Windows}
+\end{figure}
+
+\begin{figure}[H]
+    \center
+    \includegraphics[width=10cm,frame]{figures/crash_message_linux.png}
+    \caption{Crash message on Linux}
+\end{figure}
+
+To report the crash:
+
+\begin{itemize}
+\item Click \textbf{Open Log Folder} and attach the log file shown in the message to the report, and its \texttt{.log.1} file if it exists
+\item Describe the steps taken until the crash
+\end{itemize}
+\ \\
+
+\includegraphics[width=0.5cm]{../../data/icons/hint.png} If \texttt{compass\_client.exe} (Windows) or a self-built \texttt{compass\_client} is started directly, no watchdog runs and no message is shown. The log file and the console still contain the crash report. \\
+
+In some cases a stack trace created manually might be requested. This can be achieved by running the application using gdb (\url{https://www.gnu.org/software/gdb/}), which might have to be installed.
+
+Then, on Linux, the application can be run using \texttt{gdb ./COMPASS\_1.1.0-x86\_64.AppImage}. The output will look similiar to this:
 
 \begin{verbatim}
 GNU gdb (Ubuntu 8.0.1-0ubuntu1) 8.0.1

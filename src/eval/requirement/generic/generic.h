@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/requirement/base/probabilitybase.h"
+#include "requirement/base/probabilitybase.h"
 
 namespace EvaluationRequirement
 {
@@ -62,7 +62,7 @@ public:
         const SectorLayer& sector_layer) override;
 
 protected:
-    std::function <std::pair<ValueComparisonResult,std::string> (
+    std::function <ValueComparisonResult (
         const dbContent::TargetReport::Chain::DataID& id,
         const EvaluationTargetData& target_data,
         boost::posix_time::time_duration max_ref_time_diff)> value_compare_func_;
@@ -88,7 +88,7 @@ public:
 protected:
     double threshold_ {0};
 
-    std::function <std::pair<ValueComparisonResult,std::string> (
+    std::function <ValueComparisonResult (
         const dbContent::TargetReport::Chain::DataID& id,
         const EvaluationTargetData& target_data,
         boost::posix_time::time_duration max_ref_time_diff, double threshold)> value_compare_func_;

@@ -16,16 +16,20 @@
  */
 
 #include "dubioustrackconfig.h"
-#include "eval/requirement/dubious/dubioustrack.h"
+#include "requirement/dubious/dubioustrack.h"
 #include "dubioustrackconfigwidget.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
+
+#include "stringconv.h"
+#include "number.h"
 
 using namespace std;
+using namespace Utils;
 
 
 namespace EvaluationRequirement
@@ -37,9 +41,6 @@ DubiousTrackConfig::DubiousTrackConfig(
     : ProbabilityBaseConfig(config, parent)
 {
     prob_check_type_ = COMPARISON_TYPE::LESS_THAN_OR_EQUAL;
-
-    registerParameter("eval_only_single_ds_id", &eval_only_single_ds_id_, false);
-    registerParameter("single_ds_id", &single_ds_id_, 0u);
 
     registerParameter("minimum_comparison_time", &minimum_comparison_time_, 1.0f);
     registerParameter("maximum_comparison_time", &maximum_comparison_time_, 30.0f);
@@ -231,31 +232,10 @@ void DubiousTrackConfig::dubiousProb(float dubious_prob)
     dubious_prob_ = dubious_prob;
 }
 
-bool DubiousTrackConfig::evalOnlySingleDsId() const
-{
-    return eval_only_single_ds_id_;
-}
-
-void DubiousTrackConfig::evalOnlySingleDsId(bool eval_only_single_ds_id)
-{
-    eval_only_single_ds_id_ = eval_only_single_ds_id;
-}
-
-unsigned int DubiousTrackConfig::singleDsId() const
-{
-    return single_ds_id_;
-}
-
-void DubiousTrackConfig::singleDsId(unsigned int single_ds_id)
-{
-    single_ds_id_ = single_ds_id;
-}
-
 std::shared_ptr<Base> DubiousTrackConfig::createRequirement()
 {
     shared_ptr<DubiousTrack> req = make_shared<DubiousTrack>(
                 name_, short_name_, group_.name(),
-                eval_only_single_ds_id_, single_ds_id_,
                 minimum_comparison_time_, maximum_comparison_time_,
                 mark_primary_only_, use_min_updates_, min_updates_,
                 use_min_duration_, min_duration_,
@@ -275,15 +255,45 @@ BaseConfigWidget* DubiousTrackConfig::createWidget()
 
 void DubiousTrackConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
-    //auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
+    BaseConfig::addToReport(report);
 
-    //   auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
-    //    table.addRow({"Name", "Requirement name", name_});
-    //    table.addRow({"Short Name", "Requirement short name", short_name_});
-    //    table.addRow({"Comment", "", comment_});
+    auto& table = section.getTable("req_table");
 
-    // prob & check type added in subclass
+    table.addRow({"Probability [%]", "Probability of dubious updates",
+                  probabilityPercent(prob_)});
+    table.addRow({"Probability Check Type", "",
+                  comparisonTypeString(prob_check_type_)});
+    table.addRow({"Minimum Comparison Time [s]",
+                  "Minimum time between two updates for the acceleration, turnrate and ROCD checks",
+                  Number::floatToDouble(minimum_comparison_time_)});
+    table.addRow({"Maximum Comparison Time [s]",
+                  "Maximum time between two updates for the acceleration, turnrate and ROCD checks",
+                  Number::floatToDouble(maximum_comparison_time_)});
+    table.addRow({"Mark Primary-Only", "If all updates of a primary-only track are dubious",
+                  String::boolToString(mark_primary_only_)});
+    table.addRow({"Use Minimum Updates", "If all updates of a track with fewer updates are dubious",
+                  String::boolToString(use_min_updates_)});
+    table.addRow({"Minimum Updates [1]", "", min_updates_});
+    table.addRow({"Use Minimum Duration", "If all updates of a shorter track are dubious",
+                  String::boolToString(use_min_duration_)});
+    table.addRow({"Minimum Duration [s]", "", Number::floatToDouble(min_duration_)});
+    table.addRow({"Use Maximum Groundspeed", "If updates with a higher groundspeed are dubious",
+                  String::boolToString(use_max_groundspeed_)});
+    table.addRow({"Maximum Groundspeed [kts]", "", Number::floatToDouble(max_groundspeed_kts_)});
+    table.addRow({"Use Maximum Acceleration", "If updates with a higher acceleration are dubious",
+                  String::boolToString(use_max_acceleration_)});
+    table.addRow({"Maximum Acceleration [m/s^2]", "", Number::floatToDouble(max_acceleration_)});
+    table.addRow({"Use Maximum Turnrate", "If updates with a higher turnrate are dubious",
+                  String::boolToString(use_max_turnrate_)});
+    table.addRow({"Maximum Turnrate [deg/s]", "", Number::floatToDouble(max_turnrate_)});
+    table.addRow({"Use Maximum ROCD", "If updates with a higher rate of climb or descent are dubious",
+                  String::boolToString(use_max_rocd_)});
+    table.addRow({"Maximum ROCD [ft/s]", "", Number::floatToDouble(max_rocd_)});
+    table.addRow({"Dubious Probability [%]",
+                  "A track is dubious if the ratio of its dubious updates is higher",
+                  probabilityPercent(Number::floatToDouble(dubious_prob_))});
 }
 
 }

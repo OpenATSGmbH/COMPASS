@@ -36,10 +36,86 @@
 // so the generated code is identical regardless of which branch is compiled.
 // ---------------------------------------------------------------------------
 
+#ifdef _WIN32
+
+// Windows: there is no dlsym(RTLD_NEXT) to reach the real __cxa_throw, but with SEH the GCC unwinder
+// raises every throw as a Windows exception with the code STATUS_GCC_THROW (libgcc unwind-seh.c),
+// with the _Unwind_Exception of the thrown object as first parameter. A vectored exception handler
+// sees it first, in the throwing thread, before any unwinding.
+
+#include "cxa_throw_hook.h"
+#include "stacktrace_format.h"
+
+#include <unwind.h>
+#include <windows.h>
+
+// empty until a throw: the default constructor of boost::stacktrace captures the current stack,
+// which the crash handlers would report as the throw site
+thread_local boost::stacktrace::stacktrace last_throw_trace(0, 0);
+thread_local const void* last_throw_object = nullptr;
+
+static thread_local bool in_throw_hook = false;
+
+// GCC_EXCEPTION(0) in libgcc unwind-seh.c: STATUS_USER_DEFINED | ('G' << 16 | 'C' << 8 | 'C')
+static const DWORD STATUS_GCC_THROW = 0x20474343;
+
+static LONG WINAPI throwHookHandler(EXCEPTION_POINTERS* info)
+{
+    const EXCEPTION_RECORD* record = info ? info->ExceptionRecord : nullptr;
+
+    if (!record || record->ExceptionCode != STATUS_GCC_THROW || record->NumberParameters < 1 || in_throw_hook)
+        return EXCEPTION_CONTINUE_SEARCH;
+
+    in_throw_hook = true;
+
+    //the thrown object follows the _Unwind_Exception header of libstdc++ (__get_object_from_ue in
+    //unwind-cxx.h). Not __cxa_get_exception_ptr: it returns the pointer adjusted for the catch, which
+    //is only set when the unwinder has found the handler, after this point.
+    auto ue = reinterpret_cast<const _Unwind_Exception*>(record->ExceptionInformation[ 0 ]);
+
+    //std::rethrow_exception throws a dependent exception (class ends with 0x01), whose header is
+    //followed by no object: not recorded, the original throw site is in the thread that threw it
+    if (!ue || (ue->exception_class & 0xff) == 0x01)
+    {
+        in_throw_hook = false;
+        return EXCEPTION_CONTINUE_SEARCH;
+    }
+
+    const void* object = ue + 1;
+
+    //a rethrow (throw;) raises the same object again: keep the original throw site
+    if (object != last_throw_object || last_throw_trace.empty())
+    {
+        last_throw_trace  = boost::stacktrace::stacktrace();
+        last_throw_object = object;
+    }
+
+    in_throw_hook = false;
+
+    return EXCEPTION_CONTINUE_SEARCH;
+}
+
+void installThrowHook()
+{
+    AddVectoredExceptionHandler(1, throwHookHandler);
+
+    stacktrace_format::setThrowSiteProvider(&throwSiteOf);
+}
+
+std::string throwSiteOf(const void* exception_object)
+{
+    if (!exception_object || exception_object != last_throw_object || last_throw_trace.empty())
+        return {};
+
+    return stacktrace_format::toString(last_throw_trace);
+}
+
+#else
+
 #include <dlfcn.h>
 
 // forward-declare the capture helper (defined below, after boost includes)
-static void capture_throw_trace();
+static void capture_throw_trace(const void* thrown_exception);
 
 #ifdef __clang__
 #include <cxxabi.h>
@@ -61,7 +137,7 @@ extern "C" void __cxa_throw(void* thrown_exception,
                              cxa_throw_type_info tinfo,
                              void (*dest)(void*))
 {
-    capture_throw_trace();
+    capture_throw_trace(thrown_exception);
     get_real_cxa_throw()(thrown_exception, tinfo, dest);
     __builtin_unreachable();
 }
@@ -70,17 +146,39 @@ extern "C" void __cxa_throw(void* thrown_exception,
 
 #include "cxa_throw_hook.h"
 
-thread_local boost::stacktrace::stacktrace last_throw_trace;
+#include "stacktrace_format.h"
+
+// empty until a throw: the default constructor of boost::stacktrace captures the current stack,
+// which the crash handlers would report as the throw site
+thread_local boost::stacktrace::stacktrace last_throw_trace(0, 0);
+thread_local const void* last_throw_object = nullptr;
 
 // guard against recursion (boost::stacktrace itself may throw internally)
 static thread_local bool in_cxa_throw_hook = false;
 
-static void capture_throw_trace()
+static void capture_throw_trace(const void* thrown_exception)
 {
     if (!in_cxa_throw_hook)
     {
         in_cxa_throw_hook = true;
-        last_throw_trace = boost::stacktrace::stacktrace();
+        last_throw_trace  = boost::stacktrace::stacktrace();
+        last_throw_object = thrown_exception;
         in_cxa_throw_hook = false;
     }
 }
+
+void installThrowHook()
+{
+    //the __cxa_throw hook needs no installation
+    stacktrace_format::setThrowSiteProvider(&throwSiteOf);
+}
+
+std::string throwSiteOf(const void* exception_object)
+{
+    if (!exception_object || exception_object != last_throw_object || last_throw_trace.empty())
+        return {};
+
+    return stacktrace_format::toString(last_throw_trace);
+}
+
+#endif

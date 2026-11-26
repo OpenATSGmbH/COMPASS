@@ -425,9 +425,20 @@ TEST_CASE("FFT position handling", "[context][fft]")
         REQUIRE(result.second == Approx(0.0f));
     }
 
-    SECTION("the match radius is 5000 m")
+    SECTION("the default match radius is 5000 m")
     {
-        REQUIRE(FFT::max_plot_distance_m_ == Approx(5000.0));
+        REQUIRE(FFT::DefaultMaxPlotDistanceM == Approx(5000.0));
+
+        FFT fft;
+        REQUIRE(fft.maxPlotDistanceM() == Approx(5000.0));
+    }
+
+    SECTION("an FFT can carry its own match radius")
+    {
+        FFT fft;
+        fft.info()["max_plot_distance_m"] = 50.0;
+
+        REQUIRE(fft.maxPlotDistanceM() == Approx(50.0));
     }
 }
 
@@ -468,5 +479,45 @@ TEST_CASE("FFT matching with both secondary values set", "[context][fft]")
         auto result = fft.matches(near_lat, near_lon, fft_acad, false, no_mode_3a, no_mode_c);
 
         REQUIRE(result.first);
+    }
+}
+
+TEST_CASE("FFT runtime id", "[context][fft]")
+{
+    FFT fft;
+    fft.name("FFT1");
+
+    FFT other;
+    other.name("FFT1");
+
+    SECTION("every FFT gets its own id")
+    {
+        REQUIRE_FALSE(fft.runtimeId().empty());
+        REQUIRE(fft.runtimeId() != other.runtimeId());
+    }
+
+    SECTION("copies keep the id, e.g. on a vector reallocation")
+    {
+        FFT copy = fft;
+        REQUIRE(copy.runtimeId() == fft.runtimeId());
+
+        std::vector<FFT> ffts;
+        ffts.push_back(fft);
+        const std::string id = ffts.front().runtimeId();
+
+        for (int i = 0; i < 100; ++i)
+            ffts.push_back(other);
+
+        REQUIRE(ffts.front().runtimeId() == id);
+    }
+
+    SECTION("the id is not compared and not serialized")
+    {
+        REQUIRE(fft == other);
+
+        FFT restored = FFT::fromJSON(fft.toJSON());
+        REQUIRE(restored == fft);
+        REQUIRE(restored.runtimeId() != fft.runtimeId());
+        REQUIRE(fft.toJSON().dump().find(fft.runtimeId()) == std::string::npos);
     }
 }

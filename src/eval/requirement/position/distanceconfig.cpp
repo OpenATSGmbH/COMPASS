@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/distanceconfig.h"
-#include "eval/requirement/position/distanceconfigwidget.h"
-#include "eval/requirement/position/distance.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/probabilitybase.h"
+#include "requirement/position/distanceconfig.h"
+#include "requirement/position/distanceconfigwidget.h"
+#include "requirement/position/distance.h"
+#include "requirement/group.h"
+#include "requirement/base/probabilitybase.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 #include "stringconv.h"
 
@@ -41,6 +41,9 @@ PositionDistanceConfig::PositionDistanceConfig(
     registerParameter("threshold_value_check_type", (unsigned int*)&threshold_value_check_type_,
                       (unsigned int) COMPARISON_TYPE::LESS_THAN_OR_EQUAL);
     registerParameter("failed_values_of_interest", &failed_values_of_interest_, true);
+
+    registerParameter("use_averaging", &use_averaging_, false);
+    registerParameter("averaging_window_s", &averaging_window_s_, 5.0f);
 }
 
 PositionDistanceConfig::~PositionDistanceConfig()
@@ -51,7 +54,8 @@ std::shared_ptr<Base> PositionDistanceConfig::createRequirement()
 {
     shared_ptr<PositionDistance> req = make_shared<PositionDistance>(
                 name_, short_name_, group_.name(), prob_, prob_check_type_, ref_min_accuracy_, calculator_,
-                threshold_value_, threshold_value_check_type_, failed_values_of_interest_);
+                threshold_value_, threshold_value_check_type_, failed_values_of_interest_,
+                use_averaging_, averaging_window_s_);
 
     return req;
 }
@@ -86,6 +90,26 @@ void PositionDistanceConfig::failedValuesOfInterest(bool value)
     failed_values_of_interest_ = value;
 }
 
+bool PositionDistanceConfig::useAveraging() const
+{
+    return use_averaging_;
+}
+
+void PositionDistanceConfig::useAveraging(bool value)
+{
+    use_averaging_ = value;
+}
+
+float PositionDistanceConfig::averagingWindow() const
+{
+    return averaging_window_s_;
+}
+
+void PositionDistanceConfig::averagingWindow(float value)
+{
+    averaging_window_s_ = value;
+}
+
 BaseConfigWidget* PositionDistanceConfig::createWidget()
 {
     return new PositionDistanceConfigWidget(*this);
@@ -93,12 +117,15 @@ BaseConfigWidget* PositionDistanceConfig::createWidget()
 
 void PositionDistanceConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
+    // adds the table with name, comment, group, target selection and reference accuracy
+    PositionBaseProbConfig::addToReport(report);
+
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
-    auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& table = section.getTable("req_table");
 
-    table.addRow({"Probability [1]", "Probability of correct/false position",
-                  roundf(prob_ * 10000.0) / 100.0});
+    table.addRow({"Probability [%]", "Probability of correct/false position",
+                  probabilityPercent(prob_)});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
 
@@ -113,5 +140,12 @@ void PositionDistanceConfig::addToReport (std::shared_ptr<ResultReport::Report> 
     table.addRow({"Failed Values are of Interest",
                   "If the distances of interest are the ones not passing the check",
                   String::boolToString(failed_values_of_interest_)});
+
+    table.addRow({"Use Averaged Position", "One comparison per averaging window, using the mean"
+                  " position error of the test reports in that window, instead of one comparison"
+                  " per test report",
+                  String::boolToString(use_averaging_)});
+    table.addRow({"Averaging Window [s]", "Length of one averaging window",
+                  averaging_window_s_});
 }
 }

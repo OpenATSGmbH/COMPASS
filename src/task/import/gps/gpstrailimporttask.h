@@ -17,8 +17,11 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include "configurable.h"
 #include "task.h"
+#include "result.h"
 
 #include <QObject>
 
@@ -33,9 +36,12 @@ class GPSTrailImportTaskDialog;
 class DBContent;
 class Buffer;
 
+struct AsyncTaskState;
+class AsyncTaskProgressWrapper;
+
 /**
 */
-class GPSTrailImportTask : public Task, public Configurable
+class COMPASS_TASK_API GPSTrailImportTask : public Task, public Configurable
 {
     Q_OBJECT
 
@@ -138,6 +144,7 @@ protected:
     virtual void onConfigurationChanged(const std::vector<std::string>& changed_params) override;
 
     void parseCurrentFile ();
+    Result parseCurrentFileImpl (const AsyncTaskState& state, AsyncTaskProgressWrapper& progress);
     //void checkParsedData (); // throws exceptions for errors
 
     void updateDateFromString();

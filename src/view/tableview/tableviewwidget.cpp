@@ -18,7 +18,8 @@
 #include "tableviewwidget.h"
 #include "tableview.h"
 #include "tableviewconfigwidget.h"
-#include "tableviewdatawidget.h"
+#include "tableviewmodel.h"
+#include "tableviewrenderwidget.h"
 
 #include <QHBoxLayout>
 #include <QSettings>
@@ -30,8 +31,21 @@
 TableViewWidget::TableViewWidget(TableView* view, QWidget* parent)
 :   ViewWidget(view, parent)
 {
-    auto data_widget = new TableViewDataWidget(this);
-    setDataWidget(data_widget);
+    auto model = &view->model();
+
+    render_widget_ = new TableViewRenderWidget(*view, *model);
+
+    auto render_widget = render_widget_;
+
+    //the render widget builds the rows itself, no display before the first load
+    setRenderWidget(model, render_widget, [ render_widget ] () { render_widget->redraw(); }, false);
+
+    connect(model, &TableViewModel::clearDataSignal, render_widget, &TableViewRenderWidget::clearDataSlot);
+    connect(model, &TableViewModel::loadingDoneSignal, render_widget, &TableViewRenderWidget::loadingDoneSlot);
+    connect(model, &TableViewModel::recomputeSignal, render_widget, &TableViewRenderWidget::recomputeSlot);
+    connect(model, &TableViewModel::layerStateChangedSignal, render_widget, &TableViewRenderWidget::layerStateChangedSlot);
+
+    connect(render_widget, &TableViewRenderWidget::displayChangedSignal, this, [ this ] () { renderDisplayChanged(); });
 
     auto config_widget = new TableViewConfigWidget(this);
     setConfigWidget(config_widget);
@@ -40,24 +54,6 @@ TableViewWidget::TableViewWidget(TableView* view, QWidget* parent)
 /*
  */
 TableViewWidget::~TableViewWidget() = default;
-
-/**
- */
-TableViewDataWidget* TableViewWidget::getViewDataWidget()
-{
-    auto w = dynamic_cast<TableViewDataWidget*>(ViewWidget::getViewDataWidget());
-    traced_assert(w);
-    return w;
-}
-
-/**
- */
-const TableViewDataWidget* TableViewWidget::getViewDataWidget() const
-{
-    auto w =  dynamic_cast<const TableViewDataWidget*>(ViewWidget::getViewDataWidget());
-    traced_assert(w);
-    return w;
-}
 
 /**
  */

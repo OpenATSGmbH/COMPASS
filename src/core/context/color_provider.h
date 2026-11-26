@@ -25,10 +25,10 @@
 #include <string>
 #include <vector>
 
-class COMPASS;
-
 namespace context
 {
+
+class DBContextManager;
 
 /**
  * Color generation / resolution helper for the DBContext color system.
@@ -49,6 +49,7 @@ namespace context
 class ColorProvider
 {
 public:
+    /// values as stored by AppState::colorMode()
     enum class Mode
     {
         DSType,
@@ -62,6 +63,11 @@ public:
         Light,
         Dark
     };
+
+    /// display name of a color mode, used by all UI elements showing one
+    static std::string modeName(Mode mode);
+    /// all color modes in UI order
+    static const std::vector<Mode>& modes();
 
     /// default DSType palette (Radar=green, ADSB=blue, MLAT=red, ...)
     static const std::map<std::string, QColor>& defaultDSTypeColors();
@@ -116,15 +122,14 @@ public:
  *
  * `hashed_fallback` supplies a stable color for keys that aren't resolvable
  * through the active context's palettes. Pass a cached hash-based function
- * (e.g. ViewDataWidget::colorForGroupName) to keep the caller's per-group
- * color map in sync; an empty std::function falls back to
+ * to keep the caller's per-group color map in sync; an empty std::function falls back to
  * ColorProvider::hashedColor.
  */
 QColor resolveSeriesColor(const std::string& ds_type,
                           const std::string& ds_name,
                           int line_index,
                           const std::string& dbcontent_name,
-                          COMPASS& compass,
+                          DBContextManager& ctx_man,
                           std::function<QColor(const std::string&)> hashed_fallback = {});
 
 } // namespace context

@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/requirement/base/probabilitybase.h"
+#include "requirement/base/probabilitybase.h"
 
 namespace EvaluationRequirement
 {
@@ -29,7 +29,7 @@ class ModeCFalse : public ProbabilityBase
 public:
     ModeCFalse(const std::string& name, const std::string& short_name, const std::string& group_name,
                double prob, COMPARISON_TYPE prob_check_type, EvaluationCalculator& calculator,
-               float maximum_probability_false, float maximum_difference);
+               float maximum_difference);
 
     virtual std::shared_ptr<EvaluationRequirementResult::Single> evaluate (
             const EvaluationTargetData& target_data, std::shared_ptr<Base> instance,
@@ -39,11 +39,8 @@ public:
     std::string probabilityName() const override final { return "Probability of Mode C false"; }
 
     float maximumDifference() const;
-    float maximumProbabilityFalse() const;
 
 protected:
-    float maximum_probability_false_{0};
-
     float maximum_difference_ {0};
 };
 

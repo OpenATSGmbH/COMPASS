@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/requirement/base/probabilitybaseconfig.h"
+#include "requirement/base/probabilitybaseconfig.h"
 
 class Group;
 class EvaluationStandard;
@@ -40,12 +40,6 @@ public:
     std::shared_ptr<Base> createRequirement() override;
 
     virtual void addToReport (std::shared_ptr<ResultReport::Report> report) override;
-
-    bool evalOnlySingleDsId() const;
-    void evalOnlySingleDsId(bool eval_only_single_ds_id);
-
-    unsigned int singleDsId() const;
-    void singleDsId(unsigned int single_ds_id);
 
     bool markPrimaryOnly() const;
     void markPrimaryOnly(bool mark_primary_only);
@@ -97,9 +91,6 @@ public:
 
 
 protected:
-    bool eval_only_single_ds_id_ {false};
-    unsigned int single_ds_id_ {0};
-
     float minimum_comparison_time_ {1.0};
     float maximum_comparison_time_ {30.0};
 

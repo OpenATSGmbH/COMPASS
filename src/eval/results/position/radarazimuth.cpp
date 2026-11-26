@@ -15,10 +15,12 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/position/radarazimuth.h"
+#include "results/position/radarazimuth.h"
+#include "requirement/position/radarazimuth.h"
 #include "stringconv.h"
 
 #include "logger.h"
+#include "traced_assert.h"
 
 using namespace Utils;
 
@@ -50,6 +52,15 @@ SinglePositionRadarAzimuth::SinglePositionRadarAzimuth(const std::string& result
                             num_comp_passed, num_comp_failed)
 {
     updateResult();
+}
+
+/**
+ */
+void SinglePositionRadarAzimuth::addDetailCodeTexts(ReportTableDefinition& def) const
+{
+    DetailCode::addTypeText(def, NoDataSourceInfo, "No data source position");
+    DetailCode::addTypeText(def, RefTransformationError, "Reference position transformation error");
+    DetailCode::addTypeText(def, TstTransformationError, "Test position transformation error");
 }
 
 /**
@@ -88,38 +99,13 @@ std::vector<Single::TargetInfo> SinglePositionRadarAzimuth::targetInfos() const
              { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
              { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   },
              { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
-             { "DMin [m]"       , "Minimum of angle distance"                , formatValue(accumulator_.min())    }, 
-             { "DMax [m]"       , "Maximum of angle distance"                , formatValue(accumulator_.max())    },
-             { "DAvg [m]"       , "Average of angle distance"                , formatValue(accumulator_.mean())   }, 
-             { "DSDev [m]"      , "Standard Deviation of angle distance"     , formatValue(accumulator_.stddev()) }, 
-             { "DVar [m^2]"     , "Variance of angle distance"               , formatValue(accumulator_.var())    }, 
+             { "DMin [deg]"       , "Minimum of angle distance"                , formatValue(accumulator_.min())    }, 
+             { "DMax [deg]"       , "Maximum of angle distance"                , formatValue(accumulator_.max())    },
+             { "DAvg [deg]"       , "Average of angle distance"                , formatValue(accumulator_.mean())   }, 
+             { "DSDev [deg]"      , "Standard Deviation of angle distance"     , formatValue(accumulator_.stddev()) }, 
+             { "DVar [deg^2]"     , "Variance of angle distance"               , formatValue(accumulator_.var())    }, 
              { "#CF [1]"        , "Number of updates with failed comparison" , num_failed_                        }, 
              { "#CP [1]"        , "Number of updates with passed comparison" , num_passed_                        } };
-}
-
-/**
-*/
-std::vector<std::string> SinglePositionRadarAzimuth::detailHeaders() const
-{
-    return { "ToD", "NoRef", "PosInside", "#RefPosIn", "Azimuth", "CP", "#CF", "#CP", "Comment" };
-}
-
-/**
-*/
-nlohmann::json::array_t SinglePositionRadarAzimuth::detailValues(const EvaluationDetail& detail,
-                                                                 const EvaluationDetail* parent_detail) const
-{
-    bool has_ref_pos = detail.numPositions() >= 2;
-
-    return { Utils::Time::toString(detail.timestamp()),
-            !has_ref_pos,
-             detail.getValue(SinglePositionBaseCommon::DetailKey::PosInside).toBool(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumRefInaccurate).toUInt(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::Value).toFloat(),
-             detail.getValue(SinglePositionBaseCommon::DetailKey::CheckPassed).toBool(), 
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckFailed).toUInt(), 
-             detail.getValue(SinglePositionBaseCommon::DetailKey::NumCheckPassed).toUInt(), 
-             detail.comments().generalComment() }; 
 }
 
 /**
@@ -129,7 +115,12 @@ boost::optional<double> SinglePositionRadarAzimuth::computeFinalResultValue() co
     if (accumulator_.numValues() == 0)
         return {};
 
-    return accumulator_.mean();
+    // the bias is the mean of the test minus reference azimuth differences
+    auto req = std::dynamic_pointer_cast<EvaluationRequirement::PositionRadarAzimuth>(requirement_);
+    traced_assert(req);
+
+    return EvaluationRequirement::RadarHelpers::statisticValue(req->statistic(), accumulator_.stddev(),
+                                                               accumulator_.mean(), 0.0);
 }
 
 /**********************************************************************************************
@@ -156,11 +147,11 @@ std::vector<Joined::SectorInfo> JoinedPositionRadarAzimuth::sectorInfos() const
              { "#PosInside [1]" , "Number of updates inside sector"          , num_pos_inside_                    },
              { "#RefPosIn [1]"  , "Number of updates with inaccurate reference position"  , num_ref_inaccurate_   },
              { "#RefPosIn [%]"  , "Percentage of updates with inaccurate reference position"  , String::percentToStringProtected(num_ref_inaccurate_, num_pos_inside_, 2).c_str()},
-             { "DMin [m]"       , "Minimum of angle distance"                , formatValue(accumulator_.min())    }, 
-             { "DMax [m]"       , "Maximum of angle distance"                , formatValue(accumulator_.max())    },
-             { "DAvg [m]"       , "Average of angle distance"                , formatValue(accumulator_.mean())   }, 
-             { "DSDev [m]"      , "Standard Deviation of angle distance"     , formatValue(accumulator_.stddev()) }, 
-             { "DVar [m^2]"     , "Variance of angle distance"               , formatValue(accumulator_.var())    }, 
+             { "DMin [deg]"       , "Minimum of angle distance"                , formatValue(accumulator_.min())    }, 
+             { "DMax [deg]"       , "Maximum of angle distance"                , formatValue(accumulator_.max())    },
+             { "DAvg [deg]"       , "Average of angle distance"                , formatValue(accumulator_.mean())   }, 
+             { "DSDev [deg]"      , "Standard Deviation of angle distance"     , formatValue(accumulator_.stddev()) }, 
+             { "DVar [deg^2]"     , "Variance of angle distance"               , formatValue(accumulator_.var())    }, 
              { "#CF [1]"        , "Number of updates with failed comparison" , num_failed_                        }, 
              { "#CP [1]"        , "Number of updates with passed comparison" , num_passed_                        } };
 }
@@ -172,7 +163,12 @@ boost::optional<double> JoinedPositionRadarAzimuth::computeFinalResultValue() co
     if (accumulator_.numValues() == 0)
         return {};
 
-    return accumulator_.mean();
+    // the bias is the mean of the test minus reference azimuth differences
+    auto req = std::dynamic_pointer_cast<EvaluationRequirement::PositionRadarAzimuth>(requirement_);
+    traced_assert(req);
+
+    return EvaluationRequirement::RadarHelpers::statisticValue(req->statistic(), accumulator_.stddev(),
+                                                               accumulator_.mean(), 0.0);
 }
 
 }

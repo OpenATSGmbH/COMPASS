@@ -15,12 +15,11 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/base/base.h"
+#include "requirement/base/base.h"
 #include "evaluationdata.h"
 #include "stringconv.h"
 #include "number.h"
-#include "compass.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 
 using namespace std;
 using namespace Utils;
@@ -50,9 +49,6 @@ std::function<boost::optional<std::string>(const dbContent::TargetReport::Chain&
 std::function<bool(const std::string&, const std::string&)> Base::cmpACID =
     [] (const std::string& val1, const std::string& val2) { return val1 == val2; };
 
-std::function<std::string(const std::string&)> Base::printACID =
-    [] (const std::string& val) { return val; };
-
 // acad
 std::function<boost::optional<unsigned int>(const dbContent::TargetReport::Chain&,
                                             const dbContent::TargetReport::Chain::DataID&)> Base::getACAD =
@@ -61,9 +57,6 @@ std::function<boost::optional<unsigned int>(const dbContent::TargetReport::Chain
 
 std::function<bool(const unsigned int&, const unsigned int&)> Base::cmpACAD =
     [] (const unsigned int& val1, const unsigned int& val2) { return val1 == val2; };
-
-std::function<std::string(const unsigned int&)> Base::printACAD =
-    [] (const unsigned int& val) { return String::hexStringFromInt(val, 6, '0', true); };
 
 // mode a
 std::function<boost::optional<unsigned int>(const dbContent::TargetReport::Chain&,
@@ -74,9 +67,6 @@ std::function<boost::optional<unsigned int>(const dbContent::TargetReport::Chain
 std::function<bool(const unsigned int&, const unsigned int&)> Base::cmpModeA =
     [] (const unsigned int& val1, const unsigned int& val2) { return val1 == val2; };
 
-std::function<std::string(const unsigned int&)> Base::printModeA =
-    [] (const unsigned int& val) { return String::octStringFromInt(val, 4, '0'); };
-
 // mode c
 std::function<boost::optional<float>(const dbContent::TargetReport::Chain&,
                                      const dbContent::TargetReport::Chain::DataID&)> Base::getModeC =
@@ -85,9 +75,6 @@ std::function<boost::optional<float>(const dbContent::TargetReport::Chain&,
 
 std::function<bool(const float&, const float&, const float&)> Base::cmpModeC =
     [] (const float& val1, const float& val2, const float& max_val_diff) { return fabs(val1 - val2) <= max_val_diff; };
-
-std::function<std::string(const float&)> Base::printModeC =
-    [] (const unsigned int& val) { return String::doubleToStringPrecision(val, 2); };
 
 // moms
 
@@ -109,51 +96,6 @@ std::function<boost::optional<unsigned char>(const dbContent::TargetReport::Chai
 std::function<bool(const unsigned char&, const unsigned char&)> Base::cmpMomAny =
     [] (const unsigned char& val1, const unsigned char& val2) { return val1 == val2; };
 
-std::function<std::string(const unsigned char&)> Base::printMomTransAcc =
-    [] (const unsigned char& val) {
-
-        if (val == 0)
-            return "ConstantCourse";
-        else if (val == 1)
-            return "RightTurn";
-        else if (val == 2)
-            return "LeftTurn";
-        else if (val == 3)
-            return "Undetermined";
-
-        traced_assert(false);
-    };
-
-std::function<std::string(const unsigned char&)> Base::printMomLongAcc =
-    [] (const unsigned char& val) {
-
-        if (val == 0)
-            return "ConstantGroundspeed";
-        else if (val == 1)
-            return "IncreasingGroundspeed";
-        else if (val == 2)
-            return "DecreasingGroundspeed";
-        else if (val == 3)
-            return "Undetermined";
-
-        traced_assert(false);
-    };
-
-std::function<std::string(const unsigned char&)> Base::printMomVertRate =
-    [] (const unsigned char& val) {
-
-        if (val == 0)
-            return "Level";
-        else if (val == 1)
-            return "Climb";
-        else if (val == 2)
-            return "Descent";
-        else if (val == 3)
-            return "Undetermined";
-
-        traced_assert(false);
-    };
-
 // rocd
 
 std::function<boost::optional<float>(const dbContent::TargetReport::Chain&,
@@ -163,9 +105,6 @@ std::function<boost::optional<float>(const dbContent::TargetReport::Chain&,
 
 std::function<bool(const float&, const float&, const float&)> Base::cmpROCD =
     [] (const float& val1, const float& val2, const float& max_val_diff) { return fabs(val1 - val2) <= max_val_diff; };
-
-std::function<std::string(const float&)> Base::printROCD =
-    [] (const unsigned int& val) { return String::doubleToStringPrecision(val, 2); };
 
 
 // acceleration
@@ -178,9 +117,6 @@ std::function<boost::optional<double>(const dbContent::TargetReport::Chain&,
 std::function<bool(const double&, const double&, const double&)> Base::cmpAcceleration =
     [] (const float& val1, const float& val2, const float& max_val_diff) { return fabs(val1 - val2) <= max_val_diff; };
 
-std::function<std::string(const double&)> Base::printAcceleration =
-    [] (const unsigned int& val) { return String::doubleToStringPrecision(val, 2); };
-
 // coasting
 
 std::function<boost::optional<unsigned char>(const dbContent::TargetReport::Chain&,
@@ -190,9 +126,6 @@ std::function<boost::optional<unsigned char>(const dbContent::TargetReport::Chai
 
 std::function<bool(const unsigned char&, const unsigned char&)> Base::cmpCoasting =
     [] (const float& val1, const float& val2) { return val1 == val2; };
-
-std::function<std::string(const unsigned char&)> Base::printCoasting =
-    [] (const unsigned int& val) { return to_string((unsigned int) val); };
 
 const unsigned int Base::NumThresholdDecimalsMin = 2;
 const unsigned int Base::NumThresholdDecimalsMax = 6;
@@ -260,6 +193,36 @@ COMPARISON_TYPE Base::conditionCheckType() const
 const boost::optional<bool>& Base::mustHoldForAnyTarget() const
 {
     return must_hold_for_any_target_;
+}
+
+/**
+*/
+TargetSelection Base::targetSelection() const
+{
+    return target_selection_;
+}
+
+/**
+*/
+void Base::targetSelection(TargetSelection selection)
+{
+    target_selection_ = selection;
+}
+
+/**
+ * Standards state some requirements for cooperative targets only, others for every
+ * target, see EUROCAE ED-87E Table 3-1 NOTE 19 and NOTE 22. A target outside the
+ * selection is reported as ignored with this reason and does not enter the sector sum.
+ */
+std::string Base::targetSelectionIgnoreReason(const EvaluationTargetData& target) const
+{
+    if (target_selection_ == TargetSelection::Cooperative && target.isPrimaryOnly())
+        return "Not selected: non-cooperative";
+
+    if (target_selection_ == TargetSelection::NonCooperative && !target.isPrimaryOnly())
+        return "Not selected: cooperative";
+
+    return {};
 }
 
 /**
@@ -355,48 +318,39 @@ bool Base::matchesResultID(const Evaluation::RequirementResultID& id) const
 */
 bool Base::compareValue(double val, double threshold, COMPARISON_TYPE check_type) const
 {
-    if (check_type == COMPARISON_TYPE::LESS_THAN)
-        return val < threshold;
-    else if (check_type == COMPARISON_TYPE::LESS_THAN_OR_EQUAL)
-        return val <= threshold;
-    else if (check_type == COMPARISON_TYPE::GREATER_THAN)
-        return val > threshold;
-    else if (check_type == COMPARISON_TYPE::GREATER_THAN_OR_EQUAL)
-        return val >= threshold;
-    else
-        throw std::runtime_error("Base: compareValue: unknown type '" + to_string(check_type) + "'");
+    return EvaluationRequirement::compareValue(val, threshold, check_type);
 }
 
 /**
 */
-std::pair<ValueComparisonResult, std::string> Base::compareTi (
+ValueComparisonResult Base::compareTi (
     const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
     time_duration max_ref_time_diff) const
 {
-    return compare<std::string>(id, target_data, max_ref_time_diff, getACID, cmpACID, printACID);
+    return compare<std::string>(id, target_data, max_ref_time_diff, getACID, cmpACID);
 }
 
 /**
 */
-std::pair<ValueComparisonResult, std::string> Base::compareTa (
+ValueComparisonResult Base::compareTa (
     const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
     time_duration max_ref_time_diff) const
 {
-    return compare<unsigned int>(id, target_data, max_ref_time_diff, getACAD, cmpACAD, printACAD);
+    return compare<unsigned int>(id, target_data, max_ref_time_diff, getACAD, cmpACAD);
 }
 
 /**
 */
-std::pair<ValueComparisonResult, std::string> Base::compareModeA (
+ValueComparisonResult Base::compareModeA (
     const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
     time_duration max_ref_time_diff) const
 {
-    return compare<unsigned int>(id, target_data, max_ref_time_diff, getModeA, cmpModeA, printModeA);
+    return compare<unsigned int>(id, target_data, max_ref_time_diff, getModeA, cmpModeA);
 }
 
 /**
 */
-std::pair<ValueComparisonResult, std::string> Base::compareModeC (
+ValueComparisonResult Base::compareModeC (
     const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
     time_duration max_ref_time_diff, float max_val_diff) const
 {
@@ -404,39 +358,39 @@ std::pair<ValueComparisonResult, std::string> Base::compareModeC (
     std::function<bool(const float&, const float&)> tmp_cmpModeC =
         [max_val_diff] (const float& val1, const float& val2) { return fabs(val1 - val2) <= max_val_diff; };
 
-    return compare<float>(id, target_data, max_ref_time_diff, getModeC, tmp_cmpModeC, printModeC);
+    return compare<float>(id, target_data, max_ref_time_diff, getModeC, tmp_cmpModeC);
 }
 
 /**
 */
-std::pair<ValueComparisonResult, std::string> Base::compareMomLongAcc (
+ValueComparisonResult Base::compareMomLongAcc (
     const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
     boost::posix_time::time_duration max_ref_time_diff) const
 {
-    return compare<unsigned char>(id, target_data, max_ref_time_diff, getMomLongAcc, cmpMomAny, printMomLongAcc);
+    return compare<unsigned char>(id, target_data, max_ref_time_diff, getMomLongAcc, cmpMomAny);
 }
 
 /**
 */
-std::pair<ValueComparisonResult, std::string> Base::compareMomTransAcc (
+ValueComparisonResult Base::compareMomTransAcc (
     const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
     boost::posix_time::time_duration max_ref_time_diff) const
 {
-    return compare<unsigned char>(id, target_data, max_ref_time_diff, getMomTransAcc, cmpMomAny, printMomTransAcc);
+    return compare<unsigned char>(id, target_data, max_ref_time_diff, getMomTransAcc, cmpMomAny);
 }
 
 /**
 */
-std::pair<ValueComparisonResult, std::string> Base::compareMomVertRate (
+ValueComparisonResult Base::compareMomVertRate (
     const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
     boost::posix_time::time_duration max_ref_time_diff) const
 {
-    return compare<unsigned char>(id, target_data, max_ref_time_diff, getMomVertRate, cmpMomAny, printMomVertRate);
+    return compare<unsigned char>(id, target_data, max_ref_time_diff, getMomVertRate, cmpMomAny);
 }
 
 /**
 */
-std::pair<ValueComparisonResult, std::string> Base::compareROCD (
+ValueComparisonResult Base::compareROCD (
     const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
     time_duration max_ref_time_diff, float max_val_diff) const
 {
@@ -444,12 +398,12 @@ std::pair<ValueComparisonResult, std::string> Base::compareROCD (
     std::function<bool(const float&, const float&)> tmp_cmpROCD =
         [max_val_diff] (const float& val1, const float& val2) { return fabs(val1 - val2) <= max_val_diff; };
 
-    return compare<float>(id, target_data, max_ref_time_diff, getROCD, tmp_cmpROCD, printROCD);
+    return compare<float>(id, target_data, max_ref_time_diff, getROCD, tmp_cmpROCD);
 }
 
 /**
 */
-std::pair<ValueComparisonResult, std::string> Base::compareAcceleration (
+ValueComparisonResult Base::compareAcceleration (
     const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
     time_duration max_ref_time_diff, float max_val_diff) const
 {
@@ -457,16 +411,16 @@ std::pair<ValueComparisonResult, std::string> Base::compareAcceleration (
     std::function<bool(const double&, const double&)> tmp_cmpAcceleration =
         [max_val_diff] (const double& val1, const double& val2) { return fabs(val1 - val2) <= max_val_diff; };
 
-    return compare<double>(id, target_data, max_ref_time_diff, getAcceleration, tmp_cmpAcceleration, printAcceleration);
+    return compare<double>(id, target_data, max_ref_time_diff, getAcceleration, tmp_cmpAcceleration);
 }
 
 /**
 */
-std::pair<ValueComparisonResult, std::string> Base::compareCoasting (
+ValueComparisonResult Base::compareCoasting (
     const dbContent::TargetReport::Chain::DataID& id, const EvaluationTargetData& target_data,
     boost::posix_time::time_duration max_ref_time_diff) const
 {
-    return compare<unsigned char>(id, target_data, max_ref_time_diff, getCoasting, cmpCoasting, printCoasting);
+    return compare<unsigned char>(id, target_data, max_ref_time_diff, getCoasting, cmpCoasting);
 }
 
 }

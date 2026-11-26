@@ -216,7 +216,7 @@ FilterClause DBFilter::getClause(const std::string& dbcontent_name)
     return (condition_logic_ == filter_op::logic_or) ? combineOr(parts) : combineAnd(parts);
 }
 
-void DBFilter::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult DBFilter::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -242,7 +242,9 @@ void DBFilter::generateSubConfigurable(nlohmann::json& child_json)
         }
     }
     else
-        throw std::runtime_error("DBFilter: generateSubConfigurable: unknown class_name " + class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 DBFilterWidget* DBFilter::createWidget()
@@ -284,7 +286,16 @@ void DBFilter::deleteCondition(DBFilterCondition* condition)
 DBFilterWidget* DBFilter::widget()
 {
     if (!widget_)
+    {
         widget_.reset(createWidget());
+
+        //a filter marked unusable before its widget existed
+        if (unusable_)
+        {
+            widget_->collapse();
+            widget_->setDisabled(true);
+        }
+    }
 
     traced_assert(widget_);
     return widget_.get();
@@ -330,6 +341,29 @@ void DBFilter::loadViewPointConditions (const nlohmann::json& filters)
             logerr << name_ << ": cond_name '" << cond_name << "' not found";
         else
             (*it)->setValue(value);
+    }
+}
+
+void DBFilter::setUnusable(bool unusable)
+{
+    if (unusable_ == unusable)
+        return;
+
+    unusable_ = unusable;
+
+    if (!widget_)
+        return;
+
+    if (unusable_)
+    {
+        widget_->collapse();
+        widget_->setDisabled(true);
+    }
+    else
+    {
+        widget_->setDisabled(disabled_);
+        widget_->expand();
+        widget_->update();
     }
 }
 

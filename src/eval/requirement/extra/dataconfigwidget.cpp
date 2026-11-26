@@ -15,8 +15,8 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/extra/dataconfigwidget.h"
-#include "eval/requirement/extra/dataconfig.h"
+#include "requirement/extra/dataconfigwidget.h"
+#include "requirement/extra/dataconfig.h"
 //#include "textfielddoublevalidator.h"
 #include "logger.h"
 

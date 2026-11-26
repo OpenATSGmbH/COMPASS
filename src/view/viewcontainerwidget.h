@@ -21,7 +21,7 @@
 
 #include "configurable.h"
 
-class QTabWidget;
+class ViewDeck;
 class ViewManager;
 class ViewContainer;
 
@@ -37,14 +37,14 @@ class ViewContainerWidget : public QWidget, public Configurable
     ViewContainerWidget(nlohmann::json& config, ViewManager& view_manager);
     virtual ~ViewContainerWidget();
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
-
     const std::string& name() { return name_; }
     ViewContainer& viewContainer() const;
 
     void updateFeatures();
 
   protected:
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
+
     ViewManager& view_manager_;
     std::string name_;
 
@@ -55,7 +55,7 @@ class ViewContainerWidget : public QWidget, public Configurable
     unsigned int min_width_;
     unsigned int min_height_;
 
-    QTabWidget* tab_widget_{nullptr};
+    ViewDeck* view_deck_{nullptr};
     ViewContainer* view_container_{nullptr};
 
     void updateWindowTitle();

@@ -1,0 +1,24 @@
+{
+    "description": "Only target reports without a reference or test value: no probability.",
+    "reports": [
+        {
+            "cmp": [
+                "no_ref"
+            ],
+            "repeat": 3
+        },
+        {
+            "cmp": [
+                "no_tst"
+            ],
+            "repeat": 2
+        }
+    ],
+    "expected": {
+        "no_ref_val": 3,
+        "unknown": 2,
+        "correct": 0,
+        "false": 0,
+        "probability_false": null
+    }
+}

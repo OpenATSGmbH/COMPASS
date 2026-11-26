@@ -19,16 +19,16 @@
 #include "evaluationtarget.h"
 #include "evaluationdefs.h"
 
-#include "task/result/report/reportdefs.h"
+#include "report/reportdefs.h"
 
 #include "logger.h"
 #include "stringconv.h"
 #include "dbcontent/target/target.h"
-#include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "evaluationmanager.h"
 #include "evaluationcalculator.h"
-#include "util/timeconv.h"
+#include "standard/evaluationstandard.h"
+#include "timeconv.h"
 #include "sector/airspace.h"
 #include "sectorlayer.h"
 #include "evalsectionid.h"
@@ -156,6 +156,16 @@ void EvaluationTargetData::finalize () const
         has_mops_versions_ = true;
         mops_versions_ = dbcont_man.target(utn_).adsbMopsList();
     }
+
+    logdbg << "update adsb data";
+    if (dbcont_man.hasTargetsInfo() && dbcont_man.existsTarget(utn_))
+        has_adsb_data_ = dbcont_man.target(utn_).dbContentCount("CAT021") > 0;
+
+    logdbg << "update standard ignore state";
+    if (calculator_.hasCurrentStandard())
+        setIgnoredByStandard(calculator_.currentStandard().targetIgnoreReason(*this));
+    else
+        setIgnoredByStandard({});
 
     //    std::set<unsigned int> mops_version;
     //    std::tuple<bool, unsigned int, unsigned int> nucp_info;
@@ -444,32 +454,7 @@ const dbContent::TargetReport::Chain& EvaluationTargetData::tstChain() const
 bool EvaluationTargetData::hasMappedRefData(const DataID& tst_id,
                                             time_duration d_max) const
 {
-    auto timestamp = tst_id.timestamp();
-    auto index     = tst_chain_.indexFromDataID(tst_id);
-
-    const DataMapping& mapping = tst_data_mappings_.at(index.idx_internal);
-
-    if (!mapping.has_ref1_ && !mapping.has_ref2_) // no ref data
-        return false;
-
-    if (mapping.has_ref1_ && mapping.timestamp_ref1_ == timestamp && mapping.has_ref_pos_)
-        return true;
-
-    if (mapping.has_ref1_ && mapping.has_ref2_) // interpolated
-    {
-        traced_assert(mapping.timestamp_ref1_ <= timestamp);
-        traced_assert(mapping.timestamp_ref2_ >= timestamp);
-
-        if (timestamp - mapping.timestamp_ref1_ > d_max) // lower to far
-            return false;
-
-        if (mapping.timestamp_ref2_ - timestamp > d_max) // upper to far
-            return false;
-
-        return true;
-    }
-
-    return false;
+    return withinMaxGap(mappedRefMapping(tst_id), d_max);
 }
 
 /**
@@ -477,32 +462,38 @@ bool EvaluationTargetData::hasMappedRefData(const DataID& tst_id,
 std::pair<ptime, ptime> EvaluationTargetData::mappedRefTimes(const DataID& tst_id,
                                                              time_duration d_max)  const
 {
-    auto timestamp = tst_id.timestamp();
-    auto index     = tst_chain_.indexFromDataID(tst_id);
+    const DataMapping& mapping = mappedRefMapping(tst_id);
 
-    const DataMapping& mapping = tst_data_mappings_.at(index.idx_internal);
-
-    if (!mapping.has_ref1_ && !mapping.has_ref2_) // no ref data
+    if (!withinMaxGap(mapping, d_max))
         return {{}, {}};
 
-    if (mapping.has_ref1_ && mapping.timestamp_ref1_ == timestamp && mapping.has_ref_pos_)
-        return {mapping.timestamp_ref1_, {}};
+    return {mapping.timestamp_ref1_, mapping.has_ref2_ ? mapping.timestamp_ref2_ : ptime()};
+}
 
-    if (mapping.has_ref1_ && mapping.has_ref2_) // interpolated
-    {
-        traced_assert(mapping.timestamp_ref1_ <= timestamp);
-        traced_assert(mapping.timestamp_ref2_ >= timestamp);
+/**
+ */
+const dbContent::TargetReport::DataMapping& EvaluationTargetData::mappedRefMapping(const DataID& tst_id) const
+{
+    auto index = tst_chain_.indexFromDataID(tst_id);
 
-        if (timestamp - mapping.timestamp_ref1_ > d_max) // lower to far
-            return {{}, {}};
+    return tst_data_mappings_.at(index.idx_internal);
+}
 
-        if (mapping.timestamp_ref2_ - timestamp > d_max) // upper to far
-            return {{}, {}};
+/**
+ */
+std::pair<boost::optional<std::uint64_t>, boost::optional<std::uint64_t>>
+EvaluationTargetData::mappedRefRecordNumbers(const DataID& tst_id) const
+{
+    const auto& mapping = mappedRefMapping(tst_id);
 
-        return {mapping.timestamp_ref1_, mapping.timestamp_ref2_};
-    }
+    std::pair<boost::optional<std::uint64_t>, boost::optional<std::uint64_t>> rec_nums;
 
-    return {{}, {}};
+    if (mapping.has_ref1_)
+        rec_nums.first = ref_chain_.recordNumber(mapping.dataid_ref1_);
+    if (mapping.has_ref2_)
+        rec_nums.second = ref_chain_.recordNumber(mapping.dataid_ref2_);
+
+    return rec_nums;
 }
 
 /**
@@ -523,213 +514,53 @@ boost::optional<dbContent::TargetPosition> EvaluationTargetData::mappedRefPos(co
 boost::optional<dbContent::TargetPosition> EvaluationTargetData::mappedRefPos(
     const DataID& tst_id, time_duration d_max, bool debug) const
 {
-    auto timestamp = tst_id.timestamp();
-    auto index     = tst_chain_.indexFromDataID(tst_id);
+    const DataMapping& mapping = mappedRefMapping(tst_id);
+
+    bool within = withinMaxGap(mapping, d_max);
 
     if (debug)
-        loginf << "utn " << utn_ << " timestamp "
-               << Time::toString(timestamp) << " d_max " << Time::toString(d_max);
+        loginf << "utn " << utn_ << " timestamp " << Time::toString(mapping.timestamp_)
+               << " d_max " << Time::toString(d_max) << " has_ref1 " << mapping.has_ref1_
+               << " has_ref2 " << mapping.has_ref2_ << " within " << within
+               << " has_ref_pos " << mapping.has_ref_pos_;
 
-    const DataMapping& mapping = tst_data_mappings_.at(index.idx_internal);
-
-    if (debug)
-        loginf << "utn " << utn_ << " has_ref1 "
-               << mapping.has_ref1_ << " has_ref2 " << mapping.has_ref2_;
-
-    if (!mapping.has_ref1_ && !mapping.has_ref2_) // no ref data
-    {
-        if (debug)
-            loginf << "utn " << utn_ << " no ref data";
-
+    if (!within || !mapping.has_ref_pos_)
         return {};
-    }
 
-    if (mapping.has_ref1_ && mapping.timestamp_ref1_ == timestamp && mapping.has_ref_pos_)
-    {
-        if (debug)
-            loginf << "utn " << utn_ << " exact match";
-
-        return mapping.pos_ref_;
-    }
-
-    if (mapping.has_ref1_ && mapping.has_ref2_) // interpolated
-    {
-        if (debug)
-            loginf << "utn " << utn_ << " both ref data";
-
-        traced_assert(mapping.timestamp_ref1_ <= timestamp);
-        traced_assert(mapping.timestamp_ref2_ >= timestamp);
-
-        if (timestamp - mapping.timestamp_ref1_ > d_max) // lower to far
-        {
-            //            if (utn_ == debug_utn)
-            //                loginf << "lower too far";
-
-            if (debug)
-                loginf << "utn " << utn_ << " lower too far "
-                    << Time::toString(mapping.timestamp_ref1_ - timestamp);
-
-            return {};
-        }
-
-        if (mapping.timestamp_ref2_ - timestamp > d_max) // upper to far
-        {
-            //            if (utn_ == debug_utn)
-            //                loginf << "upper too far";
-
-            if (debug)
-                loginf << "utn " << utn_ << " higher too far "
-                       << Time::toString(mapping.timestamp_ref2_ - timestamp);
-
-            return {};
-        }
-
-        if (!mapping.has_ref_pos_)
-        {
-            //            if (utn_ == debug_utn)
-            //                loginf << "no ref pos";
-
-            if (debug)
-                loginf << "utn " << utn_ << " no ref_pos in mapping";
-
-            return {};
-        }
-
-        //        if (utn_ == debug_utn)
-        //            loginf << "2pos tod " << String::timeStringFromDouble(tod)
-        //                   << " has_alt " << mapping.pos_ref_.has_altitude_
-        //                   << " alt_calc " << mapping.pos_ref_.altitude_calculated_
-        //                   << " alt " << mapping.pos_ref_.altitude_;
-
-        return mapping.pos_ref_;
-    }
-
-    if (debug)
-        loginf << "utn " << utn_ << " only 1";
-
-    return {};
+    return mapping.pos_ref_;
 }
 
 boost::optional<double> EvaluationTargetData::mappedRefMinAcc(
     const dbContent::TargetReport::Chain::DataID& tst_id, boost::posix_time::time_duration d_max,
     bool debug) const
 {
-    auto timestamp = tst_id.timestamp();
-    auto index     = tst_chain_.indexFromDataID(tst_id);
+    const DataMapping& mapping = mappedRefMapping(tst_id);
 
-    if (debug)
-        loginf << "utn " << utn_ << " timestamp "
-               << Time::toString(timestamp) << " d_max " << Time::toString(d_max);
+    boost::optional<double> acc_max;
 
-    const DataMapping& mapping = tst_data_mappings_.at(index.idx_internal);
-
-    if (debug)
-        loginf << "utn " << utn_ << " has_ref1 "
-               << mapping.has_ref1_ << " has_ref2 " << mapping.has_ref2_;
-
-    if (!mapping.has_ref1_ && !mapping.has_ref2_) // no ref data
+    if (withinMaxGap(mapping, d_max))
     {
-        if (debug)
-            loginf << "utn " << utn_ << " no ref data";
-
-        return {};
-    }
-
-    if (mapping.has_ref1_ && mapping.timestamp_ref1_ == timestamp && mapping.has_ref_pos_)
-    {
-        if (debug)
-            loginf << "utn " << utn_ << " exact match";
-
         auto acc1 = ref_chain_.posAccuracy(mapping.dataid_ref1_);
 
-        if (acc1)
-        {
-            if (debug)
-                loginf << "utn " << utn_ << " acc1 "
-                       << String::doubleToStringPrecision(acc1->max(), 1);
-
-            return acc1->max();
-        }
-        else
-        {
-            if (debug)
-                loginf << "utn " << utn_ << " no acc1";
-            return {};
-        }
-    }
-
-    if (mapping.has_ref1_ && mapping.has_ref2_) // interpolated
-    {
-        if (debug)
-            loginf << "utn " << utn_ << " both ref data";
-
-        traced_assert(mapping.timestamp_ref1_ <= timestamp);
-        traced_assert(mapping.timestamp_ref2_ >= timestamp);
-
-        if (timestamp - mapping.timestamp_ref1_ > d_max) // lower to far
-        {
-            //            if (utn_ == debug_utn)
-            //                loginf << "lower too far";
-
-            if (debug)
-                loginf << "utn " << utn_ << " lower too far "
-                    << Time::toString(mapping.timestamp_ref1_ - timestamp);
-
-            return {};
-        }
-
-        if (mapping.timestamp_ref2_ - timestamp > d_max) // upper to far
-        {
-            //            if (utn_ == debug_utn)
-            //                loginf << "upper too far";
-
-            if (debug)
-                loginf << "utn " << utn_ << " higher too far "
-                       << Time::toString(mapping.timestamp_ref2_ - timestamp);
-
-            return {};
-        }
-
-        auto acc1 = ref_chain_.posAccuracy(mapping.dataid_ref1_);
-        auto acc2 = ref_chain_.posAccuracy(mapping.dataid_ref2_);
+        boost::optional<dbContent::TargetPositionAccuracy> acc2;
+        if (mapping.has_ref2_)
+            acc2 = ref_chain_.posAccuracy(mapping.dataid_ref2_);
 
         if (acc1 && acc2)
-        {
-            if (debug)
-                loginf << "utn " << utn_ << " both, max acc1,2 "
-                       << String::doubleToStringPrecision(std::max(acc1->max(), acc2->max()), 1);
-
-            return std::max(acc1->max(), acc2->max());
-        }
+            acc_max = std::max(acc1->max(), acc2->max());
         else if (acc1)
-        {
-            if (debug)
-                loginf << "utn " << utn_ << " both, acc1 "
-                       << String::doubleToStringPrecision(acc1->max(), 1);
-
-            return acc1->max();
-        }
+            acc_max = acc1->max();
         else if (acc2)
-        {
-            if (debug)
-                loginf << "utn " << utn_ << " both, acc2 "
-                       << String::doubleToStringPrecision(acc2->max(), 1);
-
-            return acc2->max();            
-        }
-        else
-        {
-            if (debug)
-                loginf << "utn " << utn_ << " both no acc";
-
-            return {};
-        }
+            acc_max = acc2->max();
     }
 
     if (debug)
-        loginf << "utn " << utn_ << " only 1";
+        loginf << "utn " << utn_ << " timestamp " << Time::toString(mapping.timestamp_)
+               << " d_max " << Time::toString(d_max) << " has_ref1 " << mapping.has_ref1_
+               << " has_ref2 " << mapping.has_ref2_ << " acc "
+               << (acc_max ? String::doubleToStringPrecision(*acc_max, 1) : std::string("none"));
 
-    return {};    
+    return acc_max;
 }
 
 /**
@@ -737,103 +568,30 @@ boost::optional<double> EvaluationTargetData::mappedRefMinAcc(
 boost::optional<dbContent::TargetVelocity> EvaluationTargetData::mappedRefSpeed(const DataID& tst_id,
                                                                                 time_duration d_max) const
 {
-    auto timestamp = tst_id.timestamp();
-    auto index     = tst_chain_.indexFromDataID(tst_id);
+    const DataMapping& mapping = mappedRefMapping(tst_id);
 
-    const DataMapping& mapping = tst_data_mappings_.at(index.idx_internal);
-
-    if (!mapping.has_ref1_ && !mapping.has_ref2_) // no ref data
+    if (!withinMaxGap(mapping, d_max) || !mapping.has_ref_spd_)
         return {};
 
-    if (mapping.has_ref1_ && mapping.timestamp_ref1_ == timestamp && mapping.has_ref_spd_)
-        return mapping.spd_ref_;
-
-    if (mapping.has_ref1_ && mapping.has_ref2_) // interpolated
-    {
-        traced_assert(mapping.timestamp_ref1_ <= timestamp);
-        traced_assert(mapping.timestamp_ref2_ >= timestamp);
-
-        if (timestamp - mapping.timestamp_ref1_ > d_max) // lower to far
-        {
-            //            if (utn_ == debug_utn)
-            //                loginf << "lower too far";
-
-            return {};
-        }
-
-        if (mapping.timestamp_ref2_ - timestamp > d_max) // upper to far
-        {
-            //            if (utn_ == debug_utn)
-            //                loginf << "upper too far";
-
-            return {};
-        }
-
-        if (!mapping.has_ref_spd_)
-        {
-            //            if (utn_ == debug_utn)
-            //                loginf << "no ref pos";
-
-            return {};
-        }
-
-        //        if (utn_ == debug_utn)
-        //            loginf << "2pos tod " << String::timeStringFromDouble(tod)
-        //                   << " has_alt " << mapping.pos_ref_.has_altitude_
-        //                   << " alt_calc " << mapping.pos_ref_.altitude_calculated_
-        //                   << " alt " << mapping.pos_ref_.altitude_;
-
-        return mapping.spd_ref_;
-    }
-
-    return {};
+    return mapping.spd_ref_;
 }
 
 /**
  */
 boost::optional<bool> EvaluationTargetData::mappedRefGroundBit(const DataID& tst_id,
                                                                time_duration d_max) const
-// has gbs, gbs true
 {
-    //    bool has_gbs = false;
-    //    bool gbs = false;
+    const DataMapping& mapping = mappedRefMapping(tst_id);
 
-    auto timestamp = tst_id.timestamp();
-    auto index     = tst_chain_.indexFromDataID(tst_id);
-
-    const DataMapping& mapping = tst_data_mappings_.at(index.idx_internal);
-
-    if (!mapping.has_ref1_ && !mapping.has_ref2_) // no ref data
+    if (!withinMaxGap(mapping, d_max))
         return {};
 
-    if (mapping.has_ref1_ && mapping.timestamp_ref1_ == timestamp && mapping.has_ref_spd_)
-    {
-        auto gbs = ref_chain_.groundBit(mapping.dataid_ref1_);
+    auto gbs1 = ref_chain_.groundBit(mapping.dataid_ref1_);
 
-        if (gbs.has_value() && *gbs)
-            return gbs;
-    }
+    if (!mapping.has_ref2_ || (gbs1.has_value() && *gbs1))
+        return gbs1;
 
-    if (mapping.has_ref1_ && mapping.has_ref2_) // interpolated
-    {
-        traced_assert(mapping.timestamp_ref1_ <= timestamp);
-        traced_assert(mapping.timestamp_ref2_ >= timestamp);
-
-        if (timestamp - mapping.timestamp_ref1_ > d_max) // lower to far
-            return {};
-
-        if (mapping.timestamp_ref2_ - timestamp > d_max) // upper to far
-            return {};
-
-        auto gbs = ref_chain_.groundBit(mapping.dataid_ref1_);
-
-        if (gbs.has_value() && *gbs)
-            return gbs;
-
-        return ref_chain_.groundBit(mapping.dataid_ref2_);
-    }
-
-    return {};
+    return ref_chain_.groundBit(mapping.dataid_ref2_);
 }
 
 /**
@@ -853,7 +611,7 @@ boost::optional<bool> EvaluationTargetData::tstGroundBitInterpolated(
 
     DataMappingTimes times = tst_chain_.findDataMappingTimes(ref_timestamp);
 
-    if (times.has_other1_ && (ref_timestamp - times.timestamp_other1_).abs() < d_max)
+    if (times.has_other1_ && (ref_timestamp - times.timestamp_other1_).abs() <= d_max)
     {
         auto gbs = tst_chain_.groundBit(times.dataid_other1_);
 
@@ -861,7 +619,7 @@ boost::optional<bool> EvaluationTargetData::tstGroundBitInterpolated(
             return gbs;
     }
 
-    if (times.has_other2_ && (ref_timestamp - times.timestamp_other2_).abs() < d_max)
+    if (times.has_other2_ && (ref_timestamp - times.timestamp_other2_).abs() <= d_max)
     {
         return tst_chain_.groundBit(times.dataid_other2_);
     }
@@ -1020,6 +778,36 @@ bool EvaluationTargetData::hasPos() const
 bool EvaluationTargetData::hasADSBInfo() const
 {
     return has_adsb_info_;
+}
+
+/**
+ */
+bool EvaluationTargetData::hasADSBData() const
+{
+    return has_adsb_data_;
+}
+
+/**
+ */
+bool EvaluationTargetData::ignoredByStandard() const
+{
+    return ignored_by_std_;
+}
+
+/**
+ */
+const std::string& EvaluationTargetData::ignoredByStandardReason() const
+{
+    return ignored_by_std_reason_;
+}
+
+/**
+ * Sets the ignore state from the current standard. An empty reason clears it.
+ */
+void EvaluationTargetData::setIgnoredByStandard(const std::string& reason) const
+{
+    ignored_by_std_        = reason.size();
+    ignored_by_std_reason_ = reason;
 }
 
 /**
@@ -1701,7 +1489,7 @@ boost::optional<bool> EvaluationTargetData::availableTstGroundBit(
 
     DataID indexed_id = DataID(ts, index);
 
-    auto gbs = ref_chain_.groundBit(indexed_id);
+    auto gbs = tst_chain_.groundBit(indexed_id);
 
     if (gbs.has_value() && *gbs)
         return gbs;

@@ -109,8 +109,8 @@ bool parseSacSicKey(const std::string& key, unsigned int& sac, unsigned int& sic
         return false;
     try
     {
-        sac = static_cast<unsigned int>(std::stoul(key.substr(0, slash)));
-        sic = static_cast<unsigned int>(std::stoul(key.substr(slash + 1)));
+        sac = static_cast<unsigned int>(std::stoull(key.substr(0, slash)));
+        sic = static_cast<unsigned int>(std::stoull(key.substr(slash + 1)));
         return true;
     }
     catch (...)
@@ -173,7 +173,7 @@ void mergeAnalysisJSON(const json& analysis,
             unsigned int cat = 0;
             try
             {
-                cat = static_cast<unsigned int>(std::stoul(cat_key));
+                cat = static_cast<unsigned int>(std::stoull(cat_key));
             }
             catch (...)
             {

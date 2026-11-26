@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "configurable.h"
 #include "license.h"
 
@@ -30,21 +32,23 @@
 
 #include "json_fwd.hpp"
 
-class COMPASS;
-
 /**
 */
-class LicenseManager : public QObject, public Configurable
+class COMPASS_CORE_API LicenseManager : public QObject, public Configurable
 {
     Q_OBJECT
 public:
-    LicenseManager(nlohmann::json& config, COMPASS& compass);
+    LicenseManager(nlohmann::json& config, Configurable& parent);
     virtual ~LicenseManager();
 
     bool readLicenses();
     bool writeLicenses() const;
 
     const license::License* activeLicense() const;
+    std::string licenseeString(bool licensed_to = true) const; // licensee of the active license, empty if none
+    std::string versionString(const std::string& app_version,
+                              bool open_ats = true,
+                              bool license_type = true) const; // e.g. "OpenATS COMPASS v1.1.0 Free"
     const license::License* activeLicenseForComponent(license::License::Component c) const;
     bool componentEnabled(license::License::Component c) const;
     
@@ -56,8 +60,6 @@ public:
     bool removeLicense(const std::string& id, bool write_licenses);
     size_t numLicenses() const;
 
-    void generateSubConfigurable(nlohmann::json& child_json) override {}
-
     static const std::string LicenseFileName;
 
 signals:
@@ -65,14 +67,13 @@ signals:
     void licensesChanged();
 
 protected:
+    GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override { return GenerateResult::Skipped; }
     virtual void checkSubConfigurables() override {}
 
 private:
     boost::optional<std::string> activeLicenseID() const;
 
     static std::string licenseFilePath();
-
-    COMPASS& compass_;
 
     std::map<std::string, license::License> licenses_;
 };

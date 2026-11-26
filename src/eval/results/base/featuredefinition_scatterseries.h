@@ -17,11 +17,11 @@
 
 #pragma once
 
-#include "eval/results/base/featuredefinition.h"
-#include "eval/results/base/featuredefinition_t.h"
+#include "results/base/featuredefinition.h"
+#include "results/base/featuredefinition_t.h"
 
-#include "view/points/viewpointgenerator.h"
-#include "view/scatterplotview/scatterseries.h"
+#include "points/viewpointgenerator.h"
+#include "scatterplotview/scatterseries.h"
 
 #include "dbcontent/dbcontent.h"
 

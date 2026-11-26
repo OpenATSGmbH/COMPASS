@@ -1,0 +1,20 @@
+{
+    "description": "Range error model test = (1 + gain) * reference + bias: the test ranges are 50 m plus 2 m per NM longer than the reference ranges (10 to 40 NM), so bias 50 m and gain 2 m/NM.",
+    "type": "fit",
+    "ref": [
+        18520.0,
+        37040.0,
+        55560.0,
+        74080.0
+    ],
+    "tst": [
+        18590.0,
+        37130.0,
+        55670.0,
+        74210.0
+    ],
+    "expected": {
+        "gain_m_per_nm": 2.0,
+        "bias_m": 50.0
+    }
+}

@@ -1,0 +1,55 @@
+/*
+ * This file is part of OpenATS COMPASS.
+ *
+ * COMPASS is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * COMPASS is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+
+ * You should have received a copy of the GNU General Public License
+ * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#pragma once
+
+#include <duckdb.h>
+
+#include <string>
+#include "dbinterface.h"
+
+
+class DBInterface;
+/**
+ */
+struct DuckDBSettings
+{
+    enum class AccessMode
+    {
+        ReadOnly = 0,
+        ReadWrite
+    };
+
+    enum class SortOrder
+    {
+        Ascending = 0,
+        Descending
+    };
+
+    void configure(duckdb_config* config, const DBInterface& dbinterface, bool db_in_memory) const;
+
+    static std::string accessModeAsString(AccessMode mode);
+    static std::string sortOrderAsString(SortOrder order);
+
+    // storage version of newly created database files (existing files keep their version), needs
+    // DuckDB v2.0.0 or newer to open them, enables e.g. zstd column compression and the reuse of
+    // deleted rows in tables with a primary key (checkpoint vacuum with ART indexes)
+    static const std::string StorageCompatibilityVersion;
+
+    AccessMode   access_mode        = AccessMode::ReadWrite;
+    SortOrder    sort_order_default = SortOrder::Ascending;
+};

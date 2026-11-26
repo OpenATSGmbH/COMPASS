@@ -15,8 +15,8 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/dubious/dubioustargetconfigwidget.h"
-#include "eval/requirement/dubious/dubioustargetconfig.h"
+#include "requirement/dubious/dubioustargetconfigwidget.h"
+#include "requirement/dubious/dubioustargetconfig.h"
 
 #include "logger.h"
 

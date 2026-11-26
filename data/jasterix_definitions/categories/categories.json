@@ -94,6 +94,7 @@
         "comment":"Category 021 ADS-B Reports",
         "default_edition":"2.4",
         "default_ref_edition":"1.5",
+        "default_spf_edition":"",
         "editions":{
             "0.26":{
                 "document":"SUR.ET1.ST05.2000-STD-12-01",
@@ -117,6 +118,13 @@
                 "date":"21 December 2021",
                 "file":"021/cat021_ref_1.5.json"
             }
+        },
+        "spf_editions":{
+            "Aireon":{
+                "document":"Aireon Special Purpose Field",
+                "date":"",
+                "file":"021/cat021_spf_aireon.json"
+            }
         }
     },
     "023":{
@@ -132,12 +140,17 @@
     },
     "025":{
         "comment":"Category 025 CNS/ATM Ground System Status Reports",
-        "default_edition":"1.1",
+        "default_edition":"1.5",
         "editions":{
             "1.1":{
                 "document":"EUROCONTROL-SPEC-0149-26",
                 "date":"November 2015",
                 "file":"025/cat025_1.1.json"
+            },
+            "1.5":{
+                "document":"EUROCONTROL-SPEC-0149-26",
+                "date":"July 2021",
+                "file":"025/cat025_1.5.json"
             }
         }
     },

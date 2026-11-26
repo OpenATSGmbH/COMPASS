@@ -35,16 +35,17 @@ Using this configuration, a user can have a specific program configuration for a
 
 
 \begin{itemize}
-\item Stored in a home folder for current AppImage version
+\item Stored in the home folder of the user, per application version
 \begin{itemize}
-\item e.g. \textasciitilde/.compass/0.9.0
+\item Linux: e.g. \texttt{\textasciitilde/.compass/1.1.0}
+\item Windows: e.g. \texttt{C:\textbackslash Users\textbackslash <user>\textbackslash .compass\textbackslash 1.1.0}
 \end{itemize}
 \item Read at application startup
 \item Written at application shutdown (if wanted)
 \item Not written at application crash
 \item If not existing for current version
 \begin{itemize}
-\item Default configuration copied by AppImage
+\item Default configuration copied from the application package (AppImage or Windows package)
 \end{itemize}
 \end{itemize}
 
@@ -138,6 +139,20 @@ For example, there is the meta variable 'Time of Day', which is a collection of 
 \item Allow easier usage
 \item Can be inspected using the Configuration menu
 \end{itemize}
+\end{itemize}
+\ \\
+
+Each DBContent variable has an \textbf{origin}: the ASTERIX data item it is decoded from, a calculation from other variables of the same target report, a selection from several alternatives, or an internal value such as the record number. \\
+Where COMPASS derives the value it uses from a decoded item of the same name, the derived variable carries an asterisk: \\
+
+\begin{itemize}
+\item 'Latitude' is the position decoded from the data item, 'Latitude*' the position COMPASS uses, e.g. projected from the Cartesian coordinates when no decoded position exists
+\item 'Time of Day' is the decoded time, 'Time of Day*' the time COMPASS uses, e.g. for ADS-B the time of applicability for position when available
+\item A 'Source' variable next to a selection, e.g. 'Position Source' or 'Time of Day Source', names the data item or the calculation the value was taken from, per target report
+\item For system tracks, 'Aircraft Identification*' is the first available of the target identification, the aircraft identification and the flight plan callsigns, 'Mode C Code' the last measured Mode C when valid and not garbled, else the calculated barometric altitude, else the measured flight level
+\item The Meta Variables point at the asterisk variables, therefore the views, the filters, the Reconstructor and the Evaluation use them
+\item Calculated variables and selections are calculated during the import (and the reconstruction and GPS trail import) and stored in the database, therefore they are also available in Live Mode
+\item The origin of a variable is shown in the \nameref{sec:variable_selection} dialog and in the tooltip of a variable name
 \end{itemize}
 
 \subsection*{Unique Target Numbers}
@@ -252,6 +267,21 @@ The task is independent of the requirement-based evaluation: it does not assess 
 \subsection*{Evaluation}
 
 Based on reference and test data source(s), evaluation of configurable standards within defined airspace sectors can be performed. The results are given as sector averages as well as per-target statistics and can be inspected down to the per-target-report level if wanted. Certain targets can be removed from the evaluation (i.e. target not of interest, transponder issues), and evaluation report documents can be automatically generated as PDFs.
+
+\subsection*{Report Tables \& Report Variables}
+
+Evaluation reports and Analysis reports store the values computed per target report in the database, as so-called \textbf{Report Tables}. 
+Their columns are offered as \textbf{Report Variables} in the variable selection, next to the DBContent variables and Meta Variables (see \nameref{sec:report_tables}). \\
+
+\begin{itemize}
+\item One row per test target report or detection gap, one column per computed value
+\item Written by every Evaluation and Analyze Data Source run
+\item Report Variables
+\begin{itemize}
+\item Usable in all Views, labels and filters
+\item Displayed as 'Report Name: Variable Name'
+\end{itemize}
+\end{itemize}
 
 \subsection*{View Presets}
 

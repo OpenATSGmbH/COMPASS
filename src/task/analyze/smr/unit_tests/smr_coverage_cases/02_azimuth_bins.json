@@ -1,0 +1,46 @@
+{
+    "description": "0.25 deg bins: 1440 bins, 0 and 0.24 deg in bin 0, 0.25 deg in bin 1, 359.99 deg in bin 1439. 7 deg bins: ceil(360 / 7) = 52 bins, the last one shorter, 359.9 deg in bin 51.",
+    "type": "bins",
+    "checks": [
+        {
+            "bin_deg": 0.25,
+            "num_bins": 1440,
+            "azimuths": [
+                [
+                    0.0,
+                    0
+                ],
+                [
+                    0.24,
+                    0
+                ],
+                [
+                    0.25,
+                    1
+                ],
+                [
+                    359.99,
+                    1439
+                ]
+            ]
+        },
+        {
+            "bin_deg": 7.0,
+            "num_bins": 52,
+            "azimuths": [
+                [
+                    359.9,
+                    51
+                ],
+                [
+                    6.99,
+                    0
+                ],
+                [
+                    7.0,
+                    1
+                ]
+            ]
+        }
+    ]
+}

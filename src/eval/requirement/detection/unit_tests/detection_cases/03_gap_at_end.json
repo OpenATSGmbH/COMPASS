@@ -1,0 +1,53 @@
+{
+    "description": "Last test report at 56 s, period ends at 80 s: 24 s gap, 3 misses.",
+    "params": {
+        "update_interval_s": 8.0,
+        "max_ref_time_diff_s": 5.0
+    },
+    "ref_series": [
+        [
+            0,
+            80,
+            1,
+            true
+        ]
+    ],
+    "tst": [
+        [
+            0,
+            "ok"
+        ],
+        [
+            8,
+            "ok"
+        ],
+        [
+            16,
+            "ok"
+        ],
+        [
+            24,
+            "ok"
+        ],
+        [
+            32,
+            "ok"
+        ],
+        [
+            40,
+            "ok"
+        ],
+        [
+            48,
+            "ok"
+        ],
+        [
+            56,
+            "ok"
+        ]
+    ],
+    "expected": {
+        "sum_expected": 10,
+        "sum_missed": 3
+    }
+}

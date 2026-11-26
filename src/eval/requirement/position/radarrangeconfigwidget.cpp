@@ -15,13 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/radarrangeconfigwidget.h"
-#include "eval/requirement/position/radarrangeconfig.h"
+#include "requirement/position/radarrangeconfigwidget.h"
+#include "requirement/position/radarrangeconfig.h"
 //#include "textfielddoublevalidator.h"
 //#include "eval/requirement/base/comparisontypecombobox.h"
 #include "logger.h"
 
 #include <QLineEdit>
+#include <QComboBox>
+#include <QLabel>
 #include <QFormLayout>
 #include <QCheckBox>
 #include <QDoubleValidator>
@@ -30,16 +32,27 @@ namespace EvaluationRequirement
 {
 
 PositionRadarRangeConfigWidget::PositionRadarRangeConfigWidget(PositionRadarRangeConfig& cfg)
-    : PositionBaseProbConfigWidget(cfg)
+    : PositionBaseValueConfigWidget(cfg)
 {
-    // max dist
+    statistic_box_ = new QComboBox();
+    for (const auto& info : RadarHelpers::rangeStatistics())
+        statistic_box_->addItem(QString::fromStdString(info.label), (unsigned int)info.statistic);
+    statistic_box_->setCurrentIndex(statistic_box_->findData((unsigned int)config().statistic()));
+    statistic_box_->setToolTip("Statistic of the differences between the test target reports and the reference that is checked");
+    connect(statistic_box_, QOverload<int>::of(&QComboBox::currentIndexChanged),
+            this, &PositionRadarRangeConfigWidget::statisticChangedSlot);
+
+    form_layout_->addRow("Statistic", statistic_box_);
+
     threshold_value_edit_ = new QLineEdit(QString::number(config().thresholdValue()));
-    threshold_value_edit_->setValidator(new QDoubleValidator(0.0, 10000.0, 2, this));
-    threshold_value_edit_->setToolTip("Minimum/Maximum allowed distance from test target report to reference");
+    threshold_value_edit_->setValidator(new QDoubleValidator(0.0, 10000.0, 4, this));
     connect(threshold_value_edit_, &QLineEdit::textEdited,
             this, &PositionRadarRangeConfigWidget::thresholdValueEditSlot);
 
-    form_layout_->addRow("Threshold Value [m]", threshold_value_edit_);
+    threshold_label_ = new QLabel();
+    form_layout_->addRow(threshold_label_, threshold_value_edit_);
+
+    updateThresholdTexts();
 }
 
 void PositionRadarRangeConfigWidget::thresholdValueEditSlot(QString value)
@@ -53,6 +66,20 @@ void PositionRadarRangeConfigWidget::thresholdValueEditSlot(QString value)
         config().thresholdValue(val);
     else
         loginf << "invalid value";
+}
+
+void PositionRadarRangeConfigWidget::statisticChangedSlot(int index)
+{
+    config().statistic((RadarHelpers::Statistic)statistic_box_->itemData(index).toUInt());
+    updateThresholdTexts();
+}
+
+void PositionRadarRangeConfigWidget::updateThresholdTexts()
+{
+    const auto& info = config().statisticInfo();
+
+    threshold_label_->setText(QString::fromStdString(info.threshold_label));
+    threshold_value_edit_->setToolTip(QString::fromStdString(info.threshold_description));
 }
 
 PositionRadarRangeConfig& PositionRadarRangeConfigWidget::config()

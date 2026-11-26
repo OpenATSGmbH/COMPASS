@@ -1,121 +1,131 @@
 \section{Appendix: Adding/Changing Maps}
 \label{sec:appendix_maps}
 
-As with all configuration, a local version is kept in the home folder of the user. The map files are loaded from the hidden folder '\textasciitilde/.compass/yourversion/data/maps' ('\textasciitilde' is the user's home directory, like /home/user).
+As with all configuration, a local version is kept in the home folder of the user. The map files are loaded from the folder \texttt{\textasciitilde/.compass/<version>/data/maps} ('\textasciitilde' is the user's home folder, e.g. \texttt{/home/<user>} on Linux or \texttt{C:\textbackslash Users\textbackslash <user>} on Windows, the folder is hidden on Linux). \\
 
-\begin{figure}[H]
-    \centering
-    \includegraphics[width=10cm,frame]{figures/geoview_maps_config.png}
-  \caption{Maps Folder}
-\end{figure}
+In this folder, the previously discussed maps exist as osgEarth '.earth' files, each in a 3D and a 2D version (suffix '\_2d'). The subfolder 'shapefiles' holds the ESRI shapefiles used by the minimal maps:
 
-In this folder, the previously discussed maps exist as osgEarth '.earth' files. If new .earth files are added, or the content of such files is changed, they can be used from the Geographic View after a restart.
+\begin{lstlisting}
+arcgis.earth
+arcgis_2d.earth
+minimal.earth
+minimal_2d.earth
+openstreetmap.earth
+openstreetmap_2d.earth
+openstreetmap_dark.earth
+openstreetmap_dark_2d.earth
+openstreetmap_german.earth
+openstreetmap_german_2d.earth
+shapefiles/
+\end{lstlisting}
+
+If new .earth files are added, or the content of such files is changed, they can be used from the Geographic View after a restart.
 
 \subsection{Map Example}
-The easiest example is the 'minimal\_new.earth' file, which uses an ESRI shapefile from the subfolder 'shapefiles' to display the national borders.
+The easiest example is the 'minimal.earth' file, which uses an ESRI shapefile from the subfolder 'shapefiles' to display the national borders. The part for the national borders is:
 
 \begin{lstlisting}
 <map name="Wordwide Line Vectors" type="geocentric">
-  
+
     <options>
-        <lighting>false</lighting>
         <terrain>
-            <min_tile_range_factor>8</min_tile_range_factor>
+            <tile_size>2</tile_size>
             <color>#000000FF</color>
         </terrain>
-      
+
     </options>
 
-    <feature_source name="world-data" driver="ogr">
+    <OGRFeatures name="world-data">
         <url>shapefiles/TM_WORLD_BORDERS-0.3.shp</url>
-        <convert type="line"/>
-    </feature_source>
-    
-    <feature_model name="world_boundaries" feature_source="world-data">
-        
-        <layout tile_size="100000"  paged="true">
-            <level max_range="1e10"/>
-        </layout>
-                
-        <styles>
-            <style type="text/css">
-                world {
-                   stroke:                   #ffff00;
-                   stroke-width:             2px;
-                   stroke-tessellation-size: 1km;
-                   render-lighting:          false;
-                   altitude-clamping:        none;
-                   render-depth-test: false;
-                }            
-            </style>
-        </styles>
-        
-    </feature_model>
- 
+    </OGRFeatures>
+
+  <FeatureModel name="world_boundaries" features="world-data">
+      <layout paged="true">
+          <level max_range="1e10"/>
+      </layout>
+      <styles>
+          <style type="text/css">
+              world {
+                 stroke:                   #ffff00;
+                 stroke-width:             2px;
+                 stroke-tessellation-size: 500m;
+                 altitude-clamping:        terrain-gpu;
+                 altitude-technique:       scene;
+                 render-lighting:          false;
+                 render-clip-plane:        0;
+                 render-anti-aliased:      true;
+                 render-depth-test:        false;
+              }
+          </style>
+      </styles>
+  </FeatureModel>
 
 </map>
 \end{lstlisting}
 
+The supplied file additionally contains the feature model 'Airports Europe', which shows the European airports from the shapefile 'AIRP\_PT\_2013.shp' as labels.
+
 \subsection{Editing Map Example}
 
-The world background color is set using the 'terrain color' tag. The name of the shapefile is given using the 'url' tag, the line color and width is set in the style below. Basically a user can add their own files to the 'shapefiles' folder, and simply duplicate the 'feature\_model' part with their own ESRI shapefiles. This could then look like this:
+The world background color is set using the 'color' tag in 'terrain'. The name of the shapefile is given using the 'url' tag of 'OGRFeatures', the line color and width are set in the style of the 'FeatureModel'. A user can add their own files to the 'shapefiles' folder, and duplicate the 'OGRFeatures' and 'FeatureModel' parts with their own ESRI shapefiles. This could then look like this:
 
 \begin{lstlisting}
 <map name="Wordwide Line Vectors" type="geocentric">
-  
+
     <options>
-        <lighting>false</lighting>
-         <terrain color="#101010ff"/>
+        <terrain>
+            <tile_size>2</tile_size>
+            <color>#101010FF</color>
+        </terrain>
     </options>
 
-    <feature_source name="world-data" driver="ogr">
+    <OGRFeatures name="world-data">
         <url>shapefiles/TM_WORLD_BORDERS-0.3.shp</url>
-        <convert type="line"/>
-    </feature_source>
-    
-    <feature_model name="world_boundaries" feature_source="world-data">
-        
-        <layout tile_size="100000"  paged="true">
+    </OGRFeatures>
+
+    <FeatureModel name="world_boundaries" features="world-data">
+        <layout paged="true">
             <level max_range="1e10"/>
         </layout>
-                
         <styles>
             <style type="text/css">
                 world {
                    stroke:                   #ffff00;
                    stroke-width:             2px;
-                   stroke-tessellation-size: 1km;
+                   stroke-tessellation-size: 500m;
+                   altitude-clamping:        terrain-gpu;
+                   altitude-technique:       scene;
                    render-lighting:          false;
-                   altitude-clamping:        none;
-                   render-depth-test: false;                   
-                }            
+                   render-depth-test:        false;
+                }
             </style>
         </styles>
-        
-    </feature_model>
-  
-    <feature_model name="doi">
-        <features name="wolrd" driver="ogr">
-            <url>shapefiles/doi.shp</url>
-            <build_spatial_index>true</build_spatial_index>
-            <ogr_driver>ESRI Shapefile</ogr_driver>
-            <convert type="line"/>
-        </features>        
+    </FeatureModel>
 
-        <layout tile_size="100000">
+    <OGRFeatures name="doi-data">
+        <url>shapefiles/doi.shp</url>
+        <build_spatial_index>true</build_spatial_index>
+    </OGRFeatures>
+
+    <FeatureModel name="doi" features="doi-data">
+        <layout paged="true">
             <level max_range="1e10"/>
         </layout>
-
         <styles>
             <style type="text/css">
-                states {
-                   stroke:          #00ff00; 
-                   stroke-width:    2px;
-                   render-depth-test: false;
-                }                    
+                doi {
+                   stroke:                   #00ff00;
+                   stroke-width:             2px;
+                   stroke-tessellation-size: 500m;
+                   altitude-clamping:        terrain-gpu;
+                   altitude-technique:       scene;
+                   render-lighting:          false;
+                   render-depth-test:        false;
+                }
             </style>
-        </styles>        
-    </feature_model>
+        </styles>
+    </FeatureModel>
+
 </map>
 \end{lstlisting}
 
@@ -186,7 +196,7 @@ Please note that due to osgEarth constraints the graticule is not always display
 
 \subsection{Offline OpenStreetMap Example}
 
-There exist a number of options how OpenStreetMap maps can be made available in an offline environment. The most convenient option the author found was using the QGIS tool (\href{https://www.qgis.org/}{Link}), which should be available in all common Linux distributions. \\
+There exist a number of options how OpenStreetMap maps can be made available in an offline environment. The most convenient option the author found was using the QGIS tool (\href{https://www.qgis.org/}{Link}), which is available for Linux and Windows. \\
 
 Using this tool, OpenStreetMap tiles can be downloaded and saved in a number of formats. To allow for efficient usage, the MBTiles format was used successfully. In this format, OpenStreetMap (and other online tile-based maps) can be stored in a single file and transferred to an offline environment.
 
@@ -240,7 +250,7 @@ After these options were set, the 'Run' button can be clicked. \\
 
 Please review and consider the OpenStreetMap copyright and license when creating such offline maps (\href{https://www.openstreetmap.org/copyright}{Link}). \\
 
-After successful completion of this task, the resulting MBTiles file has to be copied to any \textasciitilde'/.compass location and be used in a .earth file like the following:
+After successful completion of this task, the resulting MBTiles file has to be copied to a folder below \texttt{\textasciitilde/.compass} and be used in a .earth file like the following:
 
 \begin{lstlisting}
 <map name="OpenStreetMap" type="projected" version="2">

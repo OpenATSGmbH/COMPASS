@@ -1,0 +1,3 @@
+// Windows resources of the COMPASS executables: the application manifest
+// (1 = CREATEPROCESS_MANIFEST_RESOURCE_ID, 24 = RT_MANIFEST)
+1 24 "compass.manifest"

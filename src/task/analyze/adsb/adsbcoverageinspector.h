@@ -62,7 +62,7 @@ public:
     // Update-interval histogram. `ui_hist_max_s_` is the upper edge; intervals
     // at or above it fold into a single overflow bin (so long detection breaks
     // do not stretch the axis). 0 = auto-derive a rounded-up max from the data.
-    int   ui_hist_num_bins_ = 20;
+    int   ui_hist_num_bins_ = 10;
     float ui_hist_max_s_    = 15.0f;
 };
 
@@ -76,7 +76,7 @@ public:
  * addition, the per-target #EUI / #MUI totals are accumulated per aircraft
  * address so the report can surface individual transponders with coverage
  * gaps that an aggregate map averages away. See
- * src/task/analyze/readme_analysis_adsb.md (Feature 2).
+ * experimental_src/plugins/extraanalysis/readme_analysis_adsb.md (Feature 2).
  */
 class ADSBCoverageInspector : public DataSourceInspectorBase
 {
@@ -98,10 +98,11 @@ public:
 
     std::set<std::string> testDBContentNames() const override;
 
-    bool prerequisitesMet(std::string& reason_out) const override;
+    std::vector<InspectorVariable> testVariables() const override;
 
     void compute(AnalysisDataset* dataset) override;
     void writeReport(ResultReport::Section& root) override;
+    void addSettingsRows(QFormLayout* form) override;
 
 private:
     /// One transponder (aircraft address) row in the per-transponder table.
@@ -110,8 +111,8 @@ private:
         unsigned int  acad     = 0;
         bool          has_acad = false;
         std::string   callsign;
-        std::uint64_t eui      = 0;
-        std::uint64_t mui      = 0;
+        double        eui      = 0.0;   // weighted, see coveragepdwalk.h
+        double        mui      = 0.0;
     };
 
     /// One sector row in the "PD by Sector" overview table. The "All" reference
@@ -120,8 +121,8 @@ private:
     {
         std::string   label;
         std::size_t   num_transponders = 0;
-        std::uint64_t eui = 0;
-        std::uint64_t mui = 0;
+        double        eui = 0.0;   // weighted, see coveragepdwalk.h
+        double        mui = 0.0;
         double        pd  = 0.0;
     };
 
@@ -134,8 +135,8 @@ private:
         unsigned int targets_walked = 0;
         unsigned int targets_no_ref = 0;
         unsigned int targets_no_tst = 0;
-        std::uint64_t total_eui    = 0;
-        std::uint64_t total_mui    = 0;
+        double total_eui           = 0.0;   // weighted, see coveragepdwalk.h
+        double total_mui           = 0.0;
         double overall_pd          = 0.0;
 
         // Measured per-target inter-report interval (the actual update cadence),
@@ -170,8 +171,8 @@ private:
     struct Group
     {
         std::string   label;
-        std::uint64_t eui = 0;
-        std::uint64_t mui = 0;
+        double        eui = 0.0;   // weighted, see coveragepdwalk.h
+        double        mui = 0.0;
         std::unique_ptr<TargetReport3DGrid> grid;
     };
 

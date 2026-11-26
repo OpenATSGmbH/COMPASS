@@ -25,10 +25,10 @@
 class QString;
 class QSignalSpy;
 class QElapsedTimer;
-class COMPASS;
 
 namespace rtcommand
 {
+    class IRTCommandHost;
 
     /**
      * Base for the implementation of a wait condition.
@@ -55,14 +55,14 @@ namespace rtcommand
     public:
         WaitConditionSignal(const QString& obj_name,
                             const QString& signal,
-                            COMPASS& compass,
+                            IRTCommandHost& host,
                             int timeout_ms = -1,
                             QObject* parent = nullptr);
         virtual ~WaitConditionSignal();
 
         static QSignalSpy* createSpy(const QString& obj_name,
                                      const QString& signal,
-                                     COMPASS& compass,
+                                     IRTCommandHost& host,
                                      QObject* parent = nullptr);
 
         virtual bool valid() const override;

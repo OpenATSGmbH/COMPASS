@@ -46,6 +46,7 @@
 #include <QStringList>
 
 #include <cmath>
+#include <functional>
 
 #include <boost/optional.hpp>
 
@@ -280,6 +281,90 @@ namespace ui_test
             return {};
 
         return value2JSON(last_action->isChecked());
+    }
+    template<>
+    inline nlohmann::json getUIElementValueJSON(QMenu* widget, const QString& what)
+    {
+        //list all selectable entries; entries of submenus are listed as "Submenu|Entry" paths
+        if (what == "entries")
+        {
+            nlohmann::json entries = nlohmann::json::array();
+
+            std::function<void(QMenu*, const QString&)> collect =
+                [ & ] (QMenu* menu, const QString& prefix)
+            {
+                for (auto a : menu->actions())
+                {
+                    if (a->isSeparator())
+                        continue;
+
+                    if (a->menu())
+                        collect(a->menu(), prefix + normalizedMenuName(a->text()) + "|");
+                    else
+                        entries.push_back((prefix + normalizedActionName(a->text())).toStdString());
+                }
+            };
+            collect(widget, "");
+
+            return entries;
+        }
+
+        return {};
+    }
+    template<>
+    inline nlohmann::json getUIElementValueJSON(QTreeView* widget, const QString& what)
+    {
+        //list the tree contents as nested {name, value, children} objects,
+        //name = column 0 display text, value = column 1 display text (if present),
+        //item_name = name for tree paths (if the model has one, see ItemNameRole),
+        //checked = column 0 check state (if the item has one)
+        if (what == "entries" && widget->model())
+        {
+            QAbstractItemModel* model = widget->model();
+
+            std::function<nlohmann::json(const QModelIndex&)> collect =
+                [ & ] (const QModelIndex& parent)
+            {
+                nlohmann::json items = nlohmann::json::array();
+
+                int nrows = model->rowCount(parent);
+                for (int r = 0; r < nrows; ++r)
+                {
+                    QModelIndex idx = model->index(r, 0, parent);
+                    if (!idx.isValid())
+                        continue;
+
+                    nlohmann::json item;
+                    item[ "name" ] = idx.data(Qt::DisplayRole).toString().toStdString();
+
+                    QVariant item_name = idx.data(ItemNameRole);
+                    if (item_name.isValid())
+                        item[ "item_name" ] = item_name.toString().toStdString();
+
+                    QVariant check_state = idx.data(Qt::CheckStateRole);
+                    if (check_state.isValid())
+                        item[ "checked" ] = check_state.toInt() == Qt::Checked;
+
+                    if (model->columnCount(parent) > 1)
+                    {
+                        QModelIndex vidx = model->index(r, 1, parent);
+                        if (vidx.isValid())
+                            item[ "value" ] = vidx.data(Qt::DisplayRole).toString().toStdString();
+                    }
+
+                    if (model->hasChildren(idx))
+                        item[ "children" ] = collect(idx);
+
+                    items.push_back(item);
+                }
+
+                return items;
+            };
+
+            return collect(QModelIndex());
+        }
+
+        return {};
     }
     template<>
     inline nlohmann::json getUIElementValueJSON(QComboBox* widget, const QString& what)

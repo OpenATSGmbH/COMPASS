@@ -15,18 +15,18 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/results/dubious/dubioustarget.h"
+#include "results/dubious/dubioustarget.h"
 
-#include "eval/results/base/featuredefinitions.h"
+#include "results/base/featuredefinitions.h"
 
-#include "eval/requirement/base/base.h"
-#include "eval/requirement/dubious/dubioustarget.h"
+#include "requirement/base/base.h"
+#include "requirement/dubious/dubioustarget.h"
 
 #include "evaluationtargetdata.h"
 #include "evaluationmanager.h"
 
 #include "logger.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "viewpoint.h"
 
 #include "traced_assert.h"
@@ -71,7 +71,7 @@ SingleDubiousTarget::SingleDubiousTarget(const std::string& result_id,
 
     is_dubious_      = is_dubious.value();
     duration_        = duration.value();
-    dubious_reasons_ = dubiousReasonsString(details[ 0 ].comments());
+    reasons_         = dubiousReasonsString(details[ 0 ].comments());
 }
 
 /**
@@ -138,7 +138,7 @@ nlohmann::json::array_t SingleDubiousTarget::targetTableValuesCustom() const
     return { num_pos_inside_,                        // "#PosInside"
              num_pos_inside_dubious_,                // "#DU"
              resultValueOptional(p_dubious_update_), // "PDU"
-             dubious_reasons_ };                     // "Reasons"
+             reasons_ };                             // "Reasons"
 }
 
 /**
@@ -158,33 +158,10 @@ std::vector<Single::TargetInfo> SingleDubiousTarget::targetInfos() const
 
 /**
 */
-std::vector<std::string> SingleDubiousTarget::detailHeaders() const
-{
-    return { "ToD", "UTN", "Dubious Comment" };
-}
-
-/**
-*/
-nlohmann::json::array_t SingleDubiousTarget::detailValues(const EvaluationDetail& detail,
-                                                          const EvaluationDetail* parent_detail) const
-{
-    traced_assert(parent_detail);
-
-    const std::string dub_string = dubiousReasonsString(parent_detail->comments());
-
-    return { Time::toString(detail.timestamp()),
-             parent_detail->getValue(DetailKey::UTNOrTrackNum).toUInt(),
-             dub_string };
-}
-
-/**
-*/
 bool SingleDubiousTarget::detailIsOkStatic(const EvaluationDetail& detail)
 {
-    auto comments = detail.comments().group(DetailCommentGroupDubious);
-    bool is_dub   = (comments.has_value() && !comments->empty());
-
-    return !is_dub;
+    //a test report is dubious by its reason bits, a period (parent detail) by its reasons
+    return !isDubiousUpdate(detail) && !detail.comments().hasComments(DetailCommentGroupDubious);
 }
 
 /**
@@ -360,7 +337,7 @@ FeatureDefinitions JoinedDubiousTarget::getCustomAnnotationDefinitions() const
         return boost::optional<bool>(SingleDubiousTarget::detailIsOkStatic(detail));
     };
 
-    defs.addDefinition<FeatureDefinitionBinaryGrid>(requirement()->name(), calculator_, "Passed")
+    defs.addDefinition<FeatureDefinitionIssueCountGrid>(requirement()->name(), calculator_, "Issues")
         .addDataSeries(ValueSource<bool>(getValue), 
                        GridAddDetailMode::AddEvtPosition, 
                        false);

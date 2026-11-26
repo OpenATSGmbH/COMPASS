@@ -304,8 +304,8 @@ Ticks generate(double vmin,
 
     //a timestamp label only shows the date time parts that differ across the range
     if (is_time_stamp)
-        ticks.style.time_fields = timeFieldsForSpan(Utils::Time::fromLong((long) ticks.values.front()),
-                                                    Utils::Time::fromLong((long) ticks.values.back()));
+        ticks.style.time_fields = timeFieldsForSpan(Utils::Time::fromLong((std::int64_t) ticks.values.front()),
+                                                    Utils::Time::fromLong((std::int64_t) ticks.values.back()));
 
     return ticks;
 }

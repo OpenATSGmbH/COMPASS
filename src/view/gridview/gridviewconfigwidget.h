@@ -25,11 +25,11 @@
 
 class GridViewWidget;
 class GridView;
+class GridViewRenderWidget;
 
 class ColorScaleSelection;
 class PropertyValueEdit;
 
-class DBContentRootItem;
 class ViewLayerPanelWidget;
 
 class QCheckBox;
@@ -49,13 +49,6 @@ class GridViewConfigWidget : public VariableViewConfigWidget
 {
     Q_OBJECT
 
-public slots:
-    /// Re-apply the default expansion to the DBContent subtree. Connected to
-    /// the data widget's layerTreeRebuiltSignal.
-    void applyDefaultExpansionSlot();
-
-    void colorModeChangedSlot(unsigned int mode);
-
 public:
     GridViewConfigWidget(GridViewWidget* view_widget,
                          QWidget* parent = nullptr);
@@ -69,6 +62,7 @@ public:
 protected:
     virtual void viewInfoJSON_impl(nlohmann::json& info) const override;
     virtual void configChanged_impl() override;
+    virtual void onDisplayChange_impl() override;
 
     virtual void variableChangedEvent(int idx) override;
     virtual void dataSourceChangedEvent() override;
@@ -79,6 +73,7 @@ protected:
     void gridResolutionChanged();
     void colorScaleChanged();
     void colorStepsChanged();
+    void colorLogScaleChanged();
     void minValueChanged();
     void maxValueChanged();
     
@@ -93,7 +88,8 @@ protected:
     void exportToGeographicView();
     void exportToGeoTiff();
 
-    GridView* view_ = nullptr;
+    GridView*             view_          = nullptr;
+    GridViewRenderWidget* render_widget_ = nullptr;
 
     QComboBox*           value_type_combo_             = nullptr;
     QLabel*              value_type_placeh_label_      = nullptr;
@@ -101,6 +97,7 @@ protected:
     QLabel*              grid_resolution_placeh_label_ = nullptr;
     ColorScaleSelection* color_selection_              = nullptr;
     QSpinBox*            color_steps_box_              = nullptr;
+    QCheckBox*           color_log_check_              = nullptr;
     PropertyValueEdit*   color_value_min_box_          = nullptr;
     PropertyValueEdit*   color_value_max_box_          = nullptr;
     QPushButton*         reset_min_button_             = nullptr;
@@ -108,9 +105,5 @@ protected:
     QPushButton*         export_button_                = nullptr;
     QLabel*              range_info_label_             = nullptr;
 
-    QLabel*               color_mode_label_ {nullptr};
     ViewLayerPanelWidget* layer_panel_     {nullptr};
-    DBContentRootItem*    db_content_root_ {nullptr};
-
-    static QString colorModeText(unsigned int mode);
 };

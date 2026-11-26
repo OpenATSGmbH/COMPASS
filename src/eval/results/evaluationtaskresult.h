@@ -20,6 +20,7 @@
 #include "taskresult.h"
 #include "evaluationtarget.h"
 #include "evaluationdefs.h"
+#include "results/base/single.h"
 
 #include <memory>
 
@@ -28,7 +29,8 @@
 class QMenu;
 class QCheckBox;
 
-class COMPASS;
+class Buffer;
+class EvaluationManager;
 class EvaluationCalculator;
 
 /**
@@ -37,8 +39,8 @@ class EvaluationTaskResult : public QObject, public TaskResult
 {
 public:
     EvaluationTaskResult(unsigned int id,
-                         TaskManager& task_man,
-                         COMPASS& compass);
+                         ITaskProvider& task_man,
+                         EvaluationManager& eval_man);
     virtual ~EvaluationTaskResult();
 
     typedef std::map<unsigned int, EvaluationTarget> TargetMap;
@@ -56,6 +58,8 @@ public:
     const InterestSwitches& interestSwitches() const;
 
     std::string startSection() const override final;
+
+    bool loadOnDemandOffMainThread(const ResultReport::SectionContent& content) const override final;
 
     static const std::string FieldTargets;
     static const std::string FieldTargetUTN;
@@ -93,7 +97,19 @@ protected:
                                    unsigned int row,
                                    unsigned int col) const override final;
 private:
+    /// creates the calculator on first use, null if the creation failed
+    EvaluationCalculator* calculator() const;
     Result createCalculator();
+
+    /*report table content, see readme_dynamic_dbcontent.md Section 4.5*/
+    const ReportTableInfo* reportTableFor(const ResultReport::SectionContent& content,
+                                          EvaluationRequirementResult::Single::ContentInfo& info) const;
+    std::shared_ptr<Buffer> loadReportTableRows(const ReportTableInfo& table,
+                                                unsigned int utn) const;
+    std::shared_ptr<nlohmann::json::object_t> createTargetViewable(const ReportTableInfo& table,
+                                                                   const Buffer& buffer,
+                                                                   const EvaluationRequirementResult::Single::ContentInfo& info,
+                                                                   boost::optional<unsigned int> highlight_row) const;
 
     void updateTargets();
     void updateInterestSwitches();
@@ -112,8 +128,9 @@ private:
 
     void informUpdateEvalResult(int update_type);
 
-    COMPASS& compass_;
+    EvaluationManager& eval_man_;
     mutable std::unique_ptr<EvaluationCalculator> calculator_;
+    mutable bool                                  calculator_failed_ = false; // creation failed, do not retry
     TargetMap                                     targets_;
     mutable InterestSwitches                      interest_factor_enabled_; //req sum result id => enabled
 

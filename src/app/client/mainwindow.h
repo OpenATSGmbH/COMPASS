@@ -16,8 +16,11 @@
  */
 
 #pragma once
+
+#include "compass_app_export.h"
 #include "appmode.h"
 #include "autoresumedialog.h"
+#include "imainwindow.h"
 
 #include <QMainWindow>
 
@@ -27,7 +30,6 @@
 
 class QLabel;
 class QPushButton;
-class QTabWidget;
 class QCheckBox;
 class QMenu;
 class QPushButton;
@@ -39,10 +41,12 @@ class DBSchemaManagerWidget;
 class DBContentManagerWidget;
 class MainLoadWidget;
 class ToolBox;
+class ViewDeck;
 
 class COMPASS;
+class CompassRoot;
 
-class MainWindow : public QMainWindow
+class COMPASS_APP_API MainWindow : public QMainWindow, public IMainWindow
 {
     Q_OBJECT
 signals:
@@ -66,7 +70,7 @@ public slots:
     void loadingDoneSlot();
 
     void livePauseResumeSlot();
-    void liveStopSlot();
+    void liveStopSlot() override;
 
     void configureDBContentSlot();
 
@@ -79,7 +83,7 @@ public slots:
 
     void importGPSTrailSlot();
 
-    void importViewPointsSlot();
+    void importViewPointsSlot() override;
 
     void calculateRadarPlotPositionsSlot();
     void calculateAssociationsARTASSlot();
@@ -87,9 +91,9 @@ public slots:
     void evaluateSlot();
     void analyzeMLATDataSourceSlot();
     void analyzeADSBDataSourceSlot();
+    void analyzeSMRDataSourceSlot();
 
     void quitRequestedSlot();
-    void showAddViewMenuSlot();
 
     void resetViewsMenuSlot();
 
@@ -108,7 +112,7 @@ public slots:
     void updateMenuEnabledState();
 
 public:
-    explicit MainWindow(COMPASS& compass);
+    explicit MainWindow(CompassRoot& root);
     virtual ~MainWindow();
 
     void init();
@@ -120,14 +124,14 @@ public:
     void createInMemoryDB(const std::string& future_filename = "");
     void createDBFromMemory();
 
-    void updateMenus();
+    void updateMenus() override;
     void updateBottomWidget();
 
     void loadingStarted();
     void loadingDone();
 
     void selectTool(const std::string& name);
-    void showResult(const std::string& name);
+    void showResult(const std::string& name) override;
 
 protected:
     void createUI();
@@ -146,9 +150,7 @@ protected:
     void showEvaluationResult();
 
     QWidget* main_widget_{nullptr};
-    QTabWidget* tab_widget_{nullptr};
-
-    QPushButton* add_view_button_{nullptr};
+    ViewDeck* view_deck_{nullptr};
 
     bool save_configuration_{true};
 
@@ -209,7 +211,8 @@ protected:
 private:
     void showCommandShell();
 
-    COMPASS& compass_;
+    CompassRoot& root_; // managers of the upper layers
+    COMPASS&     compass_;
 
     unsigned int tool_ds_;
     unsigned int tool_sstatus_;

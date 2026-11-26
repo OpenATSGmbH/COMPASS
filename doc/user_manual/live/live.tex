@@ -31,7 +31,7 @@ When that Live mode is enabled and the correct network lines are setup (and acti
 \begin{figure}[H]
   \centering
   \hspace*{-2.5cm}
-    \includegraphics[width=19cm]{figures/live_mode.png} 
+    \includegraphics[width=19cm,frame]{figures/live_mode.png} 
   \caption{Main Window in Live Mode}
 \end{figure}
 
@@ -74,7 +74,7 @@ Please \textbf{note} that currently only the Geographic View displays data in li
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=10cm,frame]{figures/sensor_status_overview.png}
+    \includegraphics[width=9.7cm,frame]{figures/sensor_status_overview.png}
   \caption{Sensor Status Overview}
 \end{figure}
 
@@ -109,7 +109,7 @@ For each listed sensor, the time of day of the sensor's last received update can
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=12cm,frame]{figures/sensor_status_detail.png}
+    \includegraphics[width=9.2cm,frame]{figures/sensor_status_detail.png}
   \caption{Sensor Status: Show Last Update ToD}
 \end{figure}
 
@@ -125,7 +125,7 @@ At the bottom, a text box lists all important updates and status changes of the 
 
 \begin{figure}[H]
     \centering
-    \includegraphics[width=14cm,frame]{figures/sensor_status_log.png}
+    \includegraphics[width=9.2cm,frame]{figures/sensor_status_log.png}
   \caption{Sensor Status: Sensor Status Log}
 \end{figure}
 
@@ -140,7 +140,7 @@ In Live mode, the Geographic View automatically shows the same elements as with 
 
 \begin{figure}[H]
     \centering
-    \hspace*{-2.5cm}
+  \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/geo_live_mode.png}
   \caption{Geographic View in Live Mode}
 \end{figure} 
@@ -159,7 +159,7 @@ To indicate if the displayed data is the currently most recent or from a previou
     \centering
     \hspace*{-2.5cm}
     \includegraphics[width=19cm,frame]{figures/geoview_offline_status.png}
-  \caption{Geographic View Overload Message}
+  \caption{Geographic View Online/Offline Display}
 \end{figure} 
 
 The online state text is shown if the application is in Live:Running mode and the most recent data is displayed. In all other states (other application mode or previous time window displayed) the offline state text is displayed. \\
@@ -192,7 +192,7 @@ This feature can be configured using the configuration options listed in \namere
 
 The application is optimized for long-term running, and can be run continuously. During Live mode, data older than 1 hour is removed from the database. \\
 
-In this use case, usage of a rotating log file (as described in \nameref{sec:appendix_logging_rotate}) is recommended.
+In this use case, usage of a rotating log file (as described in \nameref{sec:appendix_logging_rotate}) is recommended: the log file COMPASS writes for each start (see \nameref{sec:issues_log_files}) holds only the last 5 to 10 MB of the session.
 
 \section{Configuration Options of Interest}
 

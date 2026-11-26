@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/mode_c/falseconfig.h"
-#include "eval/requirement/mode_c/false.h"
-#include "eval/requirement/mode_c/modecfalseconfigwidget.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/base.h"
+#include "requirement/mode_c/falseconfig.h"
+#include "requirement/mode_c/false.h"
+#include "requirement/mode_c/modecfalseconfigwidget.h"
+#include "requirement/group.h"
+#include "requirement/base/base.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 using namespace std;
 
@@ -35,8 +35,6 @@ ModeCFalseConfig::ModeCFalseConfig(
         Group* parent)
     : ProbabilityBaseConfig(config, parent)
 {
-    registerParameter("maximum_probability_false", &maximum_probability_false_, 0.01f);
-
     registerParameter("max_difference", &max_difference_, 100.0f);
 }
 
@@ -44,19 +42,9 @@ std::shared_ptr<Base> ModeCFalseConfig::createRequirement()
 {
     shared_ptr<ModeCFalse> req = make_shared<ModeCFalse>(
                 name_, short_name_, group_.name(), prob_, prob_check_type_, calculator_,
-                maximum_probability_false_, max_difference_);
+                max_difference_);
 
     return req;
-}
-
-float ModeCFalseConfig::maximumProbabilityFalse() const
-{
-    return maximum_probability_false_;
-}
-
-void ModeCFalseConfig::maximumProbabilityFalse(float value)
-{
-    maximum_probability_false_ = value;
 }
 
 float ModeCFalseConfig::maxDifference() const
@@ -76,12 +64,14 @@ BaseConfigWidget* ModeCFalseConfig::createWidget()
 
 void ModeCFalseConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
+    BaseConfig::addToReport(report);
+
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
-    auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& table = section.getTable("req_table");
 
-    table.addRow({"Probability [1]", "Probability of false Mode C code",
-                  roundf(prob_ * 10000.0) / 100.0});
+    table.addRow({"Probability [%]", "Probability of false Mode C code",
+                  probabilityPercent(prob_)});
     table.addRow({"Probability Check Type", "",
                   comparisonTypeString(prob_check_type_)});
     table.addRow({"Maximum Difference [ft]", "Maximum altitude difference between the test and the reference",

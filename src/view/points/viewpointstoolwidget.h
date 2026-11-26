@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include <QCursor>
 #include <QMenu>
 #include <QWidget>
@@ -42,7 +44,7 @@ class QToolBar;
 
 class ViewPointsWidget;
 
-class ViewPointsToolWidget : public QWidget
+class COMPASS_VIEW_API ViewPointsToolWidget : public QWidget
 {
     Q_OBJECT
 

@@ -1,0 +1,34 @@
+{
+    "description": "One value (e.g. Mode C): no reference value and no test value are not counted, 2 false of 8.",
+    "reports": [
+        {
+            "cmp": [
+                "same"
+            ],
+            "repeat": 6
+        },
+        {
+            "cmp": [
+                "different"
+            ],
+            "repeat": 2
+        },
+        {
+            "cmp": [
+                "no_ref"
+            ]
+        },
+        {
+            "cmp": [
+                "no_tst"
+            ]
+        }
+    ],
+    "expected": {
+        "no_ref_val": 1,
+        "unknown": 1,
+        "correct": 6,
+        "false": 2,
+        "probability_false": 0.25
+    }
+}

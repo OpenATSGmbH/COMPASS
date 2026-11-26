@@ -1,0 +1,36 @@
+{
+    "description": "Radar Azimuth, threshold 0.08 deg. A difference of 0.05 deg passes, 0.1 deg and -0.1 deg fail. A difference of 2 deg fails: before the fix the azimuths in radians went into the degree function, so 2 deg became 0.035 and passed. Probability 1 / 4.",
+    "type": "azimuth",
+    "threshold": 0.08,
+    "reports": [
+        {
+            "ref_deg": 10.0,
+            "tst_deg": 10.05,
+            "difference": 0.05,
+            "passed": true
+        },
+        {
+            "ref_deg": 10.0,
+            "tst_deg": 10.1,
+            "difference": 0.1,
+            "passed": false
+        },
+        {
+            "ref_deg": 10.0,
+            "tst_deg": 9.9,
+            "difference": -0.1,
+            "passed": false
+        },
+        {
+            "ref_deg": 10.0,
+            "tst_deg": 12.0,
+            "difference": 2.0,
+            "passed": false
+        }
+    ],
+    "expected": {
+        "passed": 1,
+        "failed": 3,
+        "probability": 0.25
+    }
+}

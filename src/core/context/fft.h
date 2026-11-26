@@ -36,6 +36,9 @@ class FFT
 public:
     FFT();
 
+    /// session-only identity (random uuid), not serialized and not compared, copies keep it
+    const std::string& runtimeId() const { return runtime_id_; }
+
     std::string name() const { return name_; }
     void name(const std::string& name) { name_ = name; }
 
@@ -52,6 +55,12 @@ public:
     bool hasAltitude() const;
     double altitude() const;
     void altitude(double value);
+
+    // maximum distance for position-based matching of target reports to this
+    // FFT: per-FFT "max_plot_distance_m" info value, or the default. Small
+    // values (e.g. 50 m) suit FFTs on an airport surface, the wide default
+    // suits remote FFTs measured by long-range radar
+    double maxPlotDistanceM() const;
 
     // --- secondary identification ---
     // The Mode S address and the Mode 3/A code identify an FFT in the data.
@@ -77,10 +86,15 @@ public:
      * Tests one target report against this FFT. Returns the match result and
      * the FFT altitude to be used for the Radar slant range correction.
      *
-     * A match needs at least one secondary identification value that exists on
-     * both sides and is equal. The position alone is never sufficient, since
+     * A match needs the Mode S address or the Mode 3/A code to exist on both
+     * sides and be equal. The position alone is never sufficient, since
      * aircraft can overfly the FFT position. Any value that exists on both
      * sides and differs vetoes the match.
+     *
+     * The Mode C code only ever confirms a match that the Mode 3/A code has
+     * already established. It never qualifies one by itself, so a report is
+     * never taken for the FFT on position and Mode C alone - an aircraft
+     * overflying the FFT position at the same level would match that way.
      *
      * ignore_mode_s skips the Mode S address check for data that carries no
      * aircraft address, e.g. CAT001.
@@ -95,9 +109,10 @@ public:
     /// carrying it is always from an FFT, without any further check.
     static bool isAlwaysFFTCode(boost::optional<unsigned int> mode_a_code);
 
-    /// Maximum distance between a target report position and the FFT position
-    /// for a position match, in meters.
-    static constexpr double max_plot_distance_m_ = 5000.0;
+    /// Default maximum distance between a target report position and the FFT
+    /// position for a position match, in meters. Used when the FFT carries no
+    /// own "max_plot_distance_m" info value.
+    static constexpr double DefaultMaxPlotDistanceM = 5000.0;
 
     /// Mode 3/A code 7777 octal, stored as the 12 bit value.
     static constexpr unsigned int always_fft_mode_3a_code_ = 4095;
@@ -109,6 +124,7 @@ public:
     bool operator!=(const FFT& other) const { return !(*this == other); }
 
 private:
+    std::string runtime_id_; // see runtimeId()
     std::string name_;
     // always an object - erase() throws on a null json, and a newly created
     // FFT is edited before any info is set

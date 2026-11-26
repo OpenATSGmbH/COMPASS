@@ -15,19 +15,23 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/mode_c/correct_period.h"
-#include "eval/requirement/group.h"
+#include "requirement/mode_c/correct_period.h"
+#include "requirement/group.h"
 
-#include "eval/results/mode_c/correct_period.h"
+#include "results/mode_c/correct_period.h"
+#include "results/base/detailcode.h"
 
-#include "task/result/report/sectioncontenttable.h"
+#include "report/sectioncontenttable.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
 
 #include "logger.h"
 
+#include <cmath>
+
 #include <QLineEdit>
+#include <QCheckBox>
 #include <QDoubleValidator>
 #include <QFormLayout>
 
@@ -53,7 +57,9 @@ ModeCCorrectPeriod::ModeCCorrectPeriod(const std::string& name,
                                        float update_interval_s, 
                                        bool  use_miss_tolerance,
                                        float miss_tolerance_s,
-                                       float max_distance_ft)
+                                       float max_distance_ft,
+                                       bool  level_flight_only,
+                                       float max_level_rocd_ftpm)
 :   IntervalBase(name, 
                  short_name, 
                  group_name, 
@@ -64,8 +70,27 @@ ModeCCorrectPeriod::ModeCCorrectPeriod(const std::string& name,
                  {}, 
                  {},
                  use_miss_tolerance ? boost::optional<float>(miss_tolerance_s) : boost::optional<float>())
-,   max_distance_ft_(max_distance_ft)
+,   max_distance_ft_    (max_distance_ft    )
+,   level_flight_only_  (level_flight_only  )
+,   max_level_rocd_ftpm_(max_level_rocd_ftpm)
 {
+}
+
+/**
+ * With level flight only, the periods contain only reference updates in level flight
+ * (absolute reference ROCD at most the maximum level ROCD), e.g. EUROCAE ED-142 6.4.3:
+ * "use segments of trajectories with constant flight level only".
+ * A reference update without ROCD is not in level flight.
+ */
+bool ModeCCorrectPeriod::useReferenceUpdate(const EvaluationTargetData& target_data,
+                                            const dbContent::TargetReport::DataID& ref_id) const
+{
+    if (!level_flight_only_)
+        return true;
+
+    auto rocd = target_data.refChain().rocd(ref_id);
+
+    return rocd.has_value() && std::fabs(rocd.value()) <= max_level_rocd_ftpm_;
 }
 
 /**
@@ -77,14 +102,16 @@ ModeCCorrectPeriod::Validity ModeCCorrectPeriod::isValid(const dbContent::Target
 {
     auto cmp_res = compareModeC(data_id, target_data, max_ref_time_diff, max_distance_ft_);
 
-    bool no_ref = cmp_res.first == ValueComparisonResult::Unknown_NoRefData;
-    bool failed = cmp_res.first == ValueComparisonResult::Unknown_NoTstData || 
-                  cmp_res.first == ValueComparisonResult::Different;
+    bool no_ref = cmp_res == ValueComparisonResult::Unknown_NoRefData;
+    bool failed = cmp_res == ValueComparisonResult::Unknown_NoTstData || 
+                  cmp_res == ValueComparisonResult::Different;
 
     Validity v;
 
     v.value   = no_ref ? Validity::Value::RefDataMissing : (failed ? Validity::Value::Invalid : Validity::Value::Valid);
-    v.comment = failed ? "ModeC failed (" + cmp_res.second + ")" : "";
+    v.code    = comparisonCode(cmp_res,
+                               EvaluationRequirementResult::DetailCode::Value::ModeCDiffers,
+                               EvaluationRequirementResult::DetailCode::Value::ModeCMissing);
 
     return v;
 }
@@ -119,7 +146,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeCCorrectPeriod::createR
  */
 std::string ModeCCorrectPeriod::probabilityNameShortStatic()
 {
-    return "PCMCD [%]";
+    return "PCMCD";
 }
 
 /**
@@ -153,9 +180,11 @@ ModeCCorrectPeriodConfig::ModeCCorrectPeriodConfig(nlohmann::json& config,
                                                    Group* parent)
 :   IntervalBaseConfig(config, parent)
 {
-    configure(UseMissTol);
+    configure(UseMissTol | UseExclDetMisses);
 
     registerParameter("max_distance_ft", &max_distance_ft_, 300.0f);
+    registerParameter("level_flight_only", &level_flight_only_, false);
+    registerParameter("max_level_rocd_ftpm", &max_level_rocd_ftpm_, 300.0f);
 }
 
 /**
@@ -172,7 +201,12 @@ std::shared_ptr<Base> ModeCCorrectPeriodConfig::createRequirement()
                 update_interval_s_,
                 use_miss_tolerance_, 
                 miss_tolerance_s_,
-                max_distance_ft_);
+                max_distance_ft_,
+                level_flight_only_,
+                max_level_rocd_ftpm_);
+
+    req->excludeDetectionMisses(exclude_detection_misses_);
+
     return req;
 }
 
@@ -192,6 +226,34 @@ void ModeCCorrectPeriodConfig::maxDistanceFt(float value)
 
 /**
 */
+bool ModeCCorrectPeriodConfig::levelFlightOnly() const
+{
+    return level_flight_only_;
+}
+
+/**
+*/
+void ModeCCorrectPeriodConfig::levelFlightOnly(bool value)
+{
+    level_flight_only_ = value;
+}
+
+/**
+*/
+float ModeCCorrectPeriodConfig::maxLevelROCDFtpm() const
+{
+    return max_level_rocd_ftpm_;
+}
+
+/**
+*/
+void ModeCCorrectPeriodConfig::maxLevelROCDFtpm(float value)
+{
+    max_level_rocd_ftpm_ = value;
+}
+
+/**
+*/
 BaseConfigWidget* ModeCCorrectPeriodConfig::createWidget_impl()
 {
     return new ModeCCorrectPeriodConfigWidget(*this);
@@ -204,6 +266,14 @@ void ModeCCorrectPeriodConfig::addCustomTableEntries(ResultReport::SectionConten
     table.addRow( { "Maximum Difference [ft]", 
                     "Maximum altitude difference between the test and the reference",
                     std::to_string(max_distance_ft_)});
+    table.addRow( { "Level Flight Only",
+                    "Use only reference updates in level flight",
+                    level_flight_only_ ? "true" : "false"});
+
+    if (level_flight_only_)
+        table.addRow( { "Maximum Level ROCD [ft/min]",
+                        "Maximum absolute reference ROCD of level flight",
+                        std::to_string(max_level_rocd_ftpm_)});
 }
 
 /**
@@ -229,6 +299,23 @@ ModeCCorrectPeriodConfigWidget::ModeCCorrectPeriodConfigWidget(ModeCCorrectPerio
 
     form_layout_->addRow("Maximum Offset [ft]", distance_value_edit_);
 
+    level_flight_only_box_ = new QCheckBox();
+    level_flight_only_box_->setChecked(config().levelFlightOnly());
+    level_flight_only_box_->setToolTip("Use only reference updates in level flight (absolute reference ROCD at most the maximum level ROCD)");
+    connect(level_flight_only_box_, &QCheckBox::toggled,
+            this, &ModeCCorrectPeriodConfigWidget::levelFlightOnlyChanged);
+
+    form_layout_->addRow("Level Flight Only", level_flight_only_box_);
+
+    max_level_rocd_edit_ = new QLineEdit(QString::number(config().maxLevelROCDFtpm()));
+    max_level_rocd_edit_->setValidator(new QDoubleValidator(0.0, 10000.0, 2, this));
+    max_level_rocd_edit_->setToolTip("Maximum absolute reference ROCD of level flight");
+    max_level_rocd_edit_->setEnabled(config().levelFlightOnly());
+    connect(max_level_rocd_edit_, &QLineEdit::textEdited,
+            this, &ModeCCorrectPeriodConfigWidget::maxLevelROCDChanged);
+
+    form_layout_->addRow("Maximum Level ROCD [ft/min]", max_level_rocd_edit_);
+
     prob_edit_->setToolTip(QString::fromStdString(ModeCCorrectPeriod::probabilityNameStatic()));
 }
 
@@ -252,6 +339,27 @@ void ModeCCorrectPeriodConfigWidget::distanceChanged(const QString& value)
         config().maxDistanceFt(val);
     else
         loginf << "invalid value";
+}
+
+/**
+*/
+void ModeCCorrectPeriodConfigWidget::levelFlightOnlyChanged(bool checked)
+{
+    config().levelFlightOnly(checked);
+    max_level_rocd_edit_->setEnabled(checked);
+}
+
+/**
+*/
+void ModeCCorrectPeriodConfigWidget::maxLevelROCDChanged(const QString& value)
+{
+    bool ok;
+    float val = value.toFloat(&ok);
+
+    if (ok)
+        config().maxLevelROCDFtpm(val);
+    else
+        loginf << "invalid value " << value.toStdString();
 }
 
 } // namespace EvaluationRequirement

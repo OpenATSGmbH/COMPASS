@@ -18,18 +18,19 @@
 #include "evaluationstandard.h"
 #include "evaluationmanager.h"
 #include "evaluationcalculator.h"
-#include "eval/requirement/group.h"
+#include "requirement/group.h"
 #include "evaluationstandardwidget.h"
 #include "evaluationstandardtreemodel.h"
 #include "logger.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttext.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttext.h"
+#include "report/sectioncontenttable.h"
 
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/baseconfig.h"
+#include "requirement/group.h"
+#include "requirement/base/baseconfig.h"
+#include "data/evaluationtargetdata.h"
 
 #include <QTreeView>
 
@@ -50,6 +51,10 @@ EvaluationStandard::EvaluationStandard(nlohmann::json& config, EvaluationCalcula
     registerParameter("reference_max_time_diff", &reference_max_time_diff_, reference_max_time_diff_);
     //registerParameter("reference_min_accuracy", &reference_min_accuracy_, reference_min_accuracy_);
 
+    registerParameter("ignore_primary_only_targets", &ignore_primary_only_targets_, ignore_primary_only_targets_);
+    registerParameter("ignore_non_adsb_targets", &ignore_non_adsb_targets_, ignore_non_adsb_targets_);
+    registerParameter("ignore_mode_ac_only_targets", &ignore_mode_ac_only_targets_, ignore_mode_ac_only_targets_);
+
     traced_assert(name_.size());
 
     createSubConfigurables();
@@ -59,7 +64,7 @@ EvaluationStandard::~EvaluationStandard()
 {
 }
 
-void EvaluationStandard::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult EvaluationStandard::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
 
@@ -76,8 +81,9 @@ void EvaluationStandard::generateSubConfigurable(nlohmann::json& child_json)
         connect (group, &Group::configsChangedSignal, this, &EvaluationStandard::groupsChangedSlot);
     }
     else
-        throw std::runtime_error("EvaluationStandard: generateSubConfigurable: unknown class_name " +
-                                 class_name);
+        return GenerateResult::Unknown;
+
+    return GenerateResult::Generated;
 }
 
 std::string EvaluationStandard::name() const
@@ -105,7 +111,7 @@ void EvaluationStandard::addGroup (const std::string& name)
     auto& child_json = addNewSubConfiguration("EvaluationRequirementGroup", instance);
     child_json[Configuration::ParameterSection]["name"] = name;
 
-    generateSubConfigurable(child_json);
+    createSubConfigurable(child_json);
 
     traced_assert(hasGroup(name));
 
@@ -237,6 +243,26 @@ void EvaluationStandard::addToReport (std::shared_ptr<ResultReport::Report> repo
             req_it->addToReport(report);
         }
     }
+}
+
+/**
+ * Checks if the given target is not relevant for this standard, e.g. a primary-only
+ * target for a secondary surveillance standard, a target never detected in ADS-B
+ * data for an ADS-B standard, or a Mode A/C-only target for a Mode S standard.
+ * Returns the reason, or an empty string if the target is to be used.
+ */
+std::string EvaluationStandard::targetIgnoreReason(const EvaluationTargetData& target) const
+{
+    if (ignore_primary_only_targets_ && target.isPrimaryOnly())
+        return "Primary-only";
+
+    if (ignore_non_adsb_targets_ && !target.hasADSBData())
+        return "No ADS-B data";
+
+    if (ignore_mode_ac_only_targets_ && target.isModeACOnly())
+        return "Mode A/C-only";
+
+    return {};
 }
 
 std::set<std::string> EvaluationStandard::getAllRequirementNames() const

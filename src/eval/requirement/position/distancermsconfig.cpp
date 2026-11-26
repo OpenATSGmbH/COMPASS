@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/distancermsconfig.h"
-#include "eval/requirement/position/distancermsconfigwidget.h"
-#include "eval/requirement/position/distancerms.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/positionbase.h"
+#include "requirement/position/distancermsconfig.h"
+#include "requirement/position/distancermsconfigwidget.h"
+#include "requirement/position/distancerms.h"
+#include "requirement/group.h"
+#include "requirement/base/positionbase.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 using namespace std;
 
@@ -67,9 +67,11 @@ BaseConfigWidget* PositionDistanceRMSConfig::createWidget()
 
 void PositionDistanceRMSConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
+    PositionBaseValueConfig::addToReport(report);
+
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
-    auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& table = section.getTable("req_table");
 
     table.addRow({"Threshold Value [m]",
                   "Maximum allowed RMS from test target report to reference",

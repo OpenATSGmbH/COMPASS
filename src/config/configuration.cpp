@@ -1080,7 +1080,7 @@ std::pair<bool,std::vector<std::string>> Configuration::reconfigure_internal(con
 
                 try
                 {
-                    configurable->generateSubConfigurable(new_child_json);
+                    configurable->createSubConfigurable(new_child_json);
                     has_child = true;
                 }
                 catch(...)

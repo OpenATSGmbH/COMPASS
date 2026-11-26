@@ -1,0 +1,43 @@
+{
+    "description": "ED-87 RVA (< 5 m/s or 10% of the reference speed if higher) at 10 m/s reference speed: 10% is 1 m/s, so the fixed 5 m/s apply. A difference of exactly 5 m/s fails the strict check. A report without test speed is not counted. Probability 2 / 3.",
+    "params": {
+        "threshold_value": 5.0,
+        "threshold_percent": 10.0,
+        "use_percent_if_higher": true,
+        "check_type": "<"
+    },
+    "reports": [
+        {
+            "ref": 10,
+            "tst": 12,
+            "outcome": "passed",
+            "diff": 2,
+            "threshold": 5
+        },
+        {
+            "ref": 10,
+            "tst": 14.9,
+            "outcome": "passed",
+            "diff": 4.9,
+            "threshold": 5
+        },
+        {
+            "ref": 10,
+            "tst": 15,
+            "outcome": "failed",
+            "diff": 5,
+            "threshold": 5
+        },
+        {
+            "ref": 20,
+            "tst": null,
+            "outcome": "no_tst"
+        }
+    ],
+    "expected": {
+        "passed": 2,
+        "failed": 1,
+        "no_tst": 1,
+        "probability": 0.6666666666666666
+    }
+}

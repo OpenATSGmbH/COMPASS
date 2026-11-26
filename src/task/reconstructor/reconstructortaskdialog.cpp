@@ -20,16 +20,10 @@
 #include "simplereconstructor.h"
 #include "simplereconstructorwidget.h"
 #include "global.h"
-#include "compass.h"
 #include "taskmanager.h"
 #include "licensemanager.h"
 #include "dbcontentmanager.h"
 #include "dbcontentdataengine.h"
-
-#if USE_EXPERIMENTAL_SOURCE == true
-#include "probimmreconstructor.h"
-#include "probimmreconstructorwidget.h"
-#endif
 
 #include <QGridLayout>
 #include <QHBoxLayout>
@@ -68,19 +62,20 @@ ReconstructorTaskDialog::ReconstructorTaskDialog(ReconstructorTask& task, QWidge
     combo_layout->setFormAlignment(Qt::AlignRight | Qt::AlignTop);
 
     reconstructor_box_ = new QComboBox();
+    reconstructor_box_->setObjectName("method_combo");
     reconstructor_box_->addItem(QString::fromStdString(ReconstructorTask::ScoringUMReconstructorName));
 
-    const auto& license_manager = task_.manager().compass().licenseManager();
+    const auto& license_manager = task_.manager().licenseManager();
 
     bool has_adv_rec = false;
 
-#if USE_EXPERIMENTAL_SOURCE == true
-    if (license_manager.componentEnabled(license::License::Component::ComponentProbIMMReconstructor))
+    // ProbIMM only if licensed and provided by its plugin
+    if (license_manager.componentEnabled(license::License::Component::ComponentProbIMMReconstructor) &&
+        !task_.reconstructorClassName(ReconstructorTask::ProbImmReconstructorName).empty())
     {
         reconstructor_box_->addItem(QString::fromStdString(ReconstructorTask::ProbImmReconstructorName));
         has_adv_rec = true;
     }
-#endif
 
     int idx = reconstructor_box_->findText(QString::fromStdString(task_.currentReconstructorStr()));
     reconstructor_box_->setCurrentIndex(idx);
@@ -107,13 +102,18 @@ ReconstructorTaskDialog::ReconstructorTaskDialog(ReconstructorTask& task, QWidge
     main_layout->addLayout(combo_layout);
 
     reconstructor_widget_stack_ = new QStackedWidget();
+    reconstructor_widget_stack_->setObjectName("reconstructor_stack");
 
-    reconstructor_widget_stack_->addWidget(task_.simpleReconstructor()->widget());
+    // one widget per selectable reconstructor, same order as the combo box (index = stack index)
+    for (int i = 0; i < reconstructor_box_->count(); ++i)
+    {
+        const auto class_name = task_.reconstructorClassName(reconstructor_box_->itemText(i).toStdString());
 
-#if USE_EXPERIMENTAL_SOURCE == true
-    if (license_manager.componentEnabled(license::License::Component::ComponentProbIMMReconstructor))
-        reconstructor_widget_stack_->addWidget(task_.probIMMReconstructor()->widget());
-#endif
+        auto rec = task_.reconstructor(class_name);
+        traced_assert(rec);
+
+        reconstructor_widget_stack_->addWidget(rec->createWidget());
+    }
 
     showCurrentReconstructorWidget();
 
@@ -142,12 +142,14 @@ ReconstructorTaskDialog::ReconstructorTaskDialog(ReconstructorTask& task, QWidge
     QHBoxLayout* button_layout = new QHBoxLayout();
 
     cancel_button_ = new QPushButton("Cancel");
+    cancel_button_->setObjectName("cancel_button");
     connect(cancel_button_, &QPushButton::clicked, this, &QDialog::reject);
     button_layout->addWidget(cancel_button_);
 
     button_layout->addStretch();
 
     run_button_ = new QPushButton("Run");
+    run_button_->setObjectName("run_button");
     connect(run_button_, &QPushButton::clicked, this, &QDialog::accept);
     button_layout->addWidget(run_button_);
 
@@ -229,11 +231,11 @@ std::pair<bool, std::string> ReconstructorTaskDialog::configValid() const
         return std::make_pair(false, "No reconstructor found");
 
     //get full data time range
-    if (!task_.manager().compass().dbContentManager().dataEngine().hasMinMaxTimestamp())
+    if (!task_.manager().dbContentManager().dataEngine().hasMinMaxTimestamp())
         return std::make_pair(false, "No timestamps found");
 
     boost::posix_time::ptime data_t0, data_t1;
-    std::tie(data_t0, data_t1) = task_.manager().compass().dbContentManager().dataEngine().minMaxTimestamp();
+    std::tie(data_t0, data_t1) = task_.manager().dbContentManager().dataEngine().minMaxTimestamp();
 
     const auto& settings = rec->settings();
     if (settings.data_timestamp_min.is_not_a_date_time())

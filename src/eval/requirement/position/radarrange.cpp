@@ -15,16 +15,19 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/radarrange.h"
-#include "eval/results/position/radarrange.h"
-#include "eval/standard/evaluationstandard.h"
-#include "compass.h"
+#include "requirement/position/radarrange.h"
+#include "requirement/position/radar_helpers.h"
+#include "results/position/radarrange.h"
+#include "results/base/detailcode.h"
+#include "standard/evaluationstandard.h"
 #include "evaluationmanager.h"
+#include "global.h"
 #include "logger.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 #include "sectorlayer.h"
 
 #include "projection.h"
+#include "projectioncoordinatesystembase.h"
 #include "projectionmanager.h"
 
 #include <algorithm>
@@ -36,11 +39,15 @@ using namespace boost::posix_time;
 namespace EvaluationRequirement
 {
 
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
+
 PositionRadarRange::PositionRadarRange(const std::string& name, const std::string& short_name,
                                        const std::string& group_name, float ref_min_accuracy,
-                                       EvaluationCalculator& calculator, double threshold_value)
-    : PositionBaseProb(name, short_name, group_name, threshold_value,
-                       COMPARISON_TYPE::LESS_THAN_OR_EQUAL, ref_min_accuracy, calculator)
+                                       EvaluationCalculator& calculator, double threshold_value,
+        RadarHelpers::Statistic statistic)
+    : PositionBaseValue(name, short_name, group_name, threshold_value,
+                        COMPARISON_TYPE::LESS_THAN, ref_min_accuracy, calculator)
+    , statistic_(statistic)
 {
 }
 
@@ -80,7 +87,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
     bool comp_passed{false};
 
     unsigned int num_distances {0};
-    string comment;
 
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
 
@@ -96,22 +102,16 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
                             const QVariant& num_pos_outside,
                             const QVariant& num_comp_passed,
                             const QVariant& num_comp_failed,
-                            const std::string& comment)
+                            std::uint32_t code)
     {
-        details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
+        details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::PosInside, pos_inside)
                                              .setValue(Result::DetailKey::Value, offset)
                                              .setValue(Result::DetailKey::CheckPassed, check_passed)
-                                             .setValue(Result::DetailKey::NumPos, num_pos)
-                                             .setValue(Result::DetailKey::NumNoRef, num_no_ref)
-                                             .setValue(Result::DetailKey::NumInside, num_pos_inside)
-                                             .setValue(Result::DetailKey::NumOutside, num_pos_outside)
-                                             .setValue(Result::DetailKey::NumCheckPassed, num_comp_passed)
-                                             .setValue(Result::DetailKey::NumCheckFailed, num_comp_failed)
                                              .addPosition(ref_pos)
-                                             .generalComment(comment));
+                                             .addCode(code));
     };
 
-    ProjectionManager& proj_man = calculator_.manager().compass().projectionManager();
+    ProjectionManager& proj_man = calculator_.manager().projectionManager();
 
     Projection& projection = proj_man.currentProjection();
     traced_assert(projection.coordinateSystemsAdded());
@@ -120,6 +120,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
 
     double ref_slant_range_m, ref_ground_range_m, ref_alt_m, ref_azm_rad,
         tst_slant_range_m, tst_ground_range_m, tst_alt_m, tst_azm_rad;
+    double ref_alt_wgs_m, tst_alt_wgs_m;
     double range_m_diff;
 
     std::vector<double> range_values_ref;
@@ -129,6 +130,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
     {
         ++num_pos;
 
+        timestamp = tst_id.first;
+        tst_pos = target_data.tstChain().pos(tst_id);
+        comp_passed = false;
+
         tst_ds_id = target_data.tstChain().dsID(tst_id);
 
         if (!projection.hasCoordinateSystem(tst_ds_id))
@@ -136,29 +141,22 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                             {}, // ref_pos
-                            {}, {}, comp_passed, // pos_inside, value, check_passed
+                            {}, {}, {}, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed,
-                            "No data source info");
+                            num_comp_passed, num_comp_failed, Result::NoDataSourceInfo);
 
             ++num_no_ref;
             continue;
         }
-
-        timestamp = tst_id.first;
-        tst_pos = target_data.tstChain().pos(tst_id);
-
-        comp_passed = false;
 
         if (!target_data.hasMappedRefData(tst_id, max_ref_time_diff))
         {
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                             {}, // ref_pos
-                            {}, {}, comp_passed, // pos_inside, value, check_passed
+                            {}, {}, {}, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed,
-                            "No reference data");
+                            num_comp_passed, num_comp_failed, DetailCode::NoRefData);
 
             ++num_no_ref;
             continue;
@@ -171,10 +169,9 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                             {}, // ref_pos
-                            {}, {}, comp_passed, // pos_inside, value, check_passed
+                            {}, {}, {}, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed,
-                            "No reference position");
+                            num_comp_passed, num_comp_failed, DetailCode::NoRefPosition);
 
             ++num_no_ref;
             continue;
@@ -188,10 +185,9 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                             ref_pos, // ref_pos
-                            is_inside, {}, comp_passed, // pos_inside, value, check_passed
+                            is_inside, {}, {}, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed, 
-                            "Outside sector");
+                            num_comp_passed, num_comp_failed, 0);
             ++num_pos_outside;
             continue;
         }
@@ -204,84 +200,88 @@ std::shared_ptr<EvaluationRequirementResult::Single> PositionRadarRange::evaluat
             if (!skip_no_data_details)
                 addDetail(timestamp, tst_pos,
                             ref_pos, // ref_pos
-                            is_inside, {}, comp_passed, // pos_inside, value, check_passed
+                            is_inside, {}, {}, // pos_inside, value, check_passed
                             num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                            num_comp_passed, num_comp_failed, 
-                            "Inaccurate reference position");
+                            num_comp_passed, num_comp_failed, DetailCode::RefInaccurate);
 
             ++num_ref_inaccurate;
             continue;            
         }
 
+        // altitudes as in the projection of the radar plots (Mode C, else the radar height), so that the
+        // test slant range is the measured one, the reference uses its own altitude if it has one
+        tst_alt_wgs_m = tst_pos.has_altitude_ ? tst_pos.altitude_ * FT2M
+                                              : projection.coordinateSystem(tst_ds_id).altitudeM();
+        ref_alt_wgs_m = ref_pos->has_altitude_ ? ref_pos->altitude_ * FT2M : tst_alt_wgs_m;
+
         ok = projection.wgs842PolarHorizontal(tst_ds_id,
-                                              ref_pos->latitude_, ref_pos->longitude_, 0,
+                                              ref_pos->latitude_, ref_pos->longitude_, ref_alt_wgs_m,
                                               ref_azm_rad, ref_slant_range_m, ref_ground_range_m,
                                               ref_alt_m);
         if (!ok)
         {
             addDetail(timestamp, tst_pos,
                       ref_pos, // ref_pos
-                      is_inside, {}, comp_passed, // pos_inside, value, rcheck_passed
+                      is_inside, {}, {}, // pos_inside, value, rcheck_passed
                       num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                      num_comp_passed, num_comp_failed,
-                      "Ref. position transformation error");
+                      num_comp_passed, num_comp_failed, Result::RefTransformationError);
             ++num_pos_calc_errors;
             continue;
         }
 
         ok = projection.wgs842PolarHorizontal(tst_ds_id,
-                                              tst_pos.latitude_, tst_pos.longitude_, 0,
+                                              tst_pos.latitude_, tst_pos.longitude_, tst_alt_wgs_m,
                                               tst_azm_rad, tst_slant_range_m, tst_ground_range_m,
                                               tst_alt_m);
         if (!ok)
         {
             addDetail(timestamp, tst_pos,
                       ref_pos, // ref_pos
-                      is_inside, {}, comp_passed, // pos_inside, value, check_passed
+                      is_inside, {}, {}, // pos_inside, value, check_passed
                       num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                      num_comp_passed, num_comp_failed,
-                      "Tst. position transformation error");
+                      num_comp_passed, num_comp_failed, Result::TstTransformationError);
             ++num_pos_calc_errors;
             continue;
         }
 
-        range_m_diff = ref_ground_range_m - tst_ground_range_m;
+        range_m_diff = ref_slant_range_m - tst_slant_range_m;
 
         if (std::isnan(range_m_diff) || std::isinf(range_m_diff))
         {
             addDetail(timestamp, tst_pos,
                         ref_pos, // ref_pos
-                        is_inside, {}, comp_passed, // pos_inside, value, check_passed
+                        is_inside, {}, {}, // pos_inside, value, check_passed
                         num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                        num_comp_passed, num_comp_failed, 
-                        "Range Invalid");
+                        num_comp_passed, num_comp_failed, DetailCode::ValueInvalid);
             ++num_pos_calc_errors;
             continue;
         }
 
         ++num_distances;
 
-        if (fabs(range_m_diff) <= threshold()) // for single value
+        if (statistic_ != RadarHelpers::Statistic::StdDev) // a bias or gain is not checked per update
         {
             comp_passed = true;
             ++num_comp_passed;
-            comment = "Passed";
+        }
+        else if (RadarHelpers::passed(range_m_diff, threshold()))
+        {
+            comp_passed = true;
+            ++num_comp_passed;
         }
         else
         {
             ++num_comp_failed;
-            comment = "Failed";
         }
 
-        range_values_ref.push_back(ref_ground_range_m);
-        range_values_tst.push_back(tst_ground_range_m);
+        range_values_ref.push_back(ref_slant_range_m);
+        range_values_tst.push_back(tst_slant_range_m);
 
         addDetail(timestamp, tst_pos,
                     ref_pos,
                     is_inside, range_m_diff, comp_passed, // pos_inside, value, check_passed
                     num_pos, num_no_ref, num_pos_inside, num_pos_outside,
-                    num_comp_passed, num_comp_failed,
-                    comment);
+                    num_comp_passed, num_comp_failed, 0);
     }
 
     //        logdbg << "'" << name_ << "': utn " << target_data.utn_

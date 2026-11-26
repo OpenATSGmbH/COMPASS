@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_task_export.h"
+
 #include <fstream>
 #include <sstream>
 #include <string>
@@ -24,7 +26,7 @@
 
 #include "job.h"
 
-class ReadJSONFileJob : public Job
+class COMPASS_TASK_API ReadJSONFileJob : public Job
 {
     Q_OBJECT
   signals:

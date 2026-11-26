@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include "jobdefs.h"
 
 #include "logger.h"
@@ -44,9 +46,9 @@
  * Important: The Job and the contained data must be deleted in the callback functions.
  */
 #ifdef USE_ASYNC_JOBS
-class Job : public QObject
+class COMPASS_CORE_API Job : public QObject
 #else
-class Job : public QObject, public QRunnable
+class COMPASS_CORE_API Job : public QObject, public QRunnable
 #endif
 {
     Q_OBJECT
@@ -151,7 +153,7 @@ protected:
         bool skip_cpu0 = false;
         if (condition == ThreadAffinityCondition::CPU0)
         {
-            int cpu_cur = sched_getcpu();
+            int cpu_cur = job::currentCPU();
             if (cpu_cur != 0)
                 return;
             else
@@ -183,12 +185,7 @@ protected:
             return;
         }
 
-        cpu_set_t cpuset;
-        CPU_ZERO(&cpuset);
-        CPU_SET(cpu, &cpuset);
-
-        pthread_t nativeThread = pthread_self();
-        if (pthread_setaffinity_np(nativeThread, sizeof(cpu_set_t), &cpuset) != 0)
+        if (!job::setCurrentThreadCPUs({ cpu }))
         {
             logerr << "failed to set thread affinity of job " 
                    << job_id_.value() << " to cpu" << cpu;

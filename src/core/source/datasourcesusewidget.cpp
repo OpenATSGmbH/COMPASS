@@ -16,7 +16,6 @@
  */
 
 #include "datasourcesusewidget.h"
-#include "compass.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "source/dbdatasourcewidget.h"
 #include "db_context_manager.h"
@@ -39,13 +38,14 @@ using namespace std;
 using namespace Utils;
 
 DataSourcesUseWidget::DataSourcesUseWidget(context::DBContextManager& ctx_man,
+                         DBContentManager& dbcont_man,
                          std::function<bool(const std::string&)> get_use_dstype_func,
                          std::function<void(const std::string&,bool)> set_use_dstype_func,
                          std::function<bool(unsigned int)> get_use_ds_func,
                          std::function<void(unsigned int,bool)> set_use_ds_func,
                          std::function<bool(unsigned int,unsigned int)> get_use_ds_line_func,
                          std::function<void(unsigned int,unsigned int, bool)> set_use_ds_line_func)
-    : DataSourcesWidget(false, ctx_man),
+    : DataSourcesWidget(false, ctx_man, dbcont_man),
     get_use_dstype_func_(get_use_dstype_func), set_use_dstype_func_(set_use_dstype_func),
     get_use_ds_func_(get_use_ds_func), set_use_ds_func_(set_use_ds_func),
     get_use_ds_line_func_(get_use_ds_line_func), set_use_ds_line_func_(set_use_ds_line_func)

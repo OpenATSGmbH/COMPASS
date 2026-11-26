@@ -46,7 +46,7 @@ ASTERIXJSONMappingJob::~ASTERIXJSONMappingJob()
 
 void ASTERIXJSONMappingJob::run_impl()
 {
-    logdbg << "run on thread " << QThread::currentThreadId() << " on cpu " << sched_getcpu();
+    logdbg << "run on thread " << QThread::currentThreadId() << " on cpu " << job::currentCPU();
 
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
@@ -86,7 +86,7 @@ void ASTERIXJSONMappingJob::run_impl()
             unsigned int category = 0;
             try
             {
-                category = std::stoul(it.key());
+                category = std::stoull(it.key());
             }
             catch (...)
             {

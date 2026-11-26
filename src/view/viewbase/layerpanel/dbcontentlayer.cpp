@@ -22,16 +22,158 @@
 #include <QAction>
 #include <QMenu>
 #include <QString>
-#include <QTreeView>
 
+#include <algorithm>
 #include <functional>
-#include <unordered_map>
+#include <set>
+
+namespace
+{
+    const char* StaleTooltip = "Data is being reloaded";
+
+    /// the stale flag of the Data subtree the item belongs to
+    bool dataStale(const LayerTreeItem* item)
+    {
+        for (const LayerTreeItem* it = item; it; it = it->parentItem())
+            if (const auto* root = dynamic_cast<const DBContentRootItem*>(it))
+                return root->isStale();
+
+        return false;
+    }
+
+    /// update key of the entry on the given level (1 = DSType ... 4 = leaf), as updateKey() of the item
+    std::string entryKey(const DBContentRootItem::LeafEntry& entry, size_t level)
+    {
+        switch (level)
+        {
+            case 1: return entry.ds_type;
+            case 2: return entry.ds_id ? "ds:" + std::to_string(*entry.ds_id) : entry.ds_name;
+            case 3: return entry.line;
+            default:
+            {
+                const std::string id = entry.payload->persistenceId();
+                return id.empty() ? entry.dbcontent : id;
+            }
+        }
+    }
+
+    /// group name on the given level (1 = DSType ... 3 = line), leaf name on level 4
+    const std::string& entryName(const DBContentRootItem::LeafEntry& entry, size_t level)
+    {
+        switch (level)
+        {
+            case 1:  return entry.ds_type;
+            case 2:  return entry.ds_name;
+            case 3:  return entry.line;
+            default: return entry.dbcontent;
+        }
+    }
+
+    /// leaf below the root: keyed as the item (persistence id, else the name)
+    std::string topLeafKey(const DBContentRootItem::TopLeafEntry& entry)
+    {
+        const std::string id = entry.payload->persistenceId();
+        return id.empty() ? entry.name : id;
+    }
+
+    const size_t LeafLevel = 4;
+}
 
 // ---- DBContentGroupItem ---------------------------------------------------
 
-DBContentGroupItem::DBContentGroupItem(const std::string& name, DBContentLayerLevel level)
-    : LayerTreeItem(name), level_(level)
+DBContentGroupItem::DBContentGroupItem(const std::string& name,
+                                       DBContentLayerLevel level,
+                                       const std::optional<unsigned int>& ds_id,
+                                       const DBContentRootItem* data_root,
+                                       const std::vector<std::string>& path)
+    : LayerTreeItem(name), level_(level), ds_id_(ds_id), data_root_(data_root), path_(path)
 {
+}
+
+/**
+ * Static (not reconciled) outside an update of the root.
+ */
+std::optional<std::vector<std::string>> DBContentGroupItem::childKeys() const
+{
+    if (!data_root_)
+        return std::nullopt;
+
+    return data_root_->entryChildKeys(path_);
+}
+
+/**
+ */
+std::unique_ptr<LayerTreeItem> DBContentGroupItem::createChild(const std::string& key)
+{
+    traced_assert(data_root_);
+
+    const auto* entry = data_root_->findEntry(path_, key);
+    if (!entry)
+        return nullptr;
+
+    const size_t level = path_.size() + 1;
+
+    if (level == LeafLevel)
+        return std::make_unique<DBContentLeafItem>(entry->dbcontent, entry->payload);
+
+    std::vector<std::string> path = path_;
+    path.push_back(key);
+
+    return std::make_unique<DBContentGroupItem>(entryName(*entry, level),
+                                                (DBContentLayerLevel)level,
+                                                level == 2 ? entry->ds_id : std::nullopt,
+                                                data_root_,
+                                                path);
+}
+
+/**
+ * Leaves are rebound to the entry's payload, groups follow name changes (e.g. a renamed data source).
+ */
+bool DBContentGroupItem::updateChild(LayerTreeItem& child)
+{
+    traced_assert(data_root_);
+
+    const auto* entry = data_root_->findEntry(path_, child.updateKey());
+    if (!entry)
+        return false;
+
+    const size_t level = path_.size() + 1;
+
+    bool changed = false;
+
+    const std::string& name = entryName(*entry, level);
+    if (child.name() != name)
+    {
+        child.setName(name);
+        changed = true;
+    }
+
+    if (level == LeafLevel)
+    {
+        static_cast<DBContentLeafItem&>(child).setPayload(entry->payload);
+        changed = true; // count, color
+    }
+
+    return changed;
+}
+
+/**
+ */
+bool DBContentGroupItem::isStale() const
+{
+    return dataStale(this);
+}
+
+/**
+ */
+QVariant DBContentGroupItem::tooltip() const
+{
+    return isStale() ? QVariant(StaleTooltip) : QVariant();
+}
+
+std::string DBContentGroupItem::stateKeyId() const
+{
+    return ds_id_ ? "ds:" + std::to_string(*ds_id_) : std::string();
 }
 
 std::string DBContentGroupItem::persistenceId() const
@@ -76,12 +218,13 @@ void DBContentGroupItem::buildContextMenu(QMenu& menu)
 {
     const QString nm = QString::fromStdString(name());
 
+    // resolved by key when triggered, the group may be rebuilt while the menu is open
     auto add = [&menu, this](const QString& text, const QString& tip,
-                             std::function<void()> fn)
+                             std::function<void(LayerTreeItem&)> fn)
     {
         QAction* a = menu.addAction(text);
         a->setToolTip(tip);
-        QObject::connect(a, &QAction::triggered, [fn]{ fn(); });
+        connectItemAction(a, fn);
     };
 
     switch (level_)
@@ -104,19 +247,19 @@ void DBContentGroupItem::buildContextMenu(QMenu& menu)
 
     add("Show All Children",
         "Show every direct child of this entry (this entry and grandchildren untouched)",
-        [this]{
-            for (int i = 0; i < childCount(); ++i)
-                child(i)->setHidden(false, /*emit_signal=*/false);
-            if (model())
-                emit model()->hiddenChangedSignal();
+        [](LayerTreeItem& group){
+            for (int i = 0; i < group.childCount(); ++i)
+                group.child(i)->setHidden(false, /*emit_signal=*/false);
+            if (group.model())
+                emit group.model()->hiddenChangedSignal();
         });
     add("Hide All Children",
         "Hide every direct child of this entry (this entry and grandchildren untouched)",
-        [this]{
-            for (int i = 0; i < childCount(); ++i)
-                child(i)->setHidden(true, /*emit_signal=*/false);
-            if (model())
-                emit model()->hiddenChangedSignal();
+        [](LayerTreeItem& group){
+            for (int i = 0; i < group.childCount(); ++i)
+                group.child(i)->setHidden(true, /*emit_signal=*/false);
+            if (group.model())
+                emit group.model()->hiddenChangedSignal();
         });
 }
 
@@ -127,29 +270,56 @@ DBContentLeafItem::DBContentLeafItem(const std::string& name, DBContentLeafPaylo
 {
     traced_assert(payload_);
     setColor(payload_->color());
-}
 
-std::string DBContentLeafItem::persistenceId() const
-{
-    return payload_ ? payload_->persistenceId() : std::string{};
+    persistence_id_ = payload_->persistenceId();
 }
 
 QVariant DBContentLeafItem::itemData(int column) const
 {
     if (column == 0)
         return QString::fromStdString(name_);
+    if (!payload_)
+        return {};
     if (column == 1)
-        return QVariant((qulonglong)(payload_ ? payload_->count() : 0u));
+        return QVariant((qulonglong)payload_->count());
     // custom columns start at 2
-    if (payload_)
-        return payload_->customColumn(column - 2);
-    return {};
+    return payload_->customColumn(column - 2);
 }
 
 void DBContentLeafItem::onEffectiveHiddenChanged()
 {
     if (payload_)
         payload_->setVisible(!effectiveHidden());
+}
+
+/**
+ * Notice: a new payload starts visible, toggles while detached are pushed here.
+ */
+void DBContentLeafItem::setPayload(DBContentLeafPayload* payload)
+{
+    payload_ = payload;
+
+    if (!payload_)
+        return;
+
+    traced_assert(payload_->persistenceId() == persistence_id_);
+
+    setColor(payload_->color());
+    payload_->setVisible(!effectiveHidden());
+}
+
+/**
+ */
+bool DBContentLeafItem::isStale() const
+{
+    return dataStale(this);
+}
+
+/**
+ */
+QVariant DBContentLeafItem::tooltip() const
+{
+    return isStale() ? QVariant(StaleTooltip) : QVariant();
 }
 
 void DBContentLeafItem::buildContextMenu(QMenu& menu)
@@ -164,53 +334,192 @@ void DBContentLeafItem::buildContextMenu(QMenu& menu)
 // ---- DBContentRootItem ---------------------------------------------------
 
 DBContentRootItem::DBContentRootItem()
-    : DBContentGroupItem("Data", DBContentLayerLevel::Root)
+    : DBContentGroupItem("Data", DBContentLayerLevel::Root, std::nullopt, this, {})
 {
 }
 
-namespace
+/**
+ */
+void DBContentRootItem::buildContextMenu(QMenu& menu)
 {
-    DBContentGroupItem* findOrCreateGroup(LayerTreeItem* parent,
-                                          const std::string& name,
-                                          DBContentLayerLevel level)
+    DBContentGroupItem::buildContextMenu(menu);
+
+    if (menu_extension_)
+        menu_extension_(menu);
+}
+
+/**
+ * Notice: entries without payload are skipped.
+ */
+void DBContentRootItem::updateFrom(const std::vector<LeafEntry>& entries,
+                                   const std::vector<TopLeafEntry>& top_leaves)
+{
+    entries_    = &entries;
+    top_leaves_ = &top_leaves;
+
+    entry_keys_.clear();
+    entry_keys_.reserve(entries.size());
+
+    for (const auto& entry : entries)
     {
-        for (int i = 0; i < parent->childCount(); ++i)
+        if (!entry.payload)
         {
-            auto* c = parent->child(i);
-            if (c->name() == name)
-                return static_cast<DBContentGroupItem*>(c);
+            entry_keys_.emplace_back();
+            continue;
         }
-        auto group = std::make_unique<DBContentGroupItem>(name, level);
-        auto* raw  = group.get();
-        parent->appendChild(std::move(group));
-        return raw;
+
+        std::vector<std::string> keys;
+        keys.reserve(LeafLevel);
+        for (size_t level = 1; level <= LeafLevel; ++level)
+            keys.push_back(entryKey(entry, level));
+
+        entry_keys_.push_back(std::move(keys));
     }
+
+    update();
+
+    // the payloads may be released by the view now
+    entries_    = nullptr;
+    top_leaves_ = nullptr;
+    entry_keys_.clear();
 }
 
-std::vector<std::unique_ptr<LayerTreeItem>> DBContentRootItem::buildChildrenFrom(
-    const std::vector<LeafEntry>& entries) const
+/**
+ */
+void DBContentRootItem::detachPayloads()
 {
-    // Assemble the subtree on a detached scratch parent, then move its
-    // children out. The caller passes this list to refreshSubtree which
-    // reattaches them to the real DBContentRootItem inside scoped
-    // begin/endInsertRows - avoids the full modelReset that would make
-    // QHeaderView drop its section widths.
-    auto scratch = std::make_unique<DBContentGroupItem>("<scratch>", DBContentLayerLevel::Root);
-
-    for (const auto& e : entries)
+    std::function<void(LayerTreeItem*)> detach = [ & ] (LayerTreeItem* item)
     {
-        if (!e.payload)
+        if (auto* leaf = dynamic_cast<DBContentLeafItem*>(item))
+            leaf->setPayload(nullptr);
+
+        for (int i = 0; i < item->childCount(); ++i)
+            detach(item->child(i));
+    };
+    detach(this);
+}
+
+/**
+ */
+std::optional<std::vector<std::string>> DBContentRootItem::entryChildKeys(const std::vector<std::string>& path) const
+{
+    if (!entries_)
+        return std::nullopt;
+
+    const size_t level = path.size() + 1;
+    traced_assert(level <= LeafLevel);
+
+    std::vector<std::string> keys;
+    std::set<std::string>    seen;
+
+    for (const auto& entry_keys : entry_keys_)
+    {
+        if (entry_keys.empty())
             continue;
 
-        auto* ds_type_group = findOrCreateGroup(scratch.get(),    e.ds_type,   DBContentLayerLevel::DSType);
-        auto* ds_group      = findOrCreateGroup(ds_type_group,    e.ds_name,   DBContentLayerLevel::DataSource);
-        auto* line_group    = findOrCreateGroup(ds_group,         e.line,      DBContentLayerLevel::Line);
+        if (!std::equal(path.begin(), path.end(), entry_keys.begin()))
+            continue;
 
-        auto leaf = std::make_unique<DBContentLeafItem>(e.dbcontent, e.payload);
-        line_group->appendChild(std::move(leaf));
+        const std::string& key = entry_keys[ level - 1 ];
+        if (seen.insert(key).second)
+            keys.push_back(key);
     }
 
-    return scratch->moveChildrenOut();
+    return keys;
+}
+
+/**
+ */
+const DBContentRootItem::LeafEntry* DBContentRootItem::findEntry(const std::vector<std::string>& path,
+                                                                 const std::string& key) const
+{
+    if (!entries_)
+        return nullptr;
+
+    const size_t level = path.size() + 1;
+    traced_assert(level <= LeafLevel);
+
+    for (size_t i = 0; i < entry_keys_.size(); ++i)
+    {
+        const auto& entry_keys = entry_keys_[ i ];
+        if (entry_keys.empty())
+            continue;
+
+        if (entry_keys[ level - 1 ] == key && std::equal(path.begin(), path.end(), entry_keys.begin()))
+            return &(*entries_)[ i ];
+    }
+
+    return nullptr;
+}
+
+/**
+ */
+const DBContentRootItem::TopLeafEntry* DBContentRootItem::findTopLeaf(const std::string& key) const
+{
+    if (!top_leaves_)
+        return nullptr;
+
+    for (const auto& entry : *top_leaves_)
+        if (entry.payload && topLeafKey(entry) == key)
+            return &entry;
+
+    return nullptr;
+}
+
+/**
+ * The top leaves first, then the DSType groups.
+ */
+std::optional<std::vector<std::string>> DBContentRootItem::childKeys() const
+{
+    auto keys = entryChildKeys({});
+    if (!keys)
+        return std::nullopt;
+
+    std::vector<std::string> all;
+    all.reserve(top_leaves_->size() + keys->size());
+
+    for (const auto& entry : *top_leaves_)
+        if (entry.payload)
+            all.push_back(topLeafKey(entry));
+
+    all.insert(all.end(), keys->begin(), keys->end());
+
+    return all;
+}
+
+/**
+ */
+std::unique_ptr<LayerTreeItem> DBContentRootItem::createChild(const std::string& key)
+{
+    if (const auto* top_leaf = findTopLeaf(key))
+        return std::make_unique<DBContentLeafItem>(top_leaf->name, top_leaf->payload);
+
+    return DBContentGroupItem::createChild(key);
+}
+
+/**
+ */
+bool DBContentRootItem::updateChild(LayerTreeItem& child)
+{
+    if (auto* leaf = dynamic_cast<DBContentLeafItem*>(&child))
+    {
+        const auto* top_leaf = findTopLeaf(child.updateKey());
+        if (!top_leaf)
+            return false;
+
+        leaf->setName(top_leaf->name);
+        leaf->setPayload(top_leaf->payload);
+        return true;
+    }
+
+    return DBContentGroupItem::updateChild(child);
+}
+
+/**
+ */
+void DBContentRootItem::onSubtreeUpdated()
+{
+    recomputeColorsRecursive();
 }
 
 void DBContentRootItem::recomputeColorsRecursive()
@@ -224,49 +533,4 @@ void DBContentRootItem::recomputeColorsRecursive()
             g->recomputeColorFromDirectChildren();
     };
     walk(this);
-}
-
-void DBContentRootItem::applyDefaultExpansionForColorMode(QTreeView* tree_view,
-                                                          unsigned int mode) const
-{
-    if (!tree_view || !model())
-        return;
-
-    // build the QModelIndex for this root
-    const QModelIndex root_idx = model()->index(row(), 0, QModelIndex());
-
-    // COMPASS::colorMode() order:
-    //   0 DSType, 1 DBContent, 2 DataSource, 3 DataSourceLine
-    // Expansion target (relative to this root row):
-    //   DSType         -> collapsed (no descendants expanded)
-    //   DataSource     -> expand one level (show DSType -> DS rows)
-    //   DataSourceLine -> expand two levels (show up to Line rows)
-    //   DBContent      -> expand three levels (everything)
-    int depth = 0;
-    switch (mode)
-    {
-        case 0: depth = 0; break;   // DSType
-        case 2: depth = 1; break;   // DataSource
-        case 3: depth = 2; break;   // DataSourceLine
-        case 1: depth = 3; break;   // DBContent
-        default: depth = 3; break;
-    }
-
-    // The DBContent root itself is always shown; expand it so its children
-    // are visible, then descend to `depth`.
-    tree_view->expand(root_idx);
-
-    std::function<void(const QModelIndex&, int)> walk =
-        [&](const QModelIndex& idx, int remaining)
-    {
-        if (remaining <= 0) return;
-        const int n = model()->rowCount(idx);
-        for (int i = 0; i < n; ++i)
-        {
-            QModelIndex child_idx = model()->index(i, 0, idx);
-            tree_view->expand(child_idx);
-            walk(child_idx, remaining - 1);
-        }
-    };
-    walk(root_idx, depth);
 }

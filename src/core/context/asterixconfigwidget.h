@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_core_export.h"
+
 #include <jasterix/jasterix.h>
 
 #include <QWidget>
@@ -39,7 +41,7 @@ class QCheckBox;
 using DecodeGetter = std::function<bool(unsigned int)>;
 using DecodeSetter = std::function<void(unsigned int, bool)>;
 
-class ASTERIXConfigWidget : public QWidget
+class COMPASS_CORE_API ASTERIXConfigWidget : public QWidget
 {
     Q_OBJECT
 

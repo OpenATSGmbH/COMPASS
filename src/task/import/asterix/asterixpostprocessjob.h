@@ -29,17 +29,28 @@
 #include <map>
 
 class Buffer;
-class COMPASS;
+class DBContentManager;
+class ProjectionManager;
+
+namespace dbContent
+{
+class CalculationPlan;
+}
 
 class ASTERIXPostprocessJob : public Job
 {
 public:
+    /// calc_plan: the calculated variables, built on the main thread, run first in the job
     ASTERIXPostprocessJob(std::map<std::string, std::shared_ptr<Buffer>> buffers,
                           ASTERIXImportTaskSettings settings,
-                          COMPASS& compass);
+                          std::shared_ptr<const dbContent::CalculationPlan> calc_plan,
+                          DBContentManager& dbcont_man,
+                          ProjectionManager& proj_man);
 
     ASTERIXPostprocessJob(std::map<std::string, std::shared_ptr<Buffer>> buffers,
-                          COMPASS& compass);
+                          std::shared_ptr<const dbContent::CalculationPlan> calc_plan,
+                          DBContentManager& dbcont_man,
+                          ProjectionManager& proj_man);
     // ctor with no checks/overrides/filters for JSON
 
     virtual ~ASTERIXPostprocessJob();
@@ -53,7 +64,9 @@ private:
     std::map<std::string, std::shared_ptr<Buffer>> buffers_;
 
     ASTERIXImportTaskSettings settings_;
-    COMPASS& compass_;
+    std::shared_ptr<const dbContent::CalculationPlan> calc_plan_;
+    DBContentManager& dbcont_man_;
+    ProjectionManager& proj_man_;
 
     static boost::mutex m3a_map_mutex_;
     static tbb::concurrent_unordered_map<unsigned int, unsigned int> obfuscate_m3a_map_;
@@ -77,8 +90,6 @@ public:
 
     void doRadarPlotPositionCalculations();
     void doXYPositionCalculations();
-    void doADSBPositionProcessing();
-    void doGroundSpeedCalculations();
     void doFilters();
     void doObfuscate();
     void checkARTASHashes();

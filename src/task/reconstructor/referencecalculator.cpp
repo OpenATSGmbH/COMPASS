@@ -32,16 +32,15 @@
 #include "grid2d.h"
 #include "grid2dlayer.h"
 
-#include "compass.h"
 #include "taskmanager.h"
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
-#include "task/result/report/sectioncontentfigure.h"
-#include "task/result/report/sectioncontenttext.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
+#include "report/sectioncontentfigure.h"
+#include "report/sectioncontenttext.h"
 
-#include "util/timeconv.h"
-#include "util/number.h"
+#include "timeconv.h"
+#include "number.h"
 #include "stringconv.h"
 #include "logger.h"
 #include "global.h"
@@ -292,6 +291,15 @@ void ReferenceCalculator::generateLineMeasurements(const dbContent::Reconstructo
         reconstruction::Measurement mm;
         reconstructor_.createMeasurement(mm, tr_info, &target);
 
+        //stopped state: stiffen the process noise so the forced zero-movement
+        //model holds its accuracy-weighted anchor position over the standing
+        //window (reference calculation only, association chains are untouched)
+        if (mm.stopped)
+        {
+            mm.Q_var        = (float)(settings_.Q_std_stopped * settings_.Q_std_stopped);
+            mm.Q_var_interp = mm.Q_var;
+        }
+
         // if (tr_info.track_number_.value() == 69 || target.utn_ == 69)
         // {
         //     loginf << "POS (" << mm.lat << "," << mm.lon << ") " << "(" << (mm.vx.has_value() ? mm.vx.value() : 666) << "," << (mm.vy.has_value() ? mm.vy.value() : 666) << ")";
@@ -299,6 +307,38 @@ void ReferenceCalculator::generateLineMeasurements(const dbContent::Reconstructo
         // }
 
         line_measurements.push_back(mm);
+    }
+
+    //@HACK temporary debug logging for the standing-jump investigation:
+    //per-line summary of the estimated position accuracies of UTN 7
+    if (target.utn_ == 7 && !line_measurements.empty())
+    {
+        std::vector<double> stddevs;
+        stddevs.reserve(line_measurements.size());
+
+        size_t num_stopped = 0;
+
+        for (const auto& mm : line_measurements)
+        {
+            if (mm.x_stddev.has_value() && mm.y_stddev.has_value())
+                stddevs.push_back(0.5 * (mm.x_stddev.value() + mm.y_stddev.value()));
+            if (mm.stopped)
+                ++num_stopped;
+        }
+
+        if (!stddevs.empty())
+        {
+            std::sort(stddevs.begin(), stddevs.end());
+
+            loginf << "UTN7ACC dbcont " << dbcontent_id
+                   << " ds " << sensor_id
+                   << " line " << line_id
+                   << " n " << stddevs.size()
+                   << " stopped " << num_stopped
+                   << " stddev min " << stddevs.front()
+                   << " med " << stddevs[ stddevs.size() / 2 ]
+                   << " max " << stddevs.back();
+        }
     }
 
     addMeasurements(target.utn_, dbcontent_id, line_measurements);
@@ -584,7 +624,7 @@ void ReferenceCalculator::reconstructSmoothMeasurements(std::vector<kalman::Kalm
                                            refs.measurements);
     }
 
-    std::set<unsigned long> usage_used_recnums;
+    std::set<std::uint64_t> usage_used_recnums;
     for (const auto& usage : refs.measurement_contributions)
         if (usage.interpolated || usage.stopped)
             usage_used_recnums.insert(usage.rec_num);
@@ -982,12 +1022,7 @@ void ReferenceCalculator::reconstructMeasurements(TargetReferences& refs)
     //configure and init estimator
     reconstruction::KalmanEstimator estimator;
     estimator.settings() = settings_.kalmanEstimatorSettings();
-
-#if USE_EXPERIMENTAL_SOURCE == false
-    traced_assert(settings_.kalman_type_final == kalman::KalmanType::UMKalman2D);
-#endif
-
-    estimator.init(settings_.kalman_type_final);
+    estimator.init(reconstructor_.createKalmanInterface(settings_.kalman_type_final, estimator.settings()));
 
     //try to init
     auto res = initReconstruction(refs);
@@ -1029,7 +1064,7 @@ void ReferenceCalculator::reconstructMeasurements(TargetReferences& refs)
             settings_.kalman_type_final == kalman::KalmanType::IMMKalman2D ? kalman::KalmanType::AMKalman2D : settings_.kalman_type_final;
 
         estimator_resample.settings() = settings_.kalmanEstimatorSettings();
-        estimator_resample.init(type_resample);
+        estimator_resample.init(reconstructor_.createKalmanInterface(type_resample, estimator_resample.settings()));
 
         //interpolate measurements
         size_t num_failed_steps;
@@ -1083,7 +1118,7 @@ void ReferenceCalculator::updateReferences()
 
         ref.second.references.clear();
 
-        std::set<unsigned long> rec_nums;
+        std::set<std::uint64_t> rec_nums;
 
         //store target report usages to target
         for (auto& tru_it : ref.second.measurement_contributions)
@@ -1253,7 +1288,7 @@ void ReferenceCalculator::createAnnotations()
 
     if (num_targets > 0)
     {
-        auto& report           = reconstructor_.task().manager().compass().taskManager().currentReport();
+        auto& report           = reconstructor_.task().manager().currentReport();
         auto& section_ref_calc = report->getSection("Reference Calculation");
 
         std::vector<std::string> headings = { "UTN" };

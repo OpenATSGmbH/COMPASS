@@ -19,6 +19,7 @@
 #include "stringconv.h"
 #include "logger.h"
 #include "traced_assert.h"
+#include "ui_test_common.h"
 
 #include <QVBoxLayout>
 #include <QHBoxLayout>
@@ -50,6 +51,7 @@ EvaluationTargetExcludedRequirementsDialog::EvaluationTargetExcludedRequirements
            << String::compress(available_requirements_,',') << "'";
 
     setWindowTitle("Edit Evaluation Excluded Requirements");
+    setObjectName("excluded_requirements_dialog");
 
     setModal(true);
 
@@ -85,6 +87,7 @@ EvaluationTargetExcludedRequirementsDialog::EvaluationTargetExcludedRequirements
     for (const auto& requirement : available_requirements_)
     {
         auto* checkbox = new QCheckBox(QString::fromStdString(requirement), scroll_widget_);
+        UI_TEST_OBJ_NAME(checkbox, QString::fromStdString("requirement_" + requirement));
         checkbox->setChecked(selected_requirements_.count(requirement) > 0);
 
         connect(checkbox, &QCheckBox::stateChanged, this, [this, requirement](int state) {
@@ -109,6 +112,7 @@ EvaluationTargetExcludedRequirementsDialog::EvaluationTargetExcludedRequirements
     main_layout->addWidget(new QLabel("Comment"));
 
     comment_edit_ = new QLineEdit(comment.c_str());
+    comment_edit_->setObjectName("comment_edit");
     comment_edit_->setMinimumHeight(QFontMetrics(comment_edit_->font()).height() * 3);
 
     main_layout->addWidget(comment_edit_);
@@ -120,12 +124,14 @@ EvaluationTargetExcludedRequirementsDialog::EvaluationTargetExcludedRequirements
     QHBoxLayout* button_layout = new QHBoxLayout();
 
     QPushButton* cancel_button = new QPushButton("Cancel");
+    cancel_button->setObjectName("cancel_button");
     connect(cancel_button, &QPushButton::clicked, this, &QDialog::reject);
     button_layout->addWidget(cancel_button);
 
     button_layout->addStretch();
 
     QPushButton* run_button = new QPushButton("OK");
+    run_button->setObjectName("ok_button");
     connect(run_button, &QPushButton::clicked, this, &QDialog::accept);
     button_layout->addWidget(run_button);
 

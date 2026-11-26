@@ -18,13 +18,13 @@
 #pragma once
 
 #include "basetablewidget.h"
+#include "allbuffertablemodel.h"
 
 #include <memory>
 #include <map>
 #include <vector>
 #include <string>
 
-class AllBufferTableModel;
 class Buffer;
 
 class AllBufferTableWidget : public BaseBufferTableWidget
@@ -37,12 +37,18 @@ class AllBufferTableWidget : public BaseBufferTableWidget
     virtual ~AllBufferTableWidget();
 
     void show(std::map<std::string, std::shared_ptr<Buffer>> buffers);
+    // commits row data prepared on a worker thread (see AllBufferTableModel::prepareData)
+    void showPrepared(AllBufferTableModel::PreparedData&& prepared);
 
     void selectSelectedRows();
+    // as above, with the selected row ranges already computed (from prepared data)
+    void selectSelectedRows(const std::vector<std::pair<int,int>>& ranges);
 
     int rowCount() const;
 
-    std::vector<std::vector<std::string>> getSelectedText(); // first is header
+    // first is header. max_rows 0 means no limit (interactive copy);
+    // report scraping passes a limit to keep the generated table bounded
+    std::vector<std::vector<std::string>> getSelectedText(unsigned int max_rows = 0);
     std::vector<std::vector<std::string>> getText(unsigned int max_rows=30); // first is header
 
     AllBufferTableModel* allBufferTableModel() const { return all_buffer_model_; }

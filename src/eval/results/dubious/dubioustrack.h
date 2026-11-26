@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/results/dubious/dubiousbase.h"
+#include "results/dubious/dubiousbase.h"
 
 namespace EvaluationRequirement
 {
@@ -83,9 +83,6 @@ protected:
     virtual std::string targetTableCustomSortColumn() const override { return "#DT"; }
     virtual Qt::SortOrder targetTableSortOrder() const override { return Qt::SortOrder::DescendingOrder; }
     virtual std::vector<TargetInfo> targetInfos() const override;
-    virtual std::vector<std::string> detailHeaders() const override;
-    virtual nlohmann::json::array_t detailValues(const EvaluationDetail& detail,
-                                                 const EvaluationDetail* parent_detail) const override;
 
     virtual bool detailIsOk(const EvaluationDetail& detail) const override;
     virtual void addAnnotationForDetail(nlohmann::json& annotations_json, 
@@ -99,7 +96,7 @@ protected:
     mutable float track_duration_nondub_  {0};
     mutable float track_duration_dubious_ {0};
 
-    std::string dubious_reasons_;
+    std::string reasons_;
 };
 
 /**

@@ -49,18 +49,21 @@ JSONImportTaskDialog::JSONImportTaskDialog(JSONImportTask& task)
     QHBoxLayout* button_layout = new QHBoxLayout();
 
     cancel_button_ = new QPushButton("Cancel");
+    cancel_button_->setObjectName("cancel_button");
     connect(cancel_button_, &QPushButton::clicked, this, &JSONImportTaskDialog::cancelClickedSlot);
     button_layout->addWidget(cancel_button_);
 
     button_layout->addStretch();
 
     test_button_ = new QPushButton("Test Import");
+    test_button_->setObjectName("test_button");
     connect(test_button_, &QPushButton::clicked, this, &JSONImportTaskDialog::testImportClickedSlot);
     button_layout->addWidget(test_button_);
 
     button_layout->addStretch();
 
     import_button_ = new QPushButton("Import");
+    import_button_->setObjectName("import_button");
     connect(import_button_, &QPushButton::clicked, this, &JSONImportTaskDialog::importClickedSlot);
     button_layout->addWidget(import_button_);
 

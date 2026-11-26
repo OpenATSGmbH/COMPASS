@@ -21,7 +21,7 @@
 #include "licenseimportdialog.h"
 #include "licensemanager.h"
 
-#include "compass.h"
+#include "appstate.h"
 #include "timeconv.h"
 
 #include <QLineEdit>
@@ -42,13 +42,14 @@
 
 /**
 */
-LicenseManagerDialog::LicenseManagerDialog(COMPASS& compass,
+LicenseManagerDialog::LicenseManagerDialog(LicenseManager& license_manager,
                                            QWidget* parent,
                                            Qt::WindowFlags f)
 :   QDialog(parent, f),
-    compass_(compass)
+    license_manager_(license_manager)
 {
     setWindowTitle("Manage Licenses");
+    setObjectName("license_manager_dialog");
 
     auto layout = new QVBoxLayout;
     setLayout(layout);
@@ -58,6 +59,8 @@ LicenseManagerDialog::LicenseManagerDialog(COMPASS& compass,
 
     auto add_license_button = new QPushButton("Add License");
     remove_license_button_ = new QPushButton("Remove License");
+    add_license_button->setObjectName("add_license_button");
+    remove_license_button_->setObjectName("remove_license_button");
 
     layouth->addWidget(add_license_button);
     layouth->addWidget(remove_license_button_);
@@ -75,6 +78,7 @@ LicenseManagerDialog::LicenseManagerDialog(COMPASS& compass,
     state_idx_ = 5;
 
     license_list_ = new QTreeWidget;
+    license_list_->setObjectName("license_tree");
     license_list_->setColumnCount(headers.count());
     license_list_->setHeaderLabels(headers);
     license_list_->setSelectionMode(QTreeWidget::SelectionMode::SingleSelection);
@@ -93,7 +97,7 @@ LicenseManagerDialog::LicenseManagerDialog(COMPASS& compass,
 
     group->setLayout(group_layout);
 
-    bool app_image = compass_.isAppImage();
+    bool app_image = AppState::isAppImage();
 
     license_widget_ = new LicenseWidget(!app_image);
 
@@ -102,6 +106,7 @@ LicenseManagerDialog::LicenseManagerDialog(COMPASS& compass,
 
     auto button_layout = new QHBoxLayout;
     auto close_button  = new QPushButton("Close");
+    close_button->setObjectName("close_button");
 
     button_layout->addStretch(1);
     button_layout->addWidget(close_button);
@@ -150,7 +155,7 @@ void LicenseManagerDialog::updateList()
     license_list_->blockSignals(true);
     license_list_->clear();
 
-    const auto& license_manager = compass_.licenseManager();
+    const auto& license_manager = license_manager_;
     auto active_license = license_manager.activeLicense();
 
     for (const auto& l : license_manager.getLicenses())
@@ -199,7 +204,7 @@ void LicenseManagerDialog::updateLicenseWidget()
     if (items.isEmpty())
         return;
 
-    auto& license_manager = compass_.licenseManager();
+    auto& license_manager = license_manager_;
 
     auto id = items.front()->text(idx_id_).toStdString();
     const auto& l = license_manager.getLicense(id);
@@ -211,12 +216,12 @@ void LicenseManagerDialog::updateLicenseWidget()
 */
 void LicenseManagerDialog::addLicense()
 {
-    auto& license_manager = compass_.licenseManager();
+    auto& license_manager = license_manager_;
     auto  license_cur     = license_manager.activeLicense();
 
     bool had_pro_license = license_cur && license_cur->type == license::License::Type::Pro;
 
-    LicenseImportDialog dlg(compass_, this);
+    LicenseImportDialog dlg(this);
     dlg.resize(640, 480);
 
     if (dlg.exec() == QDialog::Rejected)
@@ -270,7 +275,7 @@ void LicenseManagerDialog::removeCurrentLicense()
     if (items.isEmpty())
         return;
 
-    auto& license_manager = compass_.licenseManager();
+    auto& license_manager = license_manager_;
 
     auto id = items.front()->text(idx_id_).toStdString();
 

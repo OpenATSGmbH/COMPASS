@@ -1,0 +1,30 @@
+{
+    "description": "Radar Azimuth across north, threshold 0.08 deg. Reference 359.95 deg, test 0.02 deg: test minus reference is 0.07 deg, not -359.93 deg, passes. Reference 0.02 deg, test 359.95 deg: -0.07 deg, passes. Reference 359.9 deg, test 0.1 deg: 0.2 deg, fails. Probability 2 / 3.",
+    "type": "azimuth",
+    "threshold": 0.08,
+    "reports": [
+        {
+            "ref_deg": 359.95,
+            "tst_deg": 0.02,
+            "difference": 0.07,
+            "passed": true
+        },
+        {
+            "ref_deg": 0.02,
+            "tst_deg": 359.95,
+            "difference": -0.07,
+            "passed": true
+        },
+        {
+            "ref_deg": 359.9,
+            "tst_deg": 0.1,
+            "difference": 0.2,
+            "passed": false
+        }
+    ],
+    "expected": {
+        "passed": 2,
+        "failed": 1,
+        "probability": 0.6666666667
+    }
+}

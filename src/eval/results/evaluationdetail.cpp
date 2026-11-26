@@ -37,23 +37,6 @@ size_t EvaluationDetailComments::numComments(const std::string& group_id) const
 }
 
 /**
- * Sets a general comment.
- */
-EvaluationDetailComments& EvaluationDetailComments::generalComment(const std::string& c)
-{
-    comment_ = c;
-    return *this;
-}
-
-/**
- * Returns the current general comment.
- */
-const std::string& EvaluationDetailComments::generalComment() const
-{
-    return comment_;
-}
-
-/**
  * Stores the given comment under the given comment group and comment id.
  */
 EvaluationDetailComments& EvaluationDetailComments::comment(const std::string& group_id,
@@ -354,13 +337,4 @@ const EvaluationDetail::Details& EvaluationDetail::details() const
         throw std::runtime_error("EvaluationDetail::details(): No details attached");
 
     return details_.value();
-}
-
-/**
-*/
-EvaluationDetail& EvaluationDetail::generalComment(const std::string& c)
-{
-    comments().generalComment(c);
-
-    return *this;
 }

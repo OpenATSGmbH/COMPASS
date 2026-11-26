@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cstdint>
 #include "measurement.h"
 
 #include <cmath>
@@ -67,7 +68,7 @@ struct SyntheticTrack
 
             reconstruction::Measurement mm;
             mm.source_id = i;
-            mm.t         = t0 + boost::posix_time::milliseconds((long)(i * dt_s * 1000.0));
+            mm.t         = t0 + boost::posix_time::milliseconds((std::int64_t)(i * dt_s * 1000.0));
             mm.lat       = lat + noise(rng) / MetersPerDegLat;
             mm.lon       = lon + noise(rng) / metersPerDegLon(base_lat);
             mm.x_stddev  = sigma_m;

@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_gui_export.h"
+
 #include "idatasourceprovider.h"
 
 #include <QFrame>
@@ -24,7 +26,7 @@
 class QCheckBox;
 class QGridLayout;
 
-class SelectDataSourcesWidget : public QFrame
+class COMPASS_GUI_API SelectDataSourcesWidget : public QFrame
 {
     Q_OBJECT
 

@@ -17,7 +17,12 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
+#include <cstdint>
 #include "configurable.h"
+#include "iviewprovider.h"
+#include "imanager.h"
 #include "dbcontent/variable/variableset.h"
 #include "appmode.h"
 #include "viewpresets.h"
@@ -27,12 +32,24 @@
 #include "boost/date_time/posix_time/ptime.hpp"
 #include "boost/date_time/posix_time/posix_time_duration.hpp"
 
+#include <functional>
 #include <memory>
 #include <vector>
 #include <set>
 
-class COMPASS;
+class AppState;
+class FilterManager;
+class DBInterface;
+class DBContentManager;
+class JobManager;
+class LicenseManager;
+class IMainWindow;
 class Buffer;
+
+namespace context
+{
+    class DBContextManager;
+}
 class DBContentDataSet;
 class LiveDataFeed;
 struct LoadRequest;
@@ -45,13 +62,13 @@ class ViewPointsWidget;
 class ViewPointsReportGenerator;
 
 class QWidget;
-class QTabWidget;
+class ViewDeck;
 class LoadController;
 class LiveController;
 
 /**
 */
-class ViewManager : public QObject, public Configurable
+class COMPASS_VIEW_API ViewManager : public QObject, public Configurable, public IViewProvider, public IManager
 {
     Q_OBJECT
 
@@ -70,6 +87,14 @@ class ViewManager : public QObject, public Configurable
     void reloadStateChanged();
     void automaticUpdatesChanged();
     void presetEdited(ViewPresets::EditAction ea);
+    void databaseOpenedSignal(); // relay at the end of databaseOpenedSlot, for the view widgets
+    void databaseClosedSignal(); // relay at the end of databaseClosedSlot, for the view widgets
+    // live overload check of a tick attempt, forwarded from the live session (see LiveController)
+    void liveOverloadCheckedSignal(unsigned int packets,
+                                   double latency_s,
+                                   bool overloaded,
+                                   unsigned int held_ticks,
+                                   unsigned int hold_ticks);
 
   public slots:
     void selectionChangedSlot();
@@ -85,6 +110,11 @@ class ViewManager : public QObject, public Configurable
     void sourceDataChangedSlot(const std::vector<std::string>& names, bool reset, bool last);
     void loadingDoneSlot(); // emitted when all dbconts have finished loading
 
+    // a view finished its asynchronous processing (view processingFinishedSignal):
+    // fires the deferred load-done edge once no view is pending anymore
+    void viewProcessingStartedSlot();
+    void viewProcessingFinishedSlot();
+
     void appModeSwitchSlot (AppMode app_mode_previous, AppMode app_mode_current);
 
     // ASTERIX live watchdog trigger -> one live tick (delegates to the live session)
@@ -97,15 +127,38 @@ class ViewManager : public QObject, public Configurable
         bool automatic_redraw = true;
     };
 
-    ViewManager(nlohmann::json& config, COMPASS& compass);
+    ViewManager(nlohmann::json& config,
+                Configurable& parent,
+                AppState& app_state,
+                DBContentManager& dbcont_man);
     virtual ~ViewManager();
 
-    COMPASS& compass() { return compass_; }
+    AppState& appState() { return app_state_; }
+    DBContentManager& dbContentManager() { return dbcont_man_; }
 
-    void init(QTabWidget* main_tab_widget);
+    // peers, set by the composition root
+    void setManagers(FilterManager& filter_manager,
+                     DBInterface& db_interface,
+                     context::DBContextManager& ctx_man,
+                     JobManager& job_manager,
+                     LicenseManager& license_manager);
+    bool checkWired() const override; // without the main window, set later
+    void setMainWindow(IMainWindow& main_window) { main_window_ = &main_window; }
+    void setLiveImportBacklogSizeFunc(const std::function<unsigned int()>& func) { live_import_backlog_size_func_ = func; }
+
+    FilterManager& filterManager();
+    DBInterface& dbInterface();
+    context::DBContextManager& dbContextManager();
+    JobManager& jobManager();
+    LicenseManager& licenseManager();
+    IMainWindow& mainWindow();
+
+    unsigned int liveImportBacklogSize() const; // ASTERIX packets in processing
+
+    void init(ViewDeck* main_view_deck);
     void close();
 
-    void clearDataInViews();
+    void clearDataInViews() override;
 
     // reload the view content: builds the standard view LoadRequest, makes the
     // resulting operation the current source, and runs it through DBContentManager
@@ -117,15 +170,15 @@ class ViewManager : public QObject, public Configurable
 
     // the displayed buffers (the current source's, or empty when nothing is loaded).
     // The accessor lives here, on the owner - not on DBContentManager, which holds no dataset.
-    const std::map<std::string, std::shared_ptr<Buffer>>& currentBuffers() const;
+    const std::map<std::string, std::shared_ptr<Buffer>>& currentBuffers() const override;
 
     // live-session latency, delegated to the live session (the geo view reads it via the
     // DBContentManager façade). The feed + the two controllers stay private, not exposed.
-    bool hasMaxLatency() const;
-    boost::posix_time::time_duration maxLatency() const;
+    bool hasMaxLatency() const override;
+    boost::posix_time::time_duration maxLatency() const override;
 
     // selection carried to the next load (set by FilterManager / view-point selection)
-    void storeSelectedRecNums(const std::vector<unsigned long>& selected);
+    void storeSelectedRecNums(const std::vector<std::uint64_t>& selected) override;
     void clearSelectedRecNums();
 
     void registerView(View* view);
@@ -139,8 +192,6 @@ class ViewManager : public QObject, public Configurable
     void deleteContainerWidget(std::string instance_name);
     void removeContainerWidget(std::string instance_name);
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
-
     void viewShutdown(View* view, const std::string& err = "");
 
     std::map<std::string, ViewContainer*> getContainers() { return containers_; }
@@ -148,8 +199,12 @@ class ViewManager : public QObject, public Configurable
     std::map<std::string, View*> getViews() { return views_; }
     View* latestView();
     ViewContainerWidget* latestViewContainer();
-    
-    dbContent::VariableSet getReadSet(const std::string& dbcontent_name);
+
+    QWidget* viewContainerWidget(const std::string& name) override;
+    QWidget* latestViewContainerWidget() override;
+    QWidget* latestViewWidget() override;
+
+    dbContent::VariableSet getReadSet(const std::string& dbcontent_name) override;
 
     //@TODO: needed because of view container widget hack in ui_test_find.h
     //remove if no longer needed!
@@ -171,28 +226,30 @@ class ViewManager : public QObject, public Configurable
     void addViewPoints(const std::vector <nlohmann::json>& viewpoints);
 
     void setCurrentViewPoint (ViewableDataConfig* viewable,
-                              bool load_blocking = false);
+                              bool load_blocking = false,
+                              bool open_view_deck = false);
     /// Same, but takes shared ownership. Use this whenever the caller cannot
     /// guarantee that the viewable outlives the load it starts - the
     /// set_view_point command is destroyed before its load completes, which
     /// would leave current_viewable_ (and the views' current_view_point_)
     /// dangling in doViewPointAfterLoad().
     void setCurrentViewPoint (std::shared_ptr<ViewableDataConfig> viewable,
-                              bool load_blocking = false);
+                              bool load_blocking = false,
+                              bool open_view_deck = false) override;
     void unsetCurrentViewPoint ();
     void doViewPointAfterLoad ();
 
-    /// For each view container, if the currently-selected tab's view does
+    /// For each view container, if the view selected in its View Deck does
     /// not accept any annotation feature type present in `viewable`, switch
     /// the container to the first view (in container order) that does. No
     /// switch occurs when the current view is already compatible, when no
-    /// container holds a compatible view, or when the viewable has no
-    /// annotation features.
-    void activateCompatibleViewTabs(const ViewableDataConfig* viewable);
+    /// container holds a compatible view, when the viewable has no
+    /// annotation features, or when the View Deck is collapsed and
+    /// open_view_deck is false. With open_view_deck, a collapsed View Deck
+    /// opens and shows a compatible view.
+    void activateCompatibleViews(const ViewableDataConfig* viewable, bool open_view_deck);
 
     void selectTimeWindow(boost::posix_time::ptime ts_min, boost::posix_time::ptime ts_max);
-
-    void showMainViewContainerAddView();
 
     std::map<std::string, std::string> viewClassList() const;
 
@@ -202,8 +259,18 @@ class ViewManager : public QObject, public Configurable
 
     // disables propagation of data to the views. used when loading is performed for processing purposes
 
-    bool isProcessingData() const;
+    bool isProcessingData() const override;
 
+    // any view still processing data asynchronously (e.g. geographic view geometry
+    // builds). Part of the "busy" condition: gates a second load, closing the
+    // database, applying a view point and rendering a report figure.
+    bool hasPendingViewProcessing() const override;
+
+    // suppress the load/view-processing progress dialogs (wait cursor stays),
+    // used for the duration of a report export - see LoadController
+    void setLoadDialogsSuppressed(bool suppressed);
+
+    /// Restores the views and view windows of the application start, closes the added ones.
     void resetToStartupConfiguration();
 
     bool isInitialized() const;
@@ -236,6 +303,7 @@ class ViewManager : public QObject, public Configurable
     }
 
 protected:
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
     virtual void checkSubConfigurables();
 
     void enableStoredReadSets();
@@ -258,6 +326,9 @@ protected:
     void beginLiveSession();
     void endLiveSession();
 
+    // the deferred tail of loadingDoneSlot: dialog close + external done bookend
+    void finishLoadingDone();
+
     // selection carry-over across (re)loads (owned here - a view concern):
     // captureSelection() reads selected_ from the current source before a reload swaps
     // it away; applyCarriedSelection() restores it onto freshly arrived buffers.
@@ -265,7 +336,18 @@ protected:
     void applyCarriedSelection(const std::vector<std::string>& names);
     void restoreSelectionInto(const std::string& dbcontent_name, Buffer& buffer);
 
-    COMPASS& compass_;
+    AppState&         app_state_;
+    DBContentManager& dbcont_man_;
+
+    // peers, set by the composition root
+    FilterManager*             filter_manager_  = nullptr;
+    DBInterface*               db_interface_    = nullptr;
+    context::DBContextManager* ctx_man_         = nullptr;
+    JobManager*                job_manager_     = nullptr;
+    LicenseManager*            license_manager_ = nullptr;
+    IMainWindow*               main_window_     = nullptr;
+
+    std::function<unsigned int()> live_import_backlog_size_func_; // ASTERIX packets in processing, set by the root
 
     ViewPointsWidget* view_points_widget_{nullptr};
 
@@ -275,6 +357,16 @@ protected:
     bool processing_data_ = false;
     bool reload_needed_   = false;
 
+    // the load-done edge (dialog close + loadingDoneSignal) is held back because a
+    // view still processes data asynchronously; released in viewProcessingFinishedSlot.
+    // Cleared when a new load starts (the deferred done of a superseded load is dropped).
+    bool loading_done_deferred_ = false;
+
+    // views whose asynchronous processing the view-phase progress is still waiting on:
+    // each advances the progress when it reports finished, so the dialog reflects
+    // finished views rather than dispatched ones
+    std::set<View*> pending_views_;
+
     // Diagnostic state for loading lifecycle:
     //   loading_done_dispatched_: set true after a loadingDoneSlot body completes,
     //     reset on loadingStartedSlot. Used to detect late sourceDataChangedSlot calls.
@@ -283,10 +375,15 @@ protected:
     bool loading_done_dispatched_ = false;
     std::string current_dispatch_;
 
-    QTabWidget* main_tab_widget_{nullptr};
+    ViewDeck* main_view_deck_{nullptr};
 
     std::map<std::string, ViewContainer*> containers_;
     std::map<std::string, ViewContainerWidget*> container_widgets_;
+
+    // copies of the ViewContainer and ViewContainerWidget config entries at the start, with their
+    // nested view configs: a created view takes the nested config out of its entry
+    std::vector<nlohmann::json> startup_container_configs_;
+
     std::map<std::string, View*> views_;
 
     std::shared_ptr<DBContentDataSet> current_source_; // subscribed data source
@@ -294,7 +391,7 @@ protected:
     std::unique_ptr<LoadController> load_controller_; // view-load dialog/cursor/progress
     std::unique_ptr<LiveController> live_controller_; // live session: feed + tick
 
-    std::map<std::string, std::set<unsigned long>> carried_selection_; // selected rec nums carried between loads
+    std::map<std::string, std::set<std::uint64_t>> carried_selection_; // selected rec nums carried between loads
 
     std::unique_ptr<ViewPointsReportGenerator> view_points_report_gen_;
 
@@ -306,8 +403,6 @@ protected:
     bool view_point_data_selected_ {false};
 
     unsigned int container_count_{0};
-
-    std::map<std::string, std::string> view_class_list_; // class name -> name (without appended number)
 
     bool use_tmp_stored_readset_ {false};
     std::map<std::string, dbContent::VariableSet> tmp_stored_readset_;

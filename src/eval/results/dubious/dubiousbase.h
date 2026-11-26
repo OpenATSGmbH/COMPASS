@@ -17,7 +17,7 @@
 
 #pragma once
 
-#include "eval/results/base/probabilitybase.h"
+#include "results/base/probabilitybase.h"
 
 #include "targetposition.h"
 
@@ -93,7 +93,7 @@ public:
         dbContent::TargetPosition          pos_begin;
         dbContent::TargetPosition          pos_last;
         EvaluationDetails                  details;
-        std::map<std::string, std::string> dubious_reasons;
+        std::map<std::string, std::string> reasons; // of the period, shown in the target table
     };
 
     SingleDubiousBase(const std::string& result_type,
@@ -120,20 +120,38 @@ public:
         TODBegin,        //ptime
         TODEnd,          //ptime
         Duration,        //time_duration
-        NumPosInside,    //unsigned int
-        NumPosInsideDub, //unsigned int
         HasModeAC,       //bool
         HasModeS,        //bool
         LeftSector,      //bool
-        IsDubious       //bool
+        IsDubious,       //bool
+        ReportedSpeed,   //double, dubious test report [m/s]
+        CalculatedSpeed, //double, dubious test report [kts]
+        Acceleration,    //double, dubious test report [m/s^2]
+        TurnRate,        //double, dubious test report [deg/s]
+        ROCD             //double, dubious test report [ft/s]
     };
 
-    static void logComment(EvaluationDetail& d, const std::string& id, const std::string& comment);
     static void logComments(EvaluationDetail& d, const EvaluationDetailComments::CommentGroup& group);
     static EvaluationDetails generateDetails(const std::vector<DetailData>& detail_data);
 
+    /// a test report is dubious if its detail code has a reason bit (DubiousHelpers::CodeBit)
+    static bool isDubiousUpdate(const EvaluationDetail& detail);
+
 protected:
     static std::string dubiousReasonsString(const EvaluationDetailComments& comments);
+    void addReportTableColumns(ReportTableDefinition& def) const override;
+    void fillReportTableRow(ReportTableRows& rows,
+                            const EvaluationDetail& detail,
+                            const EvaluationDetail* parent_detail,
+                            const EvaluationDetail* prev_detail) const override;
+    void fillDetailFromReportTableRow(EvaluationDetail& detail,
+                            const Buffer& buffer,
+                            unsigned int row,
+                            const EvaluationDetail* prev_detail) const override;
+    void fillPeriodDetailFromReportTableRow(EvaluationDetail& period,
+                            const Buffer& buffer,
+                            unsigned int row) const override;
+    std::string reportTablePeriodColumn() const override { return "period_begin"; }
 };
 
 /**

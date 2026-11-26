@@ -16,7 +16,6 @@
  */
 
 #include "viewpresetwidget.h"
-#include "compass.h"
 #include "viewmanager.h"
 #include "view.h"
 #include "files.h"
@@ -174,6 +173,10 @@ void ViewPresetEditDialog::createUI()
     category_edit_    = new QLineEdit;
     description_edit_ = new QTextEdit;
 
+    name_edit_->setObjectName("name_edit");
+    category_edit_->setObjectName("category_edit");
+    description_edit_->setObjectName("description_edit");
+
     description_edit_->setSizePolicy(QSizePolicy::Expanding, QSizePolicy::Expanding);
     description_edit_->setAcceptRichText(false);
 
@@ -188,6 +191,9 @@ void ViewPresetEditDialog::createUI()
 
     auto ok_button     = new QPushButton("Ok");
     auto cancel_button = new QPushButton("Cancel");
+
+    ok_button->setObjectName("ok_button");
+    cancel_button->setObjectName("cancel_button");
 
     button_layout->addWidget(cancel_button );
     button_layout->addStretch(1);
@@ -263,7 +269,7 @@ void ViewPresetEditDialog::updateMetaData()
 */
 bool ViewPresetEditDialog::checkName()
 {
-    auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    auto& presets = view_->viewManager().viewPresets();
 
     if (name_edit_->text().isEmpty())
     {
@@ -315,7 +321,7 @@ bool ViewPresetEditDialog::applyCreate()
     updateMetaData();
 
     //create new preset
-    bool ok = view_->viewManager().compass().viewManager().viewPresets().createPreset(preset_new_, view_);
+    bool ok = view_->viewManager().viewPresets().createPreset(preset_new_, view_);
 
     QApplication::restoreOverrideCursor();
 
@@ -338,7 +344,7 @@ bool ViewPresetEditDialog::applyEdit()
     updateMetaData();
 
     //edit existing preset with new metadata
-    bool ok = view_->viewManager().compass().viewManager().viewPresets().updatePreset(preset_->key(), 
+    bool ok = view_->viewManager().viewPresets().updatePreset(preset_->key(), 
                                                                            ViewPresets::UpdateMode::MetaData,
                                                                            &preset_new_,
                                                                            view_);
@@ -370,7 +376,7 @@ bool ViewPresetEditDialog::applyCopy()
     updateMetaData();
 
     //copy preset
-    bool ok = view_->viewManager().compass().viewManager().viewPresets().copyPreset(preset_->key(), 
+    bool ok = view_->viewManager().viewPresets().copyPreset(preset_->key(), 
                                                                          preset_new_.name,
                                                                          preset_new_.metadata,
                                                                          view_);
@@ -645,11 +651,20 @@ void ViewPresetItemWidget::createUI()
 */
 void ViewPresetItemWidget::updateContents(const ViewPresets::Key& key)
 {
-    auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    auto& presets = view_->viewManager().viewPresets();
     traced_assert(presets.hasPreset(key));
 
     key_    = key;
     preset_ = &presets.presets().at(key);
+
+    const QString obj_name = "preset_" + ui_test::normalizedObjectName(QString::fromStdString(key_.second));
+
+    setObjectName(obj_name);
+    deployed_label_->setObjectName(obj_name + "_origin_label");
+    edit_button_->setObjectName(obj_name + "_edit_button");
+    copy_button_->setObjectName(obj_name + "_copy_button");
+    save_button_->setObjectName(obj_name + "_save_button");
+    remove_button_->setObjectName(obj_name + "_remove_button");
 
     updateContents();
 }
@@ -699,16 +714,40 @@ void ViewPresetItemWidget::updateContents()
     preview_label_->setText(preset_->preview.isNull() ? "No preview available" : "");
     preview_label_->setPixmap(preset_->preview.isNull() ? QPixmap() : QPixmap::fromImage(preset_->preview));
 
-    auto col = palette().color(QPalette::Window);
-    col = QColor(col.red() - 20, col.green() - 20, col.blue() - 20);
-
-    QPixmap pm = preset_->deployed ? decorate(QPixmap(Utils::Files::getImageFilepath("ats_transp.png").c_str()), col) : 
-                                     decorate(QPixmap(Utils::Files::getImageFilepath("user_wide.png").c_str() ), col);
-    
-    deployed_label_->setPixmap(pm.scaledToHeight(IconHeight, Qt::SmoothTransformation));
+    updateIcon();
 
     //example presets cannot be modified
     //edit_button_->setVisible(!preset_->deployed);
+}
+
+/**
+ * Updates the deployed/user icon from the current palette.
+ * Notice: The colored logo is not inverted in dark mode (would distort its colors) => it gets a lighter box instead.
+*/
+void ViewPresetItemWidget::updateIcon()
+{
+    const auto win  = palette().color(QPalette::Window);
+    const bool dark = win.lightness() < 128;
+
+    //box is darker than the background in light mode, lighter in dark mode
+    const int    shift = dark ? 20 : -20;
+    const QColor col(win.red() + shift, win.green() + shift, win.blue() + shift);
+
+    QImage img;
+    if (preset_->deployed)
+    {
+        img = QImage(Utils::Files::getImageFilepath("ats_transp.png").c_str());
+    }
+    else
+    {
+        img = QImage(Utils::Files::getImageFilepath("user_wide.png").c_str());
+        if (dark)
+            img = Utils::Files::invertImage(img);
+    }
+
+    QPixmap pm = decorate(QPixmap::fromImage(img), col);
+
+    deployed_label_->setPixmap(pm.scaledToHeight(IconHeight, Qt::SmoothTransformation));
 }
 
 /**
@@ -736,7 +775,7 @@ void ViewPresetItemWidget::copyButtonPressed()
 */
 void ViewPresetItemWidget::saveButtonPressed()
 {
-    auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    auto& presets = view_->viewManager().viewPresets();
     traced_assert(presets.hasPreset(key_));
 
     const auto& p = presets.presets().at(key_);
@@ -801,6 +840,17 @@ void ViewPresetItemWidget::leaveEvent(QEvent* event)
     }
 }
 
+/**
+*/
+void ViewPresetItemWidget::changeEvent(QEvent* event)
+{
+    QWidget::changeEvent(event);
+
+    //icon is baked from the palette => refresh on dark mode toggle
+    if (event->type() == QEvent::PaletteChange && preset_)
+        updateIcon();
+}
+
 /********************************************************************************************
  * ViewPresetItemListWidget
  ********************************************************************************************/
@@ -818,7 +868,7 @@ ViewPresetItemListWidget::ViewPresetItemListWidget(View* view,
     createUI();
     updateContents();
 
-    auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    auto& presets = view_->viewManager().viewPresets();
 
     //react on preset changes globally
     connect(&presets, &ViewPresets::presetAdded  , this, &ViewPresetItemListWidget::updateItem);
@@ -864,6 +914,7 @@ void ViewPresetItemListWidget::createUI()
     layout->addLayout(header_layout);
 
     filter_edit_ = new QLineEdit;
+    filter_edit_->setObjectName("filter_edit");
     filter_edit_->setPlaceholderText("Filter for preset name...");
     header_layout->addWidget(filter_edit_);
 
@@ -907,6 +958,7 @@ void ViewPresetItemListWidget::createUI()
     QPushButton* add_button = new QPushButton;
     add_button->setIcon(Utils::Files::IconProvider::getIcon("crosshair_fat.png"));
     add_button->setText("Add preset");
+    add_button->setObjectName("add_preset_button");
     footer_layout->addWidget(add_button);
     footer_layout->addStretch(1);
 
@@ -943,7 +995,7 @@ void ViewPresetItemListWidget::clear()
 */
 void ViewPresetItemListWidget::editPreset(ViewPresets::Key key)
 {
-    auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    auto& presets = view_->viewManager().viewPresets();
     traced_assert(presets.hasPreset(key));
 
     auto& p = presets.presets().at(key);
@@ -962,7 +1014,7 @@ void ViewPresetItemListWidget::editPreset(ViewPresets::Key key)
 */
 void ViewPresetItemListWidget::removePreset(ViewPresets::Key key)
 {
-    auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    auto& presets = view_->viewManager().viewPresets();
     traced_assert(presets.hasPreset(key));
 
     const auto& p = presets.presets().at(key);
@@ -983,7 +1035,7 @@ void ViewPresetItemListWidget::removePreset(ViewPresets::Key key)
 */
 void ViewPresetItemListWidget::copyPreset(ViewPresets::Key key)
 {
-    auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    auto& presets = view_->viewManager().viewPresets();
     traced_assert(presets.hasPreset(key));
 
     //copy preset
@@ -1041,7 +1093,7 @@ void ViewPresetItemListWidget::refill()
     //clear items
     clear();
 
-    const auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    const auto& presets = view_->viewManager().viewPresets();
 
     //get preset keys for stored view type
     auto keys = presets.keysFor(view_);
@@ -1121,6 +1173,7 @@ void ViewPresetItemListWidget::updateMinSize()
  ********************************************************************************************/
 
 const std::string ViewPresetWidget::NumPresetsKey = "num_presets";
+const std::string ViewPresetWidget::PresetsKey    = "presets";
 
 /**
 */
@@ -1180,6 +1233,7 @@ void ViewPresetWidget::createUI()
     preset_list_ = new ViewPresetItemListWidget(view_, this);
 
     show_button_ = new QToolButton;
+    show_button_->setObjectName("show_presets_button");
     show_button_->setIcon(Utils::Files::IconProvider::getIcon("preset.png"));
     show_button_->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Preferred);
     show_button_->setToolButtonStyle(Qt::ToolButtonStyle::ToolButtonTextBesideIcon);
@@ -1226,7 +1280,7 @@ void ViewPresetWidget::presetApplied(ViewPresets::Key key)
     QApplication::setOverrideCursor(Qt::WaitCursor);
 
     //apply preset
-    const auto& presets = view_->viewManager().compass().viewManager().viewPresets();
+    const auto& presets = view_->viewManager().viewPresets();
     const auto& preset  = presets.presets().at(key);
 
     std::string error_msg;
@@ -1265,7 +1319,7 @@ nlohmann::json ViewPresetWidget::viewInfoJSON() const
     //add general information
     nlohmann::json preset_infos = nlohmann::json::array();
 
-    const auto& presets = view_->viewManager().compass().viewManager().viewPresets().presets();
+    const auto& presets = view_->viewManager().viewPresets().presets();
 
     for (const auto& p : presets)
     {
@@ -1297,12 +1351,29 @@ boost::optional<QString> ViewPresetWidget::uiGet(const QString& what) const
 }
 
 /**
- * @TODO: improve.
+ * Returns the number of presets and per preset its name and whether it was deployed with COMPASS,
+ * in the order of the indices taken by uiSet().
  */
 nlohmann::json ViewPresetWidget::uiGetJSON(const QString& what) const
 {
+    const auto& presets = view_->viewManager().viewPresets().presets();
+
+    nlohmann::json preset_infos = nlohmann::json::array();
+
+    for (const auto& key : preset_list_->keys())
+    {
+        const auto& preset = presets.at(key);
+
+        nlohmann::json preset_info;
+        preset_info[ "name"     ] = preset.name;
+        preset_info[ "deployed" ] = preset.isDeployed();
+
+        preset_infos.push_back(preset_info);
+    }
+
     nlohmann::json j;
     j[ NumPresetsKey ] = preset_list_->count();
+    j[ PresetsKey    ] = preset_infos;
 
     return j;
 }

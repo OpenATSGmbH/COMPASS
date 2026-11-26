@@ -16,9 +16,9 @@
  */
 
 #include "analysisdataset.h"
+#include "evaluationconstraints.h"
 
 #include "buffer.h"
-#include "compass.h"
 #include "db_context_manager.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentaccessor.h"
@@ -35,7 +35,12 @@
 #include "logger.h"
 #include "viewmanager.h"
 
+#include <QCoreApplication>
+#include <QThread>
+
 #include <algorithm>
+#include <chrono>
+#include <future>
 
 #include <boost/date_time/posix_time/posix_time.hpp>
 
@@ -45,12 +50,32 @@ using boost::posix_time::time_duration;
 namespace
 {
 constexpr unsigned int kInvalidIdx = std::numeric_limits<unsigned int>::max();
+
+// CAT010 I010/000 message types
+constexpr unsigned char kCAT010MsgTargetReport       = 1;
+constexpr unsigned char kCAT010MsgStartOfUpdateCycle = 2;
+
+// CAT010 I010/020 TYP: 3 = PSR (SMR)
+constexpr unsigned char kCAT010DetectionTypePSR = 3;
+
+const std::vector<unsigned int>& emptyIndices()
+{
+    static const std::vector<unsigned int> empty;
+    return empty;
 }
 
-AnalysisDataset::AnalysisDataset(COMPASS& compass)
-    : compass_(compass)
+const std::vector<ptime>& emptyCycles()
 {
-    accessor_ = std::make_shared<dbContent::DBContentAccessor>(compass.dbContentManager());
+    static const std::vector<ptime> empty;
+    return empty;
+}
+}
+
+AnalysisDataset::AnalysisDataset(DBContentManager& dbcont_man, context::DBContextManager& ctx_man)
+    : dbcont_man_(dbcont_man),
+      ctx_man_(ctx_man)
+{
+    accessor_ = std::make_shared<dbContent::DBContentAccessor>(dbcont_man_);
 }
 
 AnalysisDataset::~AnalysisDataset() = default;
@@ -59,7 +84,7 @@ void AnalysisDataset::loadStatusCycles()
 {
     status_cycles_.clear();
 
-    auto& dbcontent_man = compass_.dbContentManager();
+    auto& dbcontent_man = dbcont_man_;
 
     const std::string status_content = "CAT019";
 
@@ -117,7 +142,7 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
         return false;
     }
 
-    auto& dbcontent_man = compass_.dbContentManager();
+    auto& dbcontent_man = dbcont_man_;
 
     if (!dbcontent_man.hasAssociations())
     {
@@ -126,7 +151,7 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
         return false;
     }
 
-    auto& ctx_man = compass_.dbContextManager();
+    auto& ctx_man = ctx_man_;
 
     if (ref_ds_ids.empty())
     {
@@ -181,12 +206,29 @@ bool AnalysisDataset::load(const std::set<unsigned int>& selected_ds_ids,
     // OK; consumers (status-message PD) check `statusCycles().empty()`.
     loadStatusCycles();
 
-    buildChains(selected_ds_ids, ref_ds_ids, test_dbcontents);
+    // The chain build runs the scope filter (sector inside test) on every
+    // report and can take minutes. Run it on a worker thread and keep the Qt
+    // event loop running on the main thread, so the application stays
+    // responsive. Same std::async + polling pattern as the inspector compute:
+    // poll the future itself, it is also ready when buildChains() throws, and
+    // get() passes the exception on.
+    auto fut = std::async(std::launch::async, [&]() {
+        buildChains(selected_ds_ids, ref_ds_ids, test_dbcontents);
+    });
+
+    while (fut.wait_for(std::chrono::milliseconds(0)) != std::future_status::ready)
+    {
+        QCoreApplication::processEvents();
+        QThread::msleep(50);
+    }
+    fut.get();
 
     if (!hasUsableData())
     {
-        error_out = "Loaded buffers contain no associated UTNs with both "
-                    "reference and test data.";
+        error_out = require_reference_
+            ? "Loaded buffers contain no associated UTNs with both "
+              "reference and test data."
+            : "Loaded buffers contain no test data for the selected data sources.";
         return false;
     }
 
@@ -197,16 +239,23 @@ dbContent::VariableSet AnalysisDataset::buildReadSet(const std::string& name) co
 {
     using namespace dbcontent_vars;
 
-    auto& m = compass_.dbContentManager();
+    auto& m = dbcont_man_;
     dbContent::VariableSet rs;
 
     auto addMeta = [&](const auto& mv) {
         if (m.metaCanGetVariable(name, mv))
             rs.add(m.metaGetVariable(name, mv));
     };
+    // Variable names are not unique over the dbcontents, and the data type can
+    // differ: "Target Length" is FLOAT in CAT010 but UCHAR in CAT062 and
+    // RefTraj. getVariable() asserts on a type mismatch, so the type is checked
+    // before the variable is added.
     auto addVar = [&](const auto& v) {
-        if (m.canGetVariable(name, v))
-            rs.add(m.getVariable(name, v));
+        if (!m.canGetVariable(name, v))
+            return;
+        if (m.dbContent(name).variable(v.name()).dataType() != v.dataType())
+            return;
+        rs.add(m.getVariable(name, v));
     };
 
     // identity / time / position (mirrors EvaluationManager::addVariables; the
@@ -263,6 +312,18 @@ dbContent::VariableSet AnalysisDataset::buildReadSet(const std::string& name) co
     // contributing receivers (CAT020 RU inspectors)
     addVar(var_cat020_contrib_recv_);
 
+    // CAT010 SMR: message type (scan cycles), polar position, descriptor
+    // flags, target size, plot amplitude
+    addMeta(meta_var_message_type_);
+    addVar(var_radar_range_);
+    addVar(var_radar_azimuth_);
+    addVar(var_cat010_detection_type_);
+    addVar(var_cat010_slant_range_corrected_);
+    addVar(var_cat010_target_length_);
+    addVar(var_cat010_target_width_);
+    addVar(var_cat010_target_orientation_);
+    addVar(var_cat010_psr_amplitude_);
+
     return rs;
 }
 
@@ -273,7 +334,7 @@ bool AnalysisDataset::targetGroundOnly(unsigned int utn) const
         return it->second;
 
     bool ground_only = false;
-    auto& dbcont_man = compass_.dbContentManager();
+    auto& dbcont_man = dbcont_man_;
     if (dbcont_man.existsTarget(utn))
     {
         auto cat = dbcont_man.emitterCategory(utn);
@@ -293,16 +354,21 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
 
     const ScopeFilter& sf = scope_filter_;
 
+    // data exclusions of the evaluation, nullptr when not used
+    const EvaluationConstraints* excl = sf.eval_exclusions.get();
+
     // Per-report inside test (mirrors EvaluationTargetData::computeSectorInsideInfo):
     // a report is in scope when its ground state, barometric flight level and
     // sector membership pass the configured constraints. `lat/lon/mc/gb` are the
     // (optional) position, Mode-C and ground-bit vectors; pass nullptr when absent.
+    // `forced_on_ground` marks reports known to be on ground without a ground
+    // bit (ground-only reconstructed target, or ground-only data source).
     auto inScope = [&sf](const NullableVector<double>* lat_vec,
                          const NullableVector<double>* lon_vec,
                          const NullableVector<float>* mc_vec,
                          const NullableVector<bool>* gb_vec,
                          unsigned int idx,
-                         bool target_ground_only) -> bool
+                         bool forced_on_ground) -> bool
     {
         if (!sf.active())
             return true;
@@ -311,7 +377,7 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
         if (gb_vec && !gb_vec->isNull(idx))
             ground_bit = gb_vec->get(idx);
 
-        bool on_ground = target_ground_only || (ground_bit.has_value() && ground_bit.value());
+        bool on_ground = forced_on_ground || (ground_bit.has_value() && ground_bit.value());
 
         if (sf.ground_only && !on_ground)
             return false;
@@ -344,8 +410,9 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
                 pos.altitude_     = mc_vec->get(idx);
             }
 
-            const bool has_gb = ground_bit.has_value();
-            const bool gb_set = ground_bit.has_value() ? ground_bit.value() : false;
+            // a forced on-ground report is presented like a set ground bit
+            const bool has_gb = ground_bit.has_value() || forced_on_ground;
+            const bool gb_set = on_ground;
 
             bool inside = false;
             for (const auto& sl : sf.sectors)
@@ -398,6 +465,23 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
 
             unsigned int utn = utn_vec.get(i);
             ptime ts         = ts_vec.get(i);
+
+            if (excl)
+            {
+                if (!excl->useTarget(utn))
+                {
+                    excluded_utns_.insert(utn);
+                    ++num_ref_records_excluded_;
+                    continue;
+                }
+                if (!excl->isTimeStampNotExcluded(utn, ts))
+                {
+                    // kept as a break, the reference period ends here as in the evaluation
+                    ref_breaks_[utn].insert(ts);
+                    ++num_ref_records_excluded_;
+                    continue;
+                }
+            }
 
             if (!inScope(ref_lat_vec, ref_lon_vec, ref_mc_vec, ref_gb_vec, i, targetGroundOnly(utn)))
                 continue;
@@ -455,8 +539,10 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
         logwrn << "RefTraj buffer or required meta variables not present";
     }
 
-    // Test (CAT020 / CAT010 / ...): keep only rows from selected DS IDs and that
-    // are associated to a UTN.
+    // Test (CAT020 / CAT010 / ...): keep rows from selected DS IDs. Rows with a
+    // UTN go into per-UTN chains, rows without a UTN into the unassociated
+    // pool. CAT010 status messages are not target reports: type 002 (Start of
+    // Update Cycle) rows become per-source scan cycles, the others are dropped.
     for (const auto& dbcontent_name : test_dbcontents)
     {
         if (!accessor_->has(dbcontent_name))
@@ -488,21 +574,87 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
             accessor_->hasMetaVar<bool>(dbcontent_name, meta_var_ground_bit_)
             ? &accessor_->getMetaVar<bool>(dbcontent_name, meta_var_ground_bit_) : nullptr;
 
+        const bool is_cat010 = (dbcontent_name == "CAT010");
+
+        NullableVector<unsigned char>* msg_type_vec =
+            is_cat010 && accessor_->hasMetaVar<unsigned char>(dbcontent_name, meta_var_message_type_)
+            ? &accessor_->getMetaVar<unsigned char>(dbcontent_name, meta_var_message_type_) : nullptr;
+
+        NullableVector<unsigned char>* det_type_vec =
+            is_cat010 && sf.smr_only
+            && accessor_->hasVar<unsigned char>(dbcontent_name, var_cat010_detection_type_)
+            ? &accessor_->getVar<unsigned char>(dbcontent_name, var_cat010_detection_type_) : nullptr;
+
+        if (is_cat010 && sf.smr_only && !det_type_vec)
+            logwrn << "CAT010 detection type not loaded, SMR-only filter not applied";
+
         unsigned int n = ts_vec.contentSize();
         bool any_added = false;
         for (unsigned int i = 0; i < n; ++i)
         {
-            if (ts_vec.isNull(i) || utn_vec.isNull(i) || ds_id_vec.isNull(i))
+            if (ts_vec.isNull(i) || ds_id_vec.isNull(i))
                 continue;
 
             unsigned int ds_id = ds_id_vec.get(i);
             if (!selected_ds_ids.count(ds_id))
                 continue;
 
-            unsigned int utn = utn_vec.get(i);
-            ptime ts         = ts_vec.get(i);
+            ptime ts = ts_vec.get(i);
 
-            if (!inScope(tst_lat_vec, tst_lon_vec, tst_mc_vec, tst_gb_vec, i, targetGroundOnly(utn)))
+            if (msg_type_vec && !msg_type_vec->isNull(i))
+            {
+                const unsigned char msg_type = msg_type_vec->get(i);
+                if (msg_type == kCAT010MsgStartOfUpdateCycle)
+                {
+                    status_cycles_by_ds_[ds_id].push_back(ts);
+                    continue;
+                }
+                if (msg_type != kCAT010MsgTargetReport)
+                    continue;
+            }
+
+            if (det_type_vec
+                && (det_type_vec->isNull(i) || det_type_vec->get(i) != kCAT010DetectionTypePSR))
+            {
+                ++num_non_psr_skipped_;
+                continue;
+            }
+
+            const bool ds_ground_only = sf.ground_only_ds_ids.count(ds_id) > 0;
+
+            if (utn_vec.isNull(i))
+            {
+                // no target, only the global time rule applies
+                if (excl && !excl->isTimeStampNotExcluded(ts))
+                {
+                    ++num_tst_records_excluded_;
+                    continue;
+                }
+
+                if (!inScope(tst_lat_vec, tst_lon_vec, tst_mc_vec, tst_gb_vec, i, ds_ground_only))
+                    continue;
+
+                unassociated_idx_[dbcontent_name].push_back(i);
+                ++num_unassoc_records_total_;
+                continue;
+            }
+
+            unsigned int utn = utn_vec.get(i);
+
+            if (excl)
+            {
+                const bool use = excl->useTarget(utn);
+                if (!use || !excl->isTimeStampNotExcluded(utn, ts))
+                {
+                    if (!use)
+                        excluded_utns_.insert(utn);
+                    ++num_tst_records_excluded_;
+                    continue;
+                }
+            }
+
+            if (!inScope(tst_lat_vec, tst_lon_vec, tst_mc_vec, tst_gb_vec, i,
+                         ds_ground_only || targetGroundOnly(utn)))
                 continue;
 
             addToTestChain(utn, dbcontent_name, ts, i);
@@ -512,6 +664,13 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
 
         if (any_added)
             tst_dbcontents_present_.insert(dbcontent_name);
+    }
+
+    for (auto& kv : status_cycles_by_ds_)
+    {
+        auto& cycles = kv.second;
+        std::sort(cycles.begin(), cycles.end());
+        cycles.erase(std::unique(cycles.begin(), cycles.end()), cycles.end());
     }
 
     // Finalize chains and collect UTNs that have at least one of (ref, test).
@@ -528,6 +687,26 @@ void AnalysisDataset::buildChains(const std::set<unsigned int>& selected_ds_ids,
 
     if (has_position_extent_)
         center_lat_deg_ = 0.5 * (min_lat_ + max_lat_);
+
+    loginf << "built " << ref_chains_.size() << " reference chains, "
+           << tst_chains_.size() << " test chains, "
+           << num_unassoc_records_total_ << " unassociated test records, "
+           << num_non_psr_skipped_ << " non-PSR CAT010 records skipped, "
+           << status_cycles_by_ds_.size() << " sources with scan cycles";
+
+    if (excl)
+        loginf << "evaluation exclusions: " << excluded_utns_.size() << " targets, "
+               << num_ref_records_excluded_ << " reference and "
+               << num_tst_records_excluded_ << " test records excluded";
+}
+
+const std::set<ptime>* AnalysisDataset::referenceBreaks(unsigned int utn) const
+{
+    auto it = ref_breaks_.find(utn);
+    if (it == ref_breaks_.end() || it->second.empty())
+        return nullptr;
+
+    return &it->second;
 }
 
 void AnalysisDataset::addToReferenceChain(unsigned int utn, ptime ts, unsigned int idx)
@@ -564,6 +743,9 @@ void AnalysisDataset::addToTestChain(unsigned int utn, const std::string& dbcont
 
 bool AnalysisDataset::hasUsableData() const
 {
+    if (!require_reference_)
+        return !tst_chains_.empty() || num_unassoc_records_total_ > 0;
+
     for (const auto& kv : tst_chains_)
     {
         if (ref_chains_.count(kv.first.first))
@@ -598,8 +780,68 @@ unsigned int AnalysisDataset::numTestChains() const
     return static_cast<unsigned int>(tst_chains_.size());
 }
 
-boost::optional<dbContent::TargetPosition>
-AnalysisDataset::mappedRefPos(unsigned int utn, ptime timestamp, time_duration d_max) const
+boost::optional<bool> AnalysisDataset::testVariableHasValues(const std::string& dbcontent_name,
+                                                             const Property& property,
+                                                             bool meta) const
+{
+    if (!accessor_ || !accessor_->has(dbcontent_name))
+        return boost::none;
+
+    auto& m = dbcont_man_;
+
+    if (meta ? !m.metaCanGetVariable(dbcontent_name, property)
+             : !m.canGetVariable(dbcontent_name, property))
+        return boost::none;
+
+    // same type check as in buildReadSet, getVariable() asserts on a type mismatch
+    if (!meta && m.dbContent(dbcontent_name).variable(property.name()).dataType() != property.dataType())
+        return boost::none;
+
+    auto& var = meta ? m.metaGetVariable(dbcontent_name, property)
+                     : m.getVariable(dbcontent_name, property);
+
+    Property column(var.name(), var.dataType());
+
+    auto buffer = accessor_->get(dbcontent_name);
+    if (!buffer || !buffer->hasProperty(column))
+    {
+        logwrn << "variable " << var.name() << " not loaded for " << dbcontent_name;
+        return false;
+    }
+
+    for (unsigned int i = 0; i < buffer->size(); ++i)
+    {
+        if (!buffer->isNull(column, i))
+            return true;
+    }
+    return false;
+}
+
+const std::vector<unsigned int>&
+AnalysisDataset::unassociatedIndices(const std::string& dbcontent_name) const
+{
+    auto it = unassociated_idx_.find(dbcontent_name);
+    if (it == unassociated_idx_.end())
+        return emptyIndices();
+    return it->second;
+}
+
+bool AnalysisDataset::hasStatusCycles(unsigned int ds_id) const
+{
+    auto it = status_cycles_by_ds_.find(ds_id);
+    return it != status_cycles_by_ds_.end() && !it->second.empty();
+}
+
+const std::vector<ptime>& AnalysisDataset::statusCycles(unsigned int ds_id) const
+{
+    auto it = status_cycles_by_ds_.find(ds_id);
+    if (it == status_cycles_by_ds_.end())
+        return emptyCycles();
+    return it->second;
+}
+
+boost::optional<dbContent::TargetReport::DataMapping>
+AnalysisDataset::refMappingWithin(unsigned int utn, ptime timestamp, time_duration d_max) const
 {
     auto it = ref_chains_.find(utn);
     if (it == ref_chains_.end())
@@ -607,34 +849,127 @@ AnalysisDataset::mappedRefPos(unsigned int utn, ptime timestamp, time_duration d
 
     auto mapping = it->second->calculateDataMapping(timestamp);
 
-    if (!mapping.has_ref_pos_)
+    if (!mapping.has_ref_pos_ || !dbContent::TargetReport::withinMaxGap(mapping, d_max))
         return boost::none;
 
-    auto absDur = [](time_duration d) {
-        return d.is_negative() ? -d : d;
-    };
+    return mapping;
+}
 
-    if (mapping.has_ref1_ && mapping.has_ref2_)
-    {
-        auto lo = absDur(timestamp - mapping.timestamp_ref1_);
-        auto hi = absDur(mapping.timestamp_ref2_ - timestamp);
-        if (lo > d_max || hi > d_max)
-            return boost::none;
-    }
-    else if (mapping.has_ref1_)
-    {
-        if (absDur(timestamp - mapping.timestamp_ref1_) > d_max)
-            return boost::none;
-    }
-    else if (mapping.has_ref2_)
-    {
-        if (absDur(mapping.timestamp_ref2_ - timestamp) > d_max)
-            return boost::none;
-    }
-    else
-    {
+boost::optional<dbContent::TargetPosition>
+AnalysisDataset::mappedRefPos(unsigned int utn, ptime timestamp, time_duration d_max,
+                              boost::optional<dbContent::TargetPositionAccuracy>* ref_pos_acc_out) const
+{
+    if (ref_pos_acc_out)
+        *ref_pos_acc_out = boost::none;
+
+    auto mapping = refMappingWithin(utn, timestamp, d_max);
+    if (!mapping)
         return boost::none;
+
+    if (ref_pos_acc_out)
+    {
+        const auto& chain = *ref_chains_.at(utn);
+
+        // worse (larger std-dev) of the bracketing reference updates, like
+        // ReconstructorTarget::interpolatedRefPosForTime
+        boost::optional<dbContent::TargetPositionAccuracy> acc1, acc2;
+
+        if (mapping->has_ref1_)
+            acc1 = chain.posAccuracy(mapping->dataid_ref1_);
+        if (mapping->has_ref2_)
+            acc2 = chain.posAccuracy(mapping->dataid_ref2_);
+
+        if (acc1 && acc2)
+            *ref_pos_acc_out = acc1->max() > acc2->max() ? acc1 : acc2;
+        else if (acc1)
+            *ref_pos_acc_out = acc1;
+        else if (acc2)
+            *ref_pos_acc_out = acc2;
     }
 
-    return mapping.pos_ref_;
+    return mapping->pos_ref_;
+}
+
+std::pair<boost::optional<std::uint64_t>, boost::optional<std::uint64_t>>
+AnalysisDataset::mappedRefRecordNumbers(unsigned int utn, ptime timestamp, time_duration d_max) const
+{
+    std::pair<boost::optional<std::uint64_t>, boost::optional<std::uint64_t>> rec_nums;
+
+    auto mapping = refMappingWithin(utn, timestamp, d_max);
+    if (!mapping)
+        return rec_nums;
+
+    const auto& chain = *ref_chains_.at(utn);
+
+    if (mapping->has_ref1_)
+        rec_nums.first = chain.recordNumber(mapping->dataid_ref1_);
+    if (mapping->has_ref2_)
+        rec_nums.second = chain.recordNumber(mapping->dataid_ref2_);
+
+    return rec_nums;
+}
+
+boost::optional<dbContent::TargetReport::DataID>
+AnalysisDataset::firstReferenceSampleInRange(unsigned int utn, ptime begin, ptime end) const
+{
+    auto it = ref_chains_.find(utn);
+    if (it == ref_chains_.end())
+        return boost::none;
+
+    return dbContent::TargetReport::firstInRange(it->second->timestampIndexes(), begin, end);
+}
+
+boost::optional<dbContent::TargetReport::DataID>
+AnalysisDataset::lastReferenceSampleInRange(unsigned int utn, ptime begin, ptime end) const
+{
+    auto it = ref_chains_.find(utn);
+    if (it == ref_chains_.end())
+        return boost::none;
+
+    return dbContent::TargetReport::lastInRange(it->second->timestampIndexes(), begin, end);
+}
+
+boost::optional<std::uint64_t>
+AnalysisDataset::testRecordNumberAt(unsigned int utn, ptime timestamp) const
+{
+    for (const auto& dbc : tst_dbcontents_present_)
+    {
+        auto it = tst_chains_.find(std::make_pair(utn, dbc));
+        if (it == tst_chains_.end())
+            continue;
+
+        const auto& indexes = it->second->timestampIndexes();
+
+        auto ts_it = indexes.find(timestamp);
+        if (ts_it == indexes.end())
+            continue;
+
+        return it->second->recordNumber(dbContent::TargetReport::DataID(*ts_it));
+    }
+
+    return boost::none;
+}
+
+boost::optional<float>
+AnalysisDataset::mappedRefTrackAngle(unsigned int utn, ptime timestamp, time_duration d_max) const
+{
+    auto mapping = refMappingWithin(utn, timestamp, d_max);
+    if (!mapping)
+        return boost::none;
+
+    const auto& chain = *ref_chains_.at(utn);
+
+    if (mapping->has_ref1_)
+    {
+        auto angle = chain.trackAngle(mapping->dataid_ref1_);
+        if (angle)
+            return angle;
+    }
+    if (mapping->has_ref2_)
+    {
+        auto angle = chain.trackAngle(mapping->dataid_ref2_);
+        if (angle)
+            return angle;
+    }
+    return boost::none;
 }

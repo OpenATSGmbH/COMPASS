@@ -15,15 +15,16 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/mode_a/present.h"
-#include "eval/standard/evaluationstandard.h"
-#include "eval/results/mode_a/present.h"
+#include "requirement/mode_a/present.h"
+#include "standard/evaluationstandard.h"
+#include "results/mode_a/present.h"
+#include "results/base/detailcode.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
 
 #include "logger.h"
-#include "util/timeconv.h"
+#include "timeconv.h"
 
 using namespace std;
 using namespace Utils;
@@ -31,6 +32,8 @@ using namespace boost::posix_time;
 
 namespace EvaluationRequirement
 {
+
+namespace DetailCode = EvaluationRequirementResult::DetailCode;
 
 ModeAPresent::ModeAPresent(const std::string& name, const std::string& short_name, const std::string& group_name,
                            double prob, COMPARISON_TYPE prob_check_type, EvaluationCalculator& calculator)
@@ -81,7 +84,6 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeAPresent::evaluate (
     //pair<dbContent::TargetPosition, bool> ret_pos;
     boost::optional<dbContent::TargetPosition> ref_pos;
 
-    string comment;
     //bool lower_nok, upper_nok;
 
     bool skip_no_data_details = calculator_.settings().report_skip_no_data_details_;
@@ -100,27 +102,19 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeAPresent::evaluate (
                             const QVariant& num_no_ref_id,
                             const QVariant& num_present_id,
                             const QVariant& num_missing_id,
-                            const std::string& comment)
+                            std::uint32_t code)
     {
         details.push_back(Detail(ts, tst_pos).setValue(Result::DetailKey::RefExists, ref_exists)
-                                             .setValue(Result::DetailKey::PosInside, pos_inside.isValid() ? pos_inside : "false")
+                                             .setValue(Result::DetailKey::PosInside, pos_inside)
                                              .setValue(Result::DetailKey::IsNotOk, is_not_ok)
-                                             .setValue(Result::DetailKey::NumUpdates, num_updates)
-                                             .setValue(Result::DetailKey::NumNoRef, num_no_ref)
-                                             .setValue(Result::DetailKey::NumInside, num_pos_inside)
-                                             .setValue(Result::DetailKey::NumOutside, num_pos_outside)
-                                             .setValue(Result::DetailKey::NumNoRefVal, num_no_ref_id)
-                                             .setValue(Result::DetailKey::NumPresent, num_present_id)
-                                             .setValue(Result::DetailKey::NumMissing, num_missing_id)
                                              .addPosition(ref_pos)
-                                             .generalComment(comment));
+                                             .addCode(code));
     };
 
     for (const auto& tst_id : tst_data)
     {
         //ref_exists = false;
         is_inside = false;
-        comment = "";
 
         skip_detail = false;
 
@@ -135,7 +129,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeAPresent::evaluate (
                 addDetail(timestamp, pos_current, {},
                                    false, {}, false, // ref_exists, pos_inside, is_not_ok
                                    num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                                   num_no_ref_id, num_present_id, num_missing_id, "No reference data");
+                                   num_no_ref_id, num_present_id, num_missing_id, 0);
 
             ++num_no_ref_pos;
             continue;
@@ -152,7 +146,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeAPresent::evaluate (
                 addDetail(timestamp, pos_current, {},
                             false, {}, false, // ref_exists, pos_inside, is_not_ok
                             num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                            num_no_ref_id, num_present_id, num_missing_id, "No reference position");
+                            num_no_ref_id, num_present_id, num_missing_id, DetailCode::NoRefPosition);
 
             ++num_no_ref_pos;
             continue;
@@ -167,7 +161,7 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeAPresent::evaluate (
                 addDetail(timestamp, pos_current, ref_pos,
                             true, is_inside, false, // ref_exists, pos_inside, is_not_ok
                             num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                            num_no_ref_id, num_present_id, num_missing_id, "Outside sector");
+                            num_no_ref_id, num_present_id, num_missing_id, 0);
 
             ++num_pos_outside;
             continue;
@@ -200,12 +194,10 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeAPresent::evaluate (
         {
             if (code_present_tst)
             {
-                comment = "OK";
                 ++num_present_id;
             }
             else
             {
-                comment = "Id missing";
                 ++num_missing_id;
 
                 code_missing = true;
@@ -213,17 +205,22 @@ std::shared_ptr<EvaluationRequirementResult::Single> ModeAPresent::evaluate (
         }
         else
         {
-            comment = "No reference id";
             ++num_no_ref_id;
 
             // skip_detail?
         }
 
+        std::uint32_t present_code = 0;
+        if (!code_present_ref)
+            present_code = DetailCode::Value::NoRefValue;
+        else if (code_missing)
+            present_code = DetailCode::Value::M3AMissing;
+
         if (!(skip_no_data_details && skip_detail))
             addDetail(timestamp, pos_current, ref_pos,
                         true, is_inside, code_missing, // ref_exists, pos_inside, is_not_ok
                         num_updates, num_no_ref_pos, num_pos_inside, num_pos_outside,
-                        num_no_ref_id, num_present_id, num_missing_id, comment);
+                        num_no_ref_id, num_present_id, num_missing_id, present_code);
     }
 
     logdbg << "'" << name_ << "': utn " << target_data.utn_

@@ -1,0 +1,33 @@
+{
+    "description": "A sample exactly at the window end starts the next window.",
+    "window_s": 5.0,
+    "samples": [
+        [
+            0,
+            1.0,
+            0.0
+        ],
+        [
+            2.5,
+            1.0,
+            0.0
+        ],
+        [
+            5,
+            4.0,
+            0.0
+        ]
+    ],
+    "expected_windows": [
+        {
+            "num": 2,
+            "mean_distance": 1.0,
+            "span_s": 2.5
+        },
+        {
+            "num": 1,
+            "mean_distance": 4.0,
+            "span_s": 0.0
+        }
+    ]
+}

@@ -23,14 +23,34 @@
 #include <functional>
 
 AnnotationLeafItem::AnnotationLeafItem(const std::string& name,
+                                       const std::string& update_key,
                                        int                group_idx,
                                        int                annotation_idx,
                                        VariableView*      view)
     : LayerTreeItem(name)
+    , update_key_(update_key)
     , group_idx_(group_idx)
     , annotation_idx_(annotation_idx)
     , view_(view)
 {
+}
+
+/**
+ */
+void AnnotationLeafItem::setIndices(int group_idx, int annotation_idx)
+{
+    group_idx_      = group_idx;
+    annotation_idx_ = annotation_idx;
+}
+
+/**
+ */
+void AnnotationLeafItem::setActive(bool active)
+{
+    if (hidden_ != active)
+        return;
+
+    LayerTreeItem::setHidden(!active, /*emit_signal=*/false);
 }
 
 void AnnotationLeafItem::setHidden(bool value, bool emit_signal)

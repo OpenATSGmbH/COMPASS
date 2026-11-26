@@ -17,13 +17,12 @@
 
 #include "simpleassociator.h"
 #include "simplereconstructor.h"
-#include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "measurement.h"
 #include "timeconv.h"
 
-#include "util/tbbhack.h"
+#include "tbbhack.h"
 
 #include <boost/thread/mutex.hpp>
 #include <boost/optional/optional_io.hpp>

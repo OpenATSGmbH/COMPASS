@@ -18,7 +18,7 @@
 #include "evaluationdefs.h"
 #include "evalsectionid.h"
 
-#include "eval/results/base/base.h"
+#include "results/base/base.h"
 
 
 namespace Evaluation

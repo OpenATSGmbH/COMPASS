@@ -17,8 +17,8 @@
 
 #include "timewindowcollectionwidget.h"
 #include "timewindowdialog.h"
-#include "util/files.h"
-#include "util/timeconv.h"
+#include "files.h"
+#include "timeconv.h"
 
 #include <QHBoxLayout>
 #include <QMessageBox>
@@ -42,6 +42,7 @@ TimeWindowCollectionWidget::TimeWindowCollectionWidget(TimeWindowCollection& col
     headers << ""; // remove button
 
     tree_widget_ = new QTreeWidget();
+    tree_widget_->setObjectName("time_window_tree");
     tree_widget_->setHeaderLabels(headers);
 
     tree_widget_->header()->setStretchLastSection(false);
@@ -59,6 +60,7 @@ TimeWindowCollectionWidget::TimeWindowCollectionWidget(TimeWindowCollection& col
     button_layout->addStretch();
 
     add_button_ = new QPushButton("Add");
+    add_button_->setObjectName("add_time_window_button");
     button_layout->addWidget(add_button_);
 
     main_layout->addLayout(button_layout);
@@ -101,6 +103,7 @@ void TimeWindowCollectionWidget::refreshList()
         QWidget* item_widget = new QWidget();
 
         QPushButton* delete_btn = new QPushButton();
+        delete_btn->setObjectName(QString("time_window_%1_delete_button").arg(i));
         delete_btn->setIcon(del_icon);
         //delete_btn->setIconSize(UI_ICON_SIZE);
         //delete_btn->setMaximumWidth(UI_ICON_BUTTON_MAX_WIDTH);

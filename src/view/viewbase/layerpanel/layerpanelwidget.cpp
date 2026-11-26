@@ -22,9 +22,17 @@
 
 #include <QAction>
 #include <QHeaderView>
+#include <QItemSelectionModel>
 #include <QMenu>
+#include <QPointer>
+#include <QTimer>
 #include <QTreeView>
 #include <QVBoxLayout>
+
+namespace
+{
+    const int SpinnerIntervalMS = waitSpinner::IntervalMS; // wait icon step interval
+}
 
 /**
  * Default ctor.
@@ -50,12 +58,21 @@ LayerPanelWidget::LayerPanelWidget(QWidget* parent,
     , model_is_external_(external_model)
 {
     init(delegate);
-
-    connect(model_, &LayerTreeModel::modelChangedSignal, this, &LayerPanelWidget::autoExpand);
 }
 
 LayerPanelWidget::~LayerPanelWidget()
 {
+    // an external model may get a new panel (e.g. config widget rebuild) => hand over the view state,
+    // the successor may already exist (a destroyed model is replaced by an empty one => pointer compare only)
+    if (model_is_external_ && tree_view_->model() == model_)
+    {
+        model_->disconnect(this);
+
+        handOverViewState();
+
+        emit model_->viewStateHandedOverSignal();
+    }
+
     if (!model_is_external_)
     {
         delete model_;
@@ -69,10 +86,32 @@ void LayerPanelWidget::init(LayerTreeItemDelegate* delegate)
     layout->setMargin(0);
 
     tree_view_ = new QTreeView(this);
+    tree_view_->setObjectName("layer_tree"); // ui tests: item paths and context menus
+
     tree_view_->setModel(model_);
+
+    // connected after setModel() => runs after the view has registered the new rows
+    connect(model_, &QAbstractItemModel::rowsInserted, this, &LayerPanelWidget::applyDefaultExpansionToRows);
+    connect(model_, &QAbstractItemModel::modelReset,   this, &LayerPanelWidget::applyDefaultExpansionToAll);
+
+    // the predecessor was destroyed after this panel was created
+    connect(model_, &LayerTreeModel::viewStateHandedOverSignal, this, [ this ] ()
+    {
+        takeOverViewState(false);
+        clearViewHandover();
+    });
+
+    // checkboxes are painted from the items' hidden state => repaint, no relayout
+    connect(model_, &LayerTreeModel::hiddenChangedSignal, tree_view_, [ this ] { tree_view_->viewport()->update(); });
 
     delegate_ = delegate ? delegate : new LayerTreeItemDelegate(this);
     tree_view_->setItemDelegate(delegate_);
+
+    spinner_timer_ = new QTimer(this);
+    spinner_timer_->setInterval(SpinnerIntervalMS);
+    connect(spinner_timer_, &QTimer::timeout, this, &LayerPanelWidget::spinnerTick);
+    connect(model_, &LayerTreeModel::staleChangedSignal, this, &LayerPanelWidget::updateSpinner);
+    updateSpinner();
 
     // Header settings are re-applied after columns are registered; callers
     // should call model->addColumn(...) then model->applyHeaderSettings(header).
@@ -84,21 +123,66 @@ void LayerPanelWidget::init(LayerTreeItemDelegate* delegate)
 
     layout->addWidget(tree_view_);
     setLayout(layout);
+
+    // an existing model may carry the view state of a previous panel; kept on the items until the
+    // construction is done, so the policies set by derived panels leave the handed over rows alone
+    takeOverViewState(true);
+
+    // an external model may be destroyed before
+    QPointer<LayerTreeModel> model = model_;
+    QTimer::singleShot(0, this, [ this, model ] ()
+    {
+        if (model)
+            clearViewHandover();
+    });
+}
+
+/**
+ */
+void LayerPanelWidget::setStaleIndication(int flags)
+{
+    delegate_->setStaleIndication(flags);
+
+    updateSpinner();
+    tree_view_->viewport()->update();
+}
+
+/**
+ */
+bool LayerPanelWidget::isSpinnerActive() const
+{
+    return spinner_timer_->isActive();
+}
+
+/**
+ * Runs the wait icon timer only while it has something to show.
+ */
+void LayerPanelWidget::updateSpinner()
+{
+    const bool spin = model_->hasStaleItems() &&
+                      (delegate_->staleIndication() & LayerTreeItemDelegate::StaleSpinner);
+
+    if (spin && !spinner_timer_->isActive())
+        spinner_timer_->start();
+    else if (!spin && spinner_timer_->isActive())
+        spinner_timer_->stop();
+}
+
+/**
+ * Notice: a viewport update only repaints the visible rows, nothing while the panel is hidden.
+ */
+void LayerPanelWidget::spinnerTick()
+{
+    if (!tree_view_->isVisible())
+        return;
+
+    delegate_->advanceSpinner();
+    tree_view_->viewport()->update();
 }
 
 LayerTreeItem* LayerPanelWidget::addRootItem(std::unique_ptr<LayerTreeItem> item)
 {
     return model_->addRootItem(std::move(item));
-}
-
-std::set<std::string> LayerPanelWidget::persistedHiddenIds() const
-{
-    return model_->persistedHiddenIds();
-}
-
-void LayerPanelWidget::applyPersistedHiddenIds(const std::set<std::string>& ids)
-{
-    model_->applyPersistedHiddenIds(ids);
 }
 
 void LayerPanelWidget::onContextMenuRequested(const QPoint& pos)
@@ -111,7 +195,7 @@ void LayerPanelWidget::onContextMenuRequested(const QPoint& pos)
     QMenu menu(this);
     menu.setToolTipsVisible(true);
 
-    if (item)
+    if (item && item->isEnabled())
     {
         item->buildContextMenu(menu);
         model_->buildCustomItemContextMenu(menu, item);
@@ -164,16 +248,173 @@ void LayerPanelWidget::expandLayers(int max_depth)
     model()->traverse(expandCB, max_depth);
 }
 
-void LayerPanelWidget::enableAutoExpand(int max_depth)
+/**
+ */
+void LayerPanelWidget::setDefaultExpansion(const DefaultExpansionFunc& func)
 {
-    auto_expand_           = true;
-    auto_expand_max_depth_ = max_depth;
+    const DefaultExpansionFunc old_default = expansion_policy_;
+
+    expansion_policy_ = func;
+
+    defaultExpansionChanged(old_default);
 }
 
-void LayerPanelWidget::autoExpand()
+/**
+ * Calls func on the given rows of parent and all their descendants.
+ */
+void LayerPanelWidget::visitRows(const QModelIndex& parent,
+                                 int first,
+                                 int last,
+                                 int depth,
+                                 const VisitFunc& func) const
 {
-    if (!auto_expand_)
-        return;
+    for (int row = first; row <= last; ++row)
+    {
+        const QModelIndex index = model_->index(row, 0, parent);
+        if (!index.isValid())
+            continue;
 
-    expandLayers(auto_expand_max_depth_);
+        func(index, static_cast<LayerTreeItem*>(index.internalPointer()), depth);
+
+        const int n = model_->rowCount(index);
+        if (n > 0)
+            visitRows(index, 0, n - 1, depth + 1, func);
+    }
+}
+
+/**
+ * Depth of an index, 0 for top-level items, -1 for the invisible root.
+ */
+int LayerPanelWidget::depthOf(const QModelIndex& index) const
+{
+    int depth = -1;
+    for (QModelIndex idx = index; idx.isValid(); idx = idx.parent())
+        ++depth;
+
+    return depth;
+}
+
+/**
+ */
+void LayerPanelWidget::visitAllRows(const VisitFunc& func) const
+{
+    const int n = model_->rowCount();
+    if (n > 0)
+        visitRows(QModelIndex(), 0, n - 1, 0, func);
+}
+
+/**
+ */
+bool LayerPanelWidget::defaultExpanded(const LayerTreeItem& item, int depth, const DefaultExpansionFunc& policy) const
+{
+    return item.isExpandable() && policy && policy(item, depth);
+}
+
+/**
+ */
+void LayerPanelWidget::setExpanded(const QModelIndex& index, bool expanded)
+{
+    if (expanded != tree_view_->isExpanded(index))
+        tree_view_->setExpanded(index, expanded);
+}
+
+/**
+ */
+void LayerPanelWidget::applyDefaultExpansionToRows(const QModelIndex& parent, int first, int last)
+{
+    visitRows(parent, first, last, depthOf(parent) + 1, [ & ] (const QModelIndex& index, LayerTreeItem* item, int depth)
+    {
+        if (item->isExpandable())
+            setExpanded(index, defaultExpanded(*item, depth, expansion_policy_));
+    });
+}
+
+/**
+ */
+void LayerPanelWidget::applyDefaultExpansionToAll()
+{
+    const int n = model_->rowCount();
+    if (n > 0)
+        applyDefaultExpansionToRows(QModelIndex(), 0, n - 1);
+}
+
+/**
+ */
+void LayerPanelWidget::applyDefaultExpansion(const QModelIndex& index)
+{
+    if (index.isValid())
+        applyDefaultExpansionToRows(index.parent(), index.row(), index.row());
+}
+
+/**
+ * A row's expansion equal to old_default => it followed the default, else the user changed it.
+ */
+void LayerPanelWidget::defaultExpansionChanged(const DefaultExpansionFunc& old_default)
+{
+    visitAllRows([ & ] (const QModelIndex& index, LayerTreeItem* item, int depth)
+    {
+        if (!item->isExpandable() || item->viewHandover())
+            return;
+
+        if (tree_view_->isExpanded(index) != defaultExpanded(*item, depth, old_default))
+            return;
+
+        setExpanded(index, defaultExpanded(*item, depth, expansion_policy_));
+    });
+}
+
+/**
+ */
+void LayerPanelWidget::handOverViewState()
+{
+    auto* selection = tree_view_->selectionModel();
+
+    const QModelIndex current     = tree_view_->currentIndex();
+    const QModelIndex current_row = current.isValid() ? current.sibling(current.row(), 0) : QModelIndex();
+
+    visitAllRows([ & ] (const QModelIndex& index, LayerTreeItem* item, int)
+    {
+        LayerTreeItem::ViewHandover handover;
+        handover.expanded = item->isExpandable() && tree_view_->isExpanded(index);
+        handover.selected = selection && selection->isSelected(index);
+        handover.current  = current_row.isValid() && index == current_row;
+
+        item->setViewHandover(handover);
+    });
+}
+
+/**
+ */
+void LayerPanelWidget::takeOverViewState(bool default_others)
+{
+    auto* selection = tree_view_->selectionModel();
+
+    visitAllRows([ & ] (const QModelIndex& index, LayerTreeItem* item, int depth)
+    {
+        const auto& handover = item->viewHandover();
+
+        if (!handover)
+        {
+            if (default_others && item->isExpandable())
+                setExpanded(index, defaultExpanded(*item, depth, expansion_policy_));
+
+            return;
+        }
+
+        if (item->isExpandable())
+            setExpanded(index, handover->expanded);
+
+        if (handover->selected && selection)
+            selection->select(index, QItemSelectionModel::Select | QItemSelectionModel::Rows);
+
+        if (handover->current && selection)
+            selection->setCurrentIndex(index, QItemSelectionModel::NoUpdate);
+    });
+}
+
+/**
+ */
+void LayerPanelWidget::clearViewHandover()
+{
+    model_->traverse([] (const QModelIndex&, LayerTreeItem* item) { item->clearViewHandover(); });
 }

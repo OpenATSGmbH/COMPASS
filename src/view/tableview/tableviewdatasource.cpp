@@ -16,9 +16,9 @@
  */
 
 #include "tableviewdatasource.h"
+#include "viewmanager.h"
 #include "tableview.h"
 #include "viewabledataconfig.h"
-#include "compass.h"
 #include "dbcontent/dbcontent.h"
 #include "dbcontent/dbcontentmanager.h"
 #include "logger.h"
@@ -57,7 +57,7 @@ TableViewDataSource::~TableViewDataSource()
     unshowViewPoint(nullptr); // removes tmps TODO not done yet
 }
 
-void TableViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
+GenerateResult TableViewDataSource::generateSubConfigurable_impl(nlohmann::json& child_json)
 {
     const auto& class_name = Configuration::getClassName(child_json);
     const auto& instance_name = Configuration::getInstanceName(child_json);
@@ -68,7 +68,7 @@ void TableViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
     {
         traced_assert(!set_);
 
-        set_.reset(new VariableOrderedSet(child_json, view_.compass().dbContentManager(), this));
+        set_.reset(new VariableOrderedSet(child_json, view_.viewManager().dbContentManager(), this));
 
         connect(set_.get(), &VariableOrderedSet::setChangedSignal, this,
                 &TableViewDataSource::setChangedSignal, Qt::UniqueConnection);
@@ -79,18 +79,19 @@ void TableViewDataSource::generateSubConfigurable(nlohmann::json& child_json)
     }
     else
     {
-        throw std::runtime_error(
-            "TableViewDataSource: generateSubConfigurable: unknown class_name " + class_name);
+        return GenerateResult::Unknown;
     }
+
+    return GenerateResult::Generated;
 }
 
 void TableViewDataSource::checkSubConfigurables()
 {
-    //DBContentManager& dbcont_man = view_.compass().dbContentManager();
+    //DBContentManager& dbcont_man = view_.viewManager().dbContentManager();
 
     if (!set_)
     {
-        generateSubConfigurableFromConfig("VariableOrderedSet", DEFAULT_SET_NAME);
+        createSubConfigurableFromConfig("VariableOrderedSet", DEFAULT_SET_NAME);
         traced_assert(set_);
         addDefaultVariables(*set_.get());
     }
@@ -99,7 +100,7 @@ void TableViewDataSource::checkSubConfigurables()
 //    {
 //        DBContent& cat021_cont = dbcont_man.dbContent("CAT021");
 
-//        generateSubConfigurable("VariableOrderedSet", "ADS-B Quality");
+//        createSubConfigurableFromConfig("VariableOrderedSet", "ADS-B Quality");
 //        traced_assert(hasSet("ADS-B Quality"));
 
 //        std::unique_ptr<dbContent::VariableOrderedSet>& set = sets_.at("ADS-B Quality");
@@ -121,7 +122,7 @@ void TableViewDataSource::checkSubConfigurables()
 
 //    if (!hasSet("Horizontal Movement"))
 //    {
-//        generateSubConfigurable("VariableOrderedSet", "Horizontal Movement");
+//        createSubConfigurableFromConfig("VariableOrderedSet", "Horizontal Movement");
 //        traced_assert(hasSet("Horizontal Movement"));
 
 //        std::unique_ptr<dbContent::VariableOrderedSet>& set = sets_.at("Horizontal Movement");
@@ -140,7 +141,7 @@ void TableViewDataSource::checkSubConfigurables()
 
 //    if (!hasSet("Mode A/C Info"))
 //    {
-//        generateSubConfigurable("VariableOrderedSet", "Mode A/C Info");
+//        createSubConfigurableFromConfig("VariableOrderedSet", "Mode A/C Info");
 //        traced_assert(hasSet("Mode A/C Info"));
 
 //        std::unique_ptr<dbContent::VariableOrderedSet>& set = sets_.at("Mode A/C Info");
@@ -165,7 +166,7 @@ void TableViewDataSource::checkSubConfigurables()
 
 //    if (!hasSet("Track Lifetime"))
 //    {
-//        generateSubConfigurable("VariableOrderedSet", "Track Lifetime");
+//        createSubConfigurableFromConfig("VariableOrderedSet", "Track Lifetime");
 //        traced_assert(hasSet("Track Lifetime"));
 
 //        std::unique_ptr<dbContent::VariableOrderedSet>& set = sets_.at("Track Lifetime");
@@ -248,7 +249,7 @@ bool TableViewDataSource::addTemporaryVariable (const std::string& dbcontent_nam
     loginf << "dbcontent_name '" << dbcontent_name
            << "' var_name '" << var_name << "'";
 
-    DBContentManager& dbcont_man = view_.compass().dbContentManager();
+    DBContentManager& dbcont_man = view_.viewManager().dbContentManager();
     
     traced_assert(set_);
     if (dbcontent_name == META_OBJECT_NAME)
@@ -288,7 +289,7 @@ void TableViewDataSource::removeTemporaryVariable (const std::string& dbcontent_
 //    traced_assert(el != temporary_added_variables_.end());
 //    temporary_added_variables_.erase(el);
 
-    DBContentManager& dbcont_man = view_.compass().dbContentManager();
+    DBContentManager& dbcont_man = view_.viewManager().dbContentManager();
 
     if (dbcontent_name == META_OBJECT_NAME)
     {
@@ -311,7 +312,7 @@ void TableViewDataSource::removeTemporaryVariable (const std::string& dbcontent_
 
 void TableViewDataSource::addDefaultVariables (VariableOrderedSet& set)
 {
-    DBContentManager& dbcont_man = view_.compass().dbContentManager();
+    DBContentManager& dbcont_man = view_.viewManager().dbContentManager();
 
     // Timestamp
     if (dbcont_man.existsMetaVariable(dbcontent_vars::meta_var_timestamp_.name()))

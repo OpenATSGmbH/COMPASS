@@ -15,10 +15,11 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/identification/correct_period.h"
-#include "eval/requirement/group.h"
+#include "requirement/identification/correct_period.h"
+#include "requirement/group.h"
 
-#include "eval/results/identification/correct_period.h"
+#include "results/identification/correct_period.h"
+#include "results/base/detailcode.h"
 
 #include "evaluationmanager.h"
 #include "sectorlayer.h"
@@ -73,31 +74,38 @@ IdentificationCorrectPeriod::Validity IdentificationCorrectPeriod::isValid(const
                                                                            const SectorLayer& sector_layer,
                                                                            const boost::posix_time::time_duration& max_ref_time_diff) const
 {
-    std::pair<EvaluationRequirement::ValueComparisonResult, std::string> cmp_res;
+    namespace Value = EvaluationRequirementResult::DetailCode::Value;
+
+    EvaluationRequirement::ValueComparisonResult cmp_res {};
+    std::uint32_t differs_bit = 0, missing_bit = 0;
 
     switch(identification_type_)
     {
         case IdentificationType::AircraftAddress:
-            cmp_res = compareTa(data_id, target_data, max_ref_time_diff);
+            cmp_res     = compareTa(data_id, target_data, max_ref_time_diff);
+            differs_bit = Value::AcadDiffers;
+            missing_bit = Value::AcadMissing;
             break;
         case IdentificationType::AircraftID:
-            cmp_res = compareTi(data_id, target_data, max_ref_time_diff);
+            cmp_res     = compareTi(data_id, target_data, max_ref_time_diff);
+            differs_bit = Value::AcidDiffers;
+            missing_bit = Value::AcidMissing;
             break;
         case IdentificationType::ModeA:
-            cmp_res = compareModeA(data_id, target_data, max_ref_time_diff);
+            cmp_res     = compareModeA(data_id, target_data, max_ref_time_diff);
+            differs_bit = Value::M3ADiffers;
+            missing_bit = Value::M3AMissing;
             break;
     }
                             
-    bool no_ref = cmp_res.first == ValueComparisonResult::Unknown_NoRefData;
-    bool failed = cmp_res.first == ValueComparisonResult::Unknown_NoTstData || 
-                  cmp_res.first == ValueComparisonResult::Different;
+    bool no_ref = cmp_res == ValueComparisonResult::Unknown_NoRefData;
+    bool failed = cmp_res == ValueComparisonResult::Unknown_NoTstData || 
+                  cmp_res == ValueComparisonResult::Different;
 
     Validity v;
 
-    auto id_name = identificationName(identification_type_);
-
     v.value   = no_ref ? Validity::Value::RefDataMissing : (failed ? Validity::Value::Invalid : Validity::Value::Valid);
-    v.comment = failed ? id_name + " failed (" + cmp_res.second + ")" : "";
+    v.code    = comparisonCode(cmp_res, differs_bit, missing_bit);
 
     return v;
 }
@@ -191,7 +199,7 @@ IdentificationCorrectPeriodConfig::IdentificationCorrectPeriodConfig(nlohmann::j
                                                                      Group* parent)
 :   IntervalBaseConfig(config, parent)
 {
-    configure(UseMissTol);
+    configure(UseMissTol | UseExclDetMisses);
 
     registerParameter("identification_type", reinterpret_cast<int*>(&identification_type_), (int)IdentificationType::AircraftAddress);
 }
@@ -211,6 +219,9 @@ std::shared_ptr<Base> IdentificationCorrectPeriodConfig::createRequirement()
                 use_miss_tolerance_, 
                 miss_tolerance_s_,
                 identification_type_);
+
+    req->excludeDetectionMisses(exclude_detection_misses_);
+
     return req;
 }
 

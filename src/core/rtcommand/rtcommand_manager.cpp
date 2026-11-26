@@ -23,11 +23,14 @@
 #include "rtcommand.h"
 #include "rtcommand_result.h"
 #include "rtcommand_response.h"
-#include "compass.h"
+#include "appstate.h"
 
 #include "logger.h"
 
 #include <QCoreApplication>
+#include <QEventLoop>
+
+#include <boost/date_time/posix_time/posix_time.hpp>
 
 #include <boost/asio/io_context.hpp>
 #include <boost/bind.hpp>
@@ -42,9 +45,11 @@ RTCommandManager::CommandId RTCommandManager::command_count_ = 0;
 
 const std::string RTCommandManager::PingName = "ping";
 
-RTCommandManager::RTCommandManager(nlohmann::json& config, COMPASS* parent)
+RTCommandManager::RTCommandManager(nlohmann::json& config,
+                                   Configurable* parent,
+                                   AppState& app_state)
     : Configurable(config, parent),
-      compass_(*parent),
+      app_state_(app_state),
       io_context_(std::make_unique<boost::asio::io_context>())
 {
     logdbg;
@@ -55,9 +60,16 @@ RTCommandManager::RTCommandManager(nlohmann::json& config, COMPASS* parent)
 
 /**
  */
-RTCommandManager::~RTCommandManager() 
+RTCommandManager::~RTCommandManager()
 {
-     logdbg; 
+     logdbg;
+}
+
+/**
+ */
+bool RTCommandManager::checkWired() const
+{
+    return runner_ != nullptr;
 }
 
 /**
@@ -125,7 +137,8 @@ void RTCommandManager::run()
             {
                 loginf << "issuing command";
 
-                rtcommand::RTCommandRunner& cmd_runner = compass_.rtCmdRunner();
+                traced_assert(runner_);
+                rtcommand::RTCommandRunner& cmd_runner = *runner_;
 
                 std::future<std::vector<rtcommand::RTCommandResult>> current_result;
 
@@ -216,14 +229,33 @@ void RTCommandManager::shutdown()
 
     msleep(100);
 
+    // The wait MUST dispatch events. The runner thread finishes a command by calling
+    // back into the main thread with a Qt::BlockingQueuedConnection (the result check in
+    // RTCommandRunner), so it can only reach its stop once the main thread dispatches
+    // that call. A plain sleep loop here deadlocks the two against each other: the
+    // runner waits for the main thread, the main thread waits for the runner. That
+    // happens for a command whose own execution ends the application - 'quit' in a
+    // batch run - where the result check lands after the main event loop is gone.
+    // User input stays excluded, as everywhere else in the shutdown path.
+    boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
+
     while (!stopped_)
     {
         if (!started_)
             stopped_ = true;
 
-        loginf << "waiting on run stop";
+        QCoreApplication::processEvents(QEventLoop::ExcludeUserInputEvents);
 
-        msleep(1000);
+        msleep(50);
+
+        auto elapsed = boost::posix_time::microsec_clock::local_time() - start_time;
+
+        if (elapsed.total_seconds() >= ShutdownTimeoutSecs)
+        {
+            logwrn << "runner did not stop within " << ShutdownTimeoutSecs
+                   << " s, continuing shutdown";
+            break;
+        }
     }
 
     started_ = false;
@@ -273,7 +305,7 @@ rtcommand::IssueInfo RTCommandManager::addCommand(const std::string& cmd_str, So
     }
 
     //commands from the server are only added when app is properly running
-    if (source == Source::Server && compass_.appState() != AppState::Running)
+    if (source == Source::Server && app_state_.phase() != AppPhase::Running)
     {
         rtcommand::IssueInfo info;
         info.issued        = false;

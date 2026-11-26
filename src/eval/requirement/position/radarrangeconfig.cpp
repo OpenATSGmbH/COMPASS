@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/radarrangeconfig.h"
-#include "eval/requirement/position/radarrangeconfigwidget.h"
-#include "eval/requirement/position/radarrange.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/positionbase.h"
+#include "requirement/position/radarrangeconfig.h"
+#include "requirement/position/radarrangeconfigwidget.h"
+#include "requirement/position/radarrange.h"
+#include "requirement/group.h"
+#include "requirement/base/positionbase.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 using namespace std;
 
@@ -32,9 +32,10 @@ namespace EvaluationRequirement
 PositionRadarRangeConfig::PositionRadarRangeConfig(
         nlohmann::json& config,
         Group* parent)
-    : PositionBaseProbConfig(config, parent)
+    : PositionBaseValueConfig(config, parent)
 {
     registerParameter("threshold_value", &threshold_value_, 50.0);
+    registerParameter("statistic", &statistic_, (unsigned int)RadarHelpers::Statistic::StdDev);
 }
 
 PositionRadarRangeConfig::~PositionRadarRangeConfig()
@@ -44,7 +45,8 @@ PositionRadarRangeConfig::~PositionRadarRangeConfig()
 std::shared_ptr<Base> PositionRadarRangeConfig::createRequirement()
 {
     shared_ptr<PositionRadarRange> req = make_shared<PositionRadarRange>(
-                name_, short_name_, group_.name(), ref_min_accuracy_, calculator_, threshold_value_);
+                name_, short_name_, group_.name(), ref_min_accuracy_, calculator_, threshold_value_,
+                statistic());
 
     return req;
 }
@@ -59,6 +61,21 @@ void PositionRadarRangeConfig::thresholdValue(double value)
     threshold_value_ = value;
 }
 
+RadarHelpers::Statistic PositionRadarRangeConfig::statistic() const
+{
+    return statisticInfo().statistic;
+}
+
+void PositionRadarRangeConfig::statistic(RadarHelpers::Statistic value)
+{
+    statistic_ = (unsigned int)value;
+}
+
+const RadarHelpers::StatisticInfo& PositionRadarRangeConfig::statisticInfo() const
+{
+    return RadarHelpers::statisticInfo(RadarHelpers::rangeStatistics(), (RadarHelpers::Statistic)statistic_);
+}
+
 BaseConfigWidget* PositionRadarRangeConfig::createWidget()
 {
     return new PositionRadarRangeConfigWidget(*this);
@@ -66,13 +83,14 @@ BaseConfigWidget* PositionRadarRangeConfig::createWidget()
 
 void PositionRadarRangeConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
+    PositionBaseValueConfig::addToReport(report);
+
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
-    auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& table = section.getTable("req_table");
 
-    table.addRow({"Threshold Value [m]",
-                  "Maximum allowed RMS from test target report to reference",
-                  threshold_value_});
+    table.addRow({"Statistic", "Checked statistic of the differences", statisticInfo().label});
+    table.addRow({statisticInfo().threshold_label, statisticInfo().threshold_description, threshold_value_});
 
 }
 }

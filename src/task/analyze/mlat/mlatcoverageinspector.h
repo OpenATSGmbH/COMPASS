@@ -70,7 +70,7 @@ public:
     // Update-interval histogram. `ui_hist_max_s_` is the upper edge; intervals
     // at or above it fold into a single overflow bin (so long detection breaks
     // do not stretch the axis). 0 = auto-derive a rounded-up max from the data.
-    int   ui_hist_num_bins_ = 20;
+    int   ui_hist_num_bins_ = 10;
     float ui_hist_max_s_    = 15.0f;
 };
 
@@ -78,7 +78,7 @@ public:
  * Feature 2: PD per cell across a 3D grid using RefTraj as ground truth.
  *
  * The full algorithm (per-target slot-walk, gap construction, miss test) is
- * specified in src/task/analysis/mlat_ru/readme_analysis_mlat_ru.md. The data
+ * specified in experimental_src/plugins/extraanalysis/readme_analysis_mlat_ru.md. The data
  * walk is deferred to a subsequent iteration; this implementation produces the
  * settings recap section and an explicit placeholder for the report contents
  * that depend on the per-target loop.
@@ -102,10 +102,10 @@ public:
 
     std::set<std::string> testDBContentNames() const override;
 
-    bool prerequisitesMet(std::string& reason_out) const override;
 
     void compute(AnalysisDataset* dataset) override;
     void writeReport(ResultReport::Section& root) override;
+    void addSettingsRows(QFormLayout* form) override;
 
     ~MLATCoverageInspector() override;
 
@@ -116,8 +116,8 @@ private:
     {
         std::string   label;
         std::size_t   num_targets = 0;
-        std::uint64_t eui = 0;
-        std::uint64_t mui = 0;
+        double        eui = 0.0;   // weighted, see coveragepdwalk.h
+        double        mui = 0.0;
         double        pd  = 0.0;
     };
 
@@ -130,8 +130,8 @@ private:
         unsigned int targets_walked = 0;
         unsigned int targets_no_ref = 0;
         unsigned int targets_no_tst = 0;
-        std::uint64_t total_eui    = 0;
-        std::uint64_t total_mui    = 0;
+        double total_eui           = 0.0;   // weighted, see coveragepdwalk.h
+        double total_mui           = 0.0;
         double overall_pd          = 0.0;
 
         // Measured per-target inter-report interval (the actual update cadence),

@@ -16,18 +16,18 @@
  */
 
 #include "basetablewidget.h"
+#include "appstate.h"
+#include "viewmanager.h"
 #include "basetablemodel.h"
 #include "tableview.h"
 #include "tableviewdatasource.h"
 #include "logger.h"
-#include "compass.h"
 
 #include <QApplication>
 #include <QClipboard>
 #include <QFileDialog>
 #include <QHeaderView>
 #include <QKeyEvent>
-#include <QMessageBox>
 #include <QTableView>
 #include <QVBoxLayout>
 
@@ -38,6 +38,8 @@ BaseBufferTableWidget::BaseBufferTableWidget(TableView& view, TableViewDataSourc
     QVBoxLayout* layout = new QVBoxLayout();
 
     table_ = new QTableView(this);
+    table_->setObjectName("data_table");
+    table_->horizontalHeader()->setObjectName("data_table_header");
     table_->setSelectionBehavior(QAbstractItemView::SelectItems);
     table_->setSelectionMode(QAbstractItemView::ContiguousSelection);
     table_->setCornerButtonEnabled(false);
@@ -63,7 +65,7 @@ void BaseBufferTableWidget::initModel(BaseBufferTableModel* model)
     int ts_col = -1;
     for (int col = 0; col < model_->columnCount(); ++col)
     {
-        if (model_->headerData(col, Qt::Horizontal).toString() == "Timestamp")
+        if (model_->headerData(col, Qt::Horizontal, BaseBufferTableModel::VariableNameRole).toString() == "Timestamp")
         {
             ts_col = col;
             break;
@@ -88,7 +90,7 @@ void BaseBufferTableWidget::exportSlot()
 
     QFileDialog dialog(this);
     dialog.setFileMode(QFileDialog::AnyFile);
-    dialog.setDirectory(view_.compass().lastUsedPath().c_str());
+    dialog.setDirectory(view_.viewManager().appState().lastUsedPath().c_str());
     dialog.setNameFilter("CSV Files (*.csv)");
     dialog.setDefaultSuffix("csv");
     dialog.setAcceptMode(QFileDialog::AcceptMode::AcceptSave);
@@ -174,7 +176,8 @@ void BaseBufferTableWidget::keyPressEvent(QKeyEvent* event)
             QModelIndex previous = indexes.first();
             unsigned int row_count = 0;
 
-            selected_headers = model->headerData(previous.column(), Qt::Horizontal).toString();
+            selected_headers = model->headerData(previous.column(), Qt::Horizontal,
+                                                 BaseBufferTableModel::VariableNameRole).toString();
             selected_text = model->data(previous).toString();
             indexes.removeFirst();
 
@@ -190,16 +193,6 @@ void BaseBufferTableWidget::keyPressEvent(QKeyEvent* event)
                         selected_headers.append('\n');
 
                     ++row_count;
-
-                    if (row_count == 999)
-                    {
-                        QMessageBox m_warning(
-                                    QMessageBox::Warning, "Too Many Rows Selected",
-                                    "If more than 1000 lines are selected, only the first 1000 are copied.",
-                                    QMessageBox::Ok);
-                        m_warning.exec();
-                        break;
-                    }
                 }
                 // Otherwise it's the same row, so append a column separator, which is a tab.
                 else
@@ -217,7 +210,8 @@ void BaseBufferTableWidget::keyPressEvent(QKeyEvent* event)
 
                 if (!row_count)  // first row
                     selected_headers.append(
-                                model->headerData(current.column(), Qt::Horizontal).toString());
+                                model->headerData(current.column(), Qt::Horizontal,
+                                                  BaseBufferTableModel::VariableNameRole).toString());
 
                 previous = current;
             }

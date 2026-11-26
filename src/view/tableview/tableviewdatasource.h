@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 //#include "buffer.h"
 #include "configurable.h"
 //#include "dbcontent/variable/variable.h"
@@ -31,7 +33,7 @@ class Job;
 class ViewableDataConfig;
 class TableView;
 
-class TableViewDataSource : public QObject, public Configurable
+class COMPASS_VIEW_API TableViewDataSource : public QObject, public Configurable
 {
     Q_OBJECT
 
@@ -46,14 +48,13 @@ class TableViewDataSource : public QObject, public Configurable
     TableViewDataSource(nlohmann::json& config, TableView* parent);
     virtual ~TableViewDataSource();
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json);
-
     dbContent::VariableOrderedSet* getSet();
 
     void unshowViewPoint (ViewableDataConfig* vp); // vp can be nullptr
     void showViewPoint (ViewableDataConfig* vp);
 
 protected:
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json);
     virtual void checkSubConfigurables();
 
     TableView& view_;

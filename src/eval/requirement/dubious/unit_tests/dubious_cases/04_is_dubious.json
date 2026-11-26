@@ -1,0 +1,23 @@
+{
+    "description": "A target or track is dubious if the ratio of dubious updates is higher than the dubious probability 0.05: 1 of 20 (exactly 0.05) is not dubious, 2 of 20 is, no updates is not.",
+    "ratios": [
+        {
+            "num_dubious": 1,
+            "num_updates": 20,
+            "dubious_prob": 0.05,
+            "is_dubious": false
+        },
+        {
+            "num_dubious": 2,
+            "num_updates": 20,
+            "dubious_prob": 0.05,
+            "is_dubious": true
+        },
+        {
+            "num_dubious": 0,
+            "num_updates": 0,
+            "dubious_prob": 0.05,
+            "is_dubious": false
+        }
+    ]
+}

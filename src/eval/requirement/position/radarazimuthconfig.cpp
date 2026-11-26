@@ -15,15 +15,15 @@
  * along with COMPASS. If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "eval/requirement/position/radarazimuthconfig.h"
-#include "eval/requirement/position/radarazimuthconfigwidget.h"
-#include "eval/requirement/position/radarazimuth.h"
-#include "eval/requirement/group.h"
-#include "eval/requirement/base/positionbase.h"
+#include "requirement/position/radarazimuthconfig.h"
+#include "requirement/position/radarazimuthconfigwidget.h"
+#include "requirement/position/radarazimuth.h"
+#include "requirement/group.h"
+#include "requirement/base/positionbase.h"
 
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
 
 using namespace std;
 
@@ -33,9 +33,10 @@ namespace EvaluationRequirement
 PositionRadarAzimuthConfig::PositionRadarAzimuthConfig(
         nlohmann::json& config,
         Group* parent)
-    : PositionBaseProbConfig(config, parent)
+    : PositionBaseValueConfig(config, parent)
 {
     registerParameter("threshold_value", &threshold_value_, 0.1);
+    registerParameter("statistic", &statistic_, (unsigned int)RadarHelpers::Statistic::StdDev);
 }
 
 PositionRadarAzimuthConfig::~PositionRadarAzimuthConfig()
@@ -45,7 +46,8 @@ PositionRadarAzimuthConfig::~PositionRadarAzimuthConfig()
 std::shared_ptr<Base> PositionRadarAzimuthConfig::createRequirement()
 {
     shared_ptr<PositionRadarAzimuth> req = make_shared<PositionRadarAzimuth>(
-                name_, short_name_, group_.name(), ref_min_accuracy_, calculator_, threshold_value_);
+                name_, short_name_, group_.name(), ref_min_accuracy_, calculator_, threshold_value_,
+                statistic());
 
     return req;
 }
@@ -60,6 +62,21 @@ void PositionRadarAzimuthConfig::thresholdValue(double value)
     threshold_value_ = value;
 }
 
+RadarHelpers::Statistic PositionRadarAzimuthConfig::statistic() const
+{
+    return statisticInfo().statistic;
+}
+
+void PositionRadarAzimuthConfig::statistic(RadarHelpers::Statistic value)
+{
+    statistic_ = (unsigned int)value;
+}
+
+const RadarHelpers::StatisticInfo& PositionRadarAzimuthConfig::statisticInfo() const
+{
+    return RadarHelpers::statisticInfo(RadarHelpers::azimuthStatistics(), (RadarHelpers::Statistic)statistic_);
+}
+
 BaseConfigWidget* PositionRadarAzimuthConfig::createWidget()
 {
     return new PositionRadarAzimuthConfigWidget(*this);
@@ -67,13 +84,14 @@ BaseConfigWidget* PositionRadarAzimuthConfig::createWidget()
 
 void PositionRadarAzimuthConfig::addToReport (std::shared_ptr<ResultReport::Report> report)
 {
+    PositionBaseValueConfig::addToReport(report);
+
     auto& section = report->getSection("Appendix:Requirements:"+group_.name()+":"+name_);
 
-    auto& table = section.addTable("req_table", 3, {"Name", "Comment", "Value"}, false);
+    auto& table = section.getTable("req_table");
 
-    table.addRow({"Threshold Value [m]",
-                  "Maximum allowed RMS from test target report to reference",
-                  threshold_value_});
+    table.addRow({"Statistic", "Checked statistic of the differences", statisticInfo().label});
+    table.addRow({statisticInfo().threshold_label, statisticInfo().threshold_description, threshold_value_});
 
 }
 }

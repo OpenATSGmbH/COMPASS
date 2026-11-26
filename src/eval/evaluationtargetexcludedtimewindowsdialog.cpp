@@ -37,6 +37,7 @@ EvaluationTargetExcludedTimeWindowsDialog::EvaluationTargetExcludedTimeWindowsDi
     : QDialog(parent), dbcont_man_(dbcont_man), collection_(collection)
 {
     setWindowTitle("Edit Evaluation Excluded Time Windows");
+    setObjectName("excluded_time_windows_dialog");
 
     setModal(true);
 
@@ -66,6 +67,7 @@ EvaluationTargetExcludedTimeWindowsDialog::EvaluationTargetExcludedTimeWindowsDi
         return boost::none;
     };
     tw_widget_ = new TimeWindowCollectionWidget(collection_, min_max_func);
+    tw_widget_->setObjectName("time_windows");
     form_layout->addRow("Excluded Time Windows", tw_widget_);
 
     main_layout->addLayout(form_layout);
@@ -77,12 +79,14 @@ EvaluationTargetExcludedTimeWindowsDialog::EvaluationTargetExcludedTimeWindowsDi
     QHBoxLayout* button_layout = new QHBoxLayout();
 
     QPushButton* cancel_button = new QPushButton("Cancel");
+    cancel_button->setObjectName("cancel_button");
     connect(cancel_button, &QPushButton::clicked, this, &QDialog::reject);
     button_layout->addWidget(cancel_button);
 
     button_layout->addStretch();
 
     QPushButton* run_button = new QPushButton("OK");
+    run_button->setObjectName("ok_button");
     connect(run_button, &QPushButton::clicked, this, &QDialog::accept);
     button_layout->addWidget(run_button);
 

@@ -85,7 +85,11 @@ compass.interface.sendCommandAndUnpack('set_view_point ' + vp_escaped)
 **Import**: `import_asterix_file`, `import_asterix_files`, `import_asterix_pcap_file`,
 `import_asterix_pcap_files` (all with `framing`, `line`, `date`, `time_offset`,
 `ignore_time_jumps`, `config`), `import_asterix_network` (with `time_offset`,
-`max_lines`, `ignore_future_ts`, `config`), `import_asterix_network_pause` (pauses the
+`max_lines`, `ignore_future_ts`, `config`; live simulation via `replay_file`
+(`;`-separated IOSS recordings replayed simultaneously over UDP to a configured
+network line keeping their relative timing, ToD aligned to the current time
+unless `time_offset` is given), `replay_speed`, `replay_line`,
+`replay_stop_at_end`), `import_asterix_network_pause` (pauses the
 live display, the database keeps receiving data, returns when the paused display is
 loaded), `import_asterix_network_resume`, `import_asterix_network_stop`,
 `import_json`, `import_gps_trail` (with `name`, `sac`, `sic`, `tod_offset`, `date`,
@@ -96,16 +100,30 @@ loaded), `import_asterix_network_resume`, `import_asterix_network_stop`,
 `calculate_artas_tr_usage`, `calculate_radar_plot_positions`, `load_data`, `delete_data`
 (with `delete_info` JSON array)
 
-**Evaluation**: `evaluate` (with `config`, `result`, `run_filter`),
+**Evaluation**: `evaluate` (with `config`, `result`, `run_filter`; without `result` the report
+gets the default name "<standard> <test data source> L<line> Evaluation", the reply
+`{"report": <name>}` gives the stored name),
+`filter_eval_targets` (with `config` = Evaluation target filter parameters as in the
+`EvaluationTargetFilter` configuration, e.g. `exclude_target_categories`,
+`exclude_target_category_values`; `use_all` sets "Use" on for all targets first, the filter only
+disables targets; `no_run` only applies `config` and `use_all`; the target use flags are saved in
+the database, reply `{"targets", "used", "ignored"}`),
 `get_eval_standards` (standards with requirement groups/requirements, no DB needed)
 
 **Data retrieval**: `get_utns` (with `nodesc`), `get_target`, `get_target_stats`,
-`get_dbcontent_data` (with `dbcontent`, `variables` `|`-separated, `utn`, `max_size`),
+`get_dbcontent_data` (with `dbcontent`, `variables` `|`-separated, `utn`, `max_size`; a
+variable is a variable of the DBContent or a Report Variable joined onto it, given by its full
+name `<report name>: <display name>`, records without a Report Table row are null),
 `get_data_sources`, `get_data_source_counts` (per data source / dbcontent / line
-inserted record counts)
+inserted record counts), `get_sensor_status` (CAT063 based per data source status
+as shown in the Sensor Status tool: active tracker plus per source
+Operational/Degraded/Initializing/Not Connected/Fresh/Unknown and status time)
 
-**Reports**: `get_existing_reports`, `get_report` (with `section` for hierarchical
-drill-down, see below), `export_report` (with `report`, `dir`, `mode`),
+**Reports**: `get_existing_reports` (`reports` names, `details` per report with `id` and the
+Report Table catalog `tables`: `key`, `display_name`, `kind`, `num_rows`, `host_dbcontents`,
+`columns`, `variables` as offered in the Views), `get_report` (with `section` for hierarchical
+drill-down, see below), `get_report_figure` (with `report`, `section`, optional `figure`:
+`figures` list with `name`, `caption` and the stored `view_point` JSON), `export_report` (with `report`, `dir`, `mode`),
 `export_view_points_report`
 
 **Data context**: `create_context`, `set_context`, `delete_context`, `list_contexts`,
@@ -113,7 +131,10 @@ drill-down, see below), `export_report` (with `report`, `dir`, `mode`),
 `import_sectors_gdal` (with `layer`, `color`, `exclude`), `export_sectors_json`,
 `delete_all_sectors`, `export_data_sources_json`
 
-**Analyze**: `analyze_data_source` (with `ds_type`, `config`), `get_analyze_inspectors`
+**Analyze**: `analyze_data_source` (with `ds_type`, `config`; without `custom_report_name` in
+`config` the report gets the default name "<test data source> L<line> Analysis", the
+`custom_report_name` is a stored task parameter, so pass `""` to get the default name, the reply
+`{"report": <name>}` gives the stored name), `get_analyze_inspectors`
 
 **Geographic View**: `set_map`, `get_maps`
 

@@ -8,14 +8,29 @@ cmake_minimum_required(VERSION 3.28)
 set ( CMAKE_BUILD_TYPE RelWithDebInfo ) #Debug RelWithDebInfo Release
 
 project( COMPASS )
+
+# Debug information: function names and line tables only (-g1). Enough for stack traces with function,
+# file and line (stacktrace_format.h), without types and local variables: smaller binaries, and the
+# closed-source plugins expose less. -DCOMPASS_FULL_DEBUG_INFO=ON for full debugging with gdb (-g).
+option(COMPASS_FULL_DEBUG_INFO "full debug information (-g) instead of -g1" OFF)
+if (NOT COMPASS_FULL_DEBUG_INFO)
+    foreach (lang C CXX)
+        string(REGEX REPLACE "(^| )-g( |$)" "\\1-g1\\2" CMAKE_${lang}_FLAGS_RELWITHDEBINFO "${CMAKE_${lang}_FLAGS_RELWITHDEBINFO}")
+    endforeach()
+endif()
+message("  Debug information: ${CMAKE_CXX_FLAGS_RELWITHDEBINFO}")
 SET(CPACK_PACKAGE_VERSION_MAJOR "1")
-SET(CPACK_PACKAGE_VERSION_MINOR "0")
+SET(CPACK_PACKAGE_VERSION_MINOR "1")
 SET(CPACK_PACKAGE_VERSION_PATCH "0")
 
 message("  System: ${CMAKE_SYSTEM}")
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/lib)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
+
+# the compass_* libraries are shared: each one has to link
+# all libraries it uses, unresolved symbols fail at link time as for Windows DLLs
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--no-undefined")
 
 if(EXISTS "/.dockerenv")
 message("  Platform: Linux (inside docker)")
@@ -25,11 +40,35 @@ message("  Platform: Linux (local)")
 add_definitions ( -UNDEBUG -Wall -std=c++17 -fno-omit-frame-pointer) # -DQT_NO_KEYWORDS -fext-numeric-literals
 ENDIF()
 
+IF (WIN32)
+# Windows resources of the executables (application manifest, UTF-8 code page), compiled
+# directly with windres: the RC language would get the add_definitions compiler flags
+set(COMPASS_WINDOWS_RC "${CMAKE_BINARY_DIR}/compass_rc.o")
+add_custom_command(
+    OUTPUT "${COMPASS_WINDOWS_RC}"
+    COMMAND x86_64-w64-mingw32-windres -O coff -i compass.rc -o "${COMPASS_WINDOWS_RC}"
+    WORKING_DIRECTORY "${COMPASS_PATH}/src/app/windows"
+    DEPENDS "${COMPASS_PATH}/src/app/windows/compass.rc" "${COMPASS_PATH}/src/app/windows/compass.manifest")
+add_custom_target(compass_windows_rc DEPENDS "${COMPASS_WINDOWS_RC}")
+
+# M_PI etc. (math.h), no min/max macros and fewer other macros (windows.h, included by TBB)
+add_definitions(-D_USE_MATH_DEFINES -DNOMINMAX -DWIN32_LEAN_AND_MEAN)
+
+# export all symbols of the DLLs: ld stops doing so on its own once a DLL contains a dllexport
+# (COMPASS_<LIB>_API on the classes with signals)
+set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--export-all-symbols")
+ENDIF()
+
 set(CMAKE_THREAD_PREFER_PTHREAD TRUE)
 set(THREADS_PREFER_PTHREAD_FLAG TRUE)
 
 #-Wno-deprecated-declarations -Wno-ignored-attributes -Wno-misleading-indentation for new compiler and old libs
 # -UNDEBUG for enabling asserts in release buils (until testing/error management is improved)
+
+IF (WIN32 AND CMAKE_CROSSCOMPILING)
+# MinGW cross build: moc, uic and rcc of the Linux host Qt
+include(${COMPASS_PATH}/docker/qt5_host_tools.cmake)
+ENDIF()
 
 find_package(Qt5Widgets)
 find_package(Qt5Core)
@@ -68,6 +107,45 @@ function(compass_automoc target)
     endif()
 endfunction()
 
+# compass_add_plugin(<Name> <dir> [LIBRARIES <lib>...]): plugin <Name> (Plugin::name()) with its sources in <dir>
+# (readme_plugins.md)
+# - OBJECT library compass_plugin_<name>_obj (PIC, links compass_plugin_sdk and the LIBRARIES publicly), sources
+#   from <dir>/CMakeLists.txt, linked by the MODULE and by compass_tests
+# - MODULE compass_plugin_<name> (no "lib" prefix, -Wl,--no-undefined, build/lib/compass_plugins/) with the
+#   entry symbol source <dir>/<name>plugin_entry.cpp (COMPASS_DECLARE_PLUGIN, only in the MODULE), installed to
+#   lib/compass_plugins/ (RUNPATH $ORIGIN/..)
+# - registers the MODULE (built with compass_client) and the name (expected by compass_client, in call order)
+# A macro, not a function: the lists are appended in the caller's scope.
+macro(compass_add_plugin name dir)
+    cmake_parse_arguments(_plugin "" "" "LIBRARIES" ${ARGN})
+
+    string(TOLOWER "${name}" _plugin_lname)
+    set(_plugin_obj compass_plugin_${_plugin_lname}_obj)
+    set(_plugin_mod compass_plugin_${_plugin_lname})
+
+    add_library(${_plugin_obj} OBJECT "")
+    set_target_properties(${_plugin_obj} PROPERTIES POSITION_INDEPENDENT_CODE ON)
+    target_link_libraries(${_plugin_obj}
+        PUBLIC
+            compass_plugin_sdk # host libraries incl. compass_app
+            ${_plugin_LIBRARIES})
+
+    add_library(${_plugin_mod} MODULE "${dir}/${_plugin_lname}plugin_entry.cpp")
+    target_link_libraries(${_plugin_mod} PRIVATE ${_plugin_obj})
+    target_link_options(${_plugin_mod} PRIVATE "-Wl,--no-undefined")
+    set_target_properties(${_plugin_mod} PROPERTIES
+        PREFIX ""
+        LIBRARY_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/lib/compass_plugins"
+        INSTALL_RPATH "$ORIGIN/..") # host libraries next to the plugin directory (container install, AppImage)
+    install(TARGETS ${_plugin_mod} LIBRARY DESTINATION lib/compass_plugins)
+
+    include("${dir}/CMakeLists.txt")
+    compass_automoc(${_plugin_obj})
+
+    list(APPEND COMPASS_PLUGIN_TARGETS ${_plugin_mod})
+    list(APPEND COMPASS_PLUGIN_NAMES ${name})
+endmacro()
+
 #add_definitions(${Qt5Widgets_DEFINITIONS})
 #set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${Qt5Widgets_EXECUTABLE_COMPILE_FLAGS}")
 
@@ -85,6 +163,10 @@ message("  CMAKE_PREFIX_PATH: ${CMAKE_PREFIX_PATH}")
 find_package (Eigen3 3.2 REQUIRED)
 
 find_package ( LOG4CPP REQUIRED )
+IF (WIN32)
+# log4cpp/config-MinGW32.h does not define int64_t
+add_definitions(-DLOG4CPP_HAVE_INT64_T)
+ENDIF()
 message("  LOG4CPP_INCLUDE_DIR: ${LOG4CPP_INCLUDE_DIR}")
 message("  LOG4CPP_LIBRARY: ${LOG4CPP_LIBRARIES}")
 
@@ -96,7 +178,12 @@ find_package ( LibArchive REQUIRED )
 message("  LibArchive_INCLUDE_DIRS: ${LibArchive_INCLUDE_DIRS}")
 message("  LibArchive_LIBRARIES: ${LibArchive_LIBRARIES}")
 
+IF (WIN32)
+# oneTBB on Windows is tbb12, the own FindTBB.cmake searches tbb: use the oneTBB config
+find_package(TBB CONFIG REQUIRED)
+ELSE()
 find_package(TBB REQUIRED)
+ENDIF()
 message("  TBB_INCLUDE_DIRS: ${TBB_INCLUDE_DIRS}")
 message("  TBB_LIBRARIES: ${TBB_LIBRARIES}")
 
@@ -150,7 +237,6 @@ message("Install path: ${CMAKE_INSTALL_PREFIX}")
 
 # Global include directories (for all targets)
 include_directories (
-    ${CMAKE_SOURCE_DIR}
     ${CMAKE_CURRENT_BINARY_DIR}
     ${PROJECT_BINARY_DIR}/include
     ${Qt5Widgets_INCLUDE_DIRS}
@@ -180,9 +266,6 @@ link_directories(
 # Third-party headers
 include(lib/CMakeLists.txt)
 
-# src/ root include (for #include "src/..." style paths)
-include(src/CMakeLists.txt)
-
 # Detect experimental source early (before component libs that check EXPERIMENTAL_SRC)
 set (EXPERIMENTAL_SRC true)
 message("Experimental source: ${EXPERIMENTAL_SRC}")
@@ -196,7 +279,12 @@ IF (EXPERIMENTAL_SRC)
     ENDIF()
 ENDIF()
 
-# Component libraries (order matters: dependencies first)
+# Component libraries (order matters: dependencies first). Each one generates its export macro
+# COMPASS_<LIB>_API (<target>_export.h), set on the classes with signals: on Windows a member
+# function pointer to a signal taken in another DLL is that DLL's import thunk without dllimport,
+# and the pointer-based QObject::connect() then does not find the signal
+include(GenerateExportHeader)
+add_subdirectory(src/util)
 add_subdirectory(src/config)
 add_subdirectory(src/core)
 add_subdirectory(src/reconstruction)
@@ -205,7 +293,11 @@ add_subdirectory(src/filter)
 add_subdirectory(src/task)
 add_subdirectory(src/eval)
 add_subdirectory(src/view)
-add_subdirectory(src/report)
+add_subdirectory(src/result)
+
+# plugin MODULE targets and plugin names, filled by compass_add_plugin() (empty without experimental source)
+set(COMPASS_PLUGIN_TARGETS)
+set(COMPASS_PLUGIN_NAMES)
 
 # Experimental source - creates its own library targets
 IF (EXPERIMENTAL_SRC)
@@ -232,14 +324,14 @@ if(NOT EXISTS "/.dockerenv")
     )
 
     set(COMPASS_PCH_TARGETS
-        compass_config compass_core compass_reconstruction
+        compass_util compass_config compass_core compass_reconstruction
         compass_gui compass_filter compass_task
-        compass_eval compass_view compass_report)
+        compass_eval compass_view compass_result)
 
     if(EXPERIMENTAL_SRC)
         list(APPEND COMPASS_PCH_TARGETS
-            compass_osg_utils compass_docx compass_reconst_adv
-            compass_geo_view compass_rtcmd_ext compass_test_lab)
+            compass_osg_utils compass_plugin_docx_obj compass_plugin_probimm_obj compass_plugin_extraanalysis_obj
+            compass_plugin_geoview_obj compass_rtcmd_ext compass_test_lab)
     endif()
 
     foreach(_target ${COMPASS_PCH_TARGETS})
@@ -248,10 +340,20 @@ if(NOT EXISTS "/.dockerenv")
     endforeach()
 endif()
 
-configure_file(src/core/util/global.h.in include/global.h)
+configure_file(src/util/global.h.in include/global.h)
 
 # Application executables
 add_subdirectory(src/app)
+
+# plugins are loaded at runtime, nothing links them => build them with the client, so it never loads stale ones
+IF (COMPASS_PLUGIN_TARGETS)
+    add_dependencies(compass_client ${COMPASS_PLUGIN_TARGETS})
+ENDIF()
+
+# plugins the client expects (all or none, compass_add_plugin()), none without experimental source;
+# comma-separated, a ';' would split the definition
+string(REPLACE ";" "," COMPASS_EXPECTED_PLUGINS "${COMPASS_PLUGIN_NAMES}")
+target_compile_definitions(compass_client PRIVATE COMPASS_EXPECTED_PLUGINS="${COMPASS_EXPECTED_PLUGINS}")
 
 # compass_app links against component libraries inside src/app/CMakeLists.txt
 
@@ -270,13 +372,13 @@ install(DIRECTORY "conf" DESTINATION compass)
 install(DIRECTORY "data" DESTINATION compass)
 
 set(COMPASS_INSTALL_LIBS
-    compass_config compass_core compass_reconstruction
+    compass_util compass_config compass_core compass_reconstruction
     compass_gui compass_filter compass_task
-    compass_eval compass_view compass_report)
+    compass_eval compass_view compass_result compass_app)
 if(EXPERIMENTAL_SRC)
     list(APPEND COMPASS_INSTALL_LIBS
-        compass_osg_utils compass_docx compass_reconst_adv
-        compass_geo_view compass_rtcmd_ext compass_test_lab)
+        compass_osg_utils
+        compass_rtcmd_ext compass_test_lab)
 endif()
 install(TARGETS ${COMPASS_INSTALL_LIBS} DESTINATION lib
     PUBLIC_HEADER DESTINATION include/compass)

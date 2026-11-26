@@ -17,6 +17,8 @@
 
 #pragma once
 
+#include "compass_view_export.h"
+
 #include <QObject>
 
 #include "buffer.h"
@@ -29,7 +31,7 @@ class ViewableDataConfig;
 class HistogramView;
 class DBContentManager;
 
-class HistogramViewDataSource : public QObject, public Configurable
+class COMPASS_VIEW_API HistogramViewDataSource : public QObject, public Configurable
 {
     Q_OBJECT
   public slots:
@@ -45,8 +47,6 @@ class HistogramViewDataSource : public QObject, public Configurable
     /// @brief Destructor
     virtual ~HistogramViewDataSource();
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json);
-
     /// @brief Returns variable read list
     dbContent::VariableOrderedSet* getSet()
     {
@@ -57,6 +57,8 @@ class HistogramViewDataSource : public QObject, public Configurable
     void showViewPoint (ViewableDataConfig* vp);
 
   protected:
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json);
+
     HistogramView* view_ = nullptr;
 
     /// Variable read list

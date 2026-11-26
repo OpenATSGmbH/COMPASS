@@ -1,4 +1,10 @@
-add_library(compass_eval "")
+add_library(compass_eval SHARED "")
+
+# COMPASS_EVAL_API for the classes with signals (top-level CMakeLists.txt)
+generate_export_header(compass_eval
+    EXPORT_MACRO_NAME COMPASS_EVAL_API
+    EXPORT_FILE_NAME "${CMAKE_CURRENT_BINARY_DIR}/compass_eval_export.h")
+target_include_directories(compass_eval PUBLIC "${CMAKE_CURRENT_BINARY_DIR}")
 
 include("${CMAKE_CURRENT_LIST_DIR}/data/CMakeLists.txt")
 include("${CMAKE_CURRENT_LIST_DIR}/requirement/CMakeLists.txt")
@@ -10,6 +16,7 @@ target_sources(compass_eval
         "${CMAKE_CURRENT_LIST_DIR}/evaluationdefs.h"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationsettings.h"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationcalculator.h"
+        "${CMAKE_CURRENT_LIST_DIR}/evaluationconstraints.h"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationmanager.h"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationdialog.h"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationmaintabwidget.h"
@@ -27,6 +34,7 @@ target_sources(compass_eval
         "${CMAKE_CURRENT_LIST_DIR}/evaluationdefs.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationsettings.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationcalculator.cpp"
+        "${CMAKE_CURRENT_LIST_DIR}/evaluationconstraints.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationmanager.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationdialog.cpp"
         "${CMAKE_CURRENT_LIST_DIR}/evaluationmaintabwidget.cpp"
@@ -48,19 +56,10 @@ target_link_libraries(compass_eval
     PUBLIC
         compass_core
         compass_reconstruction
-        compass_task
         compass_gui
-)
-
-# eval sources include headers from app and view - circular deps
-target_include_directories(compass_eval PRIVATE
-    "${CMAKE_SOURCE_DIR}/src/app/client"
-    "${CMAKE_SOURCE_DIR}/src/view"
-    "${CMAKE_SOURCE_DIR}/src/view/viewbase"
-    "${CMAKE_SOURCE_DIR}/src/view/points"
-    "${CMAKE_SOURCE_DIR}/src/view/histogramview"
-    "${CMAKE_SOURCE_DIR}/src/view/scatterplotview"
-    "${CMAKE_SOURCE_DIR}/src/view/gridview"
+        compass_filter
+        compass_view
+        compass_result
 )
 
 compass_automoc(compass_eval)

@@ -1,8 +1,8 @@
-#include "eval/requirement/base/positionbaseconfig.h"
-#include "task/result/report/report.h"
-#include "task/result/report/section.h"
-#include "task/result/report/sectioncontenttable.h"
-#include "eval/requirement/group.h"
+#include "requirement/base/positionbaseconfig.h"
+#include "report/report.h"
+#include "report/section.h"
+#include "report/sectioncontenttable.h"
+#include "requirement/group.h"
 
 #include "stringconv.h"
 

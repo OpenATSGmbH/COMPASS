@@ -1,0 +1,47 @@
+{
+    "description": "Dubious Target, maximum 1333 kts (685.7 m/s). Update 0: reported 700 m/s, too high. Update 1: reported 200 m/s, but 1000 m in 1 s is 1943.8 kts, calculated speed too high. Update 2: 100 m in 1 s (194.4 kts), OK. Update 3: reported 800 m/s, the calculated speed is not checked then. The first update is checked too (the old code skipped the calculated speed of update 1). 3 of 4 updates dubious.",
+    "params": {
+        "use_max_groundspeed": true,
+        "max_groundspeed_kts": 1333.0,
+        "check_calculated_speed": true,
+        "use_max_acceleration": false,
+        "max_acceleration": 29.43,
+        "use_max_turnrate": false,
+        "max_turnrate": 30.0,
+        "use_max_rocd": false,
+        "max_rocd": 100.0,
+        "min_comparison_time": 1.0,
+        "max_comparison_time": 30.0
+    },
+    "updates": [
+        {
+            "time": 0.0,
+            "speed": 700.0,
+            "expected": {
+                "reported_speed_ms": 700.0
+            }
+        },
+        {
+            "time": 1.0,
+            "speed": 200.0,
+            "distance": 1000.0,
+            "expected": {
+                "calculated_speed_kts": 1943.84449
+            }
+        },
+        {
+            "time": 2.0,
+            "speed": 200.0,
+            "distance": 100.0,
+            "expected": {}
+        },
+        {
+            "time": 3.0,
+            "speed": 800.0,
+            "distance": 100.0,
+            "expected": {
+                "reported_speed_ms": 800.0
+            }
+        }
+    ]
+}

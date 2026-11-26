@@ -20,8 +20,11 @@
 #include "view.h"
 #include "tableviewdatasource.h"
 
+#include <memory>
+
 class TableViewWidget;
-class TableViewDataWidget;
+class TableViewModel;
+class TableViewRenderWidget;
 class ViewContainer;
 
 class TableView : public View
@@ -48,15 +51,15 @@ public:
     TableView(nlohmann::json& config, ViewContainer* parent);
     virtual ~TableView() override;
 
-    virtual void generateSubConfigurable(nlohmann::json& child_json) override;
-
     /// @brief Returns the used data source
     TableViewDataSource* getDataSource()
     {
         traced_assert(data_source_);
         return data_source_;
     }
-    TableViewDataWidget* getDataWidget();
+    TableViewRenderWidget* getRenderWidget();
+
+    TableViewModel& model() { return *model_; }
 
     virtual dbContent::VariableSet getSet(const std::string& dbcontent_name) override;
 
@@ -71,10 +74,14 @@ public:
 
     virtual void accept(LatexVisitor& v) override;
 
+    QIcon deckIcon() const override;
+
     const Settings& settings() const;
 
 protected:
     friend class LatexVisitor;
+
+    virtual GenerateResult generateSubConfigurable_impl(nlohmann::json& child_json) override;
 
     virtual void checkSubConfigurables() override;
     virtual void updateSelection_impl() override;
@@ -85,6 +92,8 @@ protected:
 
     virtual void viewInfoJSON_impl(nlohmann::json& info) const override;
 
+
+    std::unique_ptr<TableViewModel> model_; // outlives widget_, deleted in the destructor
 
     TableViewWidget* widget_{nullptr};
     TableViewDataSource* data_source_{nullptr};

@@ -1,0 +1,21 @@
+{
+    "description": "Reference accuracy: 3 m / 4 m give 5 m, 0 / 0 gives 0 m (a perfect reference is valid), a NaN (null here) gives none.",
+    "type": "reference",
+    "checks": [
+        [
+            3,
+            4,
+            5
+        ],
+        [
+            0,
+            0,
+            0
+        ],
+        [
+            null,
+            1,
+            null
+        ]
+    ]
+}

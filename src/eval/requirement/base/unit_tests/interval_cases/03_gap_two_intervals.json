@@ -1,0 +1,58 @@
+{
+    "description": "Gap of 16 s: 2 missed update intervals. A gap equal to the update interval is no miss.",
+    "params": {
+        "update_interval_s": 8.0
+    },
+    "periods": [
+        [
+            0,
+            80
+        ]
+    ],
+    "updates": [
+        [
+            0,
+            "valid"
+        ],
+        [
+            16,
+            "valid"
+        ],
+        [
+            24,
+            "valid"
+        ],
+        [
+            32,
+            "valid"
+        ],
+        [
+            40,
+            "valid"
+        ],
+        [
+            48,
+            "valid"
+        ],
+        [
+            56,
+            "valid"
+        ],
+        [
+            64,
+            "valid"
+        ],
+        [
+            72,
+            "valid"
+        ],
+        [
+            80,
+            "valid"
+        ]
+    ],
+    "expected": {
+        "sum_uis": 10,
+        "misses": 2
+    }
+}

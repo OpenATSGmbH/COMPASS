@@ -18,16 +18,18 @@
 #include "dbcontent/dbcontent.h"
 #include "asterixpostprocessjob.h"
 #include "dbcontent/dbcontentmanager.h"
+#include "dbcontent/variable/calculationplan.h"
 #include "buffer.h"
-#include "compass.h"
 #include "files.h"
 #include "logger.h"
 #include "projectionmanager.h"
-#include "util/stringconv.h"
+#include "stringconv.h"
 #include "global.h"
 #include "json.hpp"
 
 #include <osgEarth/GeoMath>
+
+#include <boost/filesystem.hpp>
 
 #include <QThread>
 
@@ -74,26 +76,38 @@ std::mt19937& obfuscateRng()
     return rng;
 }
 
-static const char* kObfuscationFile = "/tmp/compass_obfuscation.json";
+// system temp folder: /tmp on Linux, %TEMP% on Windows
+static const std::string kObfuscationFile =
+    (boost::filesystem::temp_directory_path() / "compass_obfuscation.json").string();
 }
 
 ASTERIXPostprocessJob::ASTERIXPostprocessJob(
     map<string, shared_ptr<Buffer>> buffers,
     ASTERIXImportTaskSettings settings,
-    COMPASS& compass)
+    std::shared_ptr<const dbContent::CalculationPlan> calc_plan,
+    DBContentManager& dbcont_man,
+    ProjectionManager& proj_man)
     : Job("ASTERIXPostprocessJob"),
     buffers_(std::move(buffers)),
     settings_(settings),
-    compass_(compass)
+    calc_plan_(std::move(calc_plan)),
+    dbcont_man_(dbcont_man),
+    proj_man_(proj_man)
 {
+    traced_assert(calc_plan_);
 }
 
 ASTERIXPostprocessJob::ASTERIXPostprocessJob(map<string, shared_ptr<Buffer>> buffers,
-                                             COMPASS& compass)
+                                             std::shared_ptr<const dbContent::CalculationPlan> calc_plan,
+                                             DBContentManager& dbcont_man,
+                                             ProjectionManager& proj_man)
     : Job("ASTERIXPostprocessJob"),
     buffers_(std::move(buffers)),
-    compass_(compass)
+    calc_plan_(std::move(calc_plan)),
+    dbcont_man_(dbcont_man),
+    proj_man_(proj_man)
 {
+    traced_assert(calc_plan_);
 }
 
 ASTERIXPostprocessJob::~ASTERIXPostprocessJob()
@@ -118,11 +132,17 @@ void ASTERIXPostprocessJob::run_impl()
 
     boost::posix_time::ptime start_time = boost::posix_time::microsec_clock::local_time();
 
+    // the selection variables, "Latitude*" from the decoded item or "Latitude HR", are filled
+    // by dbContent::SelectionFiller before the timestamp calculation, the calculations below
+    // fill the rows still null
+
+    // the calculated variables with an operator, DS ID first, then the functions using it:
+    // the radar plot positions of CAT001 and CAT048, the CAT021 ground speed and track angle
+    calc_plan_->run(buffers_);
+
     checkARTASHashes();
     doRadarPlotPositionCalculations();
     doXYPositionCalculations();
-    doADSBPositionProcessing();
-    doGroundSpeedCalculations();
 
     if (settings_.filter_tod_active_  || settings_.filter_position_rec_active_ 
         || settings_.filter_position_circ_active_ || settings_.filter_modec_active_)
@@ -156,7 +176,7 @@ void ASTERIXPostprocessJob::run_impl()
 
 void ASTERIXPostprocessJob::checkARTASHashes()
 {
-    DBContentManager& dbcont_man = compass_.dbContentManager();
+    DBContentManager& dbcont_man = dbcont_man_;
 
     for (auto& buf_it : buffers_)
     {
@@ -200,8 +220,16 @@ void ASTERIXPostprocessJob::checkARTASHashes()
 
 void ASTERIXPostprocessJob::doRadarPlotPositionCalculations()
 {
-    // radar calculations
-    compass_.projectionManager().doRadarPlotPositionCalculations(buffers_);
+    // radar calculations of the contents without the radar_projection function in the plan,
+    // CAT010: fills the "Latitude*" rows the selection left null, before the x/y projection
+
+    map<string, shared_ptr<Buffer>> remaining;
+
+    for (auto& buf_it : buffers_)
+        if (!calc_plan_->runsFunction(buf_it.first, dbContent::CalculationPlan::FunctionRadarProjection))
+            remaining.insert(buf_it);
+
+    proj_man_.doRadarPlotPositionCalculations(remaining);
 }
 
 void ASTERIXPostprocessJob::doXYPositionCalculations()
@@ -209,367 +237,14 @@ void ASTERIXPostprocessJob::doXYPositionCalculations()
     logdbg;
 
     // tracked data sources with only x/y coordinates
-    compass_.projectionManager().doXYPositionCalculations(buffers_);
-}
-
-void ASTERIXPostprocessJob::doADSBPositionProcessing()
-{
-    DBContentManager& dbcont_man = compass_.dbContentManager();
-
-    string dbcontent_name = "CAT021";
-
-    if (!buffers_.count(dbcontent_name))
-        return;
-
-    shared_ptr<Buffer> buffer = buffers_.at(dbcontent_name);
-    unsigned int buffer_size = buffer->size();
-
-    if (!buffer_size)
-        return;
-
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_));
-    traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_));
-
-    traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat021_latitude_hr_));
-    traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat021_longitude_hr_));
-
-    dbContent::Variable& lat_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_latitude_);
-    dbContent::Variable& lon_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_longitude_);
-
-    dbContent::Variable& lat_hr_var = dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat021_latitude_hr_);
-    dbContent::Variable& lon_hr_var = dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat021_longitude_hr_);
-
-    traced_assert(lat_var.dataType() == PropertyDataType::DOUBLE);
-    traced_assert(lon_var.dataType() == PropertyDataType::DOUBLE);
-    traced_assert(lat_hr_var.dataType() == PropertyDataType::DOUBLE);
-    traced_assert(lon_hr_var.dataType() == PropertyDataType::DOUBLE);
-
-    string lat_var_name = lat_var.name();
-    string lon_var_name = lon_var.name();
-    string lat_hr_var_name = lat_hr_var.name();
-    string lon_hr_var_name = lon_hr_var.name();
-
-    if (!buffer->has<double>(lat_hr_var_name) || !buffer->has<double>(lon_hr_var_name)) // can not copy
-        return;
-
-    if (!buffer->has<double>(lat_var_name))
-        buffer->addProperty(lat_var_name, PropertyDataType::DOUBLE); // add if needed
-
-    if (!buffer->has<double>(lon_var_name))
-        buffer->addProperty(lon_var_name, PropertyDataType::DOUBLE); // add if needed
-
-    NullableVector<double>& lat_vec = buffer->get<double>(lat_var_name);
-    NullableVector<double>& lon_vec = buffer->get<double>(lon_var_name);
-    NullableVector<double>& lat_hr_vec = buffer->get<double>(lat_hr_var_name);
-    NullableVector<double>& lon_hr_vec = buffer->get<double>(lon_hr_var_name);
-
-    for (unsigned int index=0; index < buffer_size; index++)
-    {
-        if (!lat_vec.isNull(index) || !lon_vec.isNull(index)) // no need to copy
-            continue;
-
-        if (lat_hr_vec.isNull(index) || lon_hr_vec.isNull(index)) // can not copy
-            continue;
-
-        lat_vec.set(index, lat_hr_vec.get(index));
-        lon_vec.set(index, lon_hr_vec.get(index));
-    }
-}
-
-void ASTERIXPostprocessJob::doGroundSpeedCalculations()
-{
-    // general vx/vy to ground speed/track angle conversion
-
-    string dbcontent_name;
-
-    DBContentManager& dbcont_man = compass_.dbContentManager();
-    ProjectionManager& proj_man = compass_.projectionManager();
-
-    string vx_var_name;
-    string vy_var_name;
-    string speed_var_name;
-    string track_angle_var_name;
-
-    double speed_ms, track_angle_rad, track_angle_deg;
-
-    for (auto& buf_it : buffers_)
-    {
-        dbcontent_name = buf_it.first;
-
-        if (!dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_vx_)
-            || !dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_vy_))
-            continue;
-
-        shared_ptr<Buffer> buffer = buf_it.second;
-        unsigned int buffer_size = buffer->size();
-        //assert(buffer_size);
-
-        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_));
-        traced_assert(dbcont_man.metaCanGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_angle_));
-
-        dbContent::Variable& vx_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vx_);
-        dbContent::Variable& vy_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_vy_);
-        dbContent::Variable& speed_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_);
-        dbContent::Variable& track_angle_var =
-            dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_angle_);
-
-        vx_var_name = vx_var.name();
-        vy_var_name = vy_var.name();
-        speed_var_name = speed_var.name();
-        track_angle_var_name = track_angle_var.name();
-
-        traced_assert(vx_var.dataType() == PropertyDataType::DOUBLE);
-        traced_assert(vy_var.dataType() == PropertyDataType::DOUBLE);
-        traced_assert(speed_var.dataType() == PropertyDataType::DOUBLE);
-        traced_assert(track_angle_var.dataType() == PropertyDataType::DOUBLE);
-
-        if (!buffer->has<double>(vx_var_name) || !buffer->has<double>(vy_var_name))
-            continue; // cant calculate
-
-        if (buffer->has<double>(speed_var_name) && buffer->has<double>(track_angle_var_name)
-            && buffer->get<double>(speed_var_name).isNeverNull()
-            && buffer->get<double>(track_angle_var_name).isNeverNull())
-        {
-            logdbg << "start"
-                   << dbcontent_name << " speed and track angle already set";
-
-            continue; // no need for calculation
-        }
-
-        if (!buffer->has<double>(speed_var_name))
-            buffer->addProperty(speed_var_name, PropertyDataType::DOUBLE); // add if needed
-
-        if (!buffer->has<double>(track_angle_var_name))
-            buffer->addProperty(track_angle_var_name, PropertyDataType::DOUBLE); // add if needed
-
-        NullableVector<double>& vx_vec = buffer->get<double>(vx_var_name);
-        NullableVector<double>& vy_vec = buffer->get<double>(vy_var_name);
-        NullableVector<double>& speed_vec = buffer->get<double>(speed_var_name);
-        NullableVector<double>& track_angle_vec = buffer->get<double>(track_angle_var_name);
-
-        unsigned int cnt = 0;
-
-        for (unsigned int index=0; index < buffer_size; index++)
-        {
-            if (vx_vec.isNull(index) || vy_vec.isNull(index)) // can not calculate
-                continue;
-
-            if (!speed_vec.isNull(index) && !track_angle_vec.isNull(index)) // already set
-                continue;
-
-            speed_ms = sqrt(pow(vx_vec.get(index), 2)+pow(vy_vec.get(index), 2)) ; // for 1s
-            track_angle_rad = atan2(vx_vec.get(index), vy_vec.get(index));
-
-            track_angle_deg = track_angle_rad * RAD2DEG;
-
-            if (track_angle_deg < 0)
-                track_angle_deg += 360.0;
-
-            speed_vec.set(index, speed_ms * M_S2KNOTS);
-            track_angle_vec.set(index, track_angle_deg);
-
-            ++cnt;
-        }
-
-        logdbg << "start"
-               << dbcontent_name << " speed and track angle calc " << cnt << " / " << buffer_size;
-    }
-
-
-    // cat021 sgv conversion
-
-    dbcontent_name = "CAT021";
-
-    unsigned int spd_already_set {0}, sgv_spd_no_val {0}, sgv_hgt_no_value {0},
-        sgv_is_heading {0}, sgv_is_magnetic {0}, sgv_usable {0};
-
-    logdbg << "got ads-b "
-           << (buffers_.count(dbcontent_name) && buffers_.at(dbcontent_name)->size());
-
-    if (buffers_.count(dbcontent_name) && buffers_.at(dbcontent_name)->size())
-    {
-        auto& buffer = buffers_.at(dbcontent_name);
-
-        unsigned int buffer_size = buffer->size();
-        traced_assert(buffer_size);
-
-        if (!buffer->has<float>(dbcontent_vars::var_cat021_sgv_gss_.name()) &&
-            buffer->has<bool>(dbcontent_vars::var_cat021_sgv_stp_.name()))
-        {  // no speed but sgv stopped bit
-            logdbg << "got ads-b no gss but stp";
-
-            unsigned int stp_set {0};
-
-            dbContent::Variable& speed_var =
-                dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_);
-            traced_assert(speed_var.dataType() == PropertyDataType::DOUBLE);
-
-            NullableVector<double>& speed_vec = buffer->get<double>(speed_var_name);
-            NullableVector<bool>& sgv_stp_vec = buffer->get<bool>(dbcontent_vars::var_cat021_sgv_stp_.name());
-
-            for (unsigned int index = 0; index < buffer_size; index++)
-            {
-                if (!speed_vec.isNull(index))  // already set
-                {
-                    spd_already_set++;
-                    continue;
-                }
-
-                if (sgv_stp_vec.isNull(index)) // speed not set
-                {
-                    ++sgv_spd_no_val;
-                    continue;
-                }
-
-                if (sgv_stp_vec.get(index))
-                {
-                    speed_vec.set(index, 0.0);
-                    ++stp_set;
-                }
-            }
-
-            logdbg << "CAT021 spd_already_set " << spd_already_set << " sgv_spd_no_val "
-                   << sgv_spd_no_val << " stp_set " << stp_set;
-
-            return;
-        }
-
-        logdbg << "got ads-b sgv gss "
-               << buffer->has<float>(dbcontent_vars::var_cat021_sgv_gss_.name())
-               << " hgt " << buffer->has<double>(dbcontent_vars::var_cat021_sgv_hgt_.name())
-               << " htt " << buffer->has<bool>(dbcontent_vars::var_cat021_sgv_htt_.name())
-               << " hrd " << buffer->has<bool>(dbcontent_vars::var_cat021_sgv_hrd_.name());
-
-        if (!buffer->has<float>(dbcontent_vars::var_cat021_sgv_gss_.name())
-            || !buffer->has<double>(dbcontent_vars::var_cat021_sgv_hgt_.name())
-            || !buffer->has<bool>(dbcontent_vars::var_cat021_sgv_htt_.name())
-            || !buffer->has<bool>(dbcontent_vars::var_cat021_sgv_hrd_.name()))
-            return;
-
-        dbContent::Variable& speed_var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_ground_speed_);
-        dbContent::Variable& track_angle_var =
-            dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_track_angle_);
-
-        speed_var_name = speed_var.name();
-        track_angle_var_name = track_angle_var.name();
-
-        traced_assert(speed_var.dataType() == PropertyDataType::DOUBLE);
-        traced_assert(track_angle_var.dataType() == PropertyDataType::DOUBLE);
-
-        NullableVector<double>& speed_vec = buffer->get<double>(speed_var_name);
-        NullableVector<double>& track_angle_vec = buffer->get<double>(track_angle_var_name);
-
-        NullableVector<float>& sgv_gss_vec = buffer->get<float>(dbcontent_vars::var_cat021_sgv_gss_.name());
-        NullableVector<double>& sgv_hgt_vec = buffer->get<double>(dbcontent_vars::var_cat021_sgv_hgt_.name());
-        NullableVector<bool>& sgv_htt_vec = buffer->get<bool>(dbcontent_vars::var_cat021_sgv_htt_.name());
-        NullableVector<bool>& sgv_hrd_vec = buffer->get<bool>(dbcontent_vars::var_cat021_sgv_hrd_.name());
-
-        traced_assert(buffer->has<boost::posix_time::ptime>(dbcontent_vars::meta_var_timestamp_.name()));
-        NullableVector<boost::posix_time::ptime> ts_vec =
-            buffer->get<boost::posix_time::ptime>(dbcontent_vars::meta_var_timestamp_.name());
-
-        NullableVector<double>* lat_vec {nullptr};
-        NullableVector<double>* lon_vec {nullptr};
-        NullableVector<float>* mode_c_vec {nullptr};
-
-        if(buffer->has<double>(dbcontent_vars::meta_var_latitude_.name())
-            && buffer->has<double>(dbcontent_vars::meta_var_longitude_.name()))
-        {
-
-            lat_vec = &buffer->get<double>(dbcontent_vars::meta_var_latitude_.name());
-            lon_vec = &buffer->get<double>(dbcontent_vars::meta_var_longitude_.name());
-        }
-
-        if(buffer->has<float>(dbcontent_vars::meta_var_mc_.name()))
-            mode_c_vec = &buffer->get<float>(dbcontent_vars::meta_var_mc_.name());
-
-        // Define position and date parameters
-        // double latitude = 37.7749;   // Latitude in degrees (example: San Francisco)
-        // double longitude = -122.4194; // Longitude in degrees
-        // double altitude = 0;         // Altitude in meters
-        // double time = 2024.0;        // Year (decimal format)
-
-        // Magnetic heading angle in degrees (example)
-        //double magneticHeading = 45.0;
-
-        for (unsigned int index=0; index < buffer_size; index++)
-        {
-            if (!speed_vec.isNull(index) && !track_angle_vec.isNull(index)) // already set
-            {
-                spd_already_set++;
-                continue;
-            }
-
-            if (sgv_gss_vec.isNull(index)) // speed not set
-            {
-                ++sgv_spd_no_val;
-                continue;
-            }
-
-            speed_vec.set(index, sgv_gss_vec.get(index));
-
-            if (sgv_hgt_vec.isNull(index) // heading/track not set or cannot distingush
-                || sgv_htt_vec.isNull(index) || sgv_hrd_vec.isNull(index))
-            {
-                ++sgv_hgt_no_value;
-                continue;
-            }
-
-            if (sgv_htt_vec.get(index) == 0)
-            {
-                ++sgv_is_heading;
-                continue;
-            }
-
-            double true_north_track_angle;
-
-            if (sgv_hrd_vec.get(index) == 1)
-            {
-                ++sgv_is_magnetic;
-
-                if (lat_vec && lon_vec && !lat_vec->isNull(index) && !lon_vec->isNull(index))
-                {
-                    traced_assert(!ts_vec.isNull(index));
-                    float year = static_cast<float>(ts_vec.get(index).date().year());
-
-                    float altitude_m {0};
-
-                    if (mode_c_vec && !mode_c_vec->isNull(index))
-                        altitude_m = mode_c_vec->get(index) * FT2M;
-
-                    double declination = proj_man.declination(year, lat_vec->get(index), lon_vec->get(index), altitude_m);
-
-                    // Calculate the true track by adding declination.
-                    true_north_track_angle = sgv_hgt_vec.get(index) + declination;
-
-                    true_north_track_angle = fmod(true_north_track_angle, 360.0);
-
-                    if (true_north_track_angle < 0)
-                        true_north_track_angle += 360.0;
-                }
-                else
-                    continue;
-            }
-            else
-                true_north_track_angle = sgv_hgt_vec.get(index);
-
-            track_angle_vec.set(index, true_north_track_angle);
-
-            sgv_usable++; // there
-        }
-
-        logdbg << "CAT021 spd_already_set " << spd_already_set
-               << " sgv_spd_no_val " << sgv_spd_no_val << " sgv_hgt_no_value " << sgv_hgt_no_value
-               << " sgv_is_heading " << sgv_is_heading << " sgv_is_magnetic " << sgv_is_magnetic
-               << " sgv_usable " << sgv_usable;
-    }
+    proj_man_.doXYPositionCalculations(buffers_);
 }
 
 void ASTERIXPostprocessJob::doFilters()
 {
     string dbcontent_name;
 
-    DBContentManager& dbcont_man = compass_.dbContentManager();
+    DBContentManager& dbcont_man = dbcont_man_;
 
     // do time based filtering first
     if (settings_.filter_tod_active_)
@@ -652,18 +327,9 @@ void ASTERIXPostprocessJob::doFilters()
 
             NullableVector<double>& lat_vec = buffer->get<double>(lat_var_name);
             NullableVector<double>& lon_vec = buffer->get<double>(lon_var_name);
+            // the Mode C Meta Variable, CAT062 is the selection "Mode C Code", filled by the
+            // SelectionFiller before this job
             NullableVector<float>& mc_vec = buffer->get<float>(mc_var_name);
-
-            NullableVector<float>* mc_vec2 {nullptr};
-
-            if (dbcontent_name == "CAT062")
-            {
-                traced_assert(dbcont_man.canGetVariable(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_));
-                dbContent::Variable& mc_var2 = dbcont_man.getVariable(dbcontent_name, dbcontent_vars::var_cat062_fl_measured_);
-
-                if (buffer->has<float>(mc_var2.name()))
-                    mc_vec2 = &buffer->get<float>(mc_var2.name());
-            }
 
             std::vector<unsigned int> to_be_removed;
 
@@ -707,12 +373,6 @@ void ASTERIXPostprocessJob::doFilters()
                         to_be_removed.push_back(cnt);
                         continue;
                     }
-                    else if (mc_vec2 && !mc_vec2->isNull(cnt)
-                             && (mc_vec2->get(cnt) < settings_.filter_modec_min_ || mc_vec2->get(cnt) > settings_.filter_modec_max_))
-                    {
-                        to_be_removed.push_back(cnt);
-                        continue;
-                    }
                 }
             }
 
@@ -737,7 +397,7 @@ void ASTERIXPostprocessJob::doObfuscate()
 
     string dbcontent_name;
 
-    DBContentManager& dbcont_man = compass_.dbContentManager();
+    DBContentManager& dbcont_man = dbcont_man_;
 
     // filter / change mode 3/a codes
     {
@@ -834,7 +494,6 @@ void ASTERIXPostprocessJob::doObfuscate()
     // change acids
     {
         boost::mutex::scoped_lock locker(acid_map_mutex_);
-        string var_name;
 
         for (auto& buf_it : buffers_)
         {
@@ -851,22 +510,53 @@ void ASTERIXPostprocessJob::doObfuscate()
 
             dbContent::Variable& var = dbcont_man.metaGetVariable(dbcontent_name, dbcontent_vars::meta_var_acid_);
 
-            var_name = var.name();
+            // the identification columns: the Meta variable and every decoded candidate of a
+            // string selection over it, "Aircraft Identification*" of CAT062 and its candidates
+            std::set<std::string> var_names;
 
-            traced_assert(buffer->has<string>(var_name));
+            var_names.insert(var.name());
 
-            NullableVector<string>& var_vec = buffer->get<string>(var_name);
-
-            for (unsigned int cnt=0; cnt < buffer_size; ++cnt)
+            for (const auto& var_it : dbcont_man.dbContent(dbcontent_name).variables())
             {
-                if (var_vec.isNull(cnt))
+                const dbContent::Variable& sel_var = *var_it.second;
+
+                if (!sel_var.isSelection() || sel_var.dataType() != PropertyDataType::STRING)
                     continue;
 
-                // obfuscate
+                bool over_acid = sel_var.name() == var.name();
+
+                for (const auto& candidate : sel_var.selection())
+                    if (candidate.is_object() && candidate.contains("variable")
+                        && candidate.at("variable").is_string() && candidate.at("variable") == var.name())
+                        over_acid = true;
+
+                if (!over_acid)
+                    continue;
+
+                for (const auto& candidate : sel_var.selection())
+                    if (candidate.is_object() && candidate.contains("variable")
+                        && candidate.at("variable").is_string())
+                        var_names.insert(candidate.at("variable").get<std::string>());
+            }
+
+            for (const auto& name : var_names)
+            {
+                if (!buffer->has<string>(name))
+                    continue;
+
+                NullableVector<string>& var_vec = buffer->get<string>(name);
+
+                for (unsigned int cnt=0; cnt < buffer_size; ++cnt)
                 {
-                    std::string tmp = var_vec.get(cnt);
-                    obfuscateACID(tmp);
-                    var_vec.set(cnt, tmp);
+                    if (var_vec.isNull(cnt))
+                        continue;
+
+                    // obfuscate
+                    {
+                        std::string tmp = var_vec.get(cnt);
+                        obfuscateACID(tmp);
+                        var_vec.set(cnt, tmp);
+                    }
                 }
             }
         }
@@ -1251,7 +941,7 @@ void ASTERIXPostprocessJob::loadObfuscationMaps()
         {
             try
             {
-                obfuscate_m3a_map_[static_cast<unsigned int>(std::stoul(kv.key()))]
+                obfuscate_m3a_map_[static_cast<unsigned int>(std::stoull(kv.key()))]
                     = kv.value().get<unsigned int>();
             }
             catch (...) { /* skip malformed entry */ }
@@ -1264,7 +954,7 @@ void ASTERIXPostprocessJob::loadObfuscationMaps()
         {
             try
             {
-                obfuscate_acad_map_[static_cast<unsigned int>(std::stoul(kv.key()))]
+                obfuscate_acad_map_[static_cast<unsigned int>(std::stoull(kv.key()))]
                     = kv.value().get<unsigned int>();
             }
             catch (...) {}
