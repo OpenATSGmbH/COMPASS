@@ -88,9 +88,10 @@ def wineInit() {
 // Prepares the Wine of the host for the Windows integration tests: a fresh prefix, Mono and
 // Gecko disabled (their install dialogs would block wineboot, COMPASS needs neither), no
 // crash dialog (it would block the run on the display, a crash ends the process). OpenGL of
-// the host GPU. LANG: Wine maps the Unix file names with the locale charset.
+// the host GPU. LANG: Wine maps the Unix file names with the locale charset. WINEPATH: the
+// Windows PATH of the prefix finds pdflatex.exe.
 def wineHostInit(String prefix) {
-    return "export PATH='${env.WINE_DIR}/bin':\$PATH WINEPREFIX='${prefix}' WINEDEBUG=-all LANG=C.UTF-8 && " +
+    return "export PATH='${env.WINE_DIR}/bin':\$PATH WINEPREFIX='${prefix}' WINEPATH='${env.TEXLIVE_WIN_BIN}' WINEDEBUG=-all LANG=C.UTF-8 && " +
            "rm -rf '${prefix}' && mkdir -p '${prefix}' && " +
            "WINEDLLOVERRIDES='mscoree,mshtml=' wineboot -i && " +
            "wine reg add 'HKCU\\Software\\Wine\\WineDbg' /v ShowCrashDialog /t REG_DWORD /d 0 /f && " +
@@ -228,6 +229,9 @@ pipeline {
         // Wine 10 on the host for the Windows integration tests (built from source, EPEL
         // has no installable Wine for EL 9.8), see readme_ci.md
         WINE_DIR        = '/home/user/opt/wine-10'
+        // pdflatex.exe for the PDF report export in Wine: TeX Live on the host with the windows
+        // binaries (/home/user/opt/texlive), see readme_ci.md
+        TEXLIVE_WIN_BIN = 'Z:\\home\\user\\opt\\texlive\\bin\\windows'
         DISPLAY             = ':0'
         COMPASS_EXTRA_ARGS  = '--no_highdpi -r'
         PYTHONUNBUFFERED    = '1'
