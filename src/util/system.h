@@ -49,5 +49,8 @@ extern const char* appDir();
 // directory of the running executable (without trailing separator, '/' as separator), empty if unknown
 extern std::string executableDir();
 
+// true if the Windows build runs in Wine (ntdll exports wine_get_version), false on Windows and Linux
+extern bool runsInWine();
+
 }  // namespace System
 }  // namespace Utils

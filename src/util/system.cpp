@@ -293,5 +293,19 @@ std::string executableDir()
     return dir.substr(0, dir.find_last_of('/'));
 }
 
+bool runsInWine()
+{
+#ifdef _WIN32
+    static const bool in_wine = [] () {
+        HMODULE ntdll = GetModuleHandleA("ntdll.dll");
+        return ntdll && GetProcAddress(ntdll, "wine_get_version") != nullptr;
+    }();
+
+    return in_wine;
+#else
+    return false;
+#endif
+}
+
 }
 }
