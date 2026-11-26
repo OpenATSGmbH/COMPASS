@@ -405,6 +405,8 @@ public:
     static const std::string FieldConfigSortOrder;
     static const std::string FieldConfigScrollPosV;
     static const std::string FieldConfigScrollPosH;
+    static const std::string FieldConfigShowUnused;
+    static const std::string FieldConfigSelectedRow;
     static const std::string FieldColGroupStates;
 
 protected:
@@ -419,6 +421,8 @@ private:
     void updateToolBar();
     void updateScrollBarV();
     void updateScrollBarH();
+    int selectedRow() const;
+    void applyPendingSelection();
 
     SectionContentTable*        content_table_     = nullptr;
     SectionContentTableModel*   model_             = nullptr;
@@ -435,6 +439,8 @@ private:
     boost::optional<unsigned int> last_clicked_row_index_;
     boost::optional<int>          scroll_pos_h_;
     boost::optional<int>          scroll_pos_v_;
+    boost::optional<int>          pending_selected_row_;       // source row to select once its row exists (restore, model reset)
+    bool                          restoring_selection_ = false; // selection set by code => no click action
 };
 
 }

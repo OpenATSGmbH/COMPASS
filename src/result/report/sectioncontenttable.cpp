@@ -2117,11 +2117,13 @@ void SectionContentTableModel::executeAndReset(const std::function<void()>& func
 const int SectionContentTableWidget::DoubleClickCheckIntervalMSecs = 300;
 const int SectionContentTableWidget::MaxVisibleRows                = 20;
 
-const std::string SectionContentTableWidget::FieldConfigSortColumn = SectionContentTable::FieldSortColumn;
-const std::string SectionContentTableWidget::FieldConfigSortOrder  = SectionContentTable::FieldSortOrder;
-const std::string SectionContentTableWidget::FieldConfigScrollPosV = "scroll_pos_v";
-const std::string SectionContentTableWidget::FieldConfigScrollPosH = "scroll_pos_h";
-const std::string SectionContentTableWidget::FieldColGroupStates   = "col_group_states";
+const std::string SectionContentTableWidget::FieldConfigSortColumn  = SectionContentTable::FieldSortColumn;
+const std::string SectionContentTableWidget::FieldConfigSortOrder   = SectionContentTable::FieldSortOrder;
+const std::string SectionContentTableWidget::FieldConfigScrollPosV  = "scroll_pos_v";
+const std::string SectionContentTableWidget::FieldConfigScrollPosH  = "scroll_pos_h";
+const std::string SectionContentTableWidget::FieldConfigShowUnused  = "show_unused";
+const std::string SectionContentTableWidget::FieldConfigSelectedRow = "selected_row";
+const std::string SectionContentTableWidget::FieldColGroupStates    = "col_group_states";
 
 /**
  */
@@ -2216,6 +2218,10 @@ SectionContentTableWidget::SectionContentTableWidget(SectionContentTable* conten
     connect(table_view_->horizontalScrollBar(), &QScrollBar::rangeChanged,
             this, &SectionContentTableWidget::updateScrollBarH);
 
+    //a reset clears the selection (on-demand rows loaded, show unused toggled)
+    connect(proxy_model_, &QAbstractItemModel::modelReset,
+            this, &SectionContentTableWidget::applyPendingSelection);
+
     auto copy_row_shortcut = new QShortcut(QKeySequence::Copy, table_view_);
     copy_row_shortcut->setContext(Qt::WidgetShortcut);
     connect(copy_row_shortcut, &QShortcut::activated,
@@ -2253,6 +2259,11 @@ void SectionContentTableWidget::showUnused(bool show)
     {
         this->proxy_model_->showUnused(show);
     };
+
+    //selected again after the reset, if still shown
+    int selected_row = selectedRow();
+    if (selected_row >= 0)
+        pending_selected_row_ = selected_row;
 
     model_->executeAndReset(func);
 }
@@ -2395,6 +2406,10 @@ int SectionContentTableWidget::fromProxy(int proxy_row) const
  */
 void SectionContentTableWidget::clicked(const QModelIndex& index)
 {
+    //restored selection, not a click of the user
+    if (restoring_selection_)
+        return;
+
     loginf;
 
     if (!index.isValid())
@@ -2546,10 +2561,11 @@ void SectionContentTableWidget::updateScrollBarV()
 {
     //loginf;
 
-    if (!content_table_->isComplete())
+    //on-demand rows not loaded yet => the range is not final. complete_ is only set by an on-demand load.
+    if (content_table_->isOnDemand() && !content_table_->isComplete())
         return;
 
-    //loginf << "applying new scroll limit: " 
+    //loginf << "applying new scroll limit: "
     //       << "v = " << (scroll_pos_v_.has_value() ? scroll_pos_v_.value() : -1);
 
     //configure vertical scroll bar position
@@ -2567,10 +2583,11 @@ void SectionContentTableWidget::updateScrollBarH()
 {
     //loginf;
 
-    if (!content_table_->isComplete())
+    //on-demand rows not loaded yet => the range is not final. complete_ is only set by an on-demand load.
+    if (content_table_->isOnDemand() && !content_table_->isComplete())
         return;
 
-    //loginf << "applying new scroll limit: " 
+    //loginf << "applying new scroll limit: "
     //      << "h = " << (scroll_pos_h_.has_value() ? scroll_pos_h_.value() : -1);
 
     //configure horizontal scroll bar position
@@ -2580,6 +2597,53 @@ void SectionContentTableWidget::updateScrollBarH()
         table_view_->horizontalScrollBar()->setValue(scroll_pos_h_.value());
         scroll_pos_h_.reset();
     }
+}
+
+/**
+ * Source row of the selected row, -1 if none. Independent of sorting and the show unused filter.
+ */
+int SectionContentTableWidget::selectedRow() const
+{
+    const auto rows = table_view_->selectionModel()->selectedRows();
+    if (rows.empty())
+        return -1;
+
+    const auto source_index = proxy_model_->mapToSource(rows.front());
+
+    return source_index.isValid() ? source_index.row() : -1;
+}
+
+/**
+ * Selects the pending source row once its row exists, dropped if it is not shown. No click action and
+ * no scrolling to it, the scroll positions are restored on their own.
+ */
+void SectionContentTableWidget::applyPendingSelection()
+{
+    if (!pending_selected_row_.has_value())
+        return;
+
+    //on-demand rows not loaded yet => the reset which adds them calls again
+    if (content_table_->isOnDemand() && !content_table_->isComplete())
+        return;
+
+    const int row = pending_selected_row_.value();
+    pending_selected_row_.reset();
+
+    if (row < 0 || row >= model_->rowCount(QModelIndex()))
+        return;
+
+    const QModelIndex proxy_index = proxy_model_->mapFromSource(model_->index(row, 0, QModelIndex()));
+    if (!proxy_index.isValid())
+        return;
+
+    const bool auto_scroll = table_view_->hasAutoScroll();
+    table_view_->setAutoScroll(false);
+    restoring_selection_ = true;
+
+    table_view_->selectionModel()->setCurrentIndex(proxy_index, QItemSelectionModel::ClearAndSelect | QItemSelectionModel::Rows);
+
+    restoring_selection_ = false;
+    table_view_->setAutoScroll(auto_scroll);
 }
 
 /**
@@ -2624,10 +2688,13 @@ nlohmann::json SectionContentTableWidget::jsonConfig() const
 
     nlohmann::json j;
 
-    j[ FieldConfigSortOrder  ] = (sort_order_ == Qt::AscendingOrder ? "ascending" : "descending");
-    j[ FieldConfigSortColumn ] = sort_column_;
+    //current sorting of the proxy, the user may have sorted by another column via the header
+    j[ FieldConfigSortOrder  ] = (proxy_model_->sortOrder() == Qt::AscendingOrder ? "ascending" : "descending");
+    j[ FieldConfigSortColumn ] = proxy_model_->sortColumn();
     j[ FieldConfigScrollPosV ] = scrollPosV();
     j[ FieldConfigScrollPosH ] = scrollPosH();
+    j[ FieldConfigShowUnused  ] = proxy_model_->showUnused();
+    j[ FieldConfigSelectedRow ] = selectedRow();
 
     //store column group states
     if (col_group_toolbar_)
@@ -2665,10 +2732,25 @@ bool SectionContentTableWidget::configure(const nlohmann::json& j)
     int           scroll_pos_v   = j[FieldConfigScrollPosV];
     int           scroll_pos_h   = j[FieldConfigScrollPosH];
 
+    //first, the sorting and the scroll positions refer to the shown rows. optional, older configs lack it.
+    if (j.contains(FieldConfigShowUnused))
+    {
+        bool show_unused = j[FieldConfigShowUnused].get<bool>();
+        if (show_unused != content_table_->showUnused())
+            content_table_->showUnused(show_unused);
+    }
+
     //configure sorting
     bool valid_sorting = sort_column >= 0 && sort_column < table_view_->model()->columnCount();
     table_view_->setSortingEnabled(valid_sorting);
     table_view_->sortByColumn(valid_sorting ? sort_column : -1, sort_order);
+
+    //selected row, before the scroll positions. optional, older configs lack it.
+    if (j.contains(FieldConfigSelectedRow) && j[FieldConfigSelectedRow].get<int>() >= 0)
+    {
+        pending_selected_row_ = j[FieldConfigSelectedRow].get<int>();
+        applyPendingSelection();
+    }
 
     //configure vertical scroll bar position for later usage
     if (scroll_pos_v >= 0)

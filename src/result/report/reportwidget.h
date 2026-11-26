@@ -19,7 +19,7 @@
 
 #include "report/treemodel.h"
 #include "report/reportdocumentlayout.h"
-#include "json_fwd.hpp"
+#include "json.hpp"
 
 #include <boost/optional.hpp>
 
@@ -72,7 +72,8 @@ public:
 
     void selectID(const std::string& id,
                   bool show_figure,
-                  const nlohmann::json& config);
+                  const nlohmann::json& config,
+                  bool add_to_history = true);
     void reshowLastId ();
 
     std::string currentSectionID() const;
@@ -84,6 +85,15 @@ public:
     static const std::string FieldConfigScrollPosH;
 
 protected:
+    /**
+     * Back history entry: a jump target, or the position the user left with a jump.
+     */
+    struct HistoryEntry
+    {
+        std::string    id;     // section id
+        nlohmann::json config; // currentSectionConfig() when left (scroll positions, table state), empty = section start
+    };
+
     void expandAllParents (QTreeView* view, QModelIndex index);
     void expandSidebarInitially();
 
@@ -95,7 +105,9 @@ protected:
     void updateBackButton ();
     void updateCurrentSectionLabel();
     void triggerItem (const QModelIndex& index,
-                      bool preload_ondemand_contents);
+                      bool preload_ondemand_contents,
+                      bool add_to_history);
+    void addToHistory(const std::string& target_id);
 
     bool configureSection(const nlohmann::json& config);
 
@@ -113,7 +125,7 @@ protected:
     std::unique_ptr<PopupMenu> sections_menu_;
 
     QPushButton* back_button_ {nullptr};
-    std::vector<std::string> id_history_;
+    std::vector<HistoryEntry> id_history_;
 
     QLabel*  current_section_label_ = nullptr;
     Section* current_section_       = nullptr;

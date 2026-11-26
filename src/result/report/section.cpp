@@ -278,10 +278,15 @@ QWidget* Section::getContentWidget(bool preload_ondemand_contents)
 }
 
 /**
- * Deletes the content widget, the next getContentWidget() creates it again.
+ * Deletes the content widget, the next getContentWidget() creates it again with the same view state
+ * (sorting, scroll positions, column groups).
 */
 void Section::releaseContentWidget()
 {
+    //read before the deletion, the view state lives in the content widgets
+    if (content_widget_container_)
+        view_config_ = jsonConfig();
+
     content_widget_                  = nullptr;
     content_widget_container_layout_ = nullptr;
 
@@ -849,8 +854,12 @@ void Section::createContentWidget(bool preload_ondemand_contents)
     content_widget_container_layout_->setContentsMargins(0, 0, 0, 0);
 
     content_widget_container_->setLayout(content_widget_container_layout_);
-    
+
     recreateContentUI(false, preload_ondemand_contents);
+
+    //view state of the previously released content widget
+    if (!view_config_.is_null())
+        configure(view_config_);
 }
 
 /**

@@ -287,7 +287,8 @@ void ReportWidget::expand()
 
 void ReportWidget::selectID(const std::string& id,
                             bool show_figure,
-                            const nlohmann::json& config)
+                            const nlohmann::json& config,
+                            bool add_to_history)
 {
     loginf << "id '" << id << "'";
 
@@ -309,7 +310,7 @@ void ReportWidget::selectID(const std::string& id,
     //(either signal-slot mechanics or multithreading related)
     bool preload_ondemand_contents = show_id_figure;
 
-    triggerItem(index, preload_ondemand_contents);
+    triggerItem(index, preload_ondemand_contents, add_to_history);
 
     if (show_id_figure)
         showFigure(index);
@@ -322,23 +323,59 @@ void ReportWidget::selectID(const std::string& id,
     }
 }
 
+/**
+ * Shows the last history entry at its stored position, without a new history entry.
+ */
 void ReportWidget::reshowLastId ()
 {
-    if (id_history_.size() >= 1)
-    {
-        selectID(*id_history_.rbegin(), false, {}); // select last one
+    if (id_history_.empty())
+        return;
 
-        id_history_.pop_back(); // remove re-added id. slightly hacky
+    //copy, the history may change during the jump
+    const HistoryEntry entry = id_history_.back();
+
+    selectID(entry.id, false, entry.config, false);
+}
+
+/**
+ * Adds a jump target to the history. Before it the position the user leaves, which may have been
+ * reached by scrolling, so that back returns to it. Without a previous jump (empty history) the
+ * current section is only the top of the new document, not a position of the user.
+ */
+void ReportWidget::addToHistory(const std::string& target_id)
+{
+    if (current_section_ && !id_history_.empty())
+    {
+        HistoryEntry left;
+        left.id     = current_section_->id();
+        left.config = currentSectionConfig();
+
+        //still in the section of the last jump => update its position
+        if (id_history_.back().id == left.id)
+            id_history_.back() = left;
+        else
+            id_history_.push_back(left);
     }
+
+    //jump within the current section => one entry
+    if (!id_history_.empty() && id_history_.back().id == target_id)
+        return;
+
+    HistoryEntry target;
+    target.id = target_id;
+
+    id_history_.push_back(target);
 }
 
 void ReportWidget::triggerItem (const QModelIndex& index,
-                                bool preload_ondemand_contents)
+                                bool preload_ondemand_contents,
+                                bool add_to_history)
 {
     TreeItem* item = static_cast<TreeItem*>(index.internalPointer());
     traced_assert(item);
 
-    id_history_.push_back(item->id());
+    if (add_to_history)
+        addToHistory(item->id());
 
     loginf << "name " << item->name() << " id " << item->id();
 
@@ -368,12 +405,12 @@ void ReportWidget::triggerItem (const QModelIndex& index,
 
 void ReportWidget::itemClickedSlot(const QModelIndex& index)
 {
-    triggerItem(index, false);
+    triggerItem(index, false, true);
 }
 
 void ReportWidget::itemDblClickedSlot(const QModelIndex& index)
 {
-    triggerItem(index, false);
+    triggerItem(index, false, true);
 
     sections_menu_->close();
 }
@@ -434,7 +471,7 @@ void ReportWidget::stepBackSlot()
     traced_assert(id_history_.size() > 1);
 
     id_history_.pop_back(); // remove last entry
-    reshowLastId(); // show last id
+    reshowLastId(); // show the previous one at its stored position
 
     updateBackButton();
     updateCurrentSectionLabel();

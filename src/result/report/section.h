@@ -217,6 +217,8 @@ protected:
     std::unique_ptr<QWidget> content_widget_container_;
     QVBoxLayout*             content_widget_container_layout_ = nullptr;
     QWidget*                 content_widget_                  = nullptr;
+    nlohmann::json           view_config_;                              // view state of the released content widget (jsonConfig()),
+                                                                        // applied to the next one
 
     std::vector<std::shared_ptr<Section>> sub_sections_;
     // heading to index in sub_sections_, keeps findSubSection() constant time.
