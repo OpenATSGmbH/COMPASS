@@ -46,7 +46,7 @@ double hueDistance(double a, double b)
 TEST_CASE("ColorProvider default DSType palette", "[color_provider]")
 {
     REQUIRE(ColorProvider::defaultDSTypeColor("Radar") == QColor(Qt::green));
-    REQUIRE(ColorProvider::defaultDSTypeColor("ADSB") == QColor(Qt::blue));
+    REQUIRE(ColorProvider::defaultDSTypeColor("ADSB").name() == QStringLiteral("#62a0ea"));
     REQUIRE(ColorProvider::defaultDSTypeColor("MLAT") == QColor(Qt::red));
     REQUIRE(ColorProvider::defaultDSTypeColor("Tracker").name() == QStringLiteral("#dddddd"));
     REQUIRE(ColorProvider::defaultDSTypeColor("RefTraj").name() == QStringLiteral("#ffa500"));
