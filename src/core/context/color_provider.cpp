@@ -91,7 +91,7 @@ const std::map<std::string, QColor>& ColorProvider::defaultDSTypeColors()
 {
     static const std::map<std::string, QColor> palette = {
         {"Radar",   QColor(Qt::green)},
-        {"ADSB",    QColor(Qt::blue)},
+        {"ADSB",    QColor(QStringLiteral("#62A0EA"))}, // light blue
         {"MLAT",    QColor(Qt::red)},
         {"Tracker", QColor(QStringLiteral("#DDDDDD"))}, // light gray (avoid pure white)
         {"RefTraj", QColor(QStringLiteral("#FFA500"))}, // orange
