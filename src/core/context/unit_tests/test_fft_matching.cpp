@@ -676,3 +676,86 @@ TEST_CASE("FFT flat earth distance", "[context][fft]")
         REQUIRE(!fft.matches(fft_lat + 60.0 / 111000.0, fft_lon, fft_acad, false, no_mode_3a, no_mode_c).first);
     }
 }
+
+// ============================================================
+// Matching against all FFTs, Mode 3/A 7777
+// ============================================================
+
+TEST_CASE("FFT matchesAny", "[context][fft]")
+{
+    const boost::optional<unsigned int> code_7777(FFT::always_fft_mode_3a_code_);
+
+    // the 7777 entry of a transponder, as defined in a Data Context
+    FFT fft_7777;
+    fft_7777.name("FFT_7777");
+    fft_7777.latitude(fft_lat);
+    fft_7777.longitude(fft_lon);
+    fft_7777.altitude(2000.0);
+    fft_7777.modeSAddress(fft_acad);
+    fft_7777.mode3ACode(FFT::always_fft_mode_3a_code_);
+
+    FFT other = fullFFT(); // other transponder, altitude 1000 ft
+    other.modeSAddress(0x00BEEF);
+
+    const std::vector<FFT> ffts {other, fft_7777};
+
+    SECTION("a 7777 plot of a defined FFT gets the FFT altitude")
+    {
+        auto result = FFT::matchesAny(ffts, near_lat, near_lon, fft_acad, false, code_7777, no_mode_c);
+
+        REQUIRE(result.first);
+        REQUIRE(result.second == Approx(2000.0f));
+    }
+
+    SECTION("a 7777 plot without a matching FFT is an FFT with altitude 0")
+    {
+        // unknown address
+        auto result = FFT::matchesAny(ffts, near_lat, near_lon, boost::optional<unsigned int>(0x00AAAA),
+                                      false, code_7777, no_mode_c);
+        REQUIRE(result.first);
+        REQUIRE(result.second == Approx(0.0f));
+
+        // far from the FFT
+        result = FFT::matchesAny(ffts, far_lat, far_lon, fft_acad, false, code_7777, no_mode_c);
+        REQUIRE(result.first);
+        REQUIRE(result.second == Approx(0.0f));
+
+        // no FFTs defined
+        result = FFT::matchesAny({}, near_lat, near_lon, fft_acad, false, code_7777, no_mode_c);
+        REQUIRE(result.first);
+        REQUIRE(result.second == Approx(0.0f));
+    }
+
+    SECTION("a 7777 plot of a delayed-reply FFT at the expected position gets the FFT altitude")
+    {
+        std::vector<FFT> delayed_ffts = ffts;
+        delayed_ffts[ 1 ].rangeDelayNM(30.0);
+
+        unsigned int calls = 0;
+        FFT::ExpectedPositionOfFunc expected = [ & ] (const FFT& fft)
+        {
+            ++calls;
+            REQUIRE(fft.name() == "FFT_7777"); // only for the FFT with a delay
+            return boost::optional<std::pair<double, double>>(std::make_pair(far_lat, far_lon));
+        };
+
+        auto result = FFT::matchesAny(delayed_ffts, far_lat, far_lon, fft_acad, false, code_7777, no_mode_c,
+                                      expected);
+
+        REQUIRE(result.first);
+        REQUIRE(result.second == Approx(2000.0f));
+        REQUIRE(calls == 1);
+    }
+
+    SECTION("other plots are matched against the FFTs only")
+    {
+        auto result = FFT::matchesAny(ffts, near_lat, near_lon, boost::optional<unsigned int>(0x00BEEF),
+                                      false, boost::optional<unsigned int>(fft_mode_3a), no_mode_c);
+        REQUIRE(result.first);
+        REQUIRE(result.second == Approx(1000.0f));
+
+        result = FFT::matchesAny(ffts, near_lat, near_lon, boost::optional<unsigned int>(0x00AAAA),
+                                 false, boost::optional<unsigned int>(01234), no_mode_c);
+        REQUIRE(!result.first);
+    }
+}

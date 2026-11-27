@@ -24,6 +24,7 @@
 #include <functional>
 #include <string>
 #include <utility>
+#include <vector>
 
 namespace context
 {
@@ -125,6 +126,23 @@ public:
                                    boost::optional<unsigned int> mode_a_code,
                                    boost::optional<float> mode_c_code,
                                    const ExpectedPositionFunc& expected_position = {}) const;
+
+    /// position (lat, lon) at which the measuring radar plots an FFT with a range delay, none if not known
+    using ExpectedPositionOfFunc = std::function<boost::optional<std::pair<double, double>>(const FFT&)>;
+
+    /**
+     * Tests one target report against all FFTs, returns {is_fft, altitude_ft} of the
+     * first matching FFT (see matches()). expected_position is given for radar plots.
+     * A target report with the Mode 3/A code 7777 is always from an FFT: with the
+     * altitude of the matching FFT, or with altitude 0 if no FFT matches.
+     */
+    static std::pair<bool, float> matchesAny(const std::vector<FFT>& ffts,
+                                             double latitude_deg, double longitude_deg,
+                                             boost::optional<unsigned int> mode_s_address,
+                                             bool ignore_mode_s,
+                                             boost::optional<unsigned int> mode_a_code,
+                                             boost::optional<float> mode_c_code,
+                                             const ExpectedPositionOfFunc& expected_position = {});
 
     /// Flat earth distance in meters between two WGS-84 positions (degrees), used for
     /// the position check. Accurate enough over the few kilometers the maximum plot

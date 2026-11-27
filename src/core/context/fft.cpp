@@ -169,6 +169,36 @@ bool FFT::hasSecondaryIdentification() const
     return hasModeSAddress() || hasMode3ACode();
 }
 
+pair<bool, float> FFT::matchesAny(const std::vector<FFT>& ffts,
+                                  double latitude_deg, double longitude_deg,
+                                  boost::optional<unsigned int> mode_s_address,
+                                  bool ignore_mode_s,
+                                  boost::optional<unsigned int> mode_a_code,
+                                  boost::optional<float> mode_c_code,
+                                  const ExpectedPositionOfFunc& expected_position)
+{
+    for (const auto& f : ffts)
+    {
+        ExpectedPositionFunc f_expected_position;
+
+        if (expected_position && f.hasRangeDelay())
+            f_expected_position = [ & ] () { return expected_position(f); };
+
+        auto result = f.matches(latitude_deg, longitude_deg, mode_s_address, ignore_mode_s,
+                                mode_a_code, mode_c_code, f_expected_position);
+
+        if (result.first)
+            return result;
+    }
+
+    // special case: mode 3/A code 7777 (4095 octal) always treated as FFT, also
+    // without a defined FFT (then no altitude is known)
+    if (isAlwaysFFTCode(mode_a_code))
+        return {true, 0};
+
+    return {false, 0};
+}
+
 double FFT::flatEarthDistanceM(double latitude_deg, double longitude_deg,
                                double ref_latitude_deg, double ref_longitude_deg)
 {

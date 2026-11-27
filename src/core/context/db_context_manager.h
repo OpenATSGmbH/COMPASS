@@ -301,7 +301,7 @@ public:
     void deleteAllFFTs();
 
     /// position (lat, lon) at which the measuring radar plots an FFT with a range delay, none if not known
-    using FFTExpectedPositionFunc = std::function<boost::optional<std::pair<double, double>>(const FFT&)>;
+    using FFTExpectedPositionFunc = FFT::ExpectedPositionOfFunc;
 
     /// Check if a position/codes match an FFT. Returns {is_fft, altitude_ft}.
     /// expected_position is given for radar plots (see ProjectionManager::isFromFFT).
