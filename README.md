@@ -5,8 +5,8 @@ For a detailed list of features, as well as the offered commercial services, ple
 
 Please refer to the releases page for the user manual and the AppImage. Please do read the user manual before running the application.
 
-## Released COMPASS Version v1.0.0
-- [Release](https://github.com/OpenATSGmbH/COMPASS/releases/tag/v1.0.0)
+## Released COMPASS Version v1.1.0
+- [Release]([https://github.com/OpenATSGmbH/COMPASS/releases/tag/v1.0.0](https://github.com/OpenATSGmbH/COMPASS/releases/tag/v1.1.0))
 
 ## Screenshots
 
@@ -19,14 +19,8 @@ Please refer to the releases page for the user manual and the AppImage. Please d
 ![alt text](https://github.com/hpuhr/COMPASS/blob/master/doc/screenshots/ss4.png)
 
 ## YouTube Videos
-### v0.6.2
-- [ Playlist](https://www.youtube.com/watch?v=a6_mqfcohr4&list=PLarVjKYqSaANf1VYSluFYX13WYkptvem2)
-### Old from v0.5.0
-- [v0.5.0: Import ASTERIX & Setup](https://youtu.be/o1S3S9tcifA)
-- [v0.5.0: New OSGView Features](https://youtu.be/c1v3tIjNLVM)
-
-
-
+- [v1.1.0 Release Highlights](https://youtu.be/XxaE96wv-kI)
+- [Company & v1.0.0 First Usage](https://www.youtube.com/watch?v=SYcyuJP1HWQ&list=PLA6Q3Jz_ltfs)
 
 ## Contents
 
@@ -54,7 +48,7 @@ The source code is released under [GNU GPLv3](https://www.gnu.org/licenses/gpl-3
 
 The binary is released under [Creative Commons Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0/), [Legal Text](https://creativecommons.org/licenses/by/4.0/legalcode)
 
-While it is permitted to use the AppImage for commercial purposes, the used open-source libraries might still prohibit this without further permission. It is the responsibility of the user to inspect the user manual and confirm that their use cases are permitted under the referenced licenses.
+While it is permitted to use the Binaries for commercial purposes, the used open-source libraries might still prohibit this without further permission. It is the responsibility of the user to inspect the user manual and confirm that their use cases are permitted under the referenced licenses.
 
 Disclaimer
 ----------
