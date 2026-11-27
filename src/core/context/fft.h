@@ -126,6 +126,12 @@ public:
                                    boost::optional<float> mode_c_code,
                                    const ExpectedPositionFunc& expected_position = {}) const;
 
+    /// Flat earth distance in meters between two WGS-84 positions (degrees), used for
+    /// the position check. Accurate enough over the few kilometers the maximum plot
+    /// distance covers.
+    static double flatEarthDistanceM(double latitude_deg, double longitude_deg,
+                                     double ref_latitude_deg, double ref_longitude_deg);
+
     /// The Mode 3/A code 7777 is reserved for SSR monitoring. A target report
     /// carrying it is always from an FFT, without any further check.
     static bool isAlwaysFFTCode(boost::optional<unsigned int> mode_a_code);

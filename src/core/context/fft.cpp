@@ -169,6 +169,17 @@ bool FFT::hasSecondaryIdentification() const
     return hasModeSAddress() || hasMode3ACode();
 }
 
+double FFT::flatEarthDistanceM(double latitude_deg, double longitude_deg,
+                               double ref_latitude_deg, double ref_longitude_deg)
+{
+    double dlat = latitude_deg - ref_latitude_deg;
+    double dlon = longitude_deg - ref_longitude_deg;
+
+    // rough distance in meters (1 degree ~ 111km lat, cos(lat)*111km lon)
+    double cos_lat = cos(latitude_deg * M_PI / 180.0);
+    return sqrt(dlat * dlat + dlon * dlon * cos_lat * cos_lat) * 111000.0;
+}
+
 bool FFT::isAlwaysFFTCode(boost::optional<unsigned int> mode_a_code)
 {
     return mode_a_code && *mode_a_code == always_fft_mode_3a_code_;
@@ -219,16 +230,9 @@ pair<bool, float> FFT::matches(double latitude_deg, double longitude_deg,
     // position check
     if (hasPosition())
     {
-        // flat earth approximation, accurate enough over the few kilometers the
-        // maximum plot distance covers
         auto distanceM = [ & ] (double ref_latitude_deg, double ref_longitude_deg)
         {
-            double dlat = latitude_deg - ref_latitude_deg;
-            double dlon = longitude_deg - ref_longitude_deg;
-
-            // rough distance in meters (1 degree ~ 111km lat, cos(lat)*111km lon)
-            double cos_lat = cos(latitude_deg * M_PI / 180.0);
-            return sqrt(dlat * dlat + dlon * dlon * cos_lat * cos_lat) * 111000.0;
+            return flatEarthDistanceM(latitude_deg, longitude_deg, ref_latitude_deg, ref_longitude_deg);
         };
 
         // a radar plots a delayed-reply FFT at the expected position, other

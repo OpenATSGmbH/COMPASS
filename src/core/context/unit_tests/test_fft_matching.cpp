@@ -21,6 +21,10 @@
 
 #include <boost/optional.hpp>
 
+#include <GeographicLib/Geodesic.hpp>
+
+#include <cmath>
+
 using namespace context;
 
 namespace
@@ -596,5 +600,79 @@ TEST_CASE("FFT range delay", "[context][fft]")
         auto result = fft.matches(far_lat, far_lon, fft_acad, false, no_mode_3a, no_mode_c, unknown);
 
         REQUIRE(!result.first);
+    }
+}
+
+// ============================================================
+// Position check math
+// ============================================================
+
+TEST_CASE("FFT flat earth distance", "[context][fft]")
+{
+    SECTION("same position is 0")
+    {
+        REQUIRE(FFT::flatEarthDistanceM(45.0, 20.0, 45.0, 20.0) == Approx(0.0).margin(1e-9));
+    }
+
+    SECTION("latitude: 111 km per degree")
+    {
+        REQUIRE(FFT::flatEarthDistanceM(45.001, 20.0, 45.0, 20.0) == Approx(111.0).epsilon(1e-6));
+        REQUIRE(FFT::flatEarthDistanceM(44.999, 20.0, 45.0, 20.0) == Approx(111.0).epsilon(1e-6));
+    }
+
+    SECTION("longitude: scaled with the cosine of the latitude")
+    {
+        REQUIRE(FFT::flatEarthDistanceM(60.0, 20.001, 60.0, 20.0) == Approx(55.5).epsilon(1e-6));
+        REQUIRE(FFT::flatEarthDistanceM(0.0, 20.001, 0.0, 20.0) == Approx(111.0).epsilon(1e-6));
+    }
+
+    SECTION("close to the geodesic distance within the maximum plot distance")
+    {
+        const GeographicLib::Geodesic& geod = GeographicLib::Geodesic::WGS84();
+
+        for (double azimuth_deg : {0.0, 45.0, 90.0, 135.0, 180.0, 270.0})
+        {
+            for (double dist_m : {50.0, 1000.0, 5000.0})
+            {
+                double lat2, lon2;
+                geod.Direct(45.0, 20.0, azimuth_deg, dist_m, lat2, lon2);
+
+                INFO("azimuth " << azimuth_deg << " distance " << dist_m);
+                REQUIRE(FFT::flatEarthDistanceM(lat2, lon2, 45.0, 20.0) == Approx(dist_m).epsilon(0.005));
+            }
+        }
+    }
+
+    SECTION("the match distance limit uses this distance")
+    {
+        FFT fft = modeSFFT();
+
+        // north of the FFT, just inside and just outside of the default 5000 m
+        const double inside_lat  = fft_lat + 4990.0 / 111000.0;
+        const double outside_lat = fft_lat + 5010.0 / 111000.0;
+
+        REQUIRE(fft.matches(inside_lat, fft_lon, fft_acad, false, no_mode_3a, no_mode_c).first);
+        REQUIRE(!fft.matches(outside_lat, fft_lon, fft_acad, false, no_mode_3a, no_mode_c).first);
+
+        // the same limit around the expected position of a delayed-reply FFT
+        const double exp_lat = 49.0, exp_lon = 17.0;
+        FFT::ExpectedPositionFunc expected = [ & ] ()
+        {
+            return boost::optional<std::pair<double, double>>(std::make_pair(exp_lat, exp_lon));
+        };
+
+        REQUIRE(fft.matches(exp_lat + 4990.0 / 111000.0, exp_lon, fft_acad, false,
+                            no_mode_3a, no_mode_c, expected).first);
+        REQUIRE(!fft.matches(exp_lat + 5010.0 / 111000.0, exp_lon, fft_acad, false,
+                             no_mode_3a, no_mode_c, expected).first);
+    }
+
+    SECTION("the per-FFT maximum plot distance")
+    {
+        FFT fft = modeSFFT();
+        fft.info()["max_plot_distance_m"] = 50.0;
+
+        REQUIRE(fft.matches(fft_lat + 40.0 / 111000.0, fft_lon, fft_acad, false, no_mode_3a, no_mode_c).first);
+        REQUIRE(!fft.matches(fft_lat + 60.0 / 111000.0, fft_lon, fft_acad, false, no_mode_3a, no_mode_c).first);
     }
 }
