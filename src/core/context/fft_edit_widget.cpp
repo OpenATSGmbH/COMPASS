@@ -113,6 +113,16 @@ FFTEditWidget::FFTEditWidget(std::function<void()> on_changed,
     connect(mode_c_edit_, &QLineEdit::editingFinished, this, &FFTEditWidget::modeCEditedSlot);
     form->addRow(new QLabel("Mode C Code [ft]"), mode_c_edit_);
 
+    range_delay_edit_ = new QLineEdit();
+    range_delay_edit_->setValidator(new TextFieldDoubleValidator(0, 1000, 2, true));
+    range_delay_edit_->setPlaceholderText("not set");
+    range_delay_edit_->setToolTip(
+        "Range delay of a delayed-reply FFT. The FFT replies after a fixed delay, so each Radar\n"
+        "plots it on the azimuth of the FFT position, at the slant range of the FFT position\n"
+        "plus this delay. The delay is the same for all Radars. Empty: no delay.");
+    connect(range_delay_edit_, &QLineEdit::editingFinished, this, &FFTEditWidget::rangeDelayEditedSlot);
+    form->addRow(new QLabel("Range Delay [NM]"), range_delay_edit_);
+
     max_plot_distance_edit_ = new QLineEdit();
     max_plot_distance_edit_->setValidator(new TextFieldDoubleValidator(0, 100000, 1, true));
     max_plot_distance_edit_->setPlaceholderText(
@@ -120,7 +130,9 @@ FFTEditWidget::FFTEditWidget(std::function<void()> on_changed,
     max_plot_distance_edit_->setToolTip(
         QString("Maximum distance for position-based matching of target reports to this FFT.\n"
                 "Use a small value (e.g. 50 m) for FFTs on an airport surface, so passing\n"
-                "traffic is not matched by position alone. Empty uses the default of %1 m.")
+                "traffic is not matched by position alone. Empty uses the default of %1 m.\n"
+                "With a range delay, Radar plots are also matched within this distance of\n"
+                "the delayed position.")
             .arg(FFT::DefaultMaxPlotDistanceM, 0, 'f', 0));
     connect(max_plot_distance_edit_, &QLineEdit::editingFinished,
             this, &FFTEditWidget::maxPlotDistanceEditedSlot);
@@ -134,6 +146,7 @@ FFTEditWidget::FFTEditWidget(std::function<void()> on_changed,
     mode_s_edit_->setObjectName("fft_edit_mode_s_edit");
     mode_3a_edit_->setObjectName("fft_edit_mode_3a_edit");
     mode_c_edit_->setObjectName("fft_edit_mode_c_edit");
+    range_delay_edit_->setObjectName("fft_edit_range_delay_edit");
     max_plot_distance_edit_->setObjectName("fft_edit_max_plot_distance_edit");
 
     layout->addLayout(form);
@@ -189,6 +202,11 @@ void FFTEditWidget::show(FFT& fft)
     else
         mode_c_edit_->setText("");
 
+    if (fft.hasRangeDelay())
+        range_delay_edit_->setText(QString::number(fft.rangeDelayNM(), 'f', 2));
+    else
+        range_delay_edit_->setText("");
+
     if (info.contains("max_plot_distance_m"))
         max_plot_distance_edit_->setText(QString::number(info.at("max_plot_distance_m").get<double>(), 'f', 1));
     else
@@ -216,6 +234,7 @@ void FFTEditWidget::clear()
     mode_s_edit_->clear();
     mode_3a_edit_->clear();
     mode_c_edit_->clear();
+    range_delay_edit_->clear();
     max_plot_distance_edit_->clear();
 
     name_edit_->blockSignals(false);
@@ -232,6 +251,7 @@ void FFTEditWidget::setReadOnly(bool read_only)
     mode_s_edit_->setReadOnly(read_only);
     mode_3a_edit_->setReadOnly(read_only);
     mode_c_edit_->setReadOnly(read_only);
+    range_delay_edit_->setReadOnly(read_only);
     max_plot_distance_edit_->setReadOnly(read_only);
 }
 
@@ -379,6 +399,33 @@ void FFTEditWidget::modeCEditedSlot()
 
         if (ok)
             changed = setInfoValue(info, "mode_c_code", val);
+    }
+
+    if (changed && on_changed_)
+        on_changed_();
+}
+
+void FFTEditWidget::rangeDelayEditedSlot()
+{
+    if (!current_fft_ || read_only_)
+        return;
+
+    auto& info = current_fft_->info();
+    QString text = range_delay_edit_->text().trimmed();
+
+    bool changed = false;
+
+    if (text.isEmpty())
+    {
+        changed = eraseInfoValue(info, "range_delay_nm");
+    }
+    else
+    {
+        bool ok = false;
+        double val = text.toDouble(&ok);
+
+        if (ok)
+            changed = setInfoValue(info, "range_delay_nm", val);
     }
 
     if (changed && on_changed_)

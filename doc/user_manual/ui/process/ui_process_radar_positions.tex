@@ -18,6 +18,7 @@ There is currently only one projection method (radar polar coordinates to WGS-84
 For this projection, no additional attributes must be given. Please \textbf{note} that this projection is based on a common 'radar slant to geodesic transformation', it should be equivalent to the ARTAS projection. 
 
 \paragraph{FFTs}
+\label{sec:ui_process_radar_positions_ffts}
 
 The altitude of Radar plots is commonly derived from the Mode C code, and used in the slant range correction. In FFTs, the downlinked Mode C code is a configured value, often very dissimilar to the real altitude, therefore causing position errors. \\
 
@@ -29,7 +30,7 @@ A plot matches an FFT if at least one secondary identification value exists in b
 \item Mode S Address (hexadecimal): Identifies the FFT. Not used for CAT001, which carries no aircraft address
 \item Mode 3/A Code (octal): Identifies the FFT
 \item Mode C Code [ft]: Confirms a match only. It can prevent a match, but it can never establish one
-\item Latitude, Longitude: WGS-84 position in degrees. The plot-FFT distance must be lower than 5000 m
+\item Latitude, Longitude: WGS-84 position in degrees. The plot-FFT distance must be lower than the Maximum Plot Distance of the FFT (default 5000 m). For an FFT with a Range Delay, a plot also matches near the delayed position, see \nameref{sec:configure_ffts_range_delay}
 \end{itemize}
 \ \\
 
@@ -37,7 +38,7 @@ A plot matches an FFT if at least one secondary identification value exists in b
 
 The Mode 3/A Code 7777 is always treated as an FFT, without any further check. \\
 
-The Altitude [ft] of the matched FFT is the value used for the slant range correction. \\
+The Altitude [ft] of the matched FFT is the value used for the slant range correction. A plot with the Mode 3/A Code 7777 that matches no FFT uses an altitude of 0 ft. \\
 
 \paragraph{Usage}
 

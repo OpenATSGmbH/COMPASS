@@ -767,3 +767,196 @@ TEST_CASE("calculateRadSlt2Geocentric with bias", "[projection][rs2g]")
     REQUIRE(ey2 == Approx(ey1).margin(0.01));
     REQUIRE(ez2 == Approx(ez1).margin(0.01));
 }
+
+// ---------------------------------------------------------------------------
+// delayedReplyPosition: position at which a radar plots a delayed-reply FFT
+// ---------------------------------------------------------------------------
+TEST_CASE("delayedReplyPosition keeps the azimuth and adds the delay to the slant range", "[projection][rs2g][fft]")
+{
+    RS2GCoordinateSystem cs(1, 48.0, 16.0, 300.0);
+
+    const double fft_lat = 48.2, fft_lon = 16.1, fft_alt_m = 200.0;
+
+    auto polar = [ & ] (double lat_deg, double lon_deg, double& azimuth_rad, double& slant_range_m)
+    {
+        double x, y, z, lx, ly, lz, ground_range_m, altitude_m;
+        cs.geodesic2Geocentric(lat_deg * DEG2RAD_T, lon_deg * DEG2RAD_T, fft_alt_m, x, y, z);
+        cs.geocentric2LocalCart(x, y, z, lx, ly, lz);
+        cs.localCart2RadarSlant(lx, ly, lz, azimuth_rad, slant_range_m, ground_range_m, altitude_m);
+    };
+
+    double site_azimuth_rad, site_slant_range_m;
+    polar(fft_lat, fft_lon, site_azimuth_rad, site_slant_range_m);
+
+    SECTION("a delay moves the position along the azimuth")
+    {
+        const double delay_m = 50.0 * 1852.0;
+
+        double plot_lat, plot_lon;
+        REQUIRE(cs.delayedReplyPosition(fft_lat, fft_lon, fft_alt_m, delay_m, plot_lat, plot_lon));
+
+        double plot_azimuth_rad, plot_slant_range_m;
+        polar(plot_lat, plot_lon, plot_azimuth_rad, plot_slant_range_m);
+
+        REQUIRE(plot_azimuth_rad == Approx(site_azimuth_rad).margin(1e-5));
+        REQUIRE(plot_slant_range_m == Approx(site_slant_range_m + delay_m).margin(5.0));
+    }
+
+    SECTION("no delay gives the site")
+    {
+        double plot_lat, plot_lon;
+        REQUIRE(cs.delayedReplyPosition(fft_lat, fft_lon, fft_alt_m, 0.0, plot_lat, plot_lon));
+
+        REQUIRE(plot_lat == Approx(fft_lat).margin(1e-5));
+        REQUIRE(plot_lon == Approx(fft_lon).margin(1e-5));
+    }
+}
+
+namespace
+{
+    /// azimuth, slant and ground range of a position from radar cs, at height_m
+    void polarOf(RS2GCoordinateSystem& cs, double lat_deg, double lon_deg, double height_m,
+                 double& azimuth_rad, double& slant_range_m, double& ground_range_m)
+    {
+        double x, y, z, lx, ly, lz, altitude_m;
+        cs.geodesic2Geocentric(lat_deg * DEG2RAD_T, lon_deg * DEG2RAD_T, height_m, x, y, z);
+        cs.geocentric2LocalCart(x, y, z, lx, ly, lz);
+        cs.localCart2RadarSlant(lx, ly, lz, azimuth_rad, slant_range_m, ground_range_m, altitude_m);
+    }
+
+    /// plot position of a radar measurement, with the altitude used for the slant range correction
+    void plotPosition(RS2GCoordinateSystem& cs, double azimuth_rad, double slant_range_m, double altitude_m,
+                      double& lat_deg, double& lon_deg)
+    {
+        double ground_range_m, x, y, z, height_m;
+        REQUIRE(cs.calculateRadSlt2Geocentric(azimuth_rad, slant_range_m, true, altitude_m,
+                                              ground_range_m, x, y, z));
+        REQUIRE(cs.geocentric2Geodesic(x, y, z, lat_deg, lon_deg, height_m));
+    }
+
+    double distanceM(double lat1, double lon1, double lat2, double lon2)
+    {
+        double dn = (lat2 - lat1) * 111320.0;
+        double de = (lon2 - lon1) * 111320.0 * cos(lat1 * DEG2RAD_T);
+        return sqrt(dn * dn + de * de);
+    }
+}
+
+TEST_CASE("delayedReplyPosition in all directions", "[projection][rs2g][fft]")
+{
+    RS2GCoordinateSystem cs(1, 44.6, 20.5, 400.0);
+
+    const double delay_m   = 60.0 * 1852.0;
+    const double fft_alt_m = 150.0;
+
+    // FFT sites about 20 km north, east, south, west of the radar
+    const std::vector<std::pair<double, double>> sites = {
+        {44.78, 20.5}, {44.6, 20.75}, {44.42, 20.5}, {44.6, 20.25}};
+
+    for (const auto& [ site_lat, site_lon ] : sites)
+    {
+        INFO("site " << site_lat << " " << site_lon);
+
+        double site_az, site_slant, site_ground;
+        polarOf(cs, site_lat, site_lon, fft_alt_m, site_az, site_slant, site_ground);
+
+        double plot_lat, plot_lon;
+        REQUIRE(cs.delayedReplyPosition(site_lat, site_lon, fft_alt_m, delay_m, plot_lat, plot_lon));
+
+        double plot_az, plot_slant, plot_ground;
+        polarOf(cs, plot_lat, plot_lon, fft_alt_m, plot_az, plot_slant, plot_ground);
+
+        REQUIRE(plot_az == Approx(site_az).margin(1e-5));
+        REQUIRE(plot_slant == Approx(site_slant + delay_m).margin(5.0));
+        REQUIRE(plot_ground > site_ground + 0.99 * delay_m);
+    }
+}
+
+TEST_CASE("delayedReplyPosition with a mountain site and a high radar", "[projection][rs2g][fft]")
+{
+    // radar and FFT on mountains, FFT higher than the radar
+    RS2GCoordinateSystem cs(1, 42.5, 22.2, 1930.0);
+
+    const double site_lat = 43.27, site_lon = 20.83, fft_alt_m = 2010.0;
+    const double delay_m  = 10.0 * 1852.0;
+
+    double site_az, site_slant, site_ground;
+    polarOf(cs, site_lat, site_lon, fft_alt_m, site_az, site_slant, site_ground);
+
+    double plot_lat, plot_lon;
+    REQUIRE(cs.delayedReplyPosition(site_lat, site_lon, fft_alt_m, delay_m, plot_lat, plot_lon));
+
+    double plot_az, plot_slant, plot_ground;
+    polarOf(cs, plot_lat, plot_lon, fft_alt_m, plot_az, plot_slant, plot_ground);
+
+    REQUIRE(plot_az == Approx(site_az).margin(1e-5));
+    REQUIRE(plot_slant == Approx(site_slant + delay_m).margin(5.0));
+}
+
+TEST_CASE("delayedReplyPosition moves outward with the delay", "[projection][rs2g][fft]")
+{
+    RS2GCoordinateSystem cs(1, 44.8, 20.3, 130.0);
+
+    const double site_lat = 44.82, site_lon = 20.29, fft_alt_m = 133.0; // about 2.7 km from the radar
+
+    double last_ground = -1.0;
+
+    for (double delay_nm : {0.0, 10.0, 50.0, 100.0, 200.0})
+    {
+        INFO("delay " << delay_nm << " NM");
+
+        double plot_lat, plot_lon;
+        REQUIRE(cs.delayedReplyPosition(site_lat, site_lon, fft_alt_m, delay_nm * 1852.0, plot_lat, plot_lon));
+
+        double az, slant, ground;
+        polarOf(cs, plot_lat, plot_lon, fft_alt_m, az, slant, ground);
+
+        REQUIRE(ground > last_ground);
+        last_ground = ground;
+    }
+}
+
+TEST_CASE("FFT altitude correction puts a delayed FFT plot on the expected position", "[projection][rs2g][fft]")
+{
+    RS2GCoordinateSystem cs(1, 44.59, 20.55, 412.0);
+
+    const double site_lat = 44.82, site_lon = 20.29, fft_alt_m = 133.0;
+    const double delay_m  = 90.0 * 1852.0;
+
+    double site_az, site_slant, site_ground;
+    polarOf(cs, site_lat, site_lon, fft_alt_m, site_az, site_slant, site_ground);
+
+    // the radar measures the delayed reply
+    const double meas_az    = site_az;
+    const double meas_slant = site_slant + delay_m;
+
+    double exp_lat, exp_lon;
+    REQUIRE(cs.delayedReplyPosition(site_lat, site_lon, fft_alt_m, delay_m, exp_lat, exp_lon));
+
+    SECTION("with the FFT altitude the plot is on the expected position")
+    {
+        double plot_lat, plot_lon;
+        plotPosition(cs, meas_az, meas_slant, fft_alt_m, plot_lat, plot_lon);
+
+        REQUIRE(distanceM(plot_lat, plot_lon, exp_lat, exp_lon) < 0.01);
+    }
+
+    SECTION("with the downlinked Mode C (-1000 ft) the plot is close, well inside the match distance")
+    {
+        double plot_lat, plot_lon;
+        plotPosition(cs, meas_az, meas_slant, -1000.0 * 0.3048, plot_lat, plot_lon);
+
+        double dist_m = distanceM(plot_lat, plot_lon, exp_lat, exp_lon);
+        REQUIRE(dist_m > 0.001);
+        REQUIRE(dist_m < 100.0);
+    }
+
+    SECTION("a measurement 0.1 NM off (Radar range bias) stays inside the match distance")
+    {
+        double plot_lat, plot_lon;
+        plotPosition(cs, meas_az, meas_slant + 0.1 * 1852.0, fft_alt_m, plot_lat, plot_lon);
+
+        double dist_m = distanceM(plot_lat, plot_lon, exp_lat, exp_lon);
+        REQUIRE(dist_m == Approx(185.2).margin(5.0));
+    }
+}

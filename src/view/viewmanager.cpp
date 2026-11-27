@@ -122,13 +122,15 @@ void ViewManager::setManagers(FilterManager& filter_manager,
                               DBInterface& db_interface,
                               context::DBContextManager& ctx_man,
                               JobManager& job_manager,
-                              LicenseManager& license_manager)
+                              LicenseManager& license_manager,
+                              ProjectionManager& projection_manager)
 {
     filter_manager_  = &filter_manager;
     db_interface_    = &db_interface;
     ctx_man_         = &ctx_man;
     job_manager_     = &job_manager;
     license_manager_ = &license_manager;
+    projection_manager_ = &projection_manager;
 }
 
 /**
@@ -140,7 +142,8 @@ bool ViewManager::checkWired() const
            db_interface_    &&
            ctx_man_         &&
            job_manager_     &&
-           license_manager_;
+           license_manager_ &&
+           projection_manager_;
 }
 
 /**
@@ -157,6 +160,14 @@ DBInterface& ViewManager::dbInterface()
 {
     traced_assert(db_interface_);
     return *db_interface_;
+}
+
+/**
+ */
+ProjectionManager& ViewManager::projectionManager()
+{
+    traced_assert(projection_manager_);
+    return *projection_manager_;
 }
 
 /**

@@ -60,6 +60,12 @@ public:
                                        double& azimuth_rad, double& slant_range_m, double& ground_range_m,
                                        double& radar_altitude_m, bool debug=false) = 0;
 
+    /// position at which radar id plots a transponder whose replies are delayed by
+    /// delay_m of slant range, altitude_ft is the transponder altitude
+    virtual bool delayedReplyPosition(unsigned int id, double latitude_deg, double longitude_deg,
+                                      double altitude_ft, double delay_m,
+                                      double& plot_latitude_deg, double& plot_longitude_deg) = 0;
+
     void getGroundRange(unsigned int id, double slant_range_m,
                           bool has_altitude, double altitude_m,
                           double& ground_range_m, double& adjusted_altitude_m, bool debug=false);

@@ -129,7 +129,13 @@ class FFT {
 
 Position via `latitude()`, `longitude()`, `altitude()`. Codes stored directly in `info_`.
 
-FFT detection (`DBContextManager::isFromFFT`): checks Mode S address, Mode 3/A code, Mode C altitude, and position proximity (< 5000 m). Mode 3/A code 7777 (octal 4095) always treated as FFT.
+FFT detection (`DBContextManager::isFromFFT`): checks Mode S address, Mode 3/A code, Mode C altitude, and position proximity (< `maxPlotDistanceM()`, default 5000 m). Mode 3/A code 7777 (octal 4095) always treated as FFT: with the altitude of the matching FFT, altitude 0 if none matches. The loop is `FFT::matchesAny` (FFT list first, then the 7777 rule).
+
+**Range delay (delayed-reply FFT):** optional `info` value `range_delay_nm` (`hasRangeDelay()`, not set or 0 = no delay). The transponder replies after a fixed delay, the same for all radars, so a radar plots it on the azimuth of the FFT site at the site slant range plus the delay.
+- Radar plots (CAT001, CAT048) go through `ProjectionManager::isFromFFT(ds_id, ...)`, which passes the expected position (`ProjectionManager::fftExpectedPosition`, via `RS2GCoordinateSystem::delayedReplyPosition`, cached) to `DBContextManager::isFromFFT`. A plot matches near the site OR near the expected position. The expected position is only computed after the secondary identification matched.
+- Other target reports (MLAT, ADS-B, trackers) use `DBContextManager::isFromFFT` without an expected position: site only.
+- Callers: ASTERIX import (`ProjectionManager` radar plot position calculation) and the reconstructor (`ReconstructorTarget`, FFT target category).
+- Geographic View: an FFT with a delay has one child entry per radar at the expected position (geoview plugin, `DrawableFFTCollection`).
 
 ## ASTERIXDecodingConfig
 

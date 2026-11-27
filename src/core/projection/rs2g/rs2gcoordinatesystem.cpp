@@ -420,3 +420,24 @@ bool RS2GCoordinateSystem::geocentric2Geodesic(double ecef_x, double ecef_y, dou
     return !std::isnan(lat_deg) && !std::isnan(lon_deg);
 }
 
+
+bool RS2GCoordinateSystem::delayedReplyPosition(double latitude_deg, double longitude_deg, double altitude_m,
+                                                double delay_m, double& plot_latitude_deg, double& plot_longitude_deg)
+{
+    double ecef_x, ecef_y, ecef_z;
+    geodesic2Geocentric(latitude_deg * DEG2RAD, longitude_deg * DEG2RAD, altitude_m, ecef_x, ecef_y, ecef_z);
+
+    double local_x, local_y, local_z;
+    geocentric2LocalCart(ecef_x, ecef_y, ecef_z, local_x, local_y, local_z);
+
+    double azimuth_rad, slant_range_m, ground_range_m, radar_altitude_m;
+    localCart2RadarSlant(local_x, local_y, local_z, azimuth_rad, slant_range_m, ground_range_m, radar_altitude_m);
+
+    double plot_ground_range_m;
+    if (!calculateRadSlt2Geocentric(azimuth_rad, slant_range_m + delay_m, true, altitude_m,
+                                    plot_ground_range_m, ecef_x, ecef_y, ecef_z))
+        return false;
+
+    double plot_height_m;
+    return geocentric2Geodesic(ecef_x, ecef_y, ecef_z, plot_latitude_deg, plot_longitude_deg, plot_height_m);
+}

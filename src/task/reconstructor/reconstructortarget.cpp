@@ -29,6 +29,7 @@
 #include "global.h"
 #include "kalman_chain.h"
 #include "db_context_manager.h"
+#include "projectionmanager.h"
 #include "timeddataseries.h"
 #include "datasourcebase.h" // for dbContent::DataSourceType enum
 
@@ -532,9 +533,16 @@ ReconstructorTarget::TargetReportAddResult ReconstructorTarget::addTargetReportI
         if (!acad && !acads_.empty())
             acad = *acads_.begin();
 
-        std::tie(is_from_fft, fft_altitude_ft) = ctx_man.isFromFFT(
-            tr.position_->latitude_, tr.position_->longitude_, acad, tr.dbcont_id_ == 1,
-            mode_a_code, baro_altitude_ft);
+        // radar plots (CAT001, CAT048) also match delayed-reply FFTs at their expected position
+        if (tr.dbcont_id_ == 1 || tr.dbcont_id_ == 48)
+            std::tie(is_from_fft, fft_altitude_ft) =
+                reconstructor_.task().manager().projectionManager().isFromFFT(
+                    tr.ds_id_, tr.position_->latitude_, tr.position_->longitude_, acad, tr.dbcont_id_ == 1,
+                    mode_a_code, baro_altitude_ft);
+        else
+            std::tie(is_from_fft, fft_altitude_ft) = ctx_man.isFromFFT(
+                tr.position_->latitude_, tr.position_->longitude_, acad, false,
+                mode_a_code, baro_altitude_ft);
 
         if (is_from_fft)
             ecat_ = (unsigned int) TargetBase::Category::FFT;

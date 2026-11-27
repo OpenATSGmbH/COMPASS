@@ -1528,25 +1528,14 @@ pair<bool, float> DBContextManager::isFromFFT(double latitude_deg, double longit
                                               boost::optional<unsigned int> mode_s_address,
                                               bool ignore_mode_s,
                                               boost::optional<unsigned int> mode_a_code,
-                                              boost::optional<float> mode_c_code) const
+                                              boost::optional<float> mode_c_code,
+                                              const FFTExpectedPositionFunc& expected_position) const
 {
     if (!hasActiveContext())
         return {false, 0};
 
-    // special case: mode 3/A code 7777 (4095 octal) always treated as FFT
-    if (FFT::isAlwaysFFTCode(mode_a_code))
-        return {true, 0};
-
-    for (const auto& f : activeContext().ffts())
-    {
-        auto result = f.matches(latitude_deg, longitude_deg, mode_s_address, ignore_mode_s,
-                                mode_a_code, mode_c_code);
-
-        if (result.first)
-            return result;
-    }
-
-    return {false, 0};
+    return FFT::matchesAny(activeContext().ffts(), latitude_deg, longitude_deg, mode_s_address, ignore_mode_s,
+                           mode_a_code, mode_c_code, expected_position);
 }
 
 // ============================================================

@@ -21,6 +21,10 @@
 
 #include <boost/optional.hpp>
 
+#include <GeographicLib/Geodesic.hpp>
+
+#include <cmath>
+
 using namespace context;
 
 namespace
@@ -519,5 +523,239 @@ TEST_CASE("FFT runtime id", "[context][fft]")
         REQUIRE(restored == fft);
         REQUIRE(restored.runtimeId() != fft.runtimeId());
         REQUIRE(fft.toJSON().dump().find(fft.runtimeId()) == std::string::npos);
+    }
+}
+
+// ============================================================
+// Range delay (delayed-reply FFT)
+// ============================================================
+
+TEST_CASE("FFT range delay", "[context][fft]")
+{
+    FFT fft = modeSFFT();
+
+    // the position at which the measuring radar plots the delayed FFT, here "far"
+    const std::pair<double, double> expected {far_lat, far_lon};
+    unsigned int expected_calls = 0;
+
+    FFT::ExpectedPositionFunc expected_func = [ & ] ()
+    {
+        ++expected_calls;
+        return boost::optional<std::pair<double, double>>(expected);
+    };
+
+    SECTION("not set or 0 means no delay")
+    {
+        REQUIRE(!fft.hasRangeDelay());
+
+        fft.rangeDelayNM(0.0);
+        REQUIRE(!fft.hasRangeDelay());
+
+        fft.rangeDelayNM(65.0);
+        REQUIRE(fft.hasRangeDelay());
+        REQUIRE(fft.rangeDelayNM() == Approx(65.0));
+        REQUIRE(FFT::fromJSON(fft.toJSON()).rangeDelayNM() == Approx(65.0));
+
+        fft.removeRangeDelay();
+        REQUIRE(!fft.hasRangeDelay());
+    }
+
+    SECTION("a target report near the expected position matches")
+    {
+        auto result = fft.matches(far_lat, far_lon, fft_acad, false, no_mode_3a, no_mode_c, expected_func);
+
+        REQUIRE(result.first);
+        REQUIRE(result.second == Approx(1000.0f));
+        REQUIRE(expected_calls == 1);
+    }
+
+    SECTION("a target report near the site still matches, without the expected position")
+    {
+        auto result = fft.matches(near_lat, near_lon, fft_acad, false, no_mode_3a, no_mode_c, expected_func);
+
+        REQUIRE(result.first);
+        REQUIRE(expected_calls == 0);
+    }
+
+    SECTION("a target report near neither position does not match")
+    {
+        auto result = fft.matches(48.6, 16.6, fft_acad, false, no_mode_3a, no_mode_c, expected_func);
+
+        REQUIRE(!result.first);
+    }
+
+    SECTION("the expected position needs the secondary identification")
+    {
+        auto result = fft.matches(far_lat, far_lon, boost::optional<unsigned int>(0x00BEEF),
+                                  false, no_mode_3a, no_mode_c, expected_func);
+
+        REQUIRE(!result.first);
+        REQUIRE(expected_calls == 0); // not needed after the identification failed
+    }
+
+    SECTION("an unknown expected position does not match away from the site")
+    {
+        FFT::ExpectedPositionFunc unknown = [] () { return boost::optional<std::pair<double, double>>(); };
+
+        auto result = fft.matches(far_lat, far_lon, fft_acad, false, no_mode_3a, no_mode_c, unknown);
+
+        REQUIRE(!result.first);
+    }
+}
+
+// ============================================================
+// Position check math
+// ============================================================
+
+TEST_CASE("FFT flat earth distance", "[context][fft]")
+{
+    SECTION("same position is 0")
+    {
+        REQUIRE(FFT::flatEarthDistanceM(45.0, 20.0, 45.0, 20.0) == Approx(0.0).margin(1e-9));
+    }
+
+    SECTION("latitude: 111 km per degree")
+    {
+        REQUIRE(FFT::flatEarthDistanceM(45.001, 20.0, 45.0, 20.0) == Approx(111.0).epsilon(1e-6));
+        REQUIRE(FFT::flatEarthDistanceM(44.999, 20.0, 45.0, 20.0) == Approx(111.0).epsilon(1e-6));
+    }
+
+    SECTION("longitude: scaled with the cosine of the latitude")
+    {
+        REQUIRE(FFT::flatEarthDistanceM(60.0, 20.001, 60.0, 20.0) == Approx(55.5).epsilon(1e-6));
+        REQUIRE(FFT::flatEarthDistanceM(0.0, 20.001, 0.0, 20.0) == Approx(111.0).epsilon(1e-6));
+    }
+
+    SECTION("close to the geodesic distance within the maximum plot distance")
+    {
+        const GeographicLib::Geodesic& geod = GeographicLib::Geodesic::WGS84();
+
+        for (double azimuth_deg : {0.0, 45.0, 90.0, 135.0, 180.0, 270.0})
+        {
+            for (double dist_m : {50.0, 1000.0, 5000.0})
+            {
+                double lat2, lon2;
+                geod.Direct(45.0, 20.0, azimuth_deg, dist_m, lat2, lon2);
+
+                INFO("azimuth " << azimuth_deg << " distance " << dist_m);
+                REQUIRE(FFT::flatEarthDistanceM(lat2, lon2, 45.0, 20.0) == Approx(dist_m).epsilon(0.005));
+            }
+        }
+    }
+
+    SECTION("the match distance limit uses this distance")
+    {
+        FFT fft = modeSFFT();
+
+        // north of the FFT, just inside and just outside of the default 5000 m
+        const double inside_lat  = fft_lat + 4990.0 / 111000.0;
+        const double outside_lat = fft_lat + 5010.0 / 111000.0;
+
+        REQUIRE(fft.matches(inside_lat, fft_lon, fft_acad, false, no_mode_3a, no_mode_c).first);
+        REQUIRE(!fft.matches(outside_lat, fft_lon, fft_acad, false, no_mode_3a, no_mode_c).first);
+
+        // the same limit around the expected position of a delayed-reply FFT
+        const double exp_lat = 49.0, exp_lon = 17.0;
+        FFT::ExpectedPositionFunc expected = [ & ] ()
+        {
+            return boost::optional<std::pair<double, double>>(std::make_pair(exp_lat, exp_lon));
+        };
+
+        REQUIRE(fft.matches(exp_lat + 4990.0 / 111000.0, exp_lon, fft_acad, false,
+                            no_mode_3a, no_mode_c, expected).first);
+        REQUIRE(!fft.matches(exp_lat + 5010.0 / 111000.0, exp_lon, fft_acad, false,
+                             no_mode_3a, no_mode_c, expected).first);
+    }
+
+    SECTION("the per-FFT maximum plot distance")
+    {
+        FFT fft = modeSFFT();
+        fft.info()["max_plot_distance_m"] = 50.0;
+
+        REQUIRE(fft.matches(fft_lat + 40.0 / 111000.0, fft_lon, fft_acad, false, no_mode_3a, no_mode_c).first);
+        REQUIRE(!fft.matches(fft_lat + 60.0 / 111000.0, fft_lon, fft_acad, false, no_mode_3a, no_mode_c).first);
+    }
+}
+
+// ============================================================
+// Matching against all FFTs, Mode 3/A 7777
+// ============================================================
+
+TEST_CASE("FFT matchesAny", "[context][fft]")
+{
+    const boost::optional<unsigned int> code_7777(FFT::always_fft_mode_3a_code_);
+
+    // the 7777 entry of a transponder, as defined in a Data Context
+    FFT fft_7777;
+    fft_7777.name("FFT_7777");
+    fft_7777.latitude(fft_lat);
+    fft_7777.longitude(fft_lon);
+    fft_7777.altitude(2000.0);
+    fft_7777.modeSAddress(fft_acad);
+    fft_7777.mode3ACode(FFT::always_fft_mode_3a_code_);
+
+    FFT other = fullFFT(); // other transponder, altitude 1000 ft
+    other.modeSAddress(0x00BEEF);
+
+    const std::vector<FFT> ffts {other, fft_7777};
+
+    SECTION("a 7777 plot of a defined FFT gets the FFT altitude")
+    {
+        auto result = FFT::matchesAny(ffts, near_lat, near_lon, fft_acad, false, code_7777, no_mode_c);
+
+        REQUIRE(result.first);
+        REQUIRE(result.second == Approx(2000.0f));
+    }
+
+    SECTION("a 7777 plot without a matching FFT is an FFT with altitude 0")
+    {
+        // unknown address
+        auto result = FFT::matchesAny(ffts, near_lat, near_lon, boost::optional<unsigned int>(0x00AAAA),
+                                      false, code_7777, no_mode_c);
+        REQUIRE(result.first);
+        REQUIRE(result.second == Approx(0.0f));
+
+        // far from the FFT
+        result = FFT::matchesAny(ffts, far_lat, far_lon, fft_acad, false, code_7777, no_mode_c);
+        REQUIRE(result.first);
+        REQUIRE(result.second == Approx(0.0f));
+
+        // no FFTs defined
+        result = FFT::matchesAny({}, near_lat, near_lon, fft_acad, false, code_7777, no_mode_c);
+        REQUIRE(result.first);
+        REQUIRE(result.second == Approx(0.0f));
+    }
+
+    SECTION("a 7777 plot of a delayed-reply FFT at the expected position gets the FFT altitude")
+    {
+        std::vector<FFT> delayed_ffts = ffts;
+        delayed_ffts[ 1 ].rangeDelayNM(30.0);
+
+        unsigned int calls = 0;
+        FFT::ExpectedPositionOfFunc expected = [ & ] (const FFT& fft)
+        {
+            ++calls;
+            REQUIRE(fft.name() == "FFT_7777"); // only for the FFT with a delay
+            return boost::optional<std::pair<double, double>>(std::make_pair(far_lat, far_lon));
+        };
+
+        auto result = FFT::matchesAny(delayed_ffts, far_lat, far_lon, fft_acad, false, code_7777, no_mode_c,
+                                      expected);
+
+        REQUIRE(result.first);
+        REQUIRE(result.second == Approx(2000.0f));
+        REQUIRE(calls == 1);
+    }
+
+    SECTION("other plots are matched against the FFTs only")
+    {
+        auto result = FFT::matchesAny(ffts, near_lat, near_lon, boost::optional<unsigned int>(0x00BEEF),
+                                      false, boost::optional<unsigned int>(fft_mode_3a), no_mode_c);
+        REQUIRE(result.first);
+        REQUIRE(result.second == Approx(1000.0f));
+
+        result = FFT::matchesAny(ffts, near_lat, near_lon, boost::optional<unsigned int>(0x00AAAA),
+                                 false, boost::optional<unsigned int>(01234), no_mode_c);
+        REQUIRE(!result.first);
     }
 }

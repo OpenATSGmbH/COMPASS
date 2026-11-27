@@ -335,7 +335,8 @@ void CompassRoot::startManagers()
                                *db_interface_,
                                *context_manager_,
                                *job_manager_,
-                               *license_manager_);
+                               *license_manager_,
+                               *projection_manager_);
     eval_manager_->setManagers(*view_manager_,
                                *filter_manager_,
                                *db_interface_,
