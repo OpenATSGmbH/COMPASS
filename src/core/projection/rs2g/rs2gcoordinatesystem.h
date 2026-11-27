@@ -68,6 +68,12 @@ class RS2GCoordinateSystem : public ProjectionCoordinateSystemBase
     void geodesic2LocalCart(double lat_rad, double lon_rad, double height_m,
                             double& local_x, double& local_y, double& local_z, bool debug=false);
 
+    /// Position at which this radar plots a transponder at the given position whose
+    /// replies are delayed by delay_m of slant range: azimuth of the transponder,
+    /// slant range of the transponder plus the delay, the altitude used both ways.
+    bool delayedReplyPosition(double latitude_deg, double longitude_deg, double altitude_m,
+                              double delay_m, double& plot_latitude_deg, double& plot_longitude_deg);
+
   protected:
      Eigen::Matrix3d rs2g_A_;     // R matrix
 

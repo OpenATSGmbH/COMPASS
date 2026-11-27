@@ -12,7 +12,7 @@ The 'FFTs' group lists all Fixed Field Transponders (FFTs) of the active Data Co
 
 The defined FFTs are used for:
 \begin{itemize}
-\item Display in the Geographic View
+\item Display in the Geographic View, for an FFT with a Range Delay also the delayed position at each Radar
 \item Usage of correct altitude information for Radar slant range correction during ASTERIX import
 \end{itemize}
 \ \\
@@ -32,6 +32,8 @@ The detail widget on the right exposes the editable attributes of the selected F
 \item Mode S Address (hexadecimal): Optional
 \item Mode 3/A Code (octal): Optional
 \item Mode C Code [ft]: Optional
+\item Range Delay [NM]: Optional, range delay of a delayed-reply FFT, see \nameref{sec:configure_ffts_range_delay}
+\item Maximum Plot Distance [m]: Optional, maximum distance between a plot and the FFT for a match. Empty uses the default of 5000 m. Use a small value (e.g. 50 m) for an FFT on an airport surface
 \end{itemize}
 \ \\
 
@@ -40,6 +42,28 @@ The detail widget on the right exposes the editable attributes of the selected F
 The Mode 3/A Code 7777 is always treated as an FFT, without any further check. \\
 
 Each change is stored immediately. \\
+
+\paragraph{Delayed-Reply FFTs}
+\label{sec:configure_ffts_range_delay}
+
+A delayed-reply FFT replies to each interrogation after a fixed delay. A Radar therefore plots it away from its real position:
+
+\begin{itemize}
+\item Azimuth: The azimuth of the FFT position
+\item Slant range: The slant range of the FFT position plus the Range Delay
+\end{itemize}
+\ \\
+
+The Range Delay is a setting of the transponder and is the same for all Radars. Small differences between Radars come from the Radar range bias and accuracy. \\
+
+For such an FFT, set the real position of the FFT and the Range Delay:
+
+\begin{itemize}
+\item Radar plots match the FFT near the FFT position or near the delayed position, see \nameref{sec:ui_process_radar_positions_ffts}
+\item Target reports of other sensors (e.g. MLAT, ADS-B) match the FFT near the FFT position only
+\item The Geographic View shows the delayed position of each Radar below the FFT
+\end{itemize}
+\ \\
 
 \paragraph{FFTs Tree Actions}
 

@@ -40,6 +40,7 @@ static const string altitude_key = "altitude";
 static const string mode_s_address_key = "mode_s_address";
 static const string mode_3a_code_key = "mode_3a_code";
 static const string mode_c_code_key = "mode_c_code";
+static const string range_delay_key = "range_delay_nm";
 
 /**
  * Notice: every constructed FFT gets a new runtime id, copies keep it.
@@ -96,6 +97,26 @@ double FFT::maxPlotDistanceM() const
         return info_.at("max_plot_distance_m").get<double>();
 
     return DefaultMaxPlotDistanceM;
+}
+
+bool FFT::hasRangeDelay() const
+{
+    return info_.contains(range_delay_key) && info_.at(range_delay_key).get<double>() != 0.0;
+}
+
+double FFT::rangeDelayNM() const
+{
+    return info_.at(range_delay_key);
+}
+
+void FFT::rangeDelayNM(double value)
+{
+    info_[range_delay_key] = value;
+}
+
+void FFT::removeRangeDelay()
+{
+    info_.erase(range_delay_key);
 }
 
 bool FFT::hasModeSAddress() const
@@ -157,7 +178,8 @@ pair<bool, float> FFT::matches(double latitude_deg, double longitude_deg,
                                boost::optional<unsigned int> mode_s_address,
                                bool ignore_mode_s,
                                boost::optional<unsigned int> mode_a_code,
-                               boost::optional<float> mode_c_code) const
+                               boost::optional<float> mode_c_code,
+                               const ExpectedPositionFunc& expected_position) const
 {
     bool secondary_matched = false;
 
@@ -199,15 +221,28 @@ pair<bool, float> FFT::matches(double latitude_deg, double longitude_deg,
     {
         // flat earth approximation, accurate enough over the few kilometers the
         // maximum plot distance covers
-        double dlat = latitude_deg - latitude();
-        double dlon = longitude_deg - longitude();
+        auto distanceM = [ & ] (double ref_latitude_deg, double ref_longitude_deg)
+        {
+            double dlat = latitude_deg - ref_latitude_deg;
+            double dlon = longitude_deg - ref_longitude_deg;
 
-        // rough distance in meters (1 degree ~ 111km lat, cos(lat)*111km lon)
-        double cos_lat = cos(latitude_deg * M_PI / 180.0);
-        double dist_m = sqrt(dlat * dlat + dlon * dlon * cos_lat * cos_lat) * 111000.0;
+            // rough distance in meters (1 degree ~ 111km lat, cos(lat)*111km lon)
+            double cos_lat = cos(latitude_deg * M_PI / 180.0);
+            return sqrt(dlat * dlat + dlon * dlon * cos_lat * cos_lat) * 111000.0;
+        };
 
-        if (dist_m > maxPlotDistanceM())
-            return {false, 0};
+        // a radar plots a delayed-reply FFT at the expected position, other
+        // sensors (and radars without the delay) at the site
+        if (distanceM(latitude(), longitude()) > maxPlotDistanceM())
+        {
+            boost::optional<std::pair<double, double>> expected;
+
+            if (expected_position)
+                expected = expected_position();
+
+            if (!expected || distanceM(expected->first, expected->second) > maxPlotDistanceM())
+                return {false, 0};
+        }
     }
 
     float alt = 0;

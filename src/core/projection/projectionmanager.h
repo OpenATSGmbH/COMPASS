@@ -26,6 +26,7 @@ class IDBVariableResolver;
 namespace context
 {
     class DBContextManager;
+    class FFT;
 }
 
 #include "gdal_priv.h"
@@ -37,7 +38,12 @@ namespace context
 
 #include <GeographicLib/MagneticModel.hpp>
 
+#include <boost/optional.hpp>
+
+#include <map>
 #include <memory>
+#include <mutex>
+#include <tuple>
 
 class ProjectionManagerWidget;
 class Projection;
@@ -73,6 +79,19 @@ public:
     //static const std::string OGR_NAME;
     //static const std::string GEO_NAME;
 
+    /// Position (latitude, longitude) at which radar ds_id plots a delayed-reply FFT:
+    /// azimuth of the FFT site, slant range of the site plus the FFT range delay.
+    /// None if the FFT has no range delay or position, or the radar has no coordinate
+    /// system. Cached, thread-safe.
+    boost::optional<std::pair<double, double>> fftExpectedPosition(unsigned int ds_id, const context::FFT& fft);
+
+    /// FFT check of a radar plot of data source ds_id: as DBContextManager::isFromFFT, and
+    /// FFTs with a range delay also match at their expected position. Returns {is_fft, altitude_ft}.
+    std::pair<bool, float> isFromFFT(unsigned int ds_id, double latitude_deg, double longitude_deg,
+                                     boost::optional<unsigned int> mode_s_address, bool ignore_mode_s,
+                                     boost::optional<unsigned int> mode_a_code,
+                                     boost::optional<float> mode_c_code);
+
     double geoidHeightM (double latitude_deg, double longitude_deg);
     double declination(float year, double latitude_deg, double longitude_deg, double altitude_m);
 
@@ -91,6 +110,12 @@ protected:
 
     context::DBContextManager* ctx_man_      = nullptr; // peer, set by the composition root
     IDBVariableResolver*       var_resolver_ = nullptr;
+
+    // fftExpectedPosition cache, key: ds_id, radar lat/lon/alt, FFT lat/lon/alt, range delay
+    // (values in the key, so edits of the radar or the FFT give a new entry)
+    using FFTExpectedKey = std::tuple<unsigned int, double, double, double, double, double, double, double>;
+    std::map<FFTExpectedKey, boost::optional<std::pair<double, double>>> fft_expected_cache_;
+    std::mutex fft_expected_mutex_;
 
     std::string current_projection_name_;
 

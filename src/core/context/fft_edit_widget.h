@@ -50,6 +50,7 @@ private slots:
     void modeSEditedSlot();
     void mode3AEditedSlot();
     void modeCEditedSlot();
+    void rangeDelayEditedSlot();
     void maxPlotDistanceEditedSlot();
 
 private:
@@ -65,6 +66,7 @@ private:
     QLineEdit* mode_s_edit_{nullptr};
     QLineEdit* mode_3a_edit_{nullptr};
     QLineEdit* mode_c_edit_{nullptr};
+    QLineEdit* range_delay_edit_{nullptr};
     QLineEdit* max_plot_distance_edit_{nullptr};
 };
 

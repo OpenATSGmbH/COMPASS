@@ -60,6 +60,10 @@ public:
                                        double& azimuth_rad, double& slant_range_m, double& ground_range_m,
                                        double& radar_altitude_m, bool debug=false) override;
 
+    virtual bool delayedReplyPosition(unsigned int id, double latitude_deg, double longitude_deg,
+                                      double altitude_ft, double delay_m,
+                                      double& plot_latitude_deg, double& plot_longitude_deg) override;
+
 protected:
     std::map<unsigned int, std::unique_ptr<RS2GCoordinateSystem>> coordinate_systems_;
 

@@ -43,6 +43,7 @@ class DBInterface;
 class DBContentManager;
 class JobManager;
 class LicenseManager;
+class ProjectionManager;
 class IMainWindow;
 class Buffer;
 
@@ -141,7 +142,8 @@ class COMPASS_VIEW_API ViewManager : public QObject, public Configurable, public
                      DBInterface& db_interface,
                      context::DBContextManager& ctx_man,
                      JobManager& job_manager,
-                     LicenseManager& license_manager);
+                     LicenseManager& license_manager,
+                     ProjectionManager& projection_manager);
     bool checkWired() const override; // without the main window, set later
     void setMainWindow(IMainWindow& main_window) { main_window_ = &main_window; }
     void setLiveImportBacklogSizeFunc(const std::function<unsigned int()>& func) { live_import_backlog_size_func_ = func; }
@@ -151,6 +153,7 @@ class COMPASS_VIEW_API ViewManager : public QObject, public Configurable, public
     context::DBContextManager& dbContextManager();
     JobManager& jobManager();
     LicenseManager& licenseManager();
+    ProjectionManager& projectionManager();
     IMainWindow& mainWindow();
 
     unsigned int liveImportBacklogSize() const; // ASTERIX packets in processing
@@ -345,6 +348,7 @@ protected:
     context::DBContextManager* ctx_man_         = nullptr;
     JobManager*                job_manager_     = nullptr;
     LicenseManager*            license_manager_ = nullptr;
+    ProjectionManager*         projection_manager_ = nullptr;
     IMainWindow*               main_window_     = nullptr;
 
     std::function<unsigned int()> live_import_backlog_size_func_; // ASTERIX packets in processing, set by the root

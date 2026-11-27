@@ -767,3 +767,47 @@ TEST_CASE("calculateRadSlt2Geocentric with bias", "[projection][rs2g]")
     REQUIRE(ey2 == Approx(ey1).margin(0.01));
     REQUIRE(ez2 == Approx(ez1).margin(0.01));
 }
+
+// ---------------------------------------------------------------------------
+// delayedReplyPosition: position at which a radar plots a delayed-reply FFT
+// ---------------------------------------------------------------------------
+TEST_CASE("delayedReplyPosition keeps the azimuth and adds the delay to the slant range", "[projection][rs2g][fft]")
+{
+    RS2GCoordinateSystem cs(1, 48.0, 16.0, 300.0);
+
+    const double fft_lat = 48.2, fft_lon = 16.1, fft_alt_m = 200.0;
+
+    auto polar = [ & ] (double lat_deg, double lon_deg, double& azimuth_rad, double& slant_range_m)
+    {
+        double x, y, z, lx, ly, lz, ground_range_m, altitude_m;
+        cs.geodesic2Geocentric(lat_deg * DEG2RAD_T, lon_deg * DEG2RAD_T, fft_alt_m, x, y, z);
+        cs.geocentric2LocalCart(x, y, z, lx, ly, lz);
+        cs.localCart2RadarSlant(lx, ly, lz, azimuth_rad, slant_range_m, ground_range_m, altitude_m);
+    };
+
+    double site_azimuth_rad, site_slant_range_m;
+    polar(fft_lat, fft_lon, site_azimuth_rad, site_slant_range_m);
+
+    SECTION("a delay moves the position along the azimuth")
+    {
+        const double delay_m = 50.0 * 1852.0;
+
+        double plot_lat, plot_lon;
+        REQUIRE(cs.delayedReplyPosition(fft_lat, fft_lon, fft_alt_m, delay_m, plot_lat, plot_lon));
+
+        double plot_azimuth_rad, plot_slant_range_m;
+        polar(plot_lat, plot_lon, plot_azimuth_rad, plot_slant_range_m);
+
+        REQUIRE(plot_azimuth_rad == Approx(site_azimuth_rad).margin(1e-5));
+        REQUIRE(plot_slant_range_m == Approx(site_slant_range_m + delay_m).margin(5.0));
+    }
+
+    SECTION("no delay gives the site")
+    {
+        double plot_lat, plot_lon;
+        REQUIRE(cs.delayedReplyPosition(fft_lat, fft_lon, fft_alt_m, 0.0, plot_lat, plot_lon));
+
+        REQUIRE(plot_lat == Approx(fft_lat).margin(1e-5));
+        REQUIRE(plot_lon == Approx(fft_lon).margin(1e-5));
+    }
+}

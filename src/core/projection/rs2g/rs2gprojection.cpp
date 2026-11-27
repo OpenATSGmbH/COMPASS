@@ -220,6 +220,16 @@ bool RS2GProjection::polarToWGS84(
     return ret;
 }
 
+bool RS2GProjection::delayedReplyPosition(unsigned int id, double latitude_deg, double longitude_deg,
+                                          double altitude_ft, double delay_m,
+                                          double& plot_latitude_deg, double& plot_longitude_deg)
+{
+    traced_assert(hasCoordinateSystem(id));
+
+    return coordinate_systems_.at(id)->delayedReplyPosition(latitude_deg, longitude_deg, altitude_ft * FT2M,
+                                                            delay_m, plot_latitude_deg, plot_longitude_deg);
+}
+
 bool RS2GProjection::wgs842PolarHorizontal(unsigned int id,
                                            double latitude_deg, double longitude_deg, double alt_wgs_m,
                                            double& azimuth_rad, double& slant_range_m, double& ground_range_m,

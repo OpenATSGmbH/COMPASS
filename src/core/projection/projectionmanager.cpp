@@ -22,6 +22,8 @@
 #include "rs2gprojection.h"
 #include "idbvariableresolver.h"
 #include "db_context_manager.h"
+#include "data_source.h"
+#include "fft.h"
 #include "files.h"
 #include "number.h"
 
@@ -369,8 +371,9 @@ unsigned int ProjectionManager::calculateRadarPlotPositions (
             mode_c_code =  boost::none;
 
 
-        std::tie(is_from_fft, fft_altitude_ft) = ctx_man.isFromFFT(
-            lat, lon, acad, dbcontent_name == "CAT001",
+        // radar plot, delayed-reply FFTs also match at their expected position
+        std::tie(is_from_fft, fft_altitude_ft) = isFromFFT(
+            ds_id, lat, lon, acad, dbcontent_name == "CAT001",
             mode_a_code, mode_c_code);
 
         if (is_from_fft) // recalculate position
@@ -769,6 +772,66 @@ ProjectionManagerWidget* ProjectionManager::widget()
 void ProjectionManager::deleteWidget()
 {
     widget_ = nullptr;
+}
+
+boost::optional<std::pair<double, double>> ProjectionManager::fftExpectedPosition(
+    unsigned int ds_id, const context::FFT& fft)
+{
+    if (!fft.hasRangeDelay() || !fft.hasPosition() || !hasCurrentProjection())
+        return boost::none;
+
+    auto& ctx_man = dbContextManager();
+
+    if (!ctx_man.hasDataSource(ds_id))
+        return boost::none;
+
+    const auto* ds = ctx_man.dataSource(ds_id);
+
+    if (!ds->hasPosition())
+        return boost::none;
+
+    double fft_altitude_ft = fft.hasAltitude() ? fft.altitude() : 0.0;
+
+    FFTExpectedKey key {ds_id, ds->latitude(), ds->longitude(), ds->altitude(),
+                        fft.latitude(), fft.longitude(), fft_altitude_ft, fft.rangeDelayNM()};
+
+    std::lock_guard<std::mutex> lock(fft_expected_mutex_);
+
+    auto it = fft_expected_cache_.find(key);
+    if (it != fft_expected_cache_.end())
+        return it->second;
+
+    boost::optional<std::pair<double, double>> position;
+
+    Projection& projection = currentProjection();
+    projection.addAllCoordinateSystems();
+
+    double latitude_deg, longitude_deg;
+
+    if (projection.hasCoordinateSystem(ds_id)
+        && projection.delayedReplyPosition(ds_id, fft.latitude(), fft.longitude(), fft_altitude_ft,
+                                           fft.rangeDelayNM() * NM2M, latitude_deg, longitude_deg))
+    {
+        position = std::make_pair(latitude_deg, longitude_deg);
+    }
+    else
+    {
+        logwrn << "no expected position of FFT '" << fft.name() << "' for data source " << ds->name();
+    }
+
+    fft_expected_cache_[key] = position;
+
+    return position;
+}
+
+std::pair<bool, float> ProjectionManager::isFromFFT(unsigned int ds_id, double latitude_deg, double longitude_deg,
+                                                    boost::optional<unsigned int> mode_s_address, bool ignore_mode_s,
+                                                    boost::optional<unsigned int> mode_a_code,
+                                                    boost::optional<float> mode_c_code)
+{
+    return dbContextManager().isFromFFT(
+        latitude_deg, longitude_deg, mode_s_address, ignore_mode_s, mode_a_code, mode_c_code,
+        [ & ] (const context::FFT& fft) { return fftExpectedPosition(ds_id, fft); });
 }
 
 double ProjectionManager::geoidHeightM (double latitude_deg, double longitude_deg)

@@ -21,6 +21,7 @@
 
 #include <boost/optional.hpp>
 
+#include <functional>
 #include <string>
 #include <utility>
 
@@ -62,6 +63,17 @@ public:
     // suits remote FFTs measured by long-range radar
     double maxPlotDistanceM() const;
 
+    // --- range delay ---
+    // A delayed-reply FFT answers each interrogation after a fixed delay, so every
+    // radar plots it on the azimuth of the FFT site, at the slant range of the site
+    // plus the delay. The delay is a setting of the transponder, the same for all
+    // radars. Not set or 0 means no delay.
+
+    bool hasRangeDelay() const;
+    double rangeDelayNM() const;
+    void rangeDelayNM(double value);
+    void removeRangeDelay();
+
     // --- secondary identification ---
     // The Mode S address and the Mode 3/A code identify an FFT in the data.
     // The Mode C code only confirms a match, it never establishes one.
@@ -98,12 +110,21 @@ public:
      *
      * ignore_mode_s skips the Mode S address check for data that carries no
      * aircraft address, e.g. CAT001.
+     *
+     * expected_position returns the position at which the measuring radar plots
+     * this FFT if it has a range delay (see ProjectionManager::fftExpectedPosition).
+     * If given, the position check passes near the FFT site or near this position.
+     * It is only called if the secondary identification matched and the target
+     * report is not near the site.
      */
+    using ExpectedPositionFunc = std::function<boost::optional<std::pair<double, double>>()>;
+
     std::pair<bool, float> matches(double latitude_deg, double longitude_deg,
                                    boost::optional<unsigned int> mode_s_address,
                                    bool ignore_mode_s,
                                    boost::optional<unsigned int> mode_a_code,
-                                   boost::optional<float> mode_c_code) const;
+                                   boost::optional<float> mode_c_code,
+                                   const ExpectedPositionFunc& expected_position = {}) const;
 
     /// The Mode 3/A code 7777 is reserved for SSR monitoring. A target report
     /// carrying it is always from an FFT, without any further check.

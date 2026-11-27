@@ -521,3 +521,80 @@ TEST_CASE("FFT runtime id", "[context][fft]")
         REQUIRE(fft.toJSON().dump().find(fft.runtimeId()) == std::string::npos);
     }
 }
+
+// ============================================================
+// Range delay (delayed-reply FFT)
+// ============================================================
+
+TEST_CASE("FFT range delay", "[context][fft]")
+{
+    FFT fft = modeSFFT();
+
+    // the position at which the measuring radar plots the delayed FFT, here "far"
+    const std::pair<double, double> expected {far_lat, far_lon};
+    unsigned int expected_calls = 0;
+
+    FFT::ExpectedPositionFunc expected_func = [ & ] ()
+    {
+        ++expected_calls;
+        return boost::optional<std::pair<double, double>>(expected);
+    };
+
+    SECTION("not set or 0 means no delay")
+    {
+        REQUIRE(!fft.hasRangeDelay());
+
+        fft.rangeDelayNM(0.0);
+        REQUIRE(!fft.hasRangeDelay());
+
+        fft.rangeDelayNM(65.0);
+        REQUIRE(fft.hasRangeDelay());
+        REQUIRE(fft.rangeDelayNM() == Approx(65.0));
+        REQUIRE(FFT::fromJSON(fft.toJSON()).rangeDelayNM() == Approx(65.0));
+
+        fft.removeRangeDelay();
+        REQUIRE(!fft.hasRangeDelay());
+    }
+
+    SECTION("a target report near the expected position matches")
+    {
+        auto result = fft.matches(far_lat, far_lon, fft_acad, false, no_mode_3a, no_mode_c, expected_func);
+
+        REQUIRE(result.first);
+        REQUIRE(result.second == Approx(1000.0f));
+        REQUIRE(expected_calls == 1);
+    }
+
+    SECTION("a target report near the site still matches, without the expected position")
+    {
+        auto result = fft.matches(near_lat, near_lon, fft_acad, false, no_mode_3a, no_mode_c, expected_func);
+
+        REQUIRE(result.first);
+        REQUIRE(expected_calls == 0);
+    }
+
+    SECTION("a target report near neither position does not match")
+    {
+        auto result = fft.matches(48.6, 16.6, fft_acad, false, no_mode_3a, no_mode_c, expected_func);
+
+        REQUIRE(!result.first);
+    }
+
+    SECTION("the expected position needs the secondary identification")
+    {
+        auto result = fft.matches(far_lat, far_lon, boost::optional<unsigned int>(0x00BEEF),
+                                  false, no_mode_3a, no_mode_c, expected_func);
+
+        REQUIRE(!result.first);
+        REQUIRE(expected_calls == 0); // not needed after the identification failed
+    }
+
+    SECTION("an unknown expected position does not match away from the site")
+    {
+        FFT::ExpectedPositionFunc unknown = [] () { return boost::optional<std::pair<double, double>>(); };
+
+        auto result = fft.matches(far_lat, far_lon, fft_acad, false, no_mode_3a, no_mode_c, unknown);
+
+        REQUIRE(!result.first);
+    }
+}

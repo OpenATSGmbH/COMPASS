@@ -32,6 +32,7 @@
 #include <boost/optional.hpp>
 #include <boost/date_time/posix_time/ptime.hpp>
 
+#include <functional>
 #include <map>
 #include <optional>
 #include <set>
@@ -299,12 +300,17 @@ public:
     void deleteFFT(const std::string& name);
     void deleteAllFFTs();
 
+    /// position (lat, lon) at which the measuring radar plots an FFT with a range delay, none if not known
+    using FFTExpectedPositionFunc = std::function<boost::optional<std::pair<double, double>>(const FFT&)>;
+
     /// Check if a position/codes match an FFT. Returns {is_fft, altitude_ft}.
+    /// expected_position is given for radar plots (see ProjectionManager::isFromFFT).
     std::pair<bool, float> isFromFFT(double latitude_deg, double longitude_deg,
                                      boost::optional<unsigned int> mode_s_address,
                                      bool ignore_mode_s,
                                      boost::optional<unsigned int> mode_a_code,
-                                     boost::optional<float> mode_c_code) const;
+                                     boost::optional<float> mode_c_code,
+                                     const FFTExpectedPositionFunc& expected_position = {}) const;
 
     // ================================================================
     // Sector layer access (cached view of context sectors)
