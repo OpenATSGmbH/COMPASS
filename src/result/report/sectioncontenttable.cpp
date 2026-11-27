@@ -1625,7 +1625,7 @@ Result SectionContentTable::toJSONDocument_impl(nlohmann::json& j,
     }
     else
     {
-        j[ FieldDocColumns ] = headings_;
+        j[ FieldDocColumns ] = proxyHeadings();
         j[ FieldDocData    ] = data.value();
     }
 
